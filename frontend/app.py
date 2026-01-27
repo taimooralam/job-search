@@ -1084,6 +1084,195 @@ def update_jobs_status_bulk():
     })
 
 
+# ============================================================================
+# Starred/Favorite Jobs Endpoints
+# ============================================================================
+
+
+@app.route("/api/jobs/favorite", methods=["POST"])
+@login_required
+def toggle_job_favorite():
+    """
+    Toggle or set starred status for a single job.
+
+    Request Body:
+        job_id: Job _id string
+        starred: bool (optional - if not provided, toggles current state)
+
+    Returns:
+        JSON with success flag and new starred state
+    """
+    repo = _get_repo()
+
+    data = request.get_json()
+    job_id = data.get("job_id")
+    starred = data.get("starred")  # Can be None for toggle
+
+    if not job_id:
+        return jsonify({"error": "job_id is required"}), 400
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job_id format"}), 400
+
+    # If starred not explicitly provided, fetch current state and toggle
+    if starred is None:
+        job = repo.find_one({"_id": object_id}, {"starred": 1})
+        if not job:
+            return jsonify({"error": "Job not found"}), 404
+        starred = not job.get("starred", False)
+
+    # Build update
+    if starred:
+        update_data = {"starred": True, "starredAt": datetime.utcnow()}
+    else:
+        update_data = {"starred": False, "starredAt": None}
+
+    result = repo.update_one(
+        {"_id": object_id},
+        {"$set": update_data}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "job_id": job_id,
+        "starred": starred
+    })
+
+
+@app.route("/api/jobs/favorite/bulk", methods=["POST"])
+@login_required
+def toggle_jobs_favorite_bulk():
+    """
+    Set starred status for multiple jobs.
+
+    Request Body:
+        job_ids: List of job _id strings
+        starred: bool (required for bulk - sets all to this value)
+
+    Returns:
+        JSON with count of updated jobs
+    """
+    repo = _get_repo()
+
+    data = request.get_json()
+    job_ids = data.get("job_ids", [])
+    starred = data.get("starred")
+
+    if not job_ids or not isinstance(job_ids, list):
+        return jsonify({"error": "job_ids array is required"}), 400
+
+    if starred is None:
+        return jsonify({"error": "starred boolean is required for bulk operations"}), 400
+
+    # Convert to ObjectIds
+    try:
+        object_ids = [ObjectId(jid) for jid in job_ids]
+    except Exception:
+        return jsonify({"error": "Invalid job_id format in array"}), 400
+
+    # Build update
+    if starred:
+        update_data = {"starred": True, "starredAt": datetime.utcnow()}
+    else:
+        update_data = {"starred": False, "starredAt": None}
+
+    result = repo.update_many(
+        {"_id": {"$in": object_ids}},
+        {"$set": update_data}
+    )
+
+    return jsonify({
+        "success": True,
+        "updated_count": result.modified_count,
+        "starred": starred
+    })
+
+
+@app.route("/api/jobs/favorites", methods=["GET"])
+@login_required
+def get_favorite_jobs():
+    """
+    Get all starred jobs for the favorites panel.
+
+    Returns:
+        JSON with list of starred jobs (title, company, location, score, status)
+    """
+    repo = _get_repo()
+
+    # Fetch starred jobs sorted by when they were starred (most recent first)
+    jobs_cursor = repo.find(
+        {"starred": True},
+        projection={
+            "title": 1,
+            "company": 1,
+            "location": 1,
+            "score": 1,
+            "status": 1,
+            "starredAt": 1
+        },
+        sort=[("starredAt", DESCENDING)],
+        limit=100
+    )
+
+    # Convert cursor to list and format _id as string
+    jobs = []
+    for job in jobs_cursor:
+        jobs.append({
+            "_id": str(job["_id"]),
+            "title": job.get("title", "Unknown Title"),
+            "company": job.get("company", "Unknown Company"),
+            "location": job.get("location", ""),
+            "score": job.get("score"),
+            "status": job.get("status", "not processed")
+        })
+
+    return jsonify({"jobs": jobs, "count": len(jobs)})
+
+
+@app.route("/api/jobs/favorites/panel", methods=["GET"])
+@login_required
+def get_favorites_panel_html():
+    """
+    Get HTML partial for the favorites dropdown panel (HTMX endpoint).
+
+    Returns:
+        Rendered HTML partial with starred jobs list
+    """
+    repo = _get_repo()
+
+    jobs_cursor = repo.find(
+        {"starred": True},
+        projection={
+            "title": 1,
+            "company": 1,
+            "location": 1,
+            "score": 1,
+            "status": 1,
+            "starredAt": 1
+        },
+        sort=[("starredAt", DESCENDING)],
+        limit=100
+    )
+
+    jobs = list(jobs_cursor)
+
+    return render_template("partials/favorites_panel.html", jobs=jobs)
+
+
+@app.route("/api/jobs/favorites/count", methods=["GET"])
+@login_required
+def get_favorites_count():
+    """Get count of starred jobs for badge display."""
+    repo = _get_repo()
+    count = repo.count_documents({"starred": True})
+    return jsonify({"count": count})
+
+
 @app.route("/api/jobs/statuses", methods=["GET"])
 @login_required
 def get_statuses():
