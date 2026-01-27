@@ -151,6 +151,51 @@ window.mobileApp = function() {
             }
         },
 
+        /**
+         * Toggle star/favorite status for a job.
+         * @param {string} jobId - The job _id to toggle
+         */
+        async toggleFavorite(jobId) {
+            if (!jobId) return;
+
+            try {
+                // Get current starred state
+                const job = this.jobs.find(j => j._id === jobId);
+                const currentStarred = job?.starred || false;
+                const newStarred = !currentStarred;
+
+                const response = await fetch('/api/jobs/favorite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, starred: newStarred })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    // Update job in local state
+                    if (job) {
+                        job.starred = result.starred;
+                    }
+                    // Dispatch event for header badge update
+                    document.body.dispatchEvent(new CustomEvent('starredChanged'));
+                    // Show toast
+                    if (typeof showToast === 'function') {
+                        showToast(result.starred ? 'Job starred' : 'Star removed', 'success');
+                    }
+                } else {
+                    const error = await response.json();
+                    if (typeof showToast === 'function') {
+                        showToast(error.error || 'Failed to update', 'error');
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to toggle favorite:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Network error', 'error');
+                }
+            }
+        },
+
         async loadJobs() {
             this.isLoading = true;
             this.jobs = [];
