@@ -326,9 +326,9 @@ class TestCVToPDFEndpoint:
             )
 
             assert response.status_code == 200
-            # Verify sanitized filename
+            # Verify sanitized filename (new behavior: collapses underscores, no trailing)
             cd = response.headers.get("content-disposition", "")
-            assert "CV_Test___Co__Director__Engineering_.pdf" in cd
+            assert "CV_Test_Co_Director_Engineering.pdf" in cd
 
 
 class TestConcurrencyLimits:

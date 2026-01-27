@@ -120,7 +120,7 @@ class IdealCandidateProfileModel(BaseModel):
     experience_profile: str = Field(
         ...,
         min_length=10,
-        max_length=150,
+        max_length=500,
         description="Years + level description"
     )
     culture_signals: List[str] = Field(

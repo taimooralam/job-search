@@ -16,9 +16,10 @@ class TestSanitizeForPath:
     """Tests for sanitize_for_path function."""
 
     def test_sanitize_removes_special_chars(self):
-        """Test that special characters are replaced with underscores."""
-        assert sanitize_for_path("Test & Co.") == "Test___Co_"
-        assert sanitize_for_path("Director (Engineering)") == "Director__Engineering_"
+        """Test that special characters are removed and spaces collapsed."""
+        # New behavior: strips non-ASCII, removes special chars, collapses underscores
+        assert sanitize_for_path("Test & Co.") == "Test_Co"
+        assert sanitize_for_path("Director (Engineering)") == "Director_Engineering"
 
     def test_sanitize_replaces_spaces(self):
         """Test that spaces are replaced with underscores."""
@@ -33,8 +34,9 @@ class TestSanitizeForPath:
         assert sanitize_for_path("Test-Company") == "Test-Company"
 
     def test_sanitize_empty_string(self):
-        """Test sanitization of empty string."""
-        assert sanitize_for_path("") == ""
+        """Test sanitization of empty string returns 'Unknown' fallback."""
+        # New behavior: returns "Unknown" for empty/non-ASCII-only strings
+        assert sanitize_for_path("") == "Unknown"
 
 
 class TestTipTapJSONToHTML:
