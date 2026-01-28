@@ -209,28 +209,17 @@ def append_operation_log(run_id: str, message: str) -> None:
     _schedule_async_task(_persist_log_to_redis(run_id, message))
 
 
-def update_operation_status(
+async def _update_operation_status_async(
     run_id: str,
     status: str,
     result: Optional[Dict[str, Any]] = None,
     error: Optional[str] = None,
 ) -> None:
     """
-    Update operation status.
+    Async implementation of operation status update.
 
-    Thread-safe: Works from both the main event loop and worker threads.
-
-    IMPORTANT: When status is "completed" or "failed", we capture the current
-    in-memory log count as expected_log_count. This fixes a race condition where
-    Redis persistence is fire-and-forget, so the frontend might see status="completed"
-    before all logs are persisted to Redis. The frontend should use expected_log_count
-    (not Redis llen) to know when all logs have been fetched.
-
-    Args:
-        run_id: Operation run ID
-        status: New status (running, completed, failed)
-        result: Optional result data on completion
-        error: Optional error message on failure
+    When status is "completed" or "failed", flushes all in-memory logs to Redis
+    BEFORE updating status. This ensures cross-runner log fetching works correctly.
     """
     state = _operation_runs.get(run_id)
     if not state:
@@ -247,14 +236,63 @@ def update_operation_status(
     # Signal SSE generator that status changed (for immediate completion notification)
     _signal_log_event(state)
 
+    # On completion/failure: flush ALL logs to Redis before updating status
+    # This fixes the race condition where fire-and-forget writes haven't completed
+    if status in {"completed", "failed"}:
+        # Flush logs synchronously (await) to ensure they're in Redis
+        await _flush_all_logs_to_redis(run_id, state.logs.copy())
+
     # Persist status update to Redis
-    # Include expected_log_count when completing/failing to fix race condition
     expected_log_count = len(state.logs) if status in {"completed", "failed"} else None
-    _schedule_async_task(_persist_operation_meta_to_redis(run_id, state, expected_log_count))
+    await _persist_operation_meta_to_redis(run_id, state, expected_log_count)
 
     # Set TTL on completion/failure (logs expire after 24 hours)
     if status in {"completed", "failed"}:
-        _schedule_async_task(_set_redis_log_ttl(run_id))
+        await _set_redis_log_ttl(run_id)
+
+
+def update_operation_status(
+    run_id: str,
+    status: str,
+    result: Optional[Dict[str, Any]] = None,
+    error: Optional[str] = None,
+) -> None:
+    """
+    Update operation status.
+
+    Thread-safe: Works from both the main event loop and worker threads.
+
+    When status is "completed" or "failed", this function ensures ALL in-memory
+    logs are flushed to Redis BEFORE the status is updated. This eliminates the
+    race condition where a different runner might see status="completed" but
+    logs haven't been persisted yet.
+
+    Args:
+        run_id: Operation run ID
+        status: New status (running, completed, failed)
+        result: Optional result data on completion
+        error: Optional error message on failure
+    """
+    # Schedule the async implementation
+    coro = _update_operation_status_async(run_id, status, result, error)
+
+    if _is_main_thread_loop():
+        asyncio.create_task(coro)
+    else:
+        from runner_service.app import get_main_loop
+        main_loop = get_main_loop()
+        if main_loop and not main_loop.is_closed():
+            # For completion status, we want to wait for the flush to complete
+            # Use run_coroutine_threadsafe and wait for the result
+            if status in {"completed", "failed"}:
+                future = asyncio.run_coroutine_threadsafe(coro, main_loop)
+                try:
+                    # Wait up to 10 seconds for flush to complete
+                    future.result(timeout=10.0)
+                except Exception as e:
+                    logger.warning(f"[{run_id[:16]}] Status update failed to await: {e}")
+            else:
+                asyncio.run_coroutine_threadsafe(coro, main_loop)
 
 
 def update_layer_status(
@@ -500,6 +538,48 @@ async def _persist_log_to_redis(run_id: str, message: str) -> None:
     except Exception as e:
         # Don't fail operation if Redis write fails
         logger.debug(f"[{run_id[:16]}] Redis log persist failed: {e}")
+
+
+async def _flush_all_logs_to_redis(run_id: str, logs: List[str]) -> bool:
+    """
+    Flush ALL in-memory logs to Redis atomically.
+
+    Called when operation completes/fails to ensure all logs are in Redis
+    before the status is updated. This fixes the race condition where
+    fire-and-forget log persistence might not complete before a different
+    runner tries to fetch logs.
+
+    Args:
+        run_id: Operation run ID
+        logs: Complete list of in-memory logs to persist
+
+    Returns:
+        True if flush succeeded, False otherwise
+    """
+    if not logs:
+        return True
+
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            logger.warning(f"[{run_id[:16]}] No Redis client for log flush")
+            return False
+
+        key = f"{REDIS_LOG_PREFIX}{run_id}:buffer"
+
+        # Delete existing buffer and write all logs atomically using pipeline
+        pipe = redis.pipeline()
+        pipe.delete(key)
+        for log in logs:
+            pipe.rpush(key, log)
+        await pipe.execute()
+
+        logger.debug(f"[{run_id[:16]}] Flushed {len(logs)} logs to Redis")
+        return True
+
+    except Exception as e:
+        logger.error(f"[{run_id[:16]}] Failed to flush logs to Redis: {e}")
+        return False
 
 
 async def _persist_operation_meta_to_redis(
