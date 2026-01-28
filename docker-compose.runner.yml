@@ -20,9 +20,16 @@ services:
       # Use `claude setup-token` to generate a long-lived token (valid 1 year)
       - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
-    # Traefik handles external traffic via HTTPS; keep direct port for local/fallback
-    ports:
-      - "0.0.0.0:8000:8000"
+    # Scaling: 4 runners × 3 concurrent = 12 parallel jobs
+    deploy:
+      replicas: 4
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 256M
+    # Traefik handles load balancing across replicas via HTTPS
+    # No direct port - use https://runner.uqab.digital
     labels:
       # Enable Traefik for this service
       - "traefik.enable=true"

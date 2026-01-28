@@ -534,7 +534,8 @@ jobs:
             echo "🔄 Code change - restarting with locally built images..."
           fi
 
-          # Restart services (picks up new compose file either way)
+          # Restart services (picks up new compose file - replicas defined in compose)
+          # Note: deploy.replicas: 4 in compose file handles scaling automatically
           docker compose -f docker-compose.runner.yml up -d --remove-orphans
 
           # Clean up old images
@@ -542,13 +543,40 @@ jobs:
 
           # Wait for services to start (PDF service may take longer due to Playwright)
           echo "Waiting for services to start..."
-          sleep 20
+          sleep 30
 
-          # Check runner health
-          echo "Checking runner health..."
-          curl -f http://localhost:8000/health || exit 1
+          # Check all runner replicas are healthy (4 runners expected)
+          echo "Checking runner health (all replicas)..."
+          HEALTHY_RUNNERS=0
+          for i in 1 2 3 4; do
+            CONTAINER="job-runner-runner-$i"
+            if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
+              echo "✅ $CONTAINER is healthy"
+              ((HEALTHY_RUNNERS++))
+            else
+              echo "⚠️ $CONTAINER not healthy yet"
+            fi
+          done
 
-          # Check PDF service health via runner's network
+          # Require at least 3 of 4 runners healthy (allows for one slow starter)
+          if [[ $HEALTHY_RUNNERS -lt 3 ]]; then
+            echo "❌ Only $HEALTHY_RUNNERS/4 runners healthy, waiting 30s more..."
+            sleep 30
+            HEALTHY_RUNNERS=0
+            for i in 1 2 3 4; do
+              CONTAINER="job-runner-runner-$i"
+              if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
+                ((HEALTHY_RUNNERS++))
+              fi
+            done
+            if [[ $HEALTHY_RUNNERS -lt 3 ]]; then
+              echo "❌ Only $HEALTHY_RUNNERS/4 runners healthy after retry"
+              exit 1
+            fi
+          fi
+          echo "✅ $HEALTHY_RUNNERS/4 runners healthy"
+
+          # Check PDF service health via any runner's network
           echo "Checking PDF service health..."
           docker exec job-runner-runner-1 curl -f http://pdf-service:8001/health || echo "Warning: PDF service health check failed"
 
