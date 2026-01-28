@@ -70,7 +70,8 @@ jobs:
           echo "$CHANGED_FILES"
 
           # Check if any code files changed (not just docker-compose.runner.yml)
-          CODE_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^docker-compose.runner.yml$" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|tests/|Dockerfile\.|requirements\.txt)" | wc -l)
+          # Include CI workflow changes to trigger full pipeline validation
+          CODE_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^docker-compose.runner.yml$" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|tests/|Dockerfile\.|requirements\.txt|\.github/workflows/runner-ci\.yml)" | wc -l)
 
           # Check if only docker-compose.runner.yml changed
           COMPOSE_ONLY=$(echo "$CHANGED_FILES" | grep -E "^docker-compose.runner.yml$" | wc -l)
@@ -292,6 +293,7 @@ jobs:
     outputs:
       runner: ${{ steps.filter.outputs.runner }}
       pdf-service: ${{ steps.filter.outputs.pdf-service }}
+      ci-changed: ${{ steps.filter.outputs.ci-changed }}
       runner_deployed_sha: ${{ steps.deployed.outputs.runner_sha }}
       pdf_deployed_sha: ${{ steps.deployed.outputs.pdf_sha }}
     steps:
@@ -412,6 +414,15 @@ jobs:
             fi
           fi
 
+          # Check if CI workflow itself changed (triggers deploy to validate new workflow)
+          CI_CHANGES=$(git diff --name-only HEAD~1..HEAD -- .github/workflows/runner-ci.yml 2>/dev/null | wc -l)
+          if [[ $CI_CHANGES -gt 0 ]]; then
+            echo "ci-changed=true" >> $GITHUB_OUTPUT
+            echo "🔄 CI workflow changed - will trigger deploy to validate"
+          else
+            echo "ci-changed=false" >> $GITHUB_OUTPUT
+          fi
+
   # Build runner image - only if runner CODE files changed (not compose-only)
   build-runner:
     needs: [quick-changes, test-unit, test-services, changes]
@@ -496,14 +507,16 @@ jobs:
     runs-on: self-hosted
     # Run if on main AND either:
     # 1. At least one build job succeeded (code change), OR
-    # 2. Compose-only change (just need to restart with new env vars)
+    # 2. Compose-only change (just need to restart with new env vars), OR
+    # 3. CI workflow changed (validate new workflow by running deploy)
     if: |
       always() &&
       github.ref == 'refs/heads/main' &&
       (
         needs.build-runner.result == 'success' ||
         needs.build-pdf-service.result == 'success' ||
-        needs.quick-changes.outputs.compose-only == 'true'
+        needs.quick-changes.outputs.compose-only == 'true' ||
+        needs.changes.outputs.ci-changed == 'true'
       )
 
     steps:
