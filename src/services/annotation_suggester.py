@@ -396,7 +396,7 @@ def find_best_match(
             # Load model if not provided
             if embedding_model is None:
                 from sentence_transformers import SentenceTransformer
-                embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+                embedding_model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
 
             # Compute embedding for new JD item
             jd_embedding = embedding_model.encode(jd_item)
@@ -590,7 +590,7 @@ def generate_annotations_for_job(
         if priors.get("sentence_index", {}).get("embeddings"):
             try:
                 from sentence_transformers import SentenceTransformer
-                embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+                embedding_model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
             except Exception as e:
                 logger.warning(f"Failed to load embedding model: {e}")
 
@@ -934,7 +934,9 @@ def get_embedding_model():
     """
     try:
         from sentence_transformers import SentenceTransformer
-        return SentenceTransformer(EMBEDDING_MODEL)
+        # Explicitly set device='cpu' to avoid PyTorch 2.x meta tensor issues
+        # (Error: "Cannot copy out of meta tensor; no data!")
+        return SentenceTransformer(EMBEDDING_MODEL, device='cpu')
     except ImportError:
         raise ImportError(
             "sentence-transformers not installed. "

@@ -522,7 +522,9 @@ def _compute_embeddings(texts: List[str]) -> np.ndarray:
         raise ImportError("sentence-transformers required for rebuild. Install with: pip install sentence-transformers")
 
     logger.info(f"Loading embedding model: {EMBEDDING_MODEL}")
-    model = SentenceTransformer(EMBEDDING_MODEL)
+    # Explicitly set device='cpu' to avoid PyTorch 2.x meta tensor issues
+    # (Error: "Cannot copy out of meta tensor; no data!")
+    model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
 
     logger.info(f"Computing embeddings for {len(texts)} texts...")
     embeddings = model.encode(texts, show_progress_bar=True, batch_size=EMBEDDING_BATCH_SIZE)
