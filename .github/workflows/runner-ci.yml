@@ -552,7 +552,7 @@ jobs:
             CONTAINER="job-runner-runner-$i"
             if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
               echo "✅ $CONTAINER is healthy"
-              ((HEALTHY_RUNNERS++))
+              HEALTHY_RUNNERS=$((HEALTHY_RUNNERS + 1))
             else
               echo "⚠️ $CONTAINER not healthy yet"
             fi
@@ -566,7 +566,7 @@ jobs:
             for i in 1 2 3 4; do
               CONTAINER="job-runner-runner-$i"
               if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
-                ((HEALTHY_RUNNERS++))
+                HEALTHY_RUNNERS=$((HEALTHY_RUNNERS + 1))
               fi
             done
             if [[ $HEALTHY_RUNNERS -lt 3 ]]; then
