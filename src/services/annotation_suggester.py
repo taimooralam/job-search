@@ -22,12 +22,18 @@ Usage:
 """
 
 import logging
+import threading
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+
+# Thread-safe singleton for embedding model
+# Prevents race conditions when multiple runners load the model simultaneously
+_embedding_model = None
+_embedding_model_lock = threading.Lock()
 
 from .annotation_priors import (
     PriorsDocument,
@@ -393,10 +399,9 @@ def find_best_match(
 
     if embeddings_list:
         try:
-            # Load model if not provided
+            # Load model if not provided (uses thread-safe singleton)
             if embedding_model is None:
-                from sentence_transformers import SentenceTransformer
-                embedding_model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
+                embedding_model = get_embedding_model()
 
             # Compute embedding for new JD item
             jd_embedding = embedding_model.encode(jd_item)
@@ -585,12 +590,11 @@ def generate_annotations_for_job(
         # 4. Load master CV data
         master_cv = _load_master_cv_data()
 
-        # 5. Load embedding model once (for efficiency)
+        # 5. Load embedding model once (uses thread-safe singleton)
         embedding_model = None
         if priors.get("sentence_index", {}).get("embeddings"):
             try:
-                from sentence_transformers import SentenceTransformer
-                embedding_model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
+                embedding_model = get_embedding_model()
             except Exception as e:
                 logger.warning(f"Failed to load embedding model: {e}")
 
@@ -927,18 +931,38 @@ def _create_annotation(
 
 def get_embedding_model():
     """
-    Get the sentence transformer model (lazy loaded, cached).
+    Get the sentence transformer model (thread-safe singleton).
+
+    Uses double-checked locking to ensure only one instance is created,
+    even when multiple runners attempt to load simultaneously.
+
+    This fixes the PyTorch 2.x "Cannot copy out of meta tensor; no data!"
+    error that occurs when multiple processes race to load the model.
 
     Returns:
-        SentenceTransformer model instance
+        SentenceTransformer model instance (cached globally)
     """
-    try:
-        from sentence_transformers import SentenceTransformer
-        # Explicitly set device='cpu' to avoid PyTorch 2.x meta tensor issues
-        # (Error: "Cannot copy out of meta tensor; no data!")
-        return SentenceTransformer(EMBEDDING_MODEL, device='cpu')
-    except ImportError:
-        raise ImportError(
-            "sentence-transformers not installed. "
-            "Run: pip install sentence-transformers"
-        )
+    global _embedding_model
+
+    # Fast path: model already loaded
+    if _embedding_model is not None:
+        return _embedding_model
+
+    # Slow path: acquire lock and load model
+    with _embedding_model_lock:
+        # Double-check after acquiring lock (another thread may have loaded it)
+        if _embedding_model is None:
+            try:
+                from sentence_transformers import SentenceTransformer
+
+                logger.info(f"Loading embedding model: {EMBEDDING_MODEL}")
+                # Explicitly set device='cpu' to avoid PyTorch 2.x meta tensor issues
+                _embedding_model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
+                logger.info("Embedding model loaded successfully")
+            except ImportError:
+                raise ImportError(
+                    "sentence-transformers not installed. "
+                    "Run: pip install sentence-transformers"
+                )
+
+    return _embedding_model
