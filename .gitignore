@@ -79,3 +79,42 @@ claude-auth/
 
 # VPS MongoDB secrets
 vps/mongodb/mongodb-keyfile
+
+# ══════════════════════════════════════════════════════════════
+# PERSONAL DATA (MUST EXCLUDE FOR PUBLIC REPO)
+# ══════════════════════════════════════════════════════════════
+
+# Personal CV and career data
+data/master-cv/
+reports/michael-page/
+reports/**/taimoor*.md
+research/
+
+# Plans containing personal strategy
+plans/
+
+# Personal reports with raw data
+reports/bullet-analysis-raw.json
+reports/role-analysis-raw.json
+reports/jd-pattern-analysis.json
+reports/role-pain-points-analysis.md
+
+# ══════════════════════════════════════════════════════════════
+# MESSY / UNFINISHED / INTERNAL
+# ══════════════════════════════════════════════════════════════
+
+# Archive of old docs
+docs/archive/
+
+# Scripts that might expose workflow
+scripts/ingest_*.py
+scripts/migrate_*.py
+
+# VPS deployment secrets
+vps/
+
+# Star curator (personal)
+star-curator/
+
+# Raw thoughts
+plans/raw_thoughts.md
