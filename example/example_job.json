@@ -1,0 +1,51 @@
+{
+  "_id": "example-job-001",
+  "title": "Senior Software Engineer - Platform",
+  "company": "Acme Technology Inc.",
+  "location": "Berlin, Germany",
+  "remote": "Hybrid",
+  "salary_range": "€80,000 - €110,000",
+  "posted_date": "2025-01-15",
+  "source": "linkedin",
+  "url": "https://example.com/jobs/senior-engineer",
+  "description": {
+    "raw": "We're looking for a Senior Software Engineer to join our Platform team...",
+    "responsibilities": [
+      "Design and implement scalable microservices architecture",
+      "Lead technical initiatives and mentor junior engineers",
+      "Collaborate with product managers to define technical requirements",
+      "Improve system reliability and observability",
+      "Participate in architecture review and code reviews"
+    ],
+    "requirements": {
+      "required": [
+        "5+ years of software engineering experience",
+        "Strong experience with Python or Node.js",
+        "Experience with cloud platforms (AWS, GCP, or Azure)",
+        "Experience with microservices and distributed systems",
+        "Strong communication skills"
+      ],
+      "preferred": [
+        "Experience with Kubernetes and Docker",
+        "Experience with event-driven architecture",
+        "Experience leading technical projects",
+        "Familiarity with observability tools (Datadog, Grafana)"
+      ]
+    }
+  },
+  "metadata": {
+    "industry": "Technology",
+    "company_size": "500-1000",
+    "stage": "Series C",
+    "engineering_team_size": "50-100"
+  },
+  "pipeline_status": {
+    "layer1_complete": true,
+    "layer2_complete": true,
+    "layer3_complete": true,
+    "layer4_complete": false,
+    "layer5_complete": false,
+    "layer6_complete": false,
+    "layer7_complete": false
+  }
+}

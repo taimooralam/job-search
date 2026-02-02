@@ -25,6 +25,8 @@ credentials/
 !vercel.json
 !data/master-cv/role_metadata.json
 !data/master-cv/role_skills_taxonomy.json
+!example/example_job.json
+!example/example_config.env
 
 # IDE / Editor
 .idea/
