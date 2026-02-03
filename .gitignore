@@ -88,18 +88,11 @@ vps/mongodb/mongodb-keyfile
 
 # Personal CV and career data
 data/master-cv/
-reports/michael-page/
-reports/**/taimoor*.md
+reports/
 research/
 
 # Plans containing personal strategy
 plans/
-
-# Personal reports with raw data
-reports/bullet-analysis-raw.json
-reports/role-analysis-raw.json
-reports/jd-pattern-analysis.json
-reports/role-pain-points-analysis.md
 
 # ══════════════════════════════════════════════════════════════
 # MESSY / UNFINISHED / INTERNAL
