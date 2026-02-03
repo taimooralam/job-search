@@ -26,8 +26,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from src.common.annotation_types import (
     ConcernAnnotation,
@@ -36,7 +35,7 @@ from src.common.annotation_types import (
     JDAnnotation,
 )
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import invoke_unified_sync
 from src.common.state import JobState
 
 logger = logging.getLogger(__name__)
@@ -410,31 +409,58 @@ class InterviewPredictor:
         if not gaps_text and not concerns_text:
             gaps_text = "No specific gaps identified. Generate general behavioral questions for the role."
 
-        # Create LLM with structured output
-        llm = create_tracked_llm(
-            model=self.model,
-            temperature=self.temperature,
-            layer="layer7_interview_prep",
+        # Build prompt with JSON schema instruction
+        user_prompt = QUESTION_GENERATION_USER_PROMPT.format(
+            role_title=job_title,
+            company=company,
+            seniority_level=seniority_level,
+            gaps_text=gaps_text,
+            concerns_text=concerns_text,
+            stars_text=stars_text,
+            passion_identity_section=("\n" + passion_identity_text + "\n") if passion_identity_text else "",
         )
 
-        structured_llm = llm.with_structured_output(QuestionGenerationOutput)
+        # Add JSON schema instruction to prompt
+        json_schema_instruction = """
 
-        # Build messages
-        system_msg = SystemMessage(content=QUESTION_GENERATION_SYSTEM_PROMPT)
-        user_msg = HumanMessage(
-            content=QUESTION_GENERATION_USER_PROMPT.format(
-                role_title=job_title,
-                company=company,
-                seniority_level=seniority_level,
-                gaps_text=gaps_text,
-                concerns_text=concerns_text,
-                stars_text=stars_text,
-                passion_identity_section=("\n" + passion_identity_text + "\n") if passion_identity_text else "",
-            )
-        )
+OUTPUT FORMAT:
+Return a JSON object with the following structure:
+{
+  "questions": [
+    {
+      "question": "The interview question text",
+      "question_type": "gap_probe|concern_probe|behavioral|technical|situational|passion_probe|identity_probe",
+      "difficulty": "easy|medium|hard",
+      "suggested_answer_approach": "2-3 sentence guidance on how to prepare",
+      "sample_answer_outline": "Brief bullet point outline (optional)",
+      "relevant_star_ids": ["star_id_1", "star_id_2"]
+    }
+  ]
+}
+
+Return ONLY valid JSON, no additional text."""
+
+        full_prompt = user_prompt + json_schema_instruction
 
         try:
-            result = structured_llm.invoke([system_msg, user_msg])
+            # Use unified LLM with step config
+            llm_result = invoke_unified_sync(
+                prompt=full_prompt,
+                system=QUESTION_GENERATION_SYSTEM_PROMPT,
+                step_name="interview_prediction",
+                validate_json=True,
+            )
+
+            if not llm_result.success:
+                logger.error(f"Interview question generation failed: {llm_result.error}")
+                return []
+
+            # Parse into Pydantic model
+            try:
+                result = QuestionGenerationOutput(**llm_result.parsed_json)
+            except (ValidationError, TypeError) as e:
+                logger.error(f"Failed to parse interview questions: {e}")
+                return []
 
             # Convert to InterviewQuestion format
             questions = []

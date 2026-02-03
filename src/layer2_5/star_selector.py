@@ -11,11 +11,10 @@ that have been manually linked to annotations.
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import invoke_unified_sync
 from src.common.state import JobState
 from src.common.star_parser import parse_star_records
 from src.common.types import STARRecord
@@ -96,14 +95,7 @@ class STARSelector:
     """
 
     def __init__(self):
-        """Initialize LLM and load STAR records."""
-        # GAP-066: Token tracking enabled
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=0.2,  # Low temperature for consistent scoring
-            layer="layer2_5_star",
-        )
-
+        """Initialize and load STAR records."""
         # Load STAR records from knowledge base
         kb_path = Path(__file__).parent.parent.parent / "knowledge-base.md"
         self.star_records = parse_star_records(str(kb_path))
@@ -155,13 +147,19 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
             star_summaries=self._format_star_summaries(self.star_records)
         )
 
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt)
-        ]
+        # Use unified LLM with step config
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            system=SYSTEM_PROMPT,
+            step_name="star_selection",
+            job_id=state.get("job_id", "unknown"),
+            validate_json=False,  # Response is formatted text, not JSON
+        )
 
-        response = self.llm.invoke(messages)
-        return response.content
+        if not result.success:
+            raise RuntimeError(f"STAR scoring LLM failed: {result.error}")
+
+        return result.content
 
     def _parse_scores(self, llm_response: str, num_pain_points: int) -> List[Dict[str, Any]]:
         """

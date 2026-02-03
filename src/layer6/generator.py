@@ -1,11 +1,25 @@
 """
-Layer 6: Outreach & CV Generator
+Layer 6: Outreach & CV Generator (LEGACY - DEPRECATED)
 
+⚠️ DEPRECATION WARNING: This is the legacy CV generator.
+Use CV Gen V2 instead (src/layer6_v2/) which is the active, maintained version.
+Set ENABLE_CV_GEN_V2=true (the default) to use V2.
+
+This legacy code is kept for backward compatibility but is not actively maintained.
+It uses the old OpenAI-based LLM system and will be removed in a future release.
+
+Original description:
 Generates personalized cover letter and tailored CV based on all previous analysis.
-
 Phase 8.1: Enhanced cover letter generator with validation gates.
 Phase 8.2: STAR-driven CV generator (to be implemented).
 """
+
+import warnings
+warnings.warn(
+    "src.layer6.generator is deprecated. Use src.layer6_v2 with ENABLE_CV_GEN_V2=true",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import json
 import logging

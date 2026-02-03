@@ -1,6 +1,14 @@
 """
-Layer 6 CV Generator (Phase 8.2) - STAR-Driven CV Generation.
+Layer 6 CV Generator (Phase 8.2) - STAR-Driven CV Generation (LEGACY - DEPRECATED)
 
+⚠️ DEPRECATION WARNING: This is the legacy CV generator.
+Use CV Gen V2 instead (src/layer6_v2/) which is the active, maintained version.
+Set ENABLE_CV_GEN_V2=true (the default) to use V2.
+
+This legacy code is kept for backward compatibility but is not actively maintained.
+It uses the old OpenAI-based LLM system and will be removed in a future release.
+
+Original description:
 Implements sophisticated CV tailoring with:
 1. Competency mix analysis (delivery/process/architecture/leadership dimensions)
 2. STAR scoring and ranking (algorithmic selection based on job fit)
@@ -11,6 +19,13 @@ Implements sophisticated CV tailoring with:
 This goes beyond basic CV templating to strategically select and present
 achievements that align with the target role's competency profile.
 """
+
+import warnings
+warnings.warn(
+    "src.layer6.cv_generator is deprecated. Use src.layer6_v2 with ENABLE_CV_GEN_V2=true",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import logging
 import re

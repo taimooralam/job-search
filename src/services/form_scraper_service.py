@@ -25,7 +25,7 @@ from pydantic import BaseModel, Field, ValidationError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import invoke_unified_sync
 from src.common.repositories import (
     get_job_repository,
     JobRepositoryInterface,
@@ -157,11 +157,6 @@ class FormScraperService:
         self._job_repository = job_repository
         self._form_cache_repository = form_cache_repository
         self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.ANALYTICAL_TEMPERATURE,
-            layer="form_scraper",
-        )
 
     def _get_job_repository(self) -> JobRepositoryInterface:
         """Get job repository, using singleton if not provided."""
@@ -272,19 +267,22 @@ class FormScraperService:
         Returns:
             FormExtractionOutput with extracted fields
         """
-        from langchain_core.messages import HumanMessage, SystemMessage
+        user_prompt = USER_PROMPT_FORM_EXTRACTION_TEMPLATE.format(
+            url=url, content=content[:12000]
+        )
 
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT_FORM_EXTRACTION),
-            HumanMessage(
-                content=USER_PROMPT_FORM_EXTRACTION_TEMPLATE.format(
-                    url=url, content=content[:12000]
-                )
-            ),
-        ]
+        # Use unified LLM with step config
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            system=SYSTEM_PROMPT_FORM_EXTRACTION,
+            step_name="form_scraping",
+            validate_json=False,  # We'll parse JSON manually for better error handling
+        )
 
-        response = self.llm.invoke(messages)
-        llm_output = response.content.strip()
+        if not result.success:
+            raise ValueError(f"Form extraction LLM failed: {result.error}")
+
+        llm_output = result.content.strip()
 
         # Remove markdown code blocks if present
         if llm_output.startswith("```"):

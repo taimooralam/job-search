@@ -13,10 +13,8 @@ import re
 from pathlib import Path
 from typing import Optional, Tuple
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_cheap_llm
+from src.common.unified_llm import invoke_unified_sync
 
 logger = logging.getLogger(__name__)
 
@@ -162,16 +160,20 @@ def quick_score_job(
     )
 
     try:
-        # GAP-066: Use tracked cheap model for quick scoring
-        llm = create_tracked_cheap_llm(layer="quick_scorer")
+        # Use unified LLM with step config (tier="low", use_fallback=False)
+        result = invoke_unified_sync(
+            prompt=user_message,
+            system=QUICK_SCORE_SYSTEM,
+            step_name="quick_scorer",
+            validate_json=False,  # Response is text with SCORE: and RATIONALE:
+        )
 
-        response = llm.invoke([
-            SystemMessage(content=QUICK_SCORE_SYSTEM),
-            HumanMessage(content=user_message),
-        ])
+        if not result.success:
+            logger.error(f"Quick scoring LLM failed: {result.error}")
+            return None, None
 
         # Parse response
-        response_text = response.content
+        response_text = result.content
         score, rationale = _parse_score_response(response_text)
 
         logger.info(f"Quick score for {company} - {title}: {score}")

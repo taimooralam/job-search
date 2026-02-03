@@ -14,11 +14,10 @@ This is used when company_type == "recruitment_agency" in the pipeline.
 import logging
 import re
 from typing import List
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import invoke_unified_sync
 from src.common.state import JobState
 
 
@@ -178,14 +177,8 @@ class RecruiterCoverLetterGenerator:
     """
 
     def __init__(self):
-        """Initialize LLM for cover letter generation."""
+        """Initialize cover letter generator."""
         self.logger = logging.getLogger(__name__)
-
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.CREATIVE_TEMPERATURE,
-            layer="layer6_recruiter_cover_letter",
-        )
         self.max_validation_retries = 2
 
     @retry(
@@ -193,10 +186,19 @@ class RecruiterCoverLetterGenerator:
         wait=wait_exponential(multiplier=1, min=2, max=30),
         reraise=True,
     )
-    def _call_llm(self, messages: list) -> str:
-        """Call LLM with retry logic."""
-        response = self.llm.invoke(messages)
-        return response.content.strip()
+    def _call_llm(self, system: str, user_prompt: str) -> str:
+        """Call LLM with retry logic using unified LLM."""
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            system=system,
+            step_name="recruiter_cover_letter",
+            validate_json=False,  # Response is plain text cover letter
+        )
+
+        if not result.success:
+            raise RuntimeError(f"Recruiter cover letter generation failed: {result.error}")
+
+        return result.content.strip()
 
     def _extract_job_requirements(self, state: JobState) -> str:
         """Extract key requirements from job description."""
@@ -253,21 +255,16 @@ class RecruiterCoverLetterGenerator:
         """Generate cover letter with validation and retry."""
         recruiter_name, recruiter_role = self._get_recruiter_info(state)
 
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT_RECRUITER),
-            HumanMessage(
-                content=USER_PROMPT_RECRUITER_TEMPLATE.format(
-                    title=state.get("title", "the role"),
-                    agency=state.get("company", "the agency"),
-                    recruiter_name=recruiter_name,
-                    recruiter_role=recruiter_role,
-                    job_requirements=self._extract_job_requirements(state),
-                    candidate_achievements=self._format_candidate_achievements(state)
-                )
-            )
-        ]
+        user_prompt = USER_PROMPT_RECRUITER_TEMPLATE.format(
+            title=state.get("title", "the role"),
+            agency=state.get("company", "the agency"),
+            recruiter_name=recruiter_name,
+            recruiter_role=recruiter_role,
+            job_requirements=self._extract_job_requirements(state),
+            candidate_achievements=self._format_candidate_achievements(state)
+        )
 
-        cover_letter = self._call_llm(messages)
+        cover_letter = self._call_llm(SYSTEM_PROMPT_RECRUITER, user_prompt)
 
         try:
             validate_recruiter_cover_letter(cover_letter, state)

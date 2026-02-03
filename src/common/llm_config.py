@@ -179,6 +179,21 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
 
     # Job Scoring - MANDATORY Claude CLI (avoid invalid OpenAI key fallback)
     "quick_scorer": StepConfig(tier="low", use_fallback=False),
+
+    # Layer 2.5: STAR Selector - selects best STAR records for roles
+    "star_selection": StepConfig(tier="middle"),
+
+    # Layer 7: Interview Predictor - predicts interview questions
+    "interview_prediction": StepConfig(tier="middle"),
+
+    # Services: Form Scraper - extracts form fields from application pages
+    "form_scraping": StepConfig(tier="low"),
+
+    # Services: Answer Generator - generates answers to application questions
+    "answer_generation": StepConfig(tier="middle"),
+
+    # Layer 6: Recruiter Cover Letter - MANDATORY Claude CLI for quality
+    "recruiter_cover_letter": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
 }
 
 

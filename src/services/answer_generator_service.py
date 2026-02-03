@@ -19,7 +19,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import invoke_unified_sync
 from src.common.database import db as database_client
 from src.common.types import FormField
 
@@ -30,17 +30,7 @@ class AnswerGeneratorService:
     """Generate planned answers for job application forms."""
 
     def __init__(self):
-        self.llm = None  # Lazy initialization
-
-    def _get_llm(self):
-        """Lazy initialize LLM to avoid import issues."""
-        if self.llm is None:
-            self.llm = create_tracked_llm(
-                model=Config.DEFAULT_MODEL,
-                temperature=0.3,
-                layer="answer_generator"
-            )
-        return self.llm
+        pass  # No initialization needed - using invoke_unified_sync directly
 
     def _load_star_records(self) -> List[Dict[str, Any]]:
         """
@@ -214,9 +204,17 @@ Job: {job.get('title', '')} at {job.get('company', '')}
 
 Return ONLY the exact text of the best option, nothing else."""
 
-            llm = self._get_llm()
-            response = llm.invoke(prompt)
-            selected = response.content.strip()
+            result = invoke_unified_sync(
+                prompt=prompt,
+                step_name="answer_generation",
+                validate_json=False,
+            )
+
+            if not result.success:
+                logger.warning(f"LLM option selection failed: {result.error}")
+                return options[0] if options else None
+
+            selected = result.content.strip()
 
             # Verify the response is one of the options
             for opt in options:
@@ -372,9 +370,17 @@ INSTRUCTIONS:
 ANSWER:"""
 
         try:
-            llm = self._get_llm()
-            response = llm.invoke(prompt)
-            answer = response.content.strip()
+            result = invoke_unified_sync(
+                prompt=prompt,
+                step_name="answer_generation",
+                validate_json=False,
+            )
+
+            if not result.success:
+                logger.error(f"Answer generation failed: {result.error}")
+                return f"[Please provide your answer for: {question}]"
+
+            answer = result.content.strip()
 
             # Truncate if over limit (with buffer for LLM variability)
             if char_limit and len(answer) > char_limit:
