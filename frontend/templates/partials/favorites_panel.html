@@ -1,7 +1,7 @@
 {# Favorites Panel Partial - HTMX loaded content for starred jobs dropdown #}
 {% if jobs %}
     {% for job in jobs %}
-    <a href="/jobs/{{ job._id }}"
+    <a href="/job/{{ job._id }}"
        class="block px-4 py-3 hover:bg-[--bg-hover] transition-colors group">
         <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
