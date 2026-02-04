@@ -7,7 +7,9 @@ with mocked LLM responses.
 
 import json
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -27,6 +29,32 @@ from src.layer7.interview_predictor import (
     QuestionGenerationOutput,
     predict_interview_questions,
 )
+
+
+# ===== MOCK LLM RESULT HELPER =====
+
+
+@dataclass
+class MockLLMResult:
+    """Mock LLMResult for testing invoke_unified_sync."""
+
+    success: bool = True
+    error: Optional[str] = None
+    parsed_json: Optional[Dict[str, Any]] = None
+    content: str = ""
+    backend: str = "test"
+    model: str = "test-model"
+    tier: str = "low"
+    duration_ms: int = 100
+
+
+def create_mock_llm_result(response: QuestionGenerationOutput) -> MockLLMResult:
+    """Convert a QuestionGenerationOutput to a MockLLMResult."""
+    return MockLLMResult(
+        success=True,
+        parsed_json=response.model_dump(),
+        content=json.dumps(response.model_dump()),
+    )
 
 
 # ===== FIXTURES =====
@@ -220,13 +248,11 @@ class TestQuestionGenerationOutputSchema:
 class TestInterviewPredictor:
     """Test InterviewPredictor class."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_with_gaps(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_with_gaps(self, mock_invoke, sample_job_state, mock_llm_response):
         """Should generate questions from gaps and concerns."""
         # Setup mock LLM
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state)
@@ -243,12 +269,10 @@ class TestInterviewPredictor:
         # Verify questions were generated
         assert len(result["predicted_questions"]) == 4
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_extracts_gaps(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_extracts_gaps(self, mock_invoke, sample_job_state, mock_llm_response):
         """Should correctly extract gaps from annotations."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
 
@@ -260,12 +284,10 @@ class TestInterviewPredictor:
         result = predictor.predict_questions(sample_job_state)
         assert result["gap_summary"]  # Should have gap summary
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_extracts_concerns(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_extracts_concerns(self, mock_invoke, sample_job_state, mock_llm_response):
         """Should correctly extract concerns marked for interview."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
 
@@ -277,12 +299,10 @@ class TestInterviewPredictor:
         result = predictor.predict_questions(sample_job_state)
         assert result["concerns_summary"]
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_empty_annotations(self, mock_create_llm, empty_annotations_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_empty_annotations(self, mock_invoke, empty_annotations_state, mock_llm_response):
         """Should handle empty gaps/concerns gracefully."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(empty_annotations_state)
@@ -290,12 +310,10 @@ class TestInterviewPredictor:
         # Should still generate questions (general behavioral)
         assert "predicted_questions" in result
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_no_annotations(self, mock_create_llm, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_no_annotations(self, mock_invoke, mock_llm_response):
         """Should handle missing jd_annotations field."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         state = {
             "job_id": "test789",
@@ -313,8 +331,8 @@ class TestInterviewPredictor:
         assert result["gap_summary"] == "No significant skill gaps identified."
         assert result["concerns_summary"] == "No significant concerns flagged for discussion."
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_max_limit(self, mock_create_llm, sample_job_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_max_limit(self, mock_invoke, sample_job_state):
         """Should respect max_questions limit."""
         # Create response with many questions
         many_questions = QuestionGenerationOutput(
@@ -329,9 +347,7 @@ class TestInterviewPredictor:
             ]
         )
 
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = many_questions
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(many_questions)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state, max_questions=5)
@@ -339,12 +355,10 @@ class TestInterviewPredictor:
         # Should be limited to 5 questions
         assert len(result["predicted_questions"]) == 5
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_llm_error(self, mock_create_llm, sample_job_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_llm_error(self, mock_invoke, sample_job_state):
         """Should handle LLM errors gracefully."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.side_effect = Exception("API Error")
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = MockLLMResult(success=False, error="API Error")
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state)
@@ -433,24 +447,20 @@ class TestInterviewPredictor:
 class TestPredictInterviewQuestionsHelper:
     """Test the predict_interview_questions helper function."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_helper_function(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_helper_function(self, mock_invoke, sample_job_state, mock_llm_response):
         """Helper function should work correctly."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         result = predict_interview_questions(sample_job_state)
 
         assert "predicted_questions" in result
         assert len(result["predicted_questions"]) > 0
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_helper_function_with_options(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_helper_function_with_options(self, mock_invoke, sample_job_state, mock_llm_response):
         """Helper function should pass options correctly."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         result = predict_interview_questions(
             sample_job_state, max_questions=3, model="gpt-4"
@@ -465,12 +475,10 @@ class TestPredictInterviewQuestionsHelper:
 class TestInterviewQuestionFormat:
     """Test InterviewQuestion output format."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_question_has_required_fields(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_question_has_required_fields(self, mock_invoke, sample_job_state, mock_llm_response):
         """Generated questions should have all required fields."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state)
@@ -484,12 +492,10 @@ class TestInterviewQuestionFormat:
             assert "practice_status" in question
             assert "created_at" in question
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_question_has_valid_difficulty(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_question_has_valid_difficulty(self, mock_invoke, sample_job_state, mock_llm_response):
         """Questions should have valid difficulty levels."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state)
@@ -497,12 +503,10 @@ class TestInterviewQuestionFormat:
         for question in result["predicted_questions"]:
             assert question["difficulty"] in DIFFICULTY_LEVELS
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_question_has_uuid(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_question_has_uuid(self, mock_invoke, sample_job_state, mock_llm_response):
         """Questions should have valid UUID ids."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state)
@@ -511,12 +515,10 @@ class TestInterviewQuestionFormat:
             # Should be valid UUID format
             uuid.UUID(question["question_id"])
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_question_default_practice_status(self, mock_create_llm, sample_job_state, mock_llm_response):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_question_default_practice_status(self, mock_invoke, sample_job_state, mock_llm_response):
         """Questions should default to not_started practice status."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response)
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(sample_job_state)

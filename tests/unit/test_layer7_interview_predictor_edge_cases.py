@@ -6,7 +6,9 @@ in the main test file.
 """
 
 import json
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,6 +20,32 @@ from src.layer7.interview_predictor import (
     QuestionGenerationOutput,
     predict_interview_questions,
 )
+
+
+# ===== MOCK LLM RESULT HELPER =====
+
+
+@dataclass
+class MockLLMResult:
+    """Mock LLMResult for testing invoke_unified_sync."""
+
+    success: bool = True
+    error: Optional[str] = None
+    parsed_json: Optional[Dict[str, Any]] = None
+    content: str = ""
+    backend: str = "test"
+    model: str = "test-model"
+    tier: str = "low"
+    duration_ms: int = 100
+
+
+def create_mock_llm_result(response: QuestionGenerationOutput) -> MockLLMResult:
+    """Convert a QuestionGenerationOutput to a MockLLMResult."""
+    return MockLLMResult(
+        success=True,
+        parsed_json=response.model_dump(),
+        content=json.dumps(response.model_dump()),
+    )
 
 
 # ===== FIXTURES =====
@@ -123,14 +151,10 @@ def special_characters_state():
 class TestErrorHandling:
     """Test error handling in interview predictor."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_llm_timeout(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_llm_timeout(self, mock_invoke, malformed_state):
         """Should handle LLM timeout gracefully."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.side_effect = TimeoutError(
-            "Request timeout"
-        )
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = MockLLMResult(success=False, error="Request timeout")
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state)
@@ -140,50 +164,40 @@ class TestErrorHandling:
         assert len(result["predicted_questions"]) == 0
         assert result["generated_by"] == predictor.model
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_llm_rate_limit(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_llm_rate_limit(self, mock_invoke, malformed_state):
         """Should handle rate limiting gracefully."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.side_effect = Exception(
-            "Rate limit exceeded"
-        )
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = MockLLMResult(success=False, error="Rate limit exceeded")
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state)
 
         assert len(result["predicted_questions"]) == 0
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_llm_invalid_json(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_llm_invalid_json(self, mock_invoke, malformed_state):
         """Should handle invalid JSON from LLM."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.side_effect = (
-            json.JSONDecodeError("Invalid", "", 0)
-        )
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = MockLLMResult(success=False, error="Invalid JSON")
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state)
 
         assert len(result["predicted_questions"]) == 0
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_llm_empty_response(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_llm_empty_response(self, mock_invoke, malformed_state):
         """Should handle empty LLM response."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(questions=[])
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state)
 
         assert len(result["predicted_questions"]) == 0
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_llm_malformed_questions(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_llm_malformed_questions(self, mock_invoke, malformed_state):
         """Should handle malformed questions from LLM."""
         malformed_question = PredictedQuestion(
             question="",  # Empty question
@@ -192,11 +206,9 @@ class TestErrorHandling:
             suggested_answer_approach="",
         )
 
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(questions=[malformed_question])
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state)
@@ -211,14 +223,12 @@ class TestErrorHandling:
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_empty_title_and_company(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_empty_title_and_company(self, mock_invoke, malformed_state):
         """Should handle empty title and None company."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(questions=[])
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state)
@@ -227,11 +237,10 @@ class TestEdgeCases:
         assert result["company_context"]
         assert result["role_context"]
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_very_large_annotations_count(self, mock_create_llm, large_annotations_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_very_large_annotations_count(self, mock_invoke, large_annotations_state):
         """Should handle very large number of annotations."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(
                 questions=[
                     PredictedQuestion(
@@ -244,7 +253,6 @@ class TestEdgeCases:
                 ]
             )
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(large_annotations_state)
@@ -252,11 +260,10 @@ class TestEdgeCases:
         # Should process without error
         assert len(result["predicted_questions"]) == 12  # Max default
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_special_characters_in_text(self, mock_create_llm, special_characters_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_special_characters_in_text(self, mock_invoke, special_characters_state):
         """Should handle special characters and unicode."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(
                 questions=[
                     PredictedQuestion(
@@ -268,7 +275,6 @@ class TestEdgeCases:
                 ]
             )
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(special_characters_state)
@@ -277,11 +283,10 @@ class TestEdgeCases:
         assert len(result["predicted_questions"]) == 1
         assert "🚀" in special_characters_state["title"]
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_zero_max_questions(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_zero_max_questions(self, mock_invoke, malformed_state):
         """Should handle max_questions=0."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(
                 questions=[
                     PredictedQuestion(
@@ -293,7 +298,6 @@ class TestEdgeCases:
                 ]
             )
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state, max_questions=0)
@@ -301,14 +305,12 @@ class TestEdgeCases:
         # Should return empty list
         assert len(result["predicted_questions"]) == 0
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_negative_max_questions(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_negative_max_questions(self, mock_invoke, malformed_state):
         """Should handle negative max_questions."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(questions=[])
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state, max_questions=-5)
@@ -316,11 +318,10 @@ class TestEdgeCases:
         # Should handle gracefully (treat as 0 or positive)
         assert "predicted_questions" in result
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_very_large_max_questions(self, mock_create_llm, malformed_state):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_very_large_max_questions(self, mock_invoke, malformed_state):
         """Should handle very large max_questions."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(
                 questions=[
                     PredictedQuestion(
@@ -333,7 +334,6 @@ class TestEdgeCases:
                 ]
             )
         )
-        mock_create_llm.return_value = mock_llm
 
         predictor = InterviewPredictor()
         result = predictor.predict_questions(malformed_state, max_questions=1000)
@@ -565,14 +565,12 @@ class TestContextExtraction:
 class TestHelperFunctionEdgeCases:
     """Test predict_interview_questions helper function edge cases."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_helper_with_custom_model(self, mock_create_llm):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_helper_with_custom_model(self, mock_invoke):
         """Helper should pass custom model correctly."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(questions=[])
         )
-        mock_create_llm.return_value = mock_llm
 
         state = {"job_id": "test", "title": "Engineer", "company": "Co"}
 
@@ -581,11 +579,10 @@ class TestHelperFunctionEdgeCases:
         # Should have called with custom model
         assert result["generated_by"] == "custom-model"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_helper_with_max_questions(self, mock_create_llm):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_helper_with_max_questions(self, mock_invoke):
         """Helper should pass max_questions correctly."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(
                 questions=[
                     PredictedQuestion(
@@ -598,7 +595,6 @@ class TestHelperFunctionEdgeCases:
                 ]
             )
         )
-        mock_create_llm.return_value = mock_llm
 
         state = {"job_id": "test", "title": "Engineer", "company": "Co"}
 
@@ -672,11 +668,10 @@ class TestCandidateProfileFallback:
 
         assert result == "No STAR stories available."
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_predict_questions_passes_candidate_profile_to_generate(self, mock_create_llm):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_predict_questions_passes_candidate_profile_to_generate(self, mock_invoke):
         """candidate_profile should flow through predict_questions to _generate_questions."""
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = (
+        mock_invoke.return_value = create_mock_llm_result(
             QuestionGenerationOutput(
                 questions=[
                     PredictedQuestion(
@@ -688,7 +683,6 @@ class TestCandidateProfileFallback:
                 ]
             )
         )
-        mock_create_llm.return_value = mock_llm
 
         state = {
             "job_id": "test123",
@@ -703,19 +697,17 @@ class TestCandidateProfileFallback:
         result = predictor.predict_questions(state)
 
         # Verify LLM was called
-        mock_llm.with_structured_output.return_value.invoke.assert_called_once()
+        mock_invoke.assert_called_once()
 
         # The candidate_profile should have been passed through
         assert len(result["predicted_questions"]) == 1
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
-    def test_candidate_profile_used_in_prompt_when_stars_empty(self, mock_create_llm):
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
+    def test_candidate_profile_used_in_prompt_when_stars_empty(self, mock_invoke):
         """When stars are empty, candidate_profile should appear in the prompt."""
-        mock_llm = MagicMock()
-        mock_structured_llm = MagicMock()
-        mock_llm.with_structured_output.return_value = mock_structured_llm
-        mock_structured_llm.invoke.return_value = QuestionGenerationOutput(questions=[])
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(
+            QuestionGenerationOutput(questions=[])
+        )
 
         candidate_text = "UNIQUE_MARKER_12345_engineer_profile_text"
         state = {
@@ -731,11 +723,10 @@ class TestCandidateProfileFallback:
         predictor = InterviewPredictor()
         predictor.predict_questions(state)
 
-        # Get the messages passed to invoke
-        call_args = mock_structured_llm.invoke.call_args[0][0]
-        # The second message (index 1) should be the user message with the formatted content
-        user_message_content = call_args[1].content
+        # Verify invoke_unified_sync was called with candidate_profile in prompt
+        call_args = mock_invoke.call_args
+        prompt_text = call_args.kwargs.get("prompt", "")
 
         # The unique marker should appear in the prompt since stars are empty
-        assert "UNIQUE_MARKER_12345" in user_message_content
-        assert "[Candidate Profile Summary]" in user_message_content
+        assert "UNIQUE_MARKER_12345" in prompt_text
+        assert "[Candidate Profile Summary]" in prompt_text

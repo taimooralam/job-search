@@ -10,8 +10,11 @@ Tests the following enhancements:
 Based on prompt-optimization-plan.md Section A (Layer 7 Analysis).
 """
 
+import json
 import pytest
 import re
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, patch
 
 from src.common.annotation_types import InterviewQuestion
@@ -21,6 +24,32 @@ from src.layer7.interview_predictor import (
     QuestionGenerationOutput,
     predict_interview_questions,
 )
+
+
+# ===== MOCK LLM RESULT HELPER =====
+
+
+@dataclass
+class MockLLMResult:
+    """Mock LLMResult for testing invoke_unified_sync."""
+
+    success: bool = True
+    error: Optional[str] = None
+    parsed_json: Optional[Dict[str, Any]] = None
+    content: str = ""
+    backend: str = "test"
+    model: str = "test-model"
+    tier: str = "low"
+    duration_ms: int = 100
+
+
+def create_mock_llm_result(response: QuestionGenerationOutput) -> MockLLMResult:
+    """Convert a QuestionGenerationOutput to a MockLLMResult."""
+    return MockLLMResult(
+        success=True,
+        parsed_json=response.model_dump(),
+        content=json.dumps(response.model_dump()),
+    )
 
 
 # =============================================================================
@@ -410,15 +439,13 @@ class TestQuestionQualityValidation:
 class TestQuestionDistribution:
     """Tests for question type distribution requirements (GAP-030 requirement #3)."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_generates_minimum_gap_probe_questions_when_gaps_provided(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Should generate at least 2 gap_probe questions when gaps are provided."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -431,15 +458,13 @@ class TestQuestionDistribution:
         assert len(gap_probe_questions) >= 2, \
             f"Should generate at least 2 gap_probe questions when 3 gaps provided, got {len(gap_probe_questions)}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_generates_minimum_concern_probe_questions_when_concerns_provided(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Should generate at least 2 concern_probe questions when concerns are provided."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -452,15 +477,13 @@ class TestQuestionDistribution:
         assert len(concern_probe_questions) >= 2, \
             f"Should generate at least 2 concern_probe questions when 2 concerns provided, got {len(concern_probe_questions)}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_generates_at_least_one_behavioral_question_always(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Should always generate at least 1 behavioral question for STAR practice."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -473,15 +496,13 @@ class TestQuestionDistribution:
         assert len(behavioral_questions) >= 1, \
             f"Should always generate at least 1 behavioral question, got {len(behavioral_questions)}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_total_question_count_in_range(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Should generate between 8-12 questions total."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -492,15 +513,13 @@ class TestQuestionDistribution:
         assert 8 <= total_questions <= 12, \
             f"Should generate 8-12 questions, got {total_questions}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_question_type_distribution_is_balanced(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Should have balanced distribution across question types."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -537,15 +556,13 @@ class TestQuestionDistribution:
 class TestSourceAttribution:
     """Tests for source attribution requirements (GAP-030 requirement #4)."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_gap_probe_questions_cite_specific_gaps(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Each gap_probe question should reference a specific gap annotation."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -574,15 +591,13 @@ class TestSourceAttribution:
                 assert question["source_annotation_id"] in gap_ids, \
                     f"source_annotation_id '{question['source_annotation_id']}' not in gap IDs: {gap_ids}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_concern_probe_questions_cite_specific_concerns(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Each concern_probe question should reference a specific concern annotation."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -611,15 +626,13 @@ class TestSourceAttribution:
                 assert question["source_annotation_id"] in concern_ids, \
                     f"source_annotation_id '{question['source_annotation_id']}' not in concern IDs: {concern_ids}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_questions_reference_actual_gap_content(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Questions should reference actual gap content, not invented topics."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -646,15 +659,13 @@ class TestSourceAttribution:
             assert len(mentioned_keywords) > 0, \
                 f"gap_probe question should reference gap keywords, but didn't: {question['question']}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_questions_reference_actual_concern_content(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """Questions should reference actual concern content, not invented topics."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -693,15 +704,13 @@ class TestSourceAttribution:
 class TestFewShotExampleEffectiveness:
     """Tests that few-shot examples improve question quality (GAP-030 requirement #1)."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_gap_probe_questions_acknowledge_the_gap(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """gap_probe questions should acknowledge the gap, not just probe it."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -739,15 +748,13 @@ class TestFewShotExampleEffectiveness:
             assert any(indicator in approach for indicator in positive_indicators), \
                 f"gap_probe answer approach should guide positive framing: {approach}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_concern_probe_questions_use_positive_framing(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """concern_probe questions should use positive framing, not negative."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
@@ -787,15 +794,13 @@ class TestFewShotExampleEffectiveness:
             assert any(pattern in question_text for pattern in positive_patterns), \
                 f"concern_probe should use positive/neutral framing: {question['question']}"
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_questions_avoid_yes_no_format_detected_via_validation(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_quality_issues
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_quality_issues
     ):
         """Validation should catch and reject yes/no format questions."""
         # Setup - use mock response with quality issues
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_quality_issues
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_quality_issues)
 
         # Execute
         predictor = InterviewPredictor()
@@ -823,15 +828,13 @@ class TestFewShotExampleEffectiveness:
 class TestBackwardCompatibility:
     """Ensure prompt improvements don't break existing functionality."""
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_existing_test_compatibility_with_distribution(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
+        self, mock_invoke, sample_state_with_gaps_and_concerns, mock_llm_response_with_distribution
     ):
         """New distribution requirements should not break existing tests."""
         # Setup
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute using helper function (as in existing tests)
         result = predict_interview_questions(sample_state_with_gaps_and_concerns)
@@ -855,9 +858,9 @@ class TestBackwardCompatibility:
             assert "practice_status" in question
             assert "created_at" in question
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_max_questions_limit_still_respected(
-        self, mock_create_llm, sample_state_with_gaps_and_concerns
+        self, mock_invoke, sample_state_with_gaps_and_concerns
     ):
         """max_questions parameter should still work with new distribution logic."""
         # Create a mock response with many questions
@@ -874,9 +877,7 @@ class TestBackwardCompatibility:
             ]
         )
 
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = many_questions
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(many_questions)
 
         # Execute with max_questions limit
         predictor = InterviewPredictor()
@@ -885,9 +886,9 @@ class TestBackwardCompatibility:
         # Verify limit is respected
         assert len(result["predicted_questions"]) == 5
 
-    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    @patch("src.layer7.interview_predictor.invoke_unified_sync")
     def test_handles_state_without_gaps_or_concerns(
-        self, mock_create_llm, mock_llm_response_with_distribution
+        self, mock_invoke, mock_llm_response_with_distribution
     ):
         """Should handle jobs with no gaps/concerns gracefully (behavioral questions only)."""
         # State with no gaps or concerns
@@ -910,9 +911,7 @@ class TestBackwardCompatibility:
             "errors": [],
         }
 
-        mock_llm = MagicMock()
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_llm_response_with_distribution
-        mock_create_llm.return_value = mock_llm
+        mock_invoke.return_value = create_mock_llm_result(mock_llm_response_with_distribution)
 
         # Execute
         predictor = InterviewPredictor()
