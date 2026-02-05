@@ -87,7 +87,7 @@ vps/mongodb/mongodb-keyfile
 # ══════════════════════════════════════════════════════════════
 
 # Personal CV and career data
-data/master-cv/
+# data/master-cv/ - UNIGNORED: public data for public repo
 reports/
 research/
 
