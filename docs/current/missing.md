@@ -4759,6 +4759,18 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Files Modified**: `runner_service/queue/manager.py`, `runner_service/routes/operations.py`
   - **Verification**: Stale items automatically cleaned on startup; operators can manually trigger cleanup via API; queue reset available for emergency recovery
 
+### Queue Polling Loop for Orphaned Job Recovery (2025-02-09)
+- [x] Added background polling loop to runner service for pending queue recovery
+  - **Root Cause**: Redis queue was a visibility layer only — not an actual work scheduler. When runners OOM and restart, `restore_interrupted_runs()` moves items back to PENDING, but nothing picks them up. The `cleanup_stale_items(60min)` then marks them as FAILED.
+  - **Fix Applied**:
+    1. Added `startup_queue_polling_loop()` in `runner_service/app.py` — polls Redis pending queue every 5 seconds (configurable via `QUEUE_POLL_INTERVAL` env var)
+    2. When runner has capacity (`_semaphore._value > 0`), dequeues items and dispatches to `submit_service_task()` for execution in thread pool
+    3. Creates operation run with log tracking, links run_id to queue item
+    4. Increased stale cleanup timeout from 60 minutes to 24 hours (1440 minutes) — the polling loop handles recovery, stale cleanup is now just a safety net
+  - **Files Modified**: `runner_service/app.py`
+  - **Tests**: `tests/unit/test_queue_polling.py` (11 tests covering capacity checks, empty queue, error handling, tier resolution, config)
+  - **Verification**: 11 new tests + 85 existing queue manager tests all passing
+
 ### MongoDB Master CV Integration Fix
 - [x] Fix CVLoader default MongoDB flag (2025-12-12): Changed CVLoader to use MongoDB master CV by default instead of falling back to local files. This ensures CV edits via the Master CV Editor are properly used in CV generation.
   - **Root Cause**: CVLoader was initialized with `use_mongodb=False`, causing the CV Editor's MongoDB changes to be ignored during generation

@@ -1492,7 +1492,7 @@ async def startup_queue_manager():
             logger.info(f"Restored {len(restored)} interrupted runs to queue")
 
         # Clean up any stale/orphaned queue items
-        cleanup_stats = await _queue_manager.cleanup_stale_items(max_age_minutes=60)
+        cleanup_stats = await _queue_manager.cleanup_stale_items(max_age_minutes=1440)  # 24 hours
         if cleanup_stats.get("total_cleaned", 0) > 0:
             logger.info(f"Cleaned up stale queue items: {cleanup_stats}")
 
@@ -1528,6 +1528,85 @@ async def startup_heartbeat_loop():
     # Start heartbeat as background task
     asyncio.create_task(heartbeat_loop())
     logger.info("Heartbeat loop started for multi-runner coordination")
+
+
+QUEUE_POLL_INTERVAL_SECONDS = int(os.getenv("QUEUE_POLL_INTERVAL", "5"))
+
+
+@app.on_event("startup")
+async def startup_queue_polling_loop():
+    """Poll Redis queue for pending items and execute when capacity available.
+
+    This solves the core problem: when a runner OOMs and restarts,
+    restore_interrupted_runs() moves items back to PENDING, but nothing
+    picks them up. This loop checks the pending queue periodically and
+    dispatches work to the service executor thread pool.
+    """
+    if not settings.redis_url:
+        return
+
+    # Wait for queue manager to be ready (startup_queue_manager runs first)
+    await asyncio.sleep(2)
+
+    async def _queue_polling_loop():
+        from runner_service.routes.operations import (
+            submit_service_task,
+            _execute_queued_operation,
+        )
+        from runner_service.routes.operation_streaming import (
+            create_operation_run,
+            append_operation_log,
+            get_runner_id,
+        )
+        from src.common.model_tiers import get_tier_from_string, ModelTier
+
+        runner_id = get_runner_id()
+        logger.info(f"[poll] Queue polling loop active for runner {runner_id}")
+
+        while True:
+            try:
+                if (
+                    _queue_manager
+                    and _queue_manager.is_connected
+                    and _semaphore._value > 0  # Runner has capacity
+                ):
+                    item = await _queue_manager.dequeue()
+                    if item:
+                        # Create operation run for log tracking
+                        run_id = create_operation_run(item.job_id, item.operation)
+                        append_operation_log(run_id, f"[poll] Picked up by {runner_id}")
+                        await _queue_manager.link_run_id(item.queue_id, run_id)
+
+                        # Convert tier string to ModelTier
+                        tier = get_tier_from_string(item.processing_tier) or ModelTier.BALANCED
+
+                        logger.info(
+                            f"[poll] Dequeued {item.queue_id} for {item.job_id} "
+                            f"({item.company}: {item.job_title[:40]})"
+                        )
+
+                        # Fire-and-forget execution in thread pool
+                        submit_service_task(
+                            _execute_queued_operation(
+                                queue_id=item.queue_id,
+                                run_id=run_id,
+                                job_id=item.job_id,
+                                operation=item.operation,
+                                tier=tier,
+                                force_refresh=False,
+                                use_llm=True,
+                                use_annotations=True,
+                                auto_annotate=True,
+                                auto_persona=True,
+                            )
+                        )
+            except Exception as e:
+                logger.warning(f"[poll] Queue polling error: {e}")
+
+            await asyncio.sleep(QUEUE_POLL_INTERVAL_SECONDS)
+
+    asyncio.create_task(_queue_polling_loop())
+    logger.info("Queue polling loop started for pending job recovery")
 
 
 @app.on_event("shutdown")
