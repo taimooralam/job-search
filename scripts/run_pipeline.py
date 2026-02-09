@@ -45,7 +45,9 @@ def load_candidate_profile(profile_path: str = None) -> str:
                 lines.append(f"# {candidate.name}")
                 lines.append(f"## {candidate.title_base}")
                 lines.append(f"Email: {candidate.email}")
-                lines.append(f"Location: {candidate.location}")
+                # Location may not be on CandidateData - use first role location if available
+                location = getattr(candidate, 'location', None) or (candidate.roles[0].location if candidate.roles else "N/A")
+                lines.append(f"Location: {location}")
                 lines.append("")
                 lines.append("## Experience")
                 for role in candidate.roles:
