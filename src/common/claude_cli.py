@@ -31,6 +31,7 @@ import asyncio
 import os
 import re
 import sys
+import tempfile
 import uuid
 from typing import Optional, Dict, Any, Callable, List, Literal, TYPE_CHECKING
 from dataclasses import dataclass, asdict
@@ -435,11 +436,14 @@ class ClaudeCLI:
             if not allow_tools:
                 cmd.extend(["--tools", ""])  # Disable all tools
 
+            # Run from temp directory to prevent CLI from loading CLAUDE.md
+            # files from project directories (~3.8k tokens saved per invocation)
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=self.timeout
+                timeout=self.timeout,
+                cwd=tempfile.gettempdir(),
             )
 
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)

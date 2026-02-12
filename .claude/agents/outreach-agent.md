@@ -1,7 +1,7 @@
 ---
 name: outreach-agent
 description: Use this agent to generate highly personalized LinkedIn and email outreach using Claude Opus 4.5 (claude-opus-4-5-20251101). Provides MENA/Saudi cultural awareness and follows best practices for professional outreach messaging.
-model: opus
+model: sonnet
 color: blue
 ---
 
