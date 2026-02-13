@@ -1,13 +1,14 @@
 """
 CV Generation V2 Orchestrator.
 
-Ties all 6 phases together into a single pipeline:
+Ties all 7 phases together into a single pipeline:
 1. CV Loader - Load pre-split role files
 2. Per-Role Generator - Generate tailored bullets for each role
 3. Stitcher - Combine roles with deduplication
 4. Header Generator - Create profile/skills grounded in achievements
 5. Grader - Multi-dimensional quality assessment
 6. Improver - Single-pass targeted improvement
+7. Cover Letter - Generate hyper-personalized cover letter
 
 Usage:
     from src.layer6_v2.orchestrator import cv_generator_v2_node
@@ -32,6 +33,7 @@ from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import sanitize_path_component, coerce_to_list
 from src.common.markdown_sanitizer import sanitize_markdown, sanitize_bullet_text
+from src.layer6_v2.cover_letter_generator import CoverLetterGenerator
 
 # GAP-014: Middle East countries for relocation tagline
 MIDDLE_EAST_COUNTRIES = [
@@ -846,10 +848,28 @@ class CVGeneratorV2:
                 grade_result, improvement_result, stitched_cv, header_output
             )
 
+            # Phase 7: Cover Letter Generation
+            self._logger.info("Phase 7: Generating cover letter...")
+            self._emit_log("phase_start", "Generating cover letter...", phase=7)
+            self._emit_struct_log("phase_start", {"phase": 7, "phase_name": "cover_letter"})
+            cover_letter = self._generate_cover_letter(state, cv_text, extracted_jd, candidate_data)
+            self._emit_log(
+                "phase_complete",
+                f"Cover letter: {'generated' if cover_letter else 'skipped'}",
+                phase=7,
+            )
+            self._emit_struct_log("phase_complete", {
+                "phase": 7,
+                "phase_name": "cover_letter",
+                "generated": cover_letter is not None,
+                "word_count": len(cover_letter.split()) if cover_letter else 0,
+            })
+
             self._logger.info("=" * 60)
             self._logger.info("CV GENERATION V2: Complete")
             self._logger.info(f"  Final score: {grade_result.composite_score:.1f}/10")
             self._logger.info(f"  Passed: {grade_result.passed}")
+            self._logger.info(f"  Cover letter: {'yes' if cover_letter else 'no'}")
             self._logger.info("=" * 60)
             self._emit_log(
                 "pipeline_complete",
@@ -869,12 +889,15 @@ class CVGeneratorV2:
                 "improvement_applied": improvement_result is not None and improvement_result.improved if improvement_result else False,
                 "tailoring_applied": tailoring_result is not None and tailoring_result.tailored if tailoring_result else False,
                 "ats_passed": ats_validation.passed if ats_validation else None,
+                "cover_letter_generated": cover_letter is not None,
             })
 
             return {
                 "cv_text": cv_text,
                 "cv_path": cv_path,
                 "cv_reasoning": cv_reasoning,
+                # Phase 7: Cover letter
+                "cover_letter": cover_letter,
                 # Extended fields for debugging/analysis
                 "cv_grade_result": grade_result.to_dict() if hasattr(grade_result, 'to_dict') else None,
                 "cv_improvement_result": improvement_result.to_dict() if improvement_result and hasattr(improvement_result, 'to_dict') else None,
@@ -910,6 +933,45 @@ class CVGeneratorV2:
                 "errors": [f"CV Gen V2 error: {str(e)}"],
                 "traceback": full_traceback,
             }
+
+    def _generate_cover_letter(
+        self,
+        state: JobState,
+        cv_text: str,
+        extracted_jd: Dict[str, Any],
+        candidate_data: Any,
+    ) -> Optional[str]:
+        """
+        Phase 7: Generate a cover letter using pipeline context.
+
+        Uses the rich context already available after CV generation
+        (extracted JD, pain points, company research, fit rationale).
+        Runs on Haiku tier for cost efficiency.
+
+        Args:
+            state: Job processing state with research data
+            cv_text: Generated CV text (source of achievements)
+            extracted_jd: Parsed JD intelligence
+            candidate_data: Loaded candidate data with name
+
+        Returns:
+            Cover letter text or None if generation fails
+        """
+        try:
+            generator = CoverLetterGenerator(job_id=self._job_id)
+            return generator.generate(
+                job_title=state.get("title", "Unknown"),
+                company=state.get("company", "Unknown"),
+                candidate_name=candidate_data.name,
+                cv_text=cv_text,
+                extracted_jd=extracted_jd,
+                pain_points=state.get("pain_points"),
+                company_research=state.get("company_research"),
+                fit_rationale=state.get("fit_rationale"),
+            )
+        except Exception as e:
+            self._logger.warning(f"Cover letter generation failed (non-fatal): {e}")
+            return None
 
     def _run_async_safely(self, coro):
         """
@@ -1012,17 +1074,23 @@ class CVGeneratorV2:
             # Build reasoning summary
             cv_reasoning = self._build_claude_reasoning(cv_result)
 
+            # Phase 7: Cover letter (shared with V2 path)
+            extracted_jd = state.get("extracted_jd") or {}
+            cover_letter = self._generate_cover_letter(state, cv_text, extracted_jd, candidate_data)
+
             self._logger.info("=" * 60)
             self._logger.info("CLAUDE CLI CV GENERATION: Complete")
             self._logger.info(f"  ATS Score: {cv_result.ats_validation.ats_score if cv_result.ats_validation else 'N/A'}")
             self._logger.info(f"  Total Cost: ${cv_result.total_cost_usd:.4f}")
             self._logger.info(f"  Total Time: {cv_result.total_time_ms}ms")
+            self._logger.info(f"  Cover letter: {'yes' if cover_letter else 'no'}")
             self._logger.info("=" * 60)
 
             return {
                 "cv_text": cv_text,
                 "cv_path": cv_path,
                 "cv_reasoning": cv_reasoning,
+                "cover_letter": cover_letter,
                 "claude_cli_result": cv_result.to_dict(),
             }
 

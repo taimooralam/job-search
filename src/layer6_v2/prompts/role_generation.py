@@ -15,19 +15,14 @@ from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.types import CareerContext
 from src.layer6_v2.achievement_mapper import map_achievements_to_pain_points
 from src.common.state import ExtractedJD
+from src.layer6_v2.prompts.shared import ANTI_HALLUCINATION_RULES
 
 
 ROLE_GENERATION_SYSTEM_PROMPT = """You are an expert CV bullet writer specializing in senior technical and leadership roles.
 
 Your mission: Transform raw achievements into ATS-optimized, JD-aligned CV bullets while STRICTLY preserving all factual claims from the source.
 
-=== CRITICAL: ANTI-HALLUCINATION RULES ===
-
-1. ONLY use achievements that appear in the source role content
-2. ONLY use metrics/numbers that appear EXACTLY in the source (no rounding, no inventing)
-3. If source lacks a metric, describe the outcome qualitatively WITHOUT inventing numbers
-4. NEVER add companies, dates, technologies, or achievements not in source
-5. Every generated bullet MUST have a clear source in the role content
+""" + ANTI_HALLUCINATION_RULES + """
 
 === CRITICAL: NO MARKDOWN FORMATTING (GAP-006) ===
 
@@ -228,10 +223,9 @@ def build_role_generation_user_prompt(
         else:
             target_bullet_count = 2  # Early career roles get brief treatment
 
-    # Format achievements for the prompt
-    achievements_text = "\n".join(f"• {a}" for a in role.achievements)
-
     # Pre-compute achievement to pain point mapping (Priority 1 improvement)
+    # This mapping already contains the original achievement texts, so no need
+    # for a separate raw achievements section (saves ~100-200 tokens per role)
     pain_points = extracted_jd.get("implied_pain_points", [])
     _, achievement_mapping_text = map_achievements_to_pain_points(
         achievements=role.achievements,
@@ -293,9 +287,6 @@ Career Stage: {career_context.career_stage}
 
 EMPHASIS GUIDANCE:
 {career_context.emphasis_guidance}
-
-=== SOURCE ACHIEVEMENTS (your ONLY source of truth) ===
-{achievements_text}
 
 {achievement_mapping_text}
 

@@ -135,7 +135,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "role_generator": StepConfig(tier="middle", use_fallback=False),
     "grader": StepConfig(tier="low", use_fallback=False),
     "ensemble_header": StepConfig(tier="middle", use_fallback=False),
-    "improver": StepConfig(tier="high", use_fallback=False),
+    "improver": StepConfig(tier="low", use_fallback=False),
 
     # Layer 2: Pain Point Miner
     "pain_point_extraction": StepConfig(tier="middle"),
@@ -168,8 +168,8 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "jd_structure_parsing": StepConfig(tier="low"),
     "jd_extraction": StepConfig(tier="middle", use_fallback=False),
 
-    # Cover Letter - MANDATORY Claude CLI for quality
-    "cover_letter_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+    # Cover Letter - Haiku tier (structured + templated, doesn't need Sonnet)
+    "cover_letter_generation": StepConfig(tier="low", use_fallback=False),
 
     # LinkedIn
     "linkedin_optimization": StepConfig(tier="middle"),

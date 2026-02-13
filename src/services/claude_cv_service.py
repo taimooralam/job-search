@@ -174,7 +174,7 @@ class ClaudeCVService:
         """
         # Three-tier CLI setup
         self.role_cli = ClaudeCLI(tier="balanced", timeout=timeout)  # Sonnet
-        self.profile_cli = ClaudeCLI(tier="quality", timeout=timeout)  # Opus
+        self.profile_cli = ClaudeCLI(tier="balanced", timeout=timeout)  # Sonnet
         self.validator_cli = ClaudeCLI(tier="fast", timeout=60)  # Haiku
 
         self.timeout = timeout

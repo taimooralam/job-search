@@ -113,12 +113,12 @@ class TestStepConfigsMapping:
         if "grader" in STEP_CONFIGS:
             assert STEP_CONFIGS["grader"].tier == "low"
 
-    def test_improver_uses_high_tier(self):
-        """Improver should use high tier for quality."""
+    def test_improver_uses_low_tier(self):
+        """Improver should use low tier (Haiku) for targeted fixes."""
         from src.common.llm_config import STEP_CONFIGS
 
         if "improver" in STEP_CONFIGS:
-            assert STEP_CONFIGS["improver"].tier == "high"
+            assert STEP_CONFIGS["improver"].tier == "low"
 
     def test_persona_synthesis_uses_high_tier(self):
         """Persona synthesis should use high tier."""

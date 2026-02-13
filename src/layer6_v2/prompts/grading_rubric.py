@@ -14,118 +14,28 @@ Each dimension is scored 1-10 with specific criteria.
 
 === DIMENSION 1: ATS OPTIMIZATION (weight: 20%) ===
 
-Score 9-10: Excellent
-- 10+ of 15 JD keywords present naturally
-- Standard section headers (Profile, Experience, Education, Skills)
-- Clean bullet formatting, no tables/graphics
-- All sections clearly labeled and parsable
-
-Score 7-8: Good
-- 7-9 JD keywords present
-- Most standard headers
-- Minor formatting issues
-
-Score 5-6: Adequate
-- 5-6 JD keywords present
-- Some non-standard formatting
-- Some sections unclear
-
-Score 1-4: Poor
-- <5 keywords present
-- Non-standard structure
-- Would fail ATS parsing
+Score 7-10 (Excellent): 7+ of 15 JD keywords present naturally, standard section headers (Profile, Experience, Education, Skills), clean bullet formatting
+Score 1-6 (Needs Improvement): <7 keywords, non-standard structure, or ATS parsing issues
 
 === DIMENSION 2: IMPACT & CLARITY (weight: 25%) ===
 
-Score 9-10: Excellent
-- Every bullet has quantified outcome
-- Strong, varied action verbs (Led, Built, Architected)
-- Specific, concrete achievements
-- No vague statements like "responsible for"
-
-Score 7-8: Good
-- Most bullets have metrics
-- Good action verbs
-- Minor vague statements
-
-Score 5-6: Adequate
-- Some metrics present
-- Mixed verb quality
-- Several vague bullets
-
-Score 1-4: Poor
-- Few or no metrics
-- Weak verbs (did, helped, worked on)
-- Mostly vague job descriptions
+Score 7-10 (Excellent): Most/all bullets have quantified outcomes, strong varied action verbs (Led, Built, Architected), specific concrete achievements
+Score 1-6 (Needs Improvement): Few metrics, weak verbs (did, helped, worked on), vague statements like "responsible for"
 
 === DIMENSION 3: JD ALIGNMENT (weight: 25%) ===
 
-Score 9-10: Excellent
-- Addresses 4+ implied JD pain points
-- Role category perfectly matched (IC vs leadership)
-- Uses JD terminology throughout
-- Success metrics align with JD goals
-
-Score 7-8: Good
-- Addresses 2-3 pain points
-- Good role category match
-- Some JD terminology
-
-Score 5-6: Adequate
-- Addresses 1-2 pain points
-- Partial role match
-- Generic language
-
-Score 1-4: Poor
-- No pain points addressed
-- Wrong emphasis for role type
-- No JD alignment evident
+Score 7-10 (Excellent): Addresses 3+ implied JD pain points, role category matched (IC vs leadership), uses JD terminology throughout
+Score 1-6 (Needs Improvement): <3 pain points addressed, generic language, wrong emphasis for role type
 
 === DIMENSION 4: EXECUTIVE PRESENCE (weight: 15%) ===
 
-Score 9-10: Excellent
-- Strategic business outcomes (revenue, efficiency)
-- Clear leadership progression
-- Team building and scaling achievements
-- Board-ready language and framing
-
-Score 7-8: Good
-- Some business outcomes
-- Leadership evident
-- Professional framing
-
-Score 5-6: Adequate
-- Task-focused, not strategic
-- Limited leadership evidence
-- Technical but not executive
-
-Score 1-4: Poor
-- No strategic framing
-- No leadership evidence
-- Junior-level language
+Score 7-10 (Excellent): Strategic business outcomes (revenue, efficiency), clear leadership progression, board-ready framing
+Score 1-6 (Needs Improvement): Task-focused not strategic, no leadership evidence, junior-level language
 
 === DIMENSION 5: ANTI-HALLUCINATION (weight: 15%) ===
 
-Score 9-10: Excellent
-- All metrics match source exactly
-- All companies/dates verifiable
-- No fabricated achievements
-- Conservative claims only
-
-Score 7-8: Good
-- Minor metric rounding
-- All facts verifiable
-- No fabrication
-
-Score 5-6: Adequate
-- Some unverifiable claims
-- Metrics may be rounded
-- Phrasing implies more than source
-
-Score 1-4: Poor
-- Fabricated metrics
-- Invented achievements
-- Companies/dates don't match
+Score 7-10 (Excellent): All metrics match source exactly, no fabricated achievements, conservative claims only
+Score 1-6 (Needs Improvement): Unverifiable claims, fabricated metrics, phrasing implies more than source
 
 === OUTPUT FORMAT ===
 

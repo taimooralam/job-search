@@ -116,36 +116,26 @@ FEW_SHOT_BULLETS: Dict[str, List[str]] = {
         "Led cross-functional team of 12 engineers to deliver customer platform on time, increasing user engagement by 30% and generating $2.4M incremental ARR",
         "Scaled engineering team from 5 to 18 members while maintaining 92% retention; implemented structured onboarding reducing ramp-up time by 40%",
         "Launched 2 applications earning $4.8M combined revenue in Q1; reduced deployment cycle time by 35% through CI/CD pipeline improvements",
-        "Established Agile practices across 3 teams, improving sprint velocity by 45% and reducing escaped defects by 60%",
-        "Partnered with Product to deliver MVP in 8 weeks, acquiring first 10 enterprise customers and validating $5M market opportunity",
     ],
     "director": [
         "Directed engineering organization of 6 teams (45 engineers) across 3 product lines, delivering 15% YoY revenue growth while reducing operational costs by $2M",
         "Restructured engineering department from project-based to product-aligned teams, improving delivery velocity by 40% and reducing cross-team dependencies by 60%",
         "Established engineering excellence program including tech radar, architecture review board, and career ladders; improved engineer satisfaction from 3.2 to 4.5",
-        "Managed $8M annual technology budget, achieving 20% cost reduction through vendor consolidation and cloud optimization",
-        "Led technical due diligence for 3 acquisitions totaling $50M; successfully integrated acquired engineering teams within 6 months",
     ],
     "vp_head": [
         "Built engineering organization from ground up: hired first 25 engineers, established culture of technical excellence, and delivered MVP securing $15M Series A",
         "Scaled engineering function 5x in 18 months while maintaining delivery velocity; established hiring process yielding 85% offer acceptance rate",
         "Spearheaded technical strategy enabling product expansion to 80+ countries; architected platform supporting 10x traffic growth",
-        "Transformed engineering from cost center to strategic partner, presenting quarterly technology roadmap to board and securing $10M platform investment",
-        "Led digital transformation initiative reducing time-to-market by 60% and enabling launch of 3 new product lines generating $30M revenue",
     ],
     "cto": [
         "Drove technology transformation increasing company valuation from $50M to $400M; architected platform supporting 10M+ daily active users with 99.99% uptime",
         "Pioneered AI-driven product strategy generating 35% revenue increase; presented technology roadmap to board securing $25M additional investment",
         "Transformed legacy monolith to cloud-native architecture, reducing infrastructure costs by 40% while enabling expansion to 15 new markets",
-        "Established technology governance framework achieving SOC2, ISO27001, and GDPR compliance; reduced security incidents by 90%",
-        "Built and led 200+ person engineering organization across 4 geographic regions; established centers of excellence in AI/ML, Platform, and Security",
     ],
     "staff_principal": [
         "Architected microservices platform handling 50K requests/second with 99.95% availability; reduced infrastructure costs by 35% through optimization",
         "Designed event-driven architecture enabling real-time processing for 10M+ daily events; mentored 8 engineers on distributed systems",
         "Spearheaded migration from monolith to microservices, reducing deployment time from 2 weeks to 2 hours; established architectural decision records adopted org-wide",
-        "Led technical design of ML pipeline processing 1TB daily; achieved 40% improvement in model accuracy and 60% reduction in training time",
-        "Authored 15 RFCs defining engineering standards for authentication, data storage, and API design; influenced technical direction across 5 product teams",
     ],
 }
 

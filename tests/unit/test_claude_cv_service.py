@@ -380,8 +380,7 @@ class TestClaudeCVServiceInit:
         # Check tier arguments
         calls = mock_cli_class.call_args_list
         tiers = [call.kwargs.get("tier") for call in calls]
-        assert "balanced" in tiers  # Sonnet for roles
-        assert "quality" in tiers  # Opus for profile
+        assert "balanced" in tiers  # Sonnet for roles and profile
         assert "fast" in tiers  # Haiku for validation
 
 

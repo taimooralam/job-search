@@ -13,6 +13,8 @@ Research Foundation (from profile-section.guide.md):
 - Structure: 60% achievements, 30% qualifications, 10% identity
 """
 
+from src.layer6_v2.prompts.shared import ANTI_HALLUCINATION_RULES
+
 
 # ============================================================================
 # HYBRID EXECUTIVE SUMMARY PROFILE GENERATION PROMPT
@@ -102,25 +104,7 @@ Example:
 - GOOD tagline: "Platform engineering leader who thrives on building infrastructure that scales and teams that excel."
 - BAD tagline: "The candidate is a platform engineering leader who has experience with scalable systems."
 
-=== CRITICAL: ANTI-HALLUCINATION RULES ===
-
-THESE RULES ARE MANDATORY - VIOLATION WILL INVALIDATE THE CV:
-
-1. ONLY use technologies, tools, and platforms that appear in the PROVIDED EXPERIENCE BULLETS
-2. ONLY use metrics and numbers that appear EXACTLY in the source material
-3. NEVER invent technologies to match the JD - if you don't have experience with it, DON'T CLAIM IT
-4. KEY ACHIEVEMENTS must map directly to provided bullets
-5. When in doubt about a metric, OMIT IT rather than risk hallucination
-
-EXAMPLES OF HALLUCINATION TO AVOID:
-- "expertise in Kafka and Flink" (if not in bullets)
-- "achieved 99.99% uptime" (if metric not in bullets)
-- Adding any skill/technology just because the JD mentions it
-
-CORRECT APPROACH:
-- Only mention technologies explicitly listed in the experience bullets
-- Use exact metrics from bullets (e.g., "reduced MTTR by 60%" only if that metric exists)
-- Focus on what the candidate ACTUALLY did, not what the JD wants
+""" + ANTI_HALLUCINATION_RULES + """
 
 === ROLE CATEGORY GUIDANCE ===
 
