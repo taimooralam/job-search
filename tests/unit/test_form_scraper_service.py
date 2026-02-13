@@ -31,11 +31,9 @@ def mock_firecrawl():
 
 @pytest.fixture
 def mock_llm():
-    """Mock LLM for field extraction."""
-    with patch("src.services.form_scraper_service.create_tracked_llm") as mock:
-        mock_instance = MagicMock()
-        mock.return_value = mock_instance
-        yield mock_instance
+    """Mock invoke_unified_sync for field extraction."""
+    with patch("src.services.form_scraper_service.invoke_unified_sync") as mock:
+        yield mock
 
 
 @pytest.fixture
@@ -179,16 +177,17 @@ class TestFormScraperServiceScraping:
         mock_result.markdown = sample_form_html
         mock_firecrawl.scrape.return_value = mock_result
 
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(sample_extraction_output)
-        mock_llm.invoke.return_value = mock_response
+        # Mock invoke_unified_sync return value
+        mock_llm_result = MagicMock()
+        mock_llm_result.success = True
+        mock_llm_result.content = json.dumps(sample_extraction_output)
+        mock_llm.return_value = mock_llm_result
 
         # Create service with mocked DB
         with patch.object(FormScraperService, "_get_cached_form_fields", return_value=None):
             with patch.object(FormScraperService, "_cache_form_fields", return_value=True):
                 service = FormScraperService()
                 service.firecrawl = mock_firecrawl
-                service.llm = mock_llm
 
                 result = await service.scrape_form(
                     job_id="test_job_id",
@@ -241,9 +240,10 @@ class TestFormScraperServiceScraping:
         mock_result.markdown = sample_form_html
         mock_firecrawl.scrape.return_value = mock_result
 
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(sample_extraction_output)
-        mock_llm.invoke.return_value = mock_response
+        mock_llm_result = MagicMock()
+        mock_llm_result.success = True
+        mock_llm_result.content = json.dumps(sample_extraction_output)
+        mock_llm.return_value = mock_llm_result
 
         with patch.object(
             FormScraperService, "_get_cached_form_fields"
@@ -251,7 +251,6 @@ class TestFormScraperServiceScraping:
             with patch.object(FormScraperService, "_cache_form_fields", return_value=True):
                 service = FormScraperService()
                 service.firecrawl = mock_firecrawl
-                service.llm = mock_llm
 
                 result = await service.scrape_form(
                     job_id="test_job_id",
@@ -314,23 +313,23 @@ class TestFormScraperServiceScraping:
     async def test_scrape_form_login_required(self, mock_firecrawl, mock_llm):
         """Test handling of login-protected forms."""
         mock_result = MagicMock()
-        mock_result.markdown = "Please log in to continue..."
+        mock_result.markdown = "Please log in to continue..." + " " * 100  # Ensure > 100 chars
         mock_firecrawl.scrape.return_value = mock_result
 
-        mock_response = MagicMock()
-        mock_response.content = json.dumps({
+        mock_llm_result = MagicMock()
+        mock_llm_result.success = True
+        mock_llm_result.content = json.dumps({
             "form_title": None,
             "fields": [],
             "requires_login": True,
             "form_type": "unknown",
         })
-        mock_llm.invoke.return_value = mock_response
+        mock_llm.return_value = mock_llm_result
 
         with patch.object(FormScraperService, "_get_cached_form_fields", return_value=None):
             with patch.object(FormScraperService, "_cache_form_fields", return_value=True):
                 service = FormScraperService()
                 service.firecrawl = mock_firecrawl
-                service.llm = mock_llm
 
                 result = await service.scrape_form(
                     job_id="test_job_id",
@@ -349,19 +348,19 @@ class TestFormScraperServiceScraping:
         mock_result.markdown = "Welcome to our company website! " * 10  # Make it longer
         mock_firecrawl.scrape.return_value = mock_result
 
-        mock_response = MagicMock()
-        mock_response.content = json.dumps({
+        mock_llm_result = MagicMock()
+        mock_llm_result.success = True
+        mock_llm_result.content = json.dumps({
             "form_title": None,
             "fields": [],
             "requires_login": False,
             "form_type": "unknown",
         })
-        mock_llm.invoke.return_value = mock_response
+        mock_llm.return_value = mock_llm_result
 
         with patch.object(FormScraperService, "_get_cached_form_fields", return_value=None):
             service = FormScraperService()
             service.firecrawl = mock_firecrawl
-            service.llm = mock_llm
 
             result = await service.scrape_form(
                 job_id="test_job_id",
@@ -393,10 +392,11 @@ class TestFormScraperServiceAnswerGeneration:
         mock_result.markdown = sample_form_html
         mock_firecrawl.scrape.return_value = mock_result
 
-        # Setup LLM mocks - first call for field extraction
-        mock_extraction_response = MagicMock()
-        mock_extraction_response.content = json.dumps(sample_extraction_output)
-        mock_llm.invoke.return_value = mock_extraction_response
+        # Setup LLM mocks - invoke_unified_sync for field extraction
+        mock_llm_result = MagicMock()
+        mock_llm_result.success = True
+        mock_llm_result.content = json.dumps(sample_extraction_output)
+        mock_llm.return_value = mock_llm_result
 
         # Setup mock job repository
         mock_job_repository = MagicMock()
@@ -421,7 +421,6 @@ class TestFormScraperServiceAnswerGeneration:
             with patch.object(FormScraperService, "_cache_form_fields", return_value=True):
                 service = FormScraperService(job_repository=mock_job_repository)
                 service.firecrawl = mock_firecrawl
-                service.llm = mock_llm
 
                 # Patch the import inside the method
                 with patch.dict(
@@ -462,15 +461,15 @@ class TestProgressCallback:
         mock_result.markdown = sample_form_html
         mock_firecrawl.scrape.return_value = mock_result
 
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(sample_extraction_output)
-        mock_llm.invoke.return_value = mock_response
+        mock_llm_result = MagicMock()
+        mock_llm_result.success = True
+        mock_llm_result.content = json.dumps(sample_extraction_output)
+        mock_llm.return_value = mock_llm_result
 
         with patch.object(FormScraperService, "_get_cached_form_fields", return_value=None):
             with patch.object(FormScraperService, "_cache_form_fields", return_value=True):
                 service = FormScraperService()
                 service.firecrawl = mock_firecrawl
-                service.llm = mock_llm
 
                 await service.scrape_form(
                     job_id="test_job_id",

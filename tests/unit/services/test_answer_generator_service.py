@@ -19,7 +19,6 @@ class TestAnswerGeneratorServiceInit:
         service = AnswerGeneratorService()
 
         assert service is not None
-        assert service.llm is None  # Lazy initialization
 
 
 class TestStaticAnswers:
@@ -88,17 +87,16 @@ class TestGenerateAnswers:
     """Tests for answer generation."""
 
     @patch("src.services.answer_generator_service.database_client")
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_generate_answers_returns_list(self, mock_create_llm, mock_db):
+    @patch("src.services.answer_generator_service.invoke_unified_sync")
+    def test_generate_answers_returns_list(self, mock_invoke, mock_db):
         """generate_answers returns a list of planned answers."""
         from src.services.answer_generator_service import AnswerGeneratorService
 
-        # Mock LLM response
-        mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(
-            content="This is a generated answer about the role."
-        )
-        mock_create_llm.return_value = mock_llm
+        # Mock unified LLM response
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.content = "This is a generated answer about the role."
+        mock_invoke.return_value = mock_result
 
         # Mock database
         mock_db.get_all_star_records.return_value = []
@@ -141,14 +139,15 @@ class TestGenerateAnswers:
             service.generate_answers(job)
 
     @patch("src.services.answer_generator_service.database_client")
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_generate_answers_uses_job_context(self, mock_create_llm, mock_db):
+    @patch("src.services.answer_generator_service.invoke_unified_sync")
+    def test_generate_answers_uses_job_context(self, mock_invoke, mock_db):
         """generate_answers includes job context in LLM prompt."""
         from src.services.answer_generator_service import AnswerGeneratorService
 
-        mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Generated answer.")
-        mock_create_llm.return_value = mock_llm
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.content = "Generated answer."
+        mock_invoke.return_value = mock_result
         mock_db.get_all_star_records.return_value = []
 
         service = AnswerGeneratorService()
@@ -165,23 +164,25 @@ class TestGenerateAnswers:
 
         service.generate_answers(job, form_fields=form_fields)
 
-        # LLM should be invoked
-        assert mock_llm.invoke.called
+        # invoke_unified_sync should be called
+        assert mock_invoke.called
 
-        # Check that context is passed to LLM
-        call_args = mock_llm.invoke.call_args[0][0]
-        assert "Acme Corp" in call_args
-        assert "Backend Developer" in call_args
+        # Check that context is passed in prompt
+        call_kwargs = mock_invoke.call_args.kwargs
+        prompt_text = call_kwargs.get("prompt", "")
+        assert "Acme Corp" in prompt_text
+        assert "Backend Developer" in prompt_text
 
     @patch("src.services.answer_generator_service.database_client")
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_generate_answers_includes_star_records(self, mock_create_llm, mock_db):
+    @patch("src.services.answer_generator_service.invoke_unified_sync")
+    def test_generate_answers_includes_star_records(self, mock_invoke, mock_db):
         """generate_answers includes relevant STAR records in context."""
         from src.services.answer_generator_service import AnswerGeneratorService
 
-        mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Generated answer.")
-        mock_create_llm.return_value = mock_llm
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.content = "Generated answer."
+        mock_invoke.return_value = mock_result
 
         # Mock STAR records
         mock_db.get_all_star_records.return_value = [
@@ -211,23 +212,22 @@ class TestGenerateAnswers:
         service.generate_answers(job, form_fields=form_fields)
 
         # Check STAR records are in context
-        call_args = mock_llm.invoke.call_args[0][0]
-        assert "Senior Engineer" in call_args or "scalable system" in call_args
+        call_kwargs = mock_invoke.call_args.kwargs
+        prompt_text = call_kwargs.get("prompt", "")
+        assert "Senior Engineer" in prompt_text or "scalable system" in prompt_text
 
     @patch("src.services.answer_generator_service.database_client")
-    def test_generate_answers_handles_llm_error(self, mock_db):
+    @patch("src.services.answer_generator_service.invoke_unified_sync")
+    def test_generate_answers_handles_llm_error(self, mock_invoke, mock_db):
         """generate_answers handles LLM errors gracefully."""
         from src.services.answer_generator_service import AnswerGeneratorService
 
         mock_db.get_all_star_records.return_value = []
 
+        # Mock invoke_unified_sync to raise an error
+        mock_invoke.side_effect = Exception("LLM API error")
+
         service = AnswerGeneratorService()
-
-        # Mock LLM to raise an error
-        mock_llm = MagicMock()
-        mock_llm.invoke.side_effect = Exception("LLM API error")
-        service.llm = mock_llm
-
         job = {
             "company": "TestCo",
             "title": "Developer",
@@ -248,14 +248,15 @@ class TestGenerateAnswers:
                 assert "[Please provide your answer" in answer["answer"]
 
     @patch("src.services.answer_generator_service.database_client")
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_generate_answers_skips_llm_for_url_fields(self, mock_create_llm, mock_db):
+    @patch("src.services.answer_generator_service.invoke_unified_sync")
+    def test_generate_answers_skips_llm_for_url_fields(self, mock_invoke, mock_db):
         """generate_answers does not call LLM for URL fields."""
         from src.services.answer_generator_service import AnswerGeneratorService
 
-        mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Generated answer.")
-        mock_create_llm.return_value = mock_llm
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.content = "Generated answer."
+        mock_invoke.return_value = mock_result
         mock_db.get_all_star_records.return_value = []
 
         service = AnswerGeneratorService()
@@ -287,15 +288,16 @@ class TestGenerateAnswers:
         assert answers == []
 
     @patch("src.services.answer_generator_service.database_client")
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_generate_answers_respects_char_limit(self, mock_create_llm, mock_db):
-        """generate_answers passes char_limit to LLM prompt."""
+    @patch("src.services.answer_generator_service.invoke_unified_sync")
+    def test_generate_answers_respects_char_limit(self, mock_invoke, mock_db):
+        """generate_answers truncates answers that exceed char_limit."""
         from src.services.answer_generator_service import AnswerGeneratorService
 
-        mock_llm = MagicMock()
         # Return a very long answer to test truncation
-        mock_llm.invoke.return_value = MagicMock(content="x" * 1000)
-        mock_create_llm.return_value = mock_llm
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.content = "x" * 1000
+        mock_invoke.return_value = mock_result
         mock_db.get_all_star_records.return_value = []
 
         service = AnswerGeneratorService()
@@ -310,50 +312,6 @@ class TestGenerateAnswers:
         assert len(answers) == 1
         # Answer should be truncated to around the limit
         assert len(answers[0]["answer"]) <= 103  # Allow for "..."
-
-
-class TestLazyLLMInit:
-    """Tests for lazy LLM initialization."""
-
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_llm_initialized_on_first_use(self, mock_create_llm):
-        """LLM is initialized only when first needed."""
-        from src.services.answer_generator_service import AnswerGeneratorService
-
-        mock_llm = MagicMock()
-        mock_create_llm.return_value = mock_llm
-
-        service = AnswerGeneratorService()
-
-        # LLM should not be created yet
-        assert service.llm is None
-        mock_create_llm.assert_not_called()
-
-        # Get LLM
-        llm = service._get_llm()
-
-        # Now it should be created
-        assert llm is mock_llm
-        mock_create_llm.assert_called_once()
-
-    @patch("src.services.answer_generator_service.create_tracked_llm")
-    def test_llm_reused_on_subsequent_calls(self, mock_create_llm):
-        """LLM instance is reused on subsequent calls."""
-        from src.services.answer_generator_service import AnswerGeneratorService
-
-        mock_llm = MagicMock()
-        mock_create_llm.return_value = mock_llm
-
-        service = AnswerGeneratorService()
-
-        # Call _get_llm multiple times
-        llm1 = service._get_llm()
-        llm2 = service._get_llm()
-        llm3 = service._get_llm()
-
-        # Should only create once
-        mock_create_llm.assert_called_once()
-        assert llm1 is llm2 is llm3
 
 
 class TestLoadStarRecords:
