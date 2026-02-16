@@ -335,9 +335,11 @@ class TestBatchJobRowsPartial:
         mock_repo = MagicMock()
         mock_get_repo.return_value = mock_repo
 
-        # Mock aggregate (default sort uses aggregation pipeline)
+        # Mock aggregate (default sort uses aggregation pipeline with $facet)
         under_processing_jobs = [j for j in sample_jobs if j["status"] == "under processing"]
-        mock_repo.aggregate.return_value = under_processing_jobs
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": len(under_processing_jobs)}], "data": under_processing_jobs}
+        ]
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -364,7 +366,7 @@ class TestBatchJobRowsPartial:
         mock_repo = MagicMock()
         mock_get_repo.return_value = mock_repo
 
-        mock_repo.aggregate.return_value = []
+        mock_repo.aggregate.return_value = [{"metadata": [], "data": []}]
         mock_render_template.return_value = "<tr>...</tr>"
 
         # Act
@@ -374,8 +376,13 @@ class TestBatchJobRowsPartial:
         mock_repo.aggregate.assert_called_once()
         pipeline = mock_repo.aggregate.call_args[0][0]
 
-        # Find the $sort stage (should be last stage)
-        sort_stage = next((s for s in pipeline if "$sort" in s), None)
+        # Last stage should be $facet containing the sort spec
+        facet_stage = next((s for s in pipeline if "$facet" in s), None)
+        assert facet_stage is not None
+
+        # The sort is inside $facet.data pipeline
+        data_pipeline = facet_stage["$facet"]["data"]
+        sort_stage = next((s for s in data_pipeline if "$sort" in s), None)
         assert sort_stage is not None
 
         # Should sort by location, seniority, score, then recency
@@ -397,6 +404,7 @@ class TestBatchJobRowsPartial:
 
         # Repository's find() returns list directly
         mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -423,6 +431,7 @@ class TestBatchJobRowsPartial:
 
         # Repository's find() returns list directly
         mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -449,6 +458,7 @@ class TestBatchJobRowsPartial:
         under_processing_jobs = [j for j in sample_jobs if j["status"] == "under processing"]
         # Repository's find() returns list directly
         mock_repo.find.return_value = under_processing_jobs
+        mock_repo.count_documents.return_value = len(under_processing_jobs)
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -501,6 +511,7 @@ class TestBatchJobRowsPartial:
 
         # Repository's find() returns list directly
         mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -523,8 +534,8 @@ class TestBatchJobRowsPartial:
         mock_repo = MagicMock()
         mock_get_repo.return_value = mock_repo
 
-        # Repository's find() returns list directly
-        mock_repo.find.return_value = []  # No jobs
+        # Default sort uses aggregate with $facet
+        mock_repo.aggregate.return_value = [{"metadata": [], "data": []}]
 
         mock_render_template.return_value = ""
 
@@ -576,8 +587,10 @@ class TestBatchProcessingWorkflow:
             {**sample_jobs[1], "status": "under processing", "batch_added_at": datetime.utcnow()},
         ]
 
-        # Step 2: Retrieve batch jobs (default sort uses aggregation pipeline)
-        mock_repo.aggregate.return_value = updated_jobs
+        # Step 2: Retrieve batch jobs (default sort uses aggregation pipeline with $facet)
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": len(updated_jobs)}], "data": updated_jobs}
+        ]
 
         with patch("frontend.app.render_template") as mock_render:
             mock_render.return_value = "<tr>2 jobs</tr>"
@@ -791,8 +804,10 @@ class TestScrapeAndFillUI:
             "application_url": "https://example.com/apply",
         }
 
-        # Mock aggregate (default sort uses aggregation pipeline)
-        mock_repo.aggregate.return_value = [job_with_url]
+        # Mock aggregate (default sort uses aggregation pipeline with $facet)
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": 1}], "data": [job_with_url]}
+        ]
 
         # Capture template call
         def capture_render(template_name, **context):
@@ -833,8 +848,10 @@ class TestScrapeAndFillUI:
             # No application_url field
         }
 
-        # Mock aggregate (default sort uses aggregation pipeline)
-        mock_repo.aggregate.return_value = [job_without_url]
+        # Mock aggregate (default sort uses aggregation pipeline with $facet)
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": 1}], "data": [job_without_url]}
+        ]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -874,8 +891,10 @@ class TestScrapeAndFillUI:
             # No application_url - template should use url as fallback
         }
 
-        # Mock aggregate (default sort uses aggregation pipeline)
-        mock_repo.aggregate.return_value = [job_with_fallback]
+        # Mock aggregate (default sort uses aggregation pipeline with $facet)
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": 1}], "data": [job_with_fallback]}
+        ]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -916,8 +935,10 @@ class TestScrapeAndFillUI:
             ],
         }
 
-        # Mock aggregate (default sort uses aggregation pipeline)
-        mock_repo.aggregate.return_value = [job_with_answers]
+        # Mock aggregate (default sort uses aggregation pipeline with $facet)
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": 1}], "data": [job_with_answers]}
+        ]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -979,7 +1000,9 @@ class TestContextMenuBatchIntegration:
             "batch_added_at": datetime.utcnow(),
         }
 
-        mock_repo.aggregate.return_value = [batch_job]
+        mock_repo.aggregate.return_value = [
+            {"metadata": [{"total": 1}], "data": [batch_job]}
+        ]
         mock_render_template.return_value = "<tr>1 job</tr>"
 
         # Act - Get batch rows

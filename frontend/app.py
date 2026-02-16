@@ -3035,6 +3035,11 @@ def batch_job_rows_partial():
     sort_field = request.args.get("sort", "default")
     sort_direction = request.args.get("direction", "desc")
 
+    # Pagination parameters
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 50, type=int)
+    page_size = min(page_size, 100)  # Cap at 100
+
     # Map frontend field names to MongoDB field names
     field_mapping = {
         "batch_added_at": "batch_added_at",
@@ -3112,19 +3117,49 @@ def batch_job_rows_partial():
             "score": -1,             # Higher scores first
             "createdAt": -1,         # Most recent first
         }
-        pipeline.append({"$sort": sort_spec})
+
+        # Use $facet to get total count and paginated data in one query
+        pipeline.append({
+            "$facet": {
+                "metadata": [{"$count": "total"}],
+                "data": [
+                    {"$sort": sort_spec},
+                    {"$skip": (page - 1) * page_size},
+                    {"$limit": page_size},
+                ],
+            }
+        })
 
         # Execute aggregation
-        jobs = list(repo.aggregate(pipeline))
+        result = list(repo.aggregate(pipeline))
+        facet = result[0] if result else {"metadata": [], "data": []}
+        total_count = facet["metadata"][0]["total"] if facet["metadata"] else 0
+        jobs = facet["data"]
     else:
         # Simple single-field sort when user clicks column headers
         mongo_sort_field = field_mapping.get(sort_field, "batch_added_at")
         mongo_sort_direction = -1 if sort_direction == "desc" else 1
 
+        # Get total count for pagination
+        total_count = repo.count_documents({"status": "under processing"})
+
         jobs = repo.find(
             {"status": "under processing"},
-            sort=[(mongo_sort_field, mongo_sort_direction)]
+            sort=[(mongo_sort_field, mongo_sort_direction)],
+            skip=(page - 1) * page_size,
+            limit=page_size,
         )
+
+    # Build pagination metadata
+    total_pages = max(1, -(-total_count // page_size))  # Ceiling division
+    pagination = {
+        "page": page,
+        "page_size": page_size,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
 
     return render_template(
         "partials/batch_job_rows.html",
@@ -3132,6 +3167,7 @@ def batch_job_rows_partial():
         statuses=JOB_STATUSES,
         current_sort=sort_field,
         current_direction=sort_direction,
+        pagination=pagination,
     )
 
 

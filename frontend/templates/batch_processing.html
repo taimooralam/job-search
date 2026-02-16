@@ -337,7 +337,7 @@
                 </div>
             </div>
             <div id="batch-table-container"
-                 hx-get="/partials/batch-job-rows"
+                 hx-get="/partials/batch-job-rows?page=1&page_size=50"
                  hx-trigger="load, refresh from:body"
                  hx-indicator=".htmx-indicator">
                 <!-- Table content loaded via HTMX -->

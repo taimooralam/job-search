@@ -25,7 +25,7 @@
             {% set new_direction = 'asc' if (is_active and current_direction == 'desc') else 'desc' %}
             <th scope="col"
                 class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ width_class }} {{ 'sort-active' if is_active }}"
-                hx-get="/partials/batch-job-rows?sort={{ field }}&direction={{ new_direction }}"
+                hx-get="/partials/batch-job-rows?sort={{ field }}&direction={{ new_direction }}&page=1"
                 hx-target="#batch-table-container"
                 hx-indicator=".htmx-indicator">
                 <div class="flex items-center gap-1">
@@ -98,6 +98,97 @@
         </tbody>
     {% endif %}
 </table>
+
+{% if pagination and pagination.total_count > 0 %}
+<div class="theme-bg-secondary px-4 py-3 flex items-center justify-between theme-border border-t">
+    <div class="flex-1 flex justify-between sm:hidden">
+        {% if pagination.has_prev %}
+        <button hx-get="/partials/batch-job-rows?page={{ pagination.page - 1 }}&sort={{ current_sort }}&direction={{ current_direction }}"
+                hx-target="#batch-table-container"
+                class="relative inline-flex items-center px-4 py-2 theme-border border text-sm font-medium rounded-md theme-text-primary theme-bg-card hover:theme-bg-hover">
+            Previous
+        </button>
+        {% endif %}
+        {% if pagination.has_next %}
+        <button hx-get="/partials/batch-job-rows?page={{ pagination.page + 1 }}&sort={{ current_sort }}&direction={{ current_direction }}"
+                hx-target="#batch-table-container"
+                class="ml-3 relative inline-flex items-center px-4 py-2 theme-border border text-sm font-medium rounded-md theme-text-primary theme-bg-card hover:theme-bg-hover">
+            Next
+        </button>
+        {% endif %}
+    </div>
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm theme-text-secondary">
+                Showing
+                <span class="font-medium">{{ (pagination.page - 1) * pagination.page_size + 1 }}</span>
+                to
+                <span class="font-medium">{{ [pagination.page * pagination.page_size, pagination.total_count] | min }}</span>
+                of
+                <span class="font-medium">{{ pagination.total_count }}</span>
+                results
+            </p>
+        </div>
+        <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <!-- Previous button -->
+                <button {% if not pagination.has_prev %}disabled{% endif %}
+                        hx-get="/partials/batch-job-rows?page={{ pagination.page - 1 }}&sort={{ current_sort }}&direction={{ current_direction }}"
+                        hx-target="#batch-table-container"
+                        class="relative inline-flex items-center px-2 py-2 rounded-l-md theme-border border theme-bg-card text-sm font-medium theme-text-secondary hover:theme-bg-hover disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+
+                <!-- Page numbers -->
+                {% set start_page = [1, pagination.page - 2] | max %}
+                {% set end_page = [pagination.total_pages, pagination.page + 2] | min %}
+
+                {% if start_page > 1 %}
+                <button hx-get="/partials/batch-job-rows?page=1&sort={{ current_sort }}&direction={{ current_direction }}"
+                        hx-target="#batch-table-container"
+                        class="relative inline-flex items-center px-4 py-2 theme-border border theme-bg-card text-sm font-medium theme-text-primary hover:theme-bg-hover">
+                    1
+                </button>
+                {% if start_page > 2 %}
+                <span class="relative inline-flex items-center px-4 py-2 theme-border border theme-bg-card text-sm font-medium theme-text-secondary">...</span>
+                {% endif %}
+                {% endif %}
+
+                {% for p in range(start_page, end_page + 1) %}
+                <button hx-get="/partials/batch-job-rows?page={{ p }}&sort={{ current_sort }}&direction={{ current_direction }}"
+                        hx-target="#batch-table-container"
+                        class="relative inline-flex items-center px-4 py-2 border text-sm font-medium {{ 'z-10 bg-primary-50 border-primary-500 text-primary-600' if p == pagination.page else 'theme-border theme-bg-card theme-text-primary hover:theme-bg-hover' }}">
+                    {{ p }}
+                </button>
+                {% endfor %}
+
+                {% if end_page < pagination.total_pages %}
+                {% if end_page < pagination.total_pages - 1 %}
+                <span class="relative inline-flex items-center px-4 py-2 theme-border border theme-bg-card text-sm font-medium theme-text-secondary">...</span>
+                {% endif %}
+                <button hx-get="/partials/batch-job-rows?page={{ pagination.total_pages }}&sort={{ current_sort }}&direction={{ current_direction }}"
+                        hx-target="#batch-table-container"
+                        class="relative inline-flex items-center px-4 py-2 theme-border border theme-bg-card text-sm font-medium theme-text-primary hover:theme-bg-hover">
+                    {{ pagination.total_pages }}
+                </button>
+                {% endif %}
+
+                <!-- Next button -->
+                <button {% if not pagination.has_next %}disabled{% endif %}
+                        hx-get="/partials/batch-job-rows?page={{ pagination.page + 1 }}&sort={{ current_sort }}&direction={{ current_direction }}"
+                        hx-target="#batch-table-container"
+                        class="relative inline-flex items-center px-2 py-2 rounded-r-md theme-border border theme-bg-card text-sm font-medium theme-text-secondary hover:theme-bg-hover disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <script>
     // Scrape & Fill job application form
