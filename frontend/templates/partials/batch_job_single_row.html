@@ -210,7 +210,7 @@
             {% if job.batch_added_at %}
                 {{ job.batch_added_at.strftime('%m/%d %H:%M') if job.batch_added_at is not string else job.batch_added_at[:16] }}
             {% elif job.createdAt %}
-                {{ job.createdAt[:10] }}
+                {{ job.createdAt[:10] if job.createdAt is string else job.createdAt.strftime('%m/%d') }}
             {% else %}
                 <span class="theme-text-muted">-</span>
             {% endif %}
