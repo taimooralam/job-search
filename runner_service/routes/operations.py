@@ -1859,12 +1859,12 @@ async def queue_operation(
     job_id: str,
     operation: str,
     request: QueueOperationRequest,
-    background_tasks: BackgroundTasks,
 ) -> QueueOperationResponse:
     """
     Queue a pipeline operation for background execution.
 
     Instead of executing immediately, adds to Redis queue.
+    The polling loop (_queue_polling_loop in app.py) handles dequeue and execution.
     Status updates are broadcast via WebSocket.
 
     This is the new queue-first approach for the job detail page:
@@ -1879,7 +1879,6 @@ async def queue_operation(
         job_id: MongoDB ObjectId of the job
         operation: Operation type (canonical or legacy name)
         request: Queue operation request parameters
-        background_tasks: FastAPI background tasks for async execution
 
     Returns:
         QueueOperationResponse with queue_id and position
@@ -1964,23 +1963,8 @@ async def queue_operation(
         avg_time = OPERATION_TIME_ESTIMATES.get(operation, 30)
         estimated_wait = (position - 1) * avg_time if position > 1 else 0
 
-        # Add background task to execute the operation - run in executor to avoid blocking
-        # Use routed_operation for execution (may differ from canonical name for new ops)
-        background_tasks.add_task(
-            run_service_in_executor,
-            _execute_queued_operation(
-                queue_id=queue_item.queue_id,
-                run_id=run_id,
-                job_id=job_id,
-                operation=routed_operation,  # Use routed operation for actual execution
-                tier=tier,
-                force_refresh=request.force_refresh or False,
-                use_llm=request.use_llm if request.use_llm is not None else True,
-                use_annotations=request.use_annotations if request.use_annotations is not None else True,
-                auto_annotate=request.auto_annotate or False,  # Auto-generate annotations (move-to-batch)
-                auto_persona=request.auto_persona or False,    # Auto-synthesize persona (move-to-batch)
-            )
-        )
+        # Execution handled by polling loop (app.py:_queue_polling_loop)
+        # Do NOT execute here to avoid race condition with polling loop
 
         logger.info(
             f"Queued {operation} for job {job_id} as {queue_item.queue_id} (position #{position})"
