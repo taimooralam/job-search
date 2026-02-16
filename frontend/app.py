@@ -3161,14 +3161,35 @@ def batch_job_rows_partial():
         "has_next": page < total_pages,
     }
 
-    return render_template(
-        "partials/batch_job_rows.html",
-        jobs=jobs,
-        statuses=JOB_STATUSES,
-        current_sort=sort_field,
-        current_direction=sort_direction,
-        pagination=pagination,
-    )
+    try:
+        return render_template(
+            "partials/batch_job_rows.html",
+            jobs=jobs,
+            statuses=JOB_STATUSES,
+            current_sort=sort_field,
+            current_direction=sort_direction,
+            pagination=pagination,
+        )
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        error_traceback = traceback.format_exc()
+        app.logger.error(f"Template error in batch_job_rows_partial: {error_msg}\n{error_traceback}")
+        # Return error HTML with console logging for debugging
+        return f'''
+        <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <h3 class="text-red-700 dark:text-red-400 font-medium">Template Rendering Error</h3>
+            <p class="text-red-600 dark:text-red-300 text-sm mt-1">{error_msg}</p>
+            <details class="mt-2">
+                <summary class="text-xs text-red-500 cursor-pointer">Stack trace</summary>
+                <pre class="text-xs text-red-400 mt-1 overflow-auto max-h-48">{error_traceback}</pre>
+            </details>
+        </div>
+        <script>
+            console.error('[batch-job-rows] Template rendering error:', {error_msg!r});
+            console.error('[batch-job-rows] Traceback:', {error_traceback!r});
+        </script>
+        ''', 500
 
 
 @app.route("/partials/batch-job-row/<job_id>")
@@ -3189,11 +3210,28 @@ def batch_job_row_partial(job_id: str):
     if not job:
         abort(404)
 
-    return render_template(
-        "partials/batch_job_single_row.html",
-        job=job,
-        statuses=JOB_STATUSES,
-    )
+    try:
+        return render_template(
+            "partials/batch_job_single_row.html",
+            job=job,
+            statuses=JOB_STATUSES,
+        )
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        error_traceback = traceback.format_exc()
+        app.logger.error(f"Template error in batch_job_row_partial for {job_id}: {error_msg}\n{error_traceback}")
+        return f'''
+        <tbody class="theme-bg-card">
+            <tr><td colspan="10" class="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-sm">
+                Template error for job {job_id}: {error_msg}
+            </td></tr>
+        </tbody>
+        <script>
+            console.error('[batch-job-row/{job_id}] Template error:', {error_msg!r});
+            console.error('[batch-job-row/{job_id}] Traceback:', {error_traceback!r});
+        </script>
+        ''', 500
 
 
 @app.route("/partials/batch-annotation/<job_id>")
