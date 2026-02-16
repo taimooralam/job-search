@@ -534,7 +534,7 @@ def list_jobs():
         sort: Field to sort by (default: createdAt)
         direction: Sort direction - asc or desc (default: desc)
         page: Page number (default: 1)
-        page_size: Items per page - 5, 10, 50, 100 (default: 10)
+        page_size: Items per page - 10, 50, 100 (default: 100)
 
     Returns:
         JSON with jobs array and pagination metadata
@@ -546,7 +546,7 @@ def list_jobs():
     sort_field = request.args.get("sort", "createdAt")
     sort_direction = request.args.get("direction", "desc")
     page = max(1, int(request.args.get("page", 1)))
-    page_size = int(request.args.get("page_size", 10))
+    page_size = int(request.args.get("page_size", 100))
 
     # Date range filters (MongoDB stores dates as ISO strings)
     date_from = request.args.get("date_from", "").strip()
@@ -2940,7 +2940,7 @@ def job_rows_partial():
             current_sort=request.args.get("sort", "createdAt"),
             current_direction=request.args.get("direction", "desc"),
             current_query=request.args.get("query", ""),
-            current_page_size=int(request.args.get("page_size", 10)),
+            current_page_size=int(request.args.get("page_size", 100)),
             current_datetime_from=datetime_from,
             current_datetime_to=datetime_to,
             current_locations=request.args.getlist("locations"),
@@ -3037,7 +3037,7 @@ def batch_job_rows_partial():
 
     # Pagination parameters
     page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 50, type=int)
+    page_size = request.args.get("page_size", 100, type=int)
     page_size = min(page_size, 100)  # Cap at 100
 
     # Map frontend field names to MongoDB field names

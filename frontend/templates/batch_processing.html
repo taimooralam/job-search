@@ -88,6 +88,23 @@
 
             <div class="h-6 w-px theme-bg-tertiary"></div>
 
+            <!-- Page Size Selector -->
+            <div class="flex items-center gap-2">
+                <label for="batch-page-size" class="text-sm theme-text-secondary font-medium">Show:</label>
+                <select id="batch-page-size"
+                        class="filter-input form-select py-1.5 text-sm"
+                        hx-get="/partials/batch-job-rows"
+                        hx-trigger="change"
+                        hx-target="#batch-table-container"
+                        hx-indicator=".htmx-indicator">
+                    <option value="10">10</option>
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                </select>
+            </div>
+
+            <div class="h-6 w-px theme-bg-tertiary"></div>
+
             <!-- Pipeline Operations Dropdown (Unified Menu) -->
             <div id="pipeline-dropdown" class="relative btn-with-hint" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open"
@@ -337,7 +354,7 @@
                 </div>
             </div>
             <div id="batch-table-container"
-                 hx-get="/partials/batch-job-rows?page=1&page_size=50"
+                 hx-get="/partials/batch-job-rows?page=1&page_size=100"
                  hx-trigger="load, refresh from:body"
                  hx-indicator=".htmx-indicator">
                 <!-- Table content loaded via HTMX -->
