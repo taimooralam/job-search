@@ -11,32 +11,31 @@
     <thead class="sticky-header">
         <tr>
             <!-- Select all checkbox -->
-            <th scope="col" class="px-4 py-3 w-10">
+            <th scope="col" class="px-2 py-3 w-8">
                 <input type="checkbox"
                        id="select-all"
                        onchange="toggleSelectAll(this)"
                        class="h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500">
             </th>
 
-            {# Column widths: narrow for metadata, wider for role/company #}
-            {# Total fixed ~650px + flexible role column to fit 1024px+ screens #}
+            {# Column widths: narrow for metadata, role column takes remaining space #}
             {% set sort_fields = [
-                ('createdAt', 'Created', 'hide-mobile', 'w-[60px]'),
-                ('company', 'Company', '', 'w-[100px] max-w-[100px]'),
-                ('title', 'Role/Title', '', 'min-w-[180px] max-w-[280px]'),
-                ('location', 'Location', 'hide-mobile', 'w-[40px]'),
-                ('url', 'URL', 'hide-tablet', 'w-[80px]'),
-                ('jobId', 'Job ID', 'hide-tablet', 'w-[75px]'),
-                ('status', 'Status', '', 'w-[90px]'),
-                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[70px]'),
-                ('score', 'Score', 'hide-mobile', 'w-[50px]')
+                ('createdAt', 'Created', 'hide-mobile', 'w-[55px]'),
+                ('company', 'Company', '', 'w-[90px] max-w-[90px]'),
+                ('title', 'Role/Title', '', ''),
+                ('location', 'Location', 'hide-mobile', 'w-[36px]'),
+                ('url', 'URL', 'hide-tablet', 'w-[65px]'),
+                ('jobId', 'Job ID', 'hide-tablet', 'w-[72px]'),
+                ('status', 'Status', '', 'w-[85px]'),
+                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[65px]'),
+                ('score', 'Score', 'hide-mobile', 'w-[45px]')
             ] %}
 
             {% for field, label, css_class, width_class in sort_fields %}
             {% set is_active = current_sort == field %}
             {% set new_direction = 'asc' if (is_active and current_direction == 'desc') else 'desc' %}
             <th scope="col"
-                class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ 'sort-active' if is_active }} {{ css_class }} {{ width_class }}"
+                class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ 'sort-active' if is_active }} {{ css_class }} {{ width_class }}"
                 hx-get="/partials/job-rows?sort={{ field }}&direction={{ new_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
                 hx-target="#job-table-container"
                 hx-indicator=".htmx-indicator">
@@ -64,7 +63,7 @@
             {% endfor %}
 
             <!-- Actions column -->
-            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[80px]">
+            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[70px]">
                 Actions
             </th>
         </tr>
@@ -81,7 +80,7 @@
                 onclick="navigateToJob(event, '{{ job._id }}')"
                 oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
                 <!-- Checkbox -->
-                <td class="px-4 py-3" onclick="event.stopPropagation()">
+                <td class="px-2 py-3" onclick="event.stopPropagation()">
                     <input type="checkbox"
                            class="row-checkbox h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500"
                            data-job-id="{{ job._id }}"
@@ -89,7 +88,7 @@
                 </td>
 
                 <!-- Created At (DD/MM format) -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile">
+                <td class="px-2 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile">
                     {% if job.createdAt %}
                         {{ job.createdAt[8:10] }}/{{ job.createdAt[5:7] }}
                     {% else %}
@@ -98,7 +97,7 @@
                 </td>
 
                 <!-- Company -->
-                <td class="px-2 sm:px-4 py-3 max-w-[120px]">
+                <td class="px-2 py-3 max-w-[90px]">
                     <div class="text-sm font-semibold theme-text-primary truncate" title="{{ job.company or '-' }}">
                         {{ job.company or '-' }}
                     </div>
@@ -123,7 +122,7 @@
                 </td>
 
                 <!-- Role/Title + JD Preview Button + Application URL -->
-                <td class="px-2 sm:px-4 py-3 role-col group">
+                <td class="px-2 py-3 role-col group">
                     <div class="flex items-center gap-1.5">
                         <div class="text-sm font-semibold theme-text-primary truncate">
                             {% if job_url %}
@@ -205,7 +204,7 @@
                 </td>
 
                 <!-- Location (2-letter country code) -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile location-col" title="{{ job.location or '' }}">
+                <td class="px-2 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile location-col" title="{{ job.location or '' }}">
                     {% set cc = job.country_code or '??' %}
                     {% if cc == 'RMT' %}
                         <span class="text-xs font-medium text-purple-600 dark:text-purple-400">rte</span>
@@ -215,10 +214,10 @@
                 </td>
 
                 <!-- Job URL -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-tablet" onclick="event.stopPropagation()">
+                <td class="px-2 py-3 whitespace-nowrap text-sm hide-tablet" onclick="event.stopPropagation()">
                     {% if job_url %}
                     <a href="{{ job_url }}" target="_blank"
-                       class="text-accent-500 hover:text-accent-400 hover:underline flex items-center gap-1 max-w-[120px]"
+                       class="text-accent-500 hover:text-accent-400 hover:underline flex items-center gap-1 max-w-[65px]"
                        title="{{ job_url }}">
                         <span class="truncate text-xs">{{ job_url | replace('https://', '') | replace('http://', '') | truncate(20, True, '...') }}</span>
                         <svg class="flex-shrink-0 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,14 +230,14 @@
                 </td>
 
                 <!-- Job ID -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap hide-tablet">
+                <td class="px-2 py-3 whitespace-nowrap hide-tablet">
                     <span class="text-xs font-mono theme-text-secondary" title="{{ job.jobId or '' }}">
                         {{ (job.jobId or '-')[:12] }}{% if job.jobId and job.jobId|length > 12 %}...{% endif %}
                     </span>
                 </td>
 
                 <!-- Status -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap status-col" onclick="event.stopPropagation()">
+                <td class="px-2 py-3 whitespace-nowrap status-col" onclick="event.stopPropagation()">
                     {% set status = job.status or 'not processed' %}
                     {% set status_class = status | replace(' ', '-') %}
                     <select class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
@@ -251,13 +250,13 @@
                 </td>
 
                 <!-- Pipeline Status (Live WebSocket Badge) -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap hide-mobile" onclick="event.stopPropagation()">
+                <td class="px-2 py-3 whitespace-nowrap hide-mobile" onclick="event.stopPropagation()">
                     {% set job_id = job._id | string %}
                     {% include 'components/live_status_badge.html' %}
                 </td>
 
                 <!-- Score (Editable - GAP-067) -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile score-col" onclick="event.stopPropagation()">
+                <td class="px-2 py-3 whitespace-nowrap text-sm hide-mobile score-col" onclick="event.stopPropagation()">
                     <div class="editable-score-container" data-job-id="{{ job._id }}">
                         <!-- Display mode -->
                         <span class="score-display cursor-pointer hover:ring-2 hover:ring-accent-400 hover:ring-offset-1 rounded-full transition-all"
@@ -284,85 +283,20 @@
                     </div>
                 </td>
 
-                <!-- Actions -->
-                <td class="px-4 py-3 whitespace-nowrap text-sm" onclick="event.stopPropagation()">
-                    <div class="flex items-center gap-2">
+                <!-- Actions (star, view, process — URL/app links are in Role/Title column) -->
+                <td class="px-2 py-3 whitespace-nowrap text-sm" onclick="event.stopPropagation()">
+                    <div class="flex items-center gap-1">
                         <!-- Star/Favorite Button -->
                         <button onclick="toggleFavorite('{{ job._id }}', {{ 'false' if job.starred else 'true' }})"
-                                class="star-btn p-1 rounded transition-all hover:scale-110 {{ 'text-yellow-500' if job.starred else 'text-[--text-tertiary]' }}"
+                                class="star-btn p-0.5 rounded transition-all hover:scale-110 {{ 'text-yellow-500' if job.starred else 'text-[--text-tertiary]' }}"
                                 data-star-job="{{ job._id }}"
                                 title="{{ 'Remove from starred' if job.starred else 'Star this job' }} (F)">
                             <svg class="w-4 h-4" fill="{{ 'currentColor' if job.starred else 'none' }}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
                             </svg>
                         </button>
-                        {% if job_url %}
-                        <a href="{{ job_url }}" target="_blank"
-                           class="text-accent-500 hover:text-accent-400"
-                           title="Open job posting">
-                            <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                        {% endif %}
-                        <!-- Application URL (popover + quick link) -->
-                        <div class="relative group"
-                             x-data="{ showPopover: false, url: '{{ (app_url or '') | e }}', saving: false }">
-                            <!-- Quick open link (if URL exists) -->
-                            {% if app_url %}
-                            <a href="{{ app_url }}" target="_blank"
-                               class="text-green-500 hover:text-green-600"
-                               title="Open application form">
-                                <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                            </a>
-                            {% endif %}
-                            <!-- Edit button (shows on hover or if no URL) -->
-                            <button @click="showPopover = !showPopover; anyPopoverOpen = showPopover"
-                                    class="p-0.5 rounded transition-all
-                                           {% if not app_url %}theme-text-tertiary hover:theme-text-primary{% else %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary ml-0.5{% endif %}"
-                                    title="{{ 'Edit application URL' if app_url else 'Set application URL' }}">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                </svg>
-                            </button>
-                            <!-- Popover -->
-                            <div x-show="showPopover"
-                                 x-cloak
-                                 @click.away="showPopover = false; anyPopoverOpen = false"
-                                 x-transition:enter="transition ease-out duration-100"
-                                 x-transition:enter-start="opacity-0 scale-95"
-                                 x-transition:enter-end="opacity-100 scale-100"
-                                 x-transition:leave="transition ease-in duration-75"
-                                 class="absolute right-0 top-full mt-1 w-72 p-3 rounded-lg shadow-xl theme-bg-card border theme-border z-50">
-                                <label class="block text-xs font-medium theme-text-secondary mb-1.5">Application URL</label>
-                                <div class="flex gap-2">
-                                    <input type="url"
-                                           x-model="url"
-                                           class="flex-1 px-2 py-1.5 text-sm rounded border theme-border theme-bg-secondary theme-text-primary focus:ring-2 focus:ring-accent-500"
-                                           placeholder="https://..."
-                                           @keydown.enter="saving = true; saveJobApplicationUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; anyPopoverOpen = false; })"
-                                           @keydown.escape="showPopover = false; anyPopoverOpen = false">
-                                    <button @click="saving = true; saveJobApplicationUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; anyPopoverOpen = false; })"
-                                            :disabled="saving"
-                                            class="px-2.5 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-medium transition flex items-center gap-1">
-                                        <template x-if="saving">
-                                            <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                            </svg>
-                                        </template>
-                                        <span x-text="saving ? '' : 'Save'"></span>
-                                    </button>
-                                </div>
-                                <p class="text-xs theme-text-tertiary mt-1.5">Enter to save, Escape to cancel</p>
-                            </div>
-                        </div>
                         <a href="/job/{{ job._id }}"
-                           class="theme-text-secondary hover:text-accent-400"
+                           class="p-0.5 theme-text-secondary hover:text-accent-400"
                            title="View details">
                             <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -370,9 +304,9 @@
                             </svg>
                         </a>
                         <button onclick="processJob('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
-                                class="inline-flex items-center justify-center w-7 h-7 text-sm rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
+                                class="inline-flex items-center justify-center w-6 h-6 text-sm rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
                                 title="Process job through pipeline">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
                         </button>
