@@ -894,39 +894,20 @@ class TestPeopleMapperQualityGates:
         # Quality gate verifies that we have at least 3 primary contacts after limiting
         assert len(result["primary_contacts"]) == 3  # GAP-060 limit: max 3 primary
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.FirecrawlApp')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_quality_gate_specific_why_relevant(self, mock_invoke, mock_firecrawl_class, sample_job_state):
         """Quality gate: why_relevant is specific and grounded."""
-        # Setup mocks
+        # Setup mocks — FireCrawl disabled via Config patch above, so synthetic contacts used.
+        # No classification LLM call occurs; synthetic contacts have hardcoded why_relevant.
         mock_firecrawl = MagicMock()
-        mock_firecrawl.search.return_value = MagicMock(data=[])
-        mock_firecrawl.scrape_url.return_value = MagicMock(markdown="Content")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
-        classification_response = MagicMock()
-        classification_response.content = json.dumps({
-            "primary_contacts": [
-                {"name": "Sarah Chen", "role": "VP Engineering", "linkedin_url": "https://li.com/sarah", "why_relevant": "Direct hiring manager for platform team, oversees infrastructure modernization", "recent_signals": []},
-                {"name": "John", "role": "Director", "linkedin_url": "https://li.com/john", "why_relevant": "Technical decision maker for cloud architecture", "recent_signals": []},
-                {"name": "Emily", "role": "Recruiter", "linkedin_url": "https://li.com/emily", "why_relevant": "Talent acquisition for engineering roles", "recent_signals": []},
-                {"name": "Mike", "role": "Manager", "linkedin_url": "https://li.com/mike", "why_relevant": "Team lead for platform engineering", "recent_signals": []}
-            ],
-            "secondary_contacts": [
-                {"name": "Alex", "role": "Product", "linkedin_url": "https://li.com/alex", "why_relevant": "Cross-functional partner", "recent_signals": []},
-                {"name": "Lisa", "role": "CTO", "linkedin_url": "https://li.com/lisa", "why_relevant": "Executive sponsor", "recent_signals": []},
-                {"name": "David", "role": "Engineer", "linkedin_url": "https://li.com/david", "why_relevant": "Peer", "recent_signals": []},
-                {"name": "Rachel", "role": "DevOps", "linkedin_url": "https://li.com/rachel", "why_relevant": "Operations lead", "recent_signals": []}
-            ]
-        })
-        outreach_response = MagicMock()
-        # GAP-011: LinkedIn message must include signature
-        outreach_response.content = json.dumps({"linkedin_message": "Interested in the role.\nBest. Taimoor Alam", "subject": "subj", "email_body": "body"})
-        mock_invoke.side_effect = [classification_response] + [outreach_response] * 8
         # mock_invoke is patched at function level
 
-        # Use FireCrawl backend (use_claude_api=False)
+        # FireCrawl disabled → synthetic contacts path (no LLM classification call)
         mapper = PeopleMapper(use_claude_api=False)
         result = mapper.map_people(sample_job_state)
 

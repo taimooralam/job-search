@@ -302,7 +302,7 @@ class TestSSEGeneratorPollInterval:
         from runner_service.routes.operation_streaming import (
             stream_operation_logs,
             create_operation_run,
-            update_operation_status,
+            _operation_runs,
             append_operation_log,
         )
 
@@ -313,8 +313,14 @@ class TestSSEGeneratorPollInterval:
         append_operation_log(run_id, "Starting operation")
         append_operation_log(run_id, "Processing layer 1")
 
-        # Mark as completed immediately
-        update_operation_status(run_id, "completed", result={"status": "ok"})
+        # Directly update state to "completed" — update_operation_status()
+        # uses _schedule_async_task which requires a running FastAPI app.
+        # In tests we set state directly to avoid that dependency.
+        state = _operation_runs[run_id]
+        state.status = "completed"
+        state.result = {"status": "ok"}
+        if state.log_event:
+            state.log_event.set()
 
         # Stream logs
         response = await stream_operation_logs(run_id)
