@@ -1,7 +1,8 @@
-"""Repository for VPS MongoDB LinkedIn Intelligence collections.
+"""Repository for LinkedIn Intelligence collections on VPS MongoDB.
 
 Standalone pymongo class — does NOT extend JobRepositoryInterface
-(different data model, different MongoDB instance).
+(different data model). Uses the same MONGODB_URI as the job repository
+since both live in the same 'jobs' database on VPS MongoDB.
 
 Singleton pattern matches existing config.py approach.
 """
@@ -35,9 +36,9 @@ class IntelRepository:
     @classmethod
     def get_instance(cls) -> "IntelRepository":
         if cls._instance is None:
-            uri = os.getenv("VPS_MONGODB_URI")
+            uri = os.getenv("MONGODB_URI")
             if not uri:
-                raise ValueError("VPS_MONGODB_URI required for intel dashboard")
+                raise ValueError("MONGODB_URI required for intel dashboard")
             cls._instance = cls(uri)
             logger.info("Initialized IntelRepository (VPS MongoDB)")
         return cls._instance

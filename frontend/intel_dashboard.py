@@ -20,7 +20,7 @@ intel_bp = Blueprint("intel", __name__, url_prefix="/dashboard")
 
 
 def get_repo():
-    """Lazy import to avoid startup failures if VPS_MONGODB_URI is not set."""
+    """Lazy import to avoid startup failures if MONGODB_URI is not set."""
     from repositories.intel_repository import IntelRepository
     return IntelRepository.get_instance()
 

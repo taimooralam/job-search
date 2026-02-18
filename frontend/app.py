@@ -87,7 +87,7 @@ else:
     if _import_error:
         print(f"   Import errors: {_import_error}")
 
-# Intel Dashboard blueprint (optional — requires VPS_MONGODB_URI)
+# Intel Dashboard blueprint (optional — requires MONGODB_URI)
 intel_bp = None
 try:
     from intel_dashboard import intel_bp
