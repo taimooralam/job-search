@@ -1609,6 +1609,47 @@ async def startup_queue_polling_loop():
     logger.info("Queue polling loop started for pending job recovery")
 
 
+QUEUE_CLEANUP_INTERVAL = int(os.getenv("QUEUE_CLEANUP_INTERVAL", "1800"))  # 30 minutes
+QUEUE_CLEANUP_MAX_AGE = int(os.getenv("QUEUE_CLEANUP_MAX_AGE", "120"))  # 2 hours
+
+
+@app.on_event("startup")
+async def startup_queue_cleanup_loop():
+    """Periodically clean up stale/orphaned queue items.
+
+    Handles items that get permanently stuck in the running set when
+    _queue_complete_threadsafe() silently fails (runner restart, Redis
+    timeout, main loop busy). Runs every QUEUE_CLEANUP_INTERVAL seconds
+    and marks items running longer than QUEUE_CLEANUP_MAX_AGE minutes
+    as failed.
+    """
+    if not settings.redis_url:
+        return
+
+    # Wait for queue manager to be ready
+    await asyncio.sleep(5)
+
+    async def _cleanup_loop():
+        logger.info(
+            f"Queue cleanup loop started (interval={QUEUE_CLEANUP_INTERVAL}s, "
+            f"max_age={QUEUE_CLEANUP_MAX_AGE}min)"
+        )
+        while True:
+            try:
+                if _queue_manager and _queue_manager.is_connected:
+                    stats = await _queue_manager.cleanup_stale_items(
+                        max_age_minutes=QUEUE_CLEANUP_MAX_AGE
+                    )
+                    if stats.get("total_cleaned", 0) > 0:
+                        logger.info(f"Periodic queue cleanup: {stats}")
+            except Exception as e:
+                logger.warning(f"Queue cleanup loop error: {e}")
+            await asyncio.sleep(QUEUE_CLEANUP_INTERVAL)
+
+    asyncio.create_task(_cleanup_loop())
+    logger.info("Queue cleanup loop started for stale item recovery")
+
+
 @app.on_event("shutdown")
 async def shutdown_runner_cleanup():
     """Remove this runner from active set on shutdown."""
@@ -1758,7 +1799,9 @@ async def cleanup_queue(max_age_minutes: int = 60):
     """
     Clean up stale/orphaned queue items.
 
-    Removes pending items older than max_age_minutes and orphaned queue entries.
+    Removes pending items older than max_age_minutes, orphaned queue entries,
+    and running items stuck for longer than max_age_minutes without completion.
+    Also runs automatically every QUEUE_CLEANUP_INTERVAL seconds.
     """
     if not _queue_manager:
         raise HTTPException(status_code=503, detail="Queue manager not available")
