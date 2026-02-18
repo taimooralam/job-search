@@ -87,6 +87,22 @@ else:
     if _import_error:
         print(f"   Import errors: {_import_error}")
 
+# Intel Dashboard blueprint (optional — requires VPS_MONGODB_URI)
+intel_bp = None
+try:
+    from intel_dashboard import intel_bp
+except ImportError:
+    try:
+        from frontend.intel_dashboard import intel_bp
+    except ImportError:
+        pass
+
+if intel_bp:
+    app.register_blueprint(intel_bp)
+    print(f"✅ Registered intel dashboard blueprint with prefix: {intel_bp.url_prefix}")
+else:
+    print(f"ℹ️ Intel dashboard blueprint not loaded (optional)")
+
 # WebSocket support removed - using HTTP polling instead
 # Queue updates via QueuePoller (1s interval)
 # Log streaming via LogPoller (200ms interval)

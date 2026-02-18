@@ -135,6 +135,18 @@ def classify_items(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict:
             stats["errors"] += 1
 
     logger.info("Classification complete: %s", stats)
+
+    # Run edge detection on newly classified items
+    try:
+        from edge_detector import process_items as run_edge_detection
+        logger.info("Running edge detection on classified items...")
+        edge_stats = run_edge_detection(test_mode=test_mode)
+        stats["edge_matches"] = edge_stats.get("matches", 0)
+        logger.info("Edge detection: %d matches found", stats["edge_matches"])
+    except Exception as e:
+        logger.error("Edge detection failed (non-fatal): %s", e)
+        stats["edge_matches"] = 0
+
     return stats
 
 
@@ -149,6 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true", help="Classify 1 item only")
     parser.add_argument("--model", default=DEFAULT_MODEL, choices=["haiku", "sonnet"],
                         help="Claude model to use (default: haiku)")
+    parser.add_argument("--no-edge", action="store_true", help="Skip edge detection")
     args = parser.parse_args()
 
     result = classify_items(test_mode=args.test, model=args.model)

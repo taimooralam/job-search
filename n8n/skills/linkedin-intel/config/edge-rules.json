@@ -1,0 +1,60 @@
+{
+  "rules": [
+    {
+      "id": "togaf_ai_crossover",
+      "description": "TOGAF/enterprise architecture meets AI/digital transformation",
+      "signals": ["togaf", "adm", "enterprise architecture", "architecture governance", "architecture framework"],
+      "cross_ref": ["ai", "ml", "machine learning", "digital transformation", "generative ai", "llm"],
+      "boost": 3,
+      "draft_type": "post_idea"
+    },
+    {
+      "id": "funded_and_hiring_ai",
+      "description": "Recently funded company hiring for AI/architecture roles",
+      "signals": ["series a", "series b", "series c", "funding round", "raised", "investment"],
+      "cross_ref": ["ai", "ml", "architect", "head of", "vp engineering", "cto"],
+      "boost": 2,
+      "draft_type": null
+    },
+    {
+      "id": "industry_not_yet_ai_mature",
+      "description": "Traditional industry making first AI hires",
+      "signals": ["first ai hire", "ai transformation", "digital transformation", "building ai team"],
+      "cross_ref": ["manufacturing", "logistics", "healthcare", "government", "construction", "energy", "mining"],
+      "boost": 2,
+      "draft_type": null
+    },
+    {
+      "id": "geographic_arbitrage",
+      "description": "Remote roles with high compensation",
+      "signals": ["remote", "anywhere", "work from anywhere", "distributed"],
+      "cross_ref": ["180k", "200k", "250k", "$180", "$200", "$250", "competitive salary"],
+      "boost": 1,
+      "draft_type": null
+    },
+    {
+      "id": "pain_without_solution",
+      "description": "Posts expressing pain points without clear solutions — consulting opportunity",
+      "signals": ["struggling", "failed", "help", "challenge", "impossible", "frustrated"],
+      "cross_ref": ["architecture", "integration", "migration", "modernization", "transformation"],
+      "boost": 2,
+      "draft_type": "comment"
+    },
+    {
+      "id": "governance_vacuum",
+      "description": "Growing AI team without architecture governance",
+      "signals": ["hiring ml engineers", "ai team growing", "scaling ai", "building ml team", "data scientists"],
+      "cross_ref": ["no architect", "no governance", "need structure", "ad hoc", "chaos"],
+      "boost": 2,
+      "draft_type": "comment"
+    },
+    {
+      "id": "multi_agent_early_adopter",
+      "description": "Enterprise exploring multi-agent/agentic AI",
+      "signals": ["multi-agent", "agentic", "ai agents", "autonomous agents", "agent framework"],
+      "cross_ref": ["enterprise", "fortune 500", "large scale", "production", "platform"],
+      "boost": 2,
+      "draft_type": "post_idea"
+    }
+  ]
+}

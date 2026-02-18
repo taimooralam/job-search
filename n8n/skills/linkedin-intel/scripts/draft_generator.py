@@ -24,6 +24,13 @@ logger = setup_logging("draft-generator")
 
 DEFAULT_MODEL = "haiku"
 
+COMMENT_TEMPLATES = {
+    "insight": "Share a specific insight or experience that adds to the discussion",
+    "contrarian": "Offer a respectful contrarian view or nuance that the author may have missed",
+    "question": "Ask a thought-provoking question that deepens the conversation",
+    "bridge": "Bridge the topic to enterprise architecture or TOGAF governance",
+}
+
 COMMENT_PROMPT = """\
 {brand_voice}
 
@@ -31,6 +38,8 @@ COMMENT_PROMPT = """\
 
 Write a LinkedIn comment (max 150 words) responding to this post.
 Follow the brand voice guide above strictly.
+
+Comment style: {template_style} — {template_description}
 
 Post title: {title}
 Post author: {author}
@@ -46,10 +55,12 @@ POST_IDEA_PROMPT = """\
 
 Based on this LinkedIn content, generate a post idea for Taimoor's LinkedIn.
 Return a JSON object with:
+- "title": working title for the post (max 10 words)
 - "hook": attention-grabbing first line (max 20 words)
 - "angle": the unique perspective to take (1 sentence)
 - "outline": 3-4 bullet points for the post body
 - "cta": closing call-to-action or question
+- "estimated_words": target word count (100-300)
 
 Inspiration source:
 Title: {title}
@@ -97,10 +108,13 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
         "classification.action": {"$in": ["engage", "apply"]},
     }).sort("relevance_score", -1).limit(10))
 
-    # Items that could inspire a post
+    # Items that could inspire a post (tagged or edge-detected)
     post_inspiration = list(db.linkedin_intel.find({
         "scraped_at": {"$gte": since},
-        "classification.tags": "post-inspiration",
+        "$or": [
+            {"classification.tags": "post-inspiration"},
+            {"edge_details.draft_type": "post_idea"},
+        ],
     }).sort("relevance_score", -1).limit(5))
 
     total = len(respond_worthy) + len(post_inspiration)
@@ -118,6 +132,10 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
 
     stats = {"comments": 0, "post_ideas": 0, "errors": 0, "model": model}
 
+    # Pick comment template based on item characteristics
+    import itertools
+    template_cycle = itertools.cycle(list(COMMENT_TEMPLATES.keys()))
+
     # Generate comment drafts
     for item in respond_worthy:
         allowed, reason = safety.can_make_call()
@@ -126,8 +144,19 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
             break
 
         try:
+            # Pick template: edge items get "bridge", others cycle
+            edge_rules = item.get("edge_opportunities", [])
+            if "togaf_ai_crossover" in edge_rules or "governance_vacuum" in edge_rules:
+                template_key = "bridge"
+            elif "pain_without_solution" in edge_rules:
+                template_key = "insight"
+            else:
+                template_key = next(template_cycle)
+
             prompt = COMMENT_PROMPT.format(
                 brand_voice=brand_voice,
+                template_style=template_key,
+                template_description=COMMENT_TEMPLATES[template_key],
                 title=item.get("title", ""),
                 author=item.get("author", ""),
                 content=item.get("content_preview", "")[:1000],
@@ -138,7 +167,9 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
             safety.wait_between_calls()
 
             mongo_store.store_draft({
+                "draft_type": "comment",
                 "type": "comment",
+                "template": template_key,
                 "source_intel_id": item["_id"],
                 "source_title": item.get("title"),
                 "source_url": item.get("url"),
@@ -150,7 +181,7 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
             stats["comments"] += 1
 
             if test_mode:
-                logger.info("Comment draft:\n%s", comment_text)
+                logger.info("Comment draft [%s]:\n%s", template_key, comment_text)
 
         except Exception as e:
             logger.error("Comment generation error: %s", e)
@@ -180,11 +211,13 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
             post_idea = json.loads(raw_text)
 
             mongo_store.store_draft({
+                "draft_type": "post_idea",
                 "type": "post_idea",
                 "source_intel_id": item["_id"],
                 "source_title": item.get("title"),
                 "content": post_idea,
                 "model_used": model,
+                "edge_rules": item.get("edge_opportunities", []),
             })
             stats["post_ideas"] += 1
 

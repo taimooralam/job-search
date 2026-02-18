@@ -69,6 +69,51 @@ python3 /home/node/skills/linkedin-intel/scripts/setup_indexes.py
 - **Cooldowns**: HTTP 429 → 24h pause, HTTP 403 → 7-day pause
 - **Alerts**: Telegram notification on any cooldown trigger
 
+### 4. Edge Detection (8 PM Mon-Sat, after classifier)
+Applies heuristic rules to detect niche opportunities (TOGAF+AI crossover, funded companies, governance vacuums, etc.).
+
+```bash
+python3 /home/node/skills/linkedin-intel/scripts/edge_detector.py
+```
+
+**Test mode** (1 item):
+```bash
+python3 /home/node/skills/linkedin-intel/scripts/edge_detector.py --test
+```
+
+### 5. Pipeline Bridge
+Push a LinkedIn intel item to the job pipeline (Atlas MongoDB → runner).
+
+```bash
+python3 /home/node/skills/linkedin-intel/scripts/pipeline_bridge.py --test <item_id>
+python3 /home/node/skills/linkedin-intel/scripts/pipeline_bridge.py --push <item_id>
+```
+
+## Telegram Commands
+
+Interactive commands via OpenClaw subprocess. Each returns text to Telegram.
+
+```bash
+python3 /home/node/skills/linkedin-intel/scripts/telegram_commands.py <command> [arg]
+```
+
+| Command | Description |
+|---------|-------------|
+| `/apply <n>` | Push job #n to pipeline |
+| `/draft <n>` | Show/generate draft for item #n |
+| `/save <n>` | Bookmark item #n |
+| `/detail <n>` | Full content of item #n |
+| `/skip <n>` | Mark as skipped |
+| `/lead <n>` | Move to lead pipeline |
+| `/stats` | Today's intelligence stats |
+| `/search "kw"` | Search intel items by keyword |
+| `/pause` | Pause scraping for 24h |
+| `/resume` | Resume scraping (clear cooldowns) |
+| `/trends` | This week's trending keywords |
+| `/next` | Next 3 unread high-relevance items |
+
+Numbers reference the daily briefing index (e.g., `[1]` in the morning message).
+
 ## Data Flow
 
 ```
@@ -76,17 +121,26 @@ LinkedIn API → linkedin_intel (MongoDB)
                     ↓
               classifier.py → classification added to docs
                     ↓
+            edge_detector.py → edge_opportunities + score boost
+                    ↓
            draft_generator.py → draft_content (MongoDB)
                     ↓
-          telegram_briefing.py → Telegram message
+          telegram_briefing.py → Telegram message (with indexes)
+                    ↓
+         telegram_commands.py → Interactive actions via Telegram
+                    ↓
+          pipeline_bridge.py → Atlas MongoDB level-2 → Runner
 ```
 
 ## Environment Variables
 
-- `MONGODB_URI` — MongoDB connection string
+- `MONGODB_URI` — VPS MongoDB connection string
+- `ATLAS_MONGODB_URI` — Atlas MongoDB for job pipeline
 - `TELEGRAM_BOT_TOKEN` — Telegram Bot API token
 - `TELEGRAM_CHAT_ID` — Telegram chat ID for briefings
 - `ANTHROPIC_API_KEY` — For Claude Haiku classification/drafts
+- `RUNNER_URL` — Runner API URL for pipeline triggers
+- `RUNNER_API_SECRET` — Runner API authentication
 
 ## Cookie Maintenance
 

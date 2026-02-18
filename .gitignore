@@ -27,6 +27,7 @@ credentials/
 !data/master-cv/role_skills_taxonomy.json
 !example/example_job.json
 !example/example_config.env
+!n8n/skills/linkedin-intel/config/edge-rules.json
 
 # IDE / Editor
 .idea/
@@ -107,6 +108,7 @@ scripts/migrate_*.py
 
 # VPS deployment secrets
 vps/
+n8n/docker-compose.yml
 
 # Star curator (personal)
 star-curator/

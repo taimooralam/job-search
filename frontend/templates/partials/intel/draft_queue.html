@@ -1,0 +1,99 @@
+<!-- Draft queue partial — HTMX swappable -->
+{% if toast %}
+<div class="mb-3 px-3 py-2 rounded-lg text-sm bg-green-500/20 text-green-400">
+    {{ toast }}
+</div>
+{% endif %}
+
+{% if drafts %}
+<div class="divide-y" style="border-color: var(--border-default);">
+    {% for draft in drafts %}
+    <div class="px-4 py-4" id="draft-{{ draft._id }}">
+        <div class="flex items-start justify-between mb-2">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs px-1.5 py-0.5 rounded uppercase
+                        {% if draft.draft_type == 'comment' or draft.type == 'comment' %}bg-blue-500/20 text-blue-400
+                        {% else %}bg-purple-500/20 text-purple-400{% endif %}">
+                        {{ draft.draft_type or draft.type or 'draft' }}
+                    </span>
+                    {% if draft.get('template') %}
+                    <span class="text-xs" style="color: var(--text-tertiary);">{{ draft.template }} style</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                    Re: {{ draft.source_title or 'Unknown source' }}
+                    {% if draft.source_author %} by {{ draft.source_author }}{% endif %}
+                </p>
+            </div>
+            {% if draft.relevance_score %}
+            <span class="text-xs px-1.5 py-0.5 rounded
+                {% if draft.relevance_score >= 9 %}bg-green-500/20 text-green-400
+                {% else %}bg-yellow-500/20 text-yellow-400{% endif %}">
+                {{ draft.relevance_score }}/10
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Draft content -->
+        <div class="rounded-lg p-3 mb-3" style="background-color: var(--bg-secondary);">
+            {% if draft.content is mapping %}
+                <!-- Post idea (JSON object) -->
+                <p class="text-sm font-medium" style="color: var(--text-primary);">{{ draft.content.get('hook', '') }}</p>
+                <p class="text-xs mt-1" style="color: var(--text-secondary);">Angle: {{ draft.content.get('angle', '') }}</p>
+                {% if draft.content.get('outline') %}
+                <ul class="mt-2 space-y-1">
+                    {% for point in draft.content.outline %}
+                    <li class="text-xs" style="color: var(--text-secondary);">{{ point }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% if draft.content.get('cta') %}
+                <p class="text-xs mt-2 italic" style="color: var(--text-tertiary);">CTA: {{ draft.content.cta }}</p>
+                {% endif %}
+            {% else %}
+                <!-- Comment (plain text) -->
+                <p class="text-sm whitespace-pre-wrap" style="color: var(--text-primary);">{{ draft.content }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+            <button hx-post="/dashboard/drafts/{{ draft._id }}/approve"
+                    hx-target="#draft-{{ draft._id }}"
+                    hx-swap="outerHTML"
+                    class="px-3 py-1.5 text-xs rounded-lg bg-green-600/20 text-green-400 hover:bg-green-600/30 transition-colors"
+                    onclick="if(typeof draft_content !== 'undefined') navigator.clipboard.writeText(draft_content)">
+                Approve & Copy
+            </button>
+            <button hx-post="/dashboard/drafts/{{ draft._id }}/regenerate"
+                    hx-target="#draft-{{ draft._id }}"
+                    hx-swap="outerHTML"
+                    class="px-3 py-1.5 text-xs rounded-lg transition-colors"
+                    style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                Regenerate
+            </button>
+            <button hx-post="/dashboard/drafts/{{ draft._id }}/skip"
+                    hx-target="#draft-{{ draft._id }}"
+                    hx-swap="outerHTML"
+                    class="px-3 py-1.5 text-xs rounded-lg text-red-400/70 transition-colors"
+                    style="background-color: var(--bg-hover);">
+                Skip
+            </button>
+            {% if draft.source_url %}
+            <a href="{{ draft.source_url }}" target="_blank" rel="noopener"
+               class="px-3 py-1.5 text-xs rounded-lg text-indigo-400 transition-colors"
+               style="background-color: var(--bg-hover);">
+                Source
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="px-4 py-8 text-center" style="color: var(--text-tertiary);">
+    <p class="text-sm">No pending drafts</p>
+    <p class="text-xs mt-1">Drafts are generated during evening analysis (8 PM CET)</p>
+</div>
+{% endif %}

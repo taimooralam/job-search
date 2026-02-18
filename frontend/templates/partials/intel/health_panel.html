@@ -1,0 +1,66 @@
+<!-- Health panel partial -->
+<div class="px-4 py-3 space-y-3">
+    <!-- Cookie status -->
+    <div class="flex items-center justify-between">
+        <span class="text-xs" style="color: var(--text-tertiary);">Cookie Status</span>
+        {% if cookie %}
+            {% if cookie.status == 'ok' %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">Active</span>
+            {% elif cookie.status == 'cooldown' %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">Cooldown</span>
+            {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-400">Unknown</span>
+            {% endif %}
+        {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-400">N/A</span>
+        {% endif %}
+    </div>
+
+    <!-- Cooldown info -->
+    {% if cookie and cookie.active_cooldown %}
+    <div class="rounded-lg p-2 bg-red-500/10 border border-red-500/20">
+        <p class="text-xs text-red-400">
+            Cooldown active (HTTP {{ cookie.active_cooldown.get('status_code', '?') }})
+        </p>
+        <p class="text-xs" style="color: var(--text-tertiary);">
+            Expires: {{ cookie.active_cooldown.expires_at.strftime('%b %d %H:%M UTC') if cookie.active_cooldown.expires_at else 'Unknown' }}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- API usage -->
+    {% if usage %}
+    <div>
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs" style="color: var(--text-tertiary);">API Usage (7 days)</span>
+            <span class="text-xs" style="color: var(--text-secondary);">{{ usage.total_calls }} calls / {{ usage.total_sessions }} sessions</span>
+        </div>
+
+        {% if usage.daily %}
+        <div class="space-y-1 mt-2">
+            {% for day in usage.daily[:5] %}
+            <div class="flex items-center gap-2">
+                <span class="text-xs w-20" style="color: var(--text-tertiary);">{{ day._id }}</span>
+                <div class="flex-1 h-2 rounded-full overflow-hidden" style="background-color: var(--bg-secondary);">
+                    <div class="h-full rounded-full transition-all
+                        {% if day.total_calls > 120 %}bg-red-500
+                        {% elif day.total_calls > 80 %}bg-yellow-500
+                        {% else %}bg-green-500{% endif %}"
+                        style="width: {{ [day.total_calls / 150 * 100, 100] | min }}%">
+                    </div>
+                </div>
+                <span class="text-xs w-12 text-right" style="color: var(--text-secondary);">{{ day.total_calls }}/150</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Last session info -->
+    {% if cookie and cookie.last_session %}
+    <div class="text-xs pt-2 border-t" style="border-color: var(--border-default); color: var(--text-tertiary);">
+        Last run: {{ cookie.last_session.started_at.strftime('%b %d, %H:%M UTC') if cookie.last_session.started_at else 'Unknown' }}
+    </div>
+    {% endif %}
+</div>

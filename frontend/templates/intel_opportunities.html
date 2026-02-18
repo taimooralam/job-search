@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Opportunities — LinkedIn Intelligence{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Opportunities</h1>
+            <p class="text-sm mt-1" style="color: var(--text-tertiary);">
+                {{ total }} items
+                {% if filters.get('type') %} — type: {{ filters.type }}{% endif %}
+                {% if filters.get('min_score') %} — score >= {{ filters.min_score }}{% endif %}
+            </p>
+        </div>
+        <a href="/dashboard" class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+           style="background-color: var(--bg-hover); color: var(--text-secondary);">
+            Back to Dashboard
+        </a>
+    </div>
+
+    {% if error %}
+    <div class="rounded-lg p-4 border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+        <p class="text-sm text-red-400">{{ error }}</p>
+    </div>
+    {% else %}
+
+    <!-- Filters -->
+    <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <form class="flex flex-wrap items-end gap-3">
+            <div>
+                <label class="text-xs block mb-1" style="color: var(--text-tertiary);">Type</label>
+                <select name="type"
+                        hx-get="/dashboard/opportunities/rows"
+                        hx-target="#opportunities-table"
+                        hx-swap="innerHTML"
+                        hx-include="closest form"
+                        class="text-sm rounded-lg px-2 py-1.5 border"
+                        style="background-color: var(--bg-secondary); border-color: var(--border-default); color: var(--text-primary);">
+                    <option value="">All types</option>
+                    <option value="job" {% if filters.get('type') == 'job' %}selected{% endif %}>Jobs</option>
+                    <option value="post" {% if filters.get('type') == 'post' %}selected{% endif %}>Posts</option>
+                    <option value="article" {% if filters.get('type') == 'article' %}selected{% endif %}>Articles</option>
+                    <option value="opportunity" {% if filters.get('type') == 'opportunity' %}selected{% endif %}>Opportunities</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs block mb-1" style="color: var(--text-tertiary);">Min Score</label>
+                <select name="min_score"
+                        hx-get="/dashboard/opportunities/rows"
+                        hx-target="#opportunities-table"
+                        hx-swap="innerHTML"
+                        hx-include="closest form"
+                        class="text-sm rounded-lg px-2 py-1.5 border"
+                        style="background-color: var(--bg-secondary); border-color: var(--border-default); color: var(--text-primary);">
+                    <option value="">Any</option>
+                    <option value="5" {% if filters.get('min_score') == 5 %}selected{% endif %}>5+</option>
+                    <option value="7" {% if filters.get('min_score') == 7 %}selected{% endif %}>7+</option>
+                    <option value="9" {% if filters.get('min_score') == 9 %}selected{% endif %}>9+</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs block mb-1" style="color: var(--text-tertiary);">Category</label>
+                <select name="category"
+                        hx-get="/dashboard/opportunities/rows"
+                        hx-target="#opportunities-table"
+                        hx-swap="innerHTML"
+                        hx-include="closest form"
+                        class="text-sm rounded-lg px-2 py-1.5 border"
+                        style="background-color: var(--bg-secondary); border-color: var(--border-default); color: var(--text-primary);">
+                    <option value="">All categories</option>
+                    <option value="target_jobs">Target Jobs</option>
+                    <option value="freelance">Freelance</option>
+                    <option value="thought_leadership">Thought Leadership</option>
+                    <option value="pain_points">Pain Points</option>
+                    <option value="niche">Niche / MENA</option>
+                    <option value="learning_related">Learning</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs block mb-1" style="color: var(--text-tertiary);">Time Range</label>
+                <select name="days"
+                        hx-get="/dashboard/opportunities/rows"
+                        hx-target="#opportunities-table"
+                        hx-swap="innerHTML"
+                        hx-include="closest form"
+                        class="text-sm rounded-lg px-2 py-1.5 border"
+                        style="background-color: var(--bg-secondary); border-color: var(--border-default); color: var(--text-primary);">
+                    <option value="1">Last 24h</option>
+                    <option value="3">Last 3 days</option>
+                    <option value="7" selected>Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs block mb-1" style="color: var(--text-tertiary);">Search</label>
+                <input type="text" name="search" placeholder="Keyword..."
+                       hx-get="/dashboard/opportunities/rows"
+                       hx-target="#opportunities-table"
+                       hx-swap="innerHTML"
+                       hx-include="closest form"
+                       hx-trigger="keyup changed delay:300ms"
+                       class="text-sm rounded-lg px-2 py-1.5 border w-40"
+                       style="background-color: var(--bg-secondary); border-color: var(--border-default); color: var(--text-primary);"
+                       value="{{ filters.get('search', '') }}">
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="rounded-xl border overflow-hidden" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <div id="opportunities-table">
+            {% include 'partials/intel/opportunities_table.html' %}
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Detail Modal (same as dashboard) -->
+<div id="detail-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+     onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl mx-4"
+         style="background-color: var(--bg-card);" onclick="event.stopPropagation()">
+        <div class="sticky top-0 flex items-center justify-between px-4 py-3 border-b"
+             style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <h3 class="font-semibold" style="color: var(--text-primary);">Item Detail</h3>
+            <button onclick="document.getElementById('detail-modal').classList.add('hidden')"
+                    class="p-1 rounded-lg hover:bg-gray-700/50" style="color: var(--text-secondary);">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="detail-modal-content" class="p-4"></div>
+    </div>
+</div>
+{% endblock %}

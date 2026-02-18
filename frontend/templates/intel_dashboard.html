@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}LinkedIn Intelligence{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--text-primary);">LinkedIn Intelligence</h1>
+            <p class="text-sm mt-1" style="color: var(--text-tertiary);">24-hour overview of scraped opportunities, drafts, and system health</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/dashboard/opportunities" class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+               style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                All Opportunities
+            </a>
+            <a href="/dashboard/drafts" class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+               style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                Draft Queue
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="rounded-lg p-4 border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+        <p class="text-sm text-red-400">Dashboard unavailable: {{ error }}</p>
+        <p class="text-xs mt-1" style="color: var(--text-tertiary);">Ensure VPS_MONGODB_URI is set in your environment.</p>
+    </div>
+    {% else %}
+
+    <!-- Stat Cards (auto-refresh every 60s) -->
+    <div hx-get="/dashboard/stats" hx-trigger="load, every 60s" hx-swap="innerHTML" id="stat-cards">
+        {% include 'partials/intel/stat_cards.html' %}
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Top Opportunities (2/3 width) -->
+        <div class="lg:col-span-2 rounded-xl border" style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--border-default);">
+                <h2 class="font-semibold" style="color: var(--text-primary);">Top Opportunities</h2>
+                <span class="text-xs px-2 py-0.5 rounded-full" style="background-color: var(--bg-hover); color: var(--text-tertiary);">Score >= 7</span>
+            </div>
+            <div class="divide-y" style="border-color: var(--border-default);">
+                {% if opportunities %}
+                    {% for item in opportunities %}
+                    <div class="px-4 py-3 hover:transition-colors" style="hover:background-color: var(--bg-hover);">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold
+                                        {% if item.relevance_score >= 9 %}bg-green-500/20 text-green-400
+                                        {% elif item.relevance_score >= 7 %}bg-yellow-500/20 text-yellow-400
+                                        {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                                        {{ item.relevance_score }}
+                                    </span>
+                                    <div>
+                                        <p class="font-medium truncate" style="color: var(--text-primary);">{{ item.title or 'Untitled' }}</p>
+                                        <p class="text-xs" style="color: var(--text-tertiary);">
+                                            {{ item.company or item.author or 'Unknown' }}
+                                            {% if item.type %}<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] uppercase" style="background-color: var(--bg-hover);">{{ item.type }}</span>{% endif %}
+                                            {% if item.edge_opportunities %}<span class="ml-1 text-purple-400">{{ item.edge_opportunities | join(', ') }}</span>{% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 ml-2">
+                                <button hx-get="/dashboard/opportunities/{{ item._id }}"
+                                        hx-target="#detail-modal-content"
+                                        hx-swap="innerHTML"
+                                        onclick="document.getElementById('detail-modal').classList.remove('hidden')"
+                                        class="px-2 py-1 text-xs rounded transition-colors"
+                                        style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                                    View
+                                </button>
+                                <button hx-post="/dashboard/opportunities/{{ item._id }}/pipeline"
+                                        hx-swap="none"
+                                        class="px-2 py-1 text-xs rounded transition-colors bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30">
+                                    Pipeline
+                                </button>
+                                <button hx-post="/dashboard/opportunities/{{ item._id }}/action"
+                                        hx-vals='{"action": "saved"}'
+                                        hx-swap="none"
+                                        class="px-2 py-1 text-xs rounded transition-colors"
+                                        style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="px-4 py-8 text-center" style="color: var(--text-tertiary);">
+                        <p class="text-sm">No high-relevance opportunities in the last 24h</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+            <!-- Recent Scrape Runs -->
+            <div class="rounded-xl border" style="background-color: var(--bg-card); border-color: var(--border-default);">
+                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
+                    <h2 class="font-semibold" style="color: var(--text-primary);">Recent Scrape Runs</h2>
+                </div>
+                <div hx-get="/dashboard/scrape-runs" hx-trigger="load, every 120s" hx-swap="innerHTML">
+                    {% include 'partials/intel/scrape_runs.html' %}
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="rounded-xl border" style="background-color: var(--bg-card); border-color: var(--border-default);">
+                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
+                    <h2 class="font-semibold" style="color: var(--text-primary);">System Health</h2>
+                </div>
+                <div hx-get="/dashboard/health" hx-trigger="load, every 120s" hx-swap="innerHTML">
+                    {% include 'partials/intel/health_panel.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Detail Modal -->
+<div id="detail-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+     onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl mx-4"
+         style="background-color: var(--bg-card);" onclick="event.stopPropagation()">
+        <div class="sticky top-0 flex items-center justify-between px-4 py-3 border-b"
+             style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <h3 class="font-semibold" style="color: var(--text-primary);">Item Detail</h3>
+            <button onclick="document.getElementById('detail-modal').classList.add('hidden')"
+                    class="p-1 rounded-lg hover:bg-gray-700/50" style="color: var(--text-secondary);">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="detail-modal-content" class="p-4">
+            <!-- Content loaded via HTMX -->
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+<!-- Scrape runs partial -->
+{% if sessions %}
+<div class="divide-y" style="border-color: var(--border-default);">
+    {% for session in sessions %}
+    <div class="px-4 py-2.5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm" style="color: var(--text-primary);">
+                    {{ session.started_at.strftime('%b %d, %H:%M') if session.started_at else 'Unknown' }}
+                </p>
+                <p class="text-xs" style="color: var(--text-tertiary);">
+                    {{ session.get('items_found', '?') }} found / {{ session.get('calls_made', '?') }} calls
+                    {% if session.get('keywords_used') %} — {{ session.get('keywords_used', 0) }} keywords{% endif %}
+                </p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded-full
+                {% if session.get('status') == 'completed' %}bg-green-500/20 text-green-400
+                {% elif session.get('status') == 'error' %}bg-red-500/20 text-red-400
+                {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                {{ session.get('status', 'unknown') }}
+            </span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="px-4 py-4 text-center text-sm" style="color: var(--text-tertiary);">
+    No recent scrape sessions
+</div>
+{% endif %}

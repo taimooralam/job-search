@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Draft Queue — LinkedIn Intelligence{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Draft Queue</h1>
+            <p class="text-sm mt-1" style="color: var(--text-tertiary);">Review, edit, and approve AI-generated LinkedIn content</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/dashboard" class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+               style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="rounded-lg p-4 border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+        <p class="text-sm text-red-400">{{ error }}</p>
+    </div>
+    {% else %}
+
+    <!-- Status filter tabs -->
+    <div class="flex gap-2">
+        <button hx-get="/dashboard/drafts/rows?status=draft"
+                hx-target="#drafts-list"
+                hx-swap="innerHTML"
+                class="px-3 py-1.5 text-sm rounded-lg bg-yellow-500/20 text-yellow-400">
+            Pending
+        </button>
+        <button hx-get="/dashboard/drafts/rows?status=approved"
+                hx-target="#drafts-list"
+                hx-swap="innerHTML"
+                class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                style="background-color: var(--bg-hover); color: var(--text-secondary);">
+            Approved
+        </button>
+        <button hx-get="/dashboard/drafts/rows?status=posted"
+                hx-target="#drafts-list"
+                hx-swap="innerHTML"
+                class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                style="background-color: var(--bg-hover); color: var(--text-secondary);">
+            Posted
+        </button>
+        <button hx-get="/dashboard/drafts/rows?status=skipped"
+                hx-target="#drafts-list"
+                hx-swap="innerHTML"
+                class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                style="background-color: var(--bg-hover); color: var(--text-secondary);">
+            Skipped
+        </button>
+    </div>
+
+    <!-- Drafts list -->
+    <div class="rounded-xl border" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <div id="drafts-list">
+            {% include 'partials/intel/draft_queue.html' %}
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

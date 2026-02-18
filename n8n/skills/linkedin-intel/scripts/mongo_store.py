@@ -188,6 +188,48 @@ def get_drafts_for_briefing(since: datetime) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Scraping pause/resume
+# ---------------------------------------------------------------------------
+
+def get_pause_state() -> dict | None:
+    """Return the current manual pause state, if any."""
+    db = get_db()
+    return db.linkedin_sessions.find_one(
+        {"type": "cooldown", "status_code": 0, "expires_at": {"$gt": datetime.now(timezone.utc)}},
+        sort=[("expires_at", -1)],
+    )
+
+
+def clear_cooldowns() -> int:
+    """Clear all active cooldowns. Returns number removed."""
+    db = get_db()
+    result = db.linkedin_sessions.delete_many(
+        {"type": "cooldown", "expires_at": {"$gt": datetime.now(timezone.utc)}},
+    )
+    return result.deleted_count
+
+
+# ---------------------------------------------------------------------------
+# Edge detection helpers
+# ---------------------------------------------------------------------------
+
+def get_items_pending_edge_detection(since: datetime) -> list[dict]:
+    """Items with classification but no edge detection yet."""
+    db = get_db()
+    return list(db.linkedin_intel.find({
+        "scraped_at": {"$gte": since},
+        "classification": {"$exists": True},
+        "edge_opportunities": {"$exists": False},
+    }).sort("relevance_score", -1))
+
+
+def update_edge_detection(item_id, edge_data: dict) -> None:
+    """Attach edge detection results to an intel item."""
+    db = get_db()
+    db.linkedin_intel.update_one({"_id": item_id}, {"$set": edge_data})
+
+
+# ---------------------------------------------------------------------------
 # CLI test
 # ---------------------------------------------------------------------------
 

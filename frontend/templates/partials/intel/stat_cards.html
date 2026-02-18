@@ -1,0 +1,31 @@
+<!-- Stat cards partial — auto-refreshed via HTMX -->
+{% if stats %}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Total (24h)</p>
+        <p class="text-2xl font-bold mt-1" style="color: var(--text-primary);">{{ stats.total }}</p>
+        <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+            {{ stats.type_counts.get('job', 0) }} jobs, {{ stats.type_counts.get('post', 0) }} posts
+        </p>
+    </div>
+    <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">High Relevance</p>
+        <p class="text-2xl font-bold mt-1 text-green-400">{{ stats.high_relevance }}</p>
+        <p class="text-xs mt-1" style="color: var(--text-tertiary);">Score >= 7</p>
+    </div>
+    <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Pending Drafts</p>
+        <p class="text-2xl font-bold mt-1 text-yellow-400">{{ stats.drafts_pending }}</p>
+        <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+            <a href="/dashboard/drafts" class="underline hover:no-underline">Review queue</a>
+        </p>
+    </div>
+    <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Leads</p>
+        <p class="text-2xl font-bold mt-1 text-purple-400">{{ stats.leads }}</p>
+        <p class="text-xs mt-1" style="color: var(--text-tertiary);">New (24h)</p>
+    </div>
+</div>
+{% else %}
+<div class="text-sm py-4 text-center" style="color: var(--text-tertiary);">Loading stats...</div>
+{% endif %}
