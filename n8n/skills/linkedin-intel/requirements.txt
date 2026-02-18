@@ -1,0 +1,4 @@
+requests>=2.31
+pymongo>=4.6
+python-dateutil>=2.8
+linkedin-api>=2.2.0

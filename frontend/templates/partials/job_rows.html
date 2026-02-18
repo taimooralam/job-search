@@ -22,9 +22,8 @@
             {% set sort_fields = [
                 ('createdAt', 'Created', 'hide-mobile', 'w-[55px]'),
                 ('company', 'Company', '', 'w-[90px] max-w-[90px]'),
-                ('title', 'Role/Title', '', ''),
+                ('title', 'Role/Title', '', 'max-w-[350px]'),
                 ('location', 'Location', 'hide-mobile', 'w-[36px]'),
-                ('url', 'URL', 'hide-tablet', 'w-[65px]'),
                 ('jobId', 'Job ID', 'hide-tablet', 'w-[72px]'),
                 ('status', 'Status', '', 'w-[85px]'),
                 ('pipeline', 'Pipeline', 'hide-mobile', 'w-[65px]'),
@@ -213,22 +212,6 @@
                     {% endif %}
                 </td>
 
-                <!-- Job URL -->
-                <td class="px-2 py-3 whitespace-nowrap text-sm hide-tablet" onclick="event.stopPropagation()">
-                    {% if job_url %}
-                    <a href="{{ job_url }}" target="_blank"
-                       class="text-accent-500 hover:text-accent-400 hover:underline flex items-center gap-1 max-w-[65px]"
-                       title="{{ job_url }}">
-                        <span class="truncate text-xs">{{ job_url | replace('https://', '') | replace('http://', '') | truncate(20, True, '...') }}</span>
-                        <svg class="flex-shrink-0 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                    </a>
-                    {% else %}
-                    <span class="theme-text-muted">-</span>
-                    {% endif %}
-                </td>
-
                 <!-- Job ID -->
                 <td class="px-2 py-3 whitespace-nowrap hide-tablet">
                     <span class="text-xs font-mono theme-text-secondary" title="{{ job.jobId or '' }}">
@@ -316,7 +299,7 @@
             {% endfor %}
         {% else %}
             <tr>
-                <td colspan="11" class="px-4 py-12 text-center">
+                <td colspan="10" class="px-4 py-12 text-center">
                     <svg class="mx-auto h-12 w-12 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>

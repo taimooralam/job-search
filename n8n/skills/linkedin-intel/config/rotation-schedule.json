@@ -1,0 +1,14 @@
+{
+  "schedule": {
+    "monday":    { "categories": ["target_jobs", "thought_leadership"], "depth": "full" },
+    "tuesday":   { "categories": ["freelance", "pain_points"], "depth": "full" },
+    "wednesday": { "categories": ["niche", "learning_related"], "depth": "full" },
+    "thursday":  { "categories": ["target_jobs", "pain_points"], "depth": "full" },
+    "friday":    { "categories": ["thought_leadership", "freelance"], "depth": "full" },
+    "saturday":  { "categories": ["target_jobs", "freelance", "thought_leadership", "pain_points", "niche", "learning_related"], "depth": "reduced" }
+  },
+  "depth_settings": {
+    "full": { "results_per_keyword": 25, "max_keywords_per_category": 10 },
+    "reduced": { "results_per_keyword": 10, "max_keywords_per_category": 3 }
+  }
+}

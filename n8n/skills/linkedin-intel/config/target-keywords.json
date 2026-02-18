@@ -1,0 +1,60 @@
+{
+  "target_jobs": [
+    "Enterprise Architect",
+    "Solution Architect",
+    "Chief Architect",
+    "VP Engineering",
+    "CTO",
+    "Head of Architecture",
+    "Digital Transformation Lead",
+    "Platform Architect",
+    "AI Architect",
+    "Cloud Architect"
+  ],
+  "freelance": [
+    "freelance architect",
+    "contract solution architect",
+    "interim CTO",
+    "fractional CTO",
+    "architecture consulting",
+    "enterprise architecture advisory",
+    "digital transformation consultant"
+  ],
+  "thought_leadership": [
+    "enterprise architecture trends",
+    "TOGAF",
+    "digital transformation strategy",
+    "platform engineering",
+    "AI enterprise adoption",
+    "cloud native architecture",
+    "microservices governance",
+    "architecture decision records"
+  ],
+  "pain_points": [
+    "architecture debt",
+    "legacy modernization",
+    "digital transformation failure",
+    "enterprise integration challenges",
+    "cloud migration problems",
+    "microservices complexity",
+    "architecture governance"
+  ],
+  "niche": [
+    "Saudi Arabia technology",
+    "MENA digital transformation",
+    "GCC enterprise architecture",
+    "Middle East cloud adoption",
+    "Saudi Vision 2030 technology",
+    "NEOM technology",
+    "UAE digital strategy"
+  ],
+  "learning_related": [
+    "enterprise architecture certification",
+    "TOGAF certification",
+    "AWS Solutions Architect",
+    "Azure Solutions Architect",
+    "architecture patterns",
+    "domain driven design",
+    "event driven architecture"
+  ]
+}

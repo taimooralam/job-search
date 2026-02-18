@@ -1,0 +1,24 @@
+{
+  "rate_limits": {
+    "max_calls_per_session": 50,
+    "max_calls_per_day": 150,
+    "min_delay_seconds": 5,
+    "max_delay_seconds": 15,
+    "session_max_duration_minutes": 30
+  },
+  "warmup": {
+    "warmup_period_days": 14,
+    "warmup_max_calls_per_day": 30
+  },
+  "cooldowns": {
+    "429": { "hours": 24, "description": "Rate limited — back off 24h" },
+    "403": { "hours": 168, "description": "Forbidden — back off 7 days" },
+    "401": { "hours": 0, "description": "Auth failed — stop and alert, cookies likely expired" }
+  },
+  "rest_day": "sunday",
+  "alerts": {
+    "on_cooldown": true,
+    "on_cookie_expiry": true,
+    "on_session_complete": false
+  }
+}
