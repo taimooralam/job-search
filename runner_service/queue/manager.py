@@ -895,6 +895,8 @@ class QueueManager:
         1. Pending items older than max_age_minutes that haven't started
         2. Queue IDs in pending list that have no corresponding item data
         3. Queue IDs in running set that have no corresponding item data
+        4. Running items stuck for longer than max_age_minutes (started but never completed)
+        5. Items in running set whose status is not RUNNING (status mismatch)
 
         Args:
             max_age_minutes: Maximum age for pending items before cleanup
@@ -909,6 +911,7 @@ class QueueManager:
             "stale_pending_removed": 0,
             "orphan_pending_removed": 0,
             "orphan_running_removed": 0,
+            "stale_running_removed": 0,
             "total_cleaned": 0,
         }
 
@@ -956,11 +959,31 @@ class QueueManager:
                 await self._redis.srem(self.RUNNING_KEY, queue_id)
                 stats["orphan_running_removed"] += 1
                 logger.info(f"Removed orphan running queue_id: {queue_id}")
+            elif item.status == QueueItemStatus.RUNNING and item.started_at and item.started_at < cutoff_time:
+                # Stale running: started but never completed (e.g., runner restart, Redis timeout)
+                await self._redis.srem(self.RUNNING_KEY, queue_id)
+                item.status = QueueItemStatus.FAILED
+                item.error = f"Stale: running for over {max_age_minutes} minutes without completion"
+                item.completed_at = datetime.utcnow()
+                await self._update_item(item)
+                await self._redis.zadd(
+                    self.FAILED_KEY,
+                    {queue_id: item.completed_at.timestamp()}
+                )
+                await self._publish_event("failed", item)
+                stats["stale_running_removed"] += 1
+                logger.info(f"Removed stale running {queue_id} for job {item.job_id} (started: {item.started_at})")
+            elif item.status != QueueItemStatus.RUNNING:
+                # Status mismatch: in running set but status is not RUNNING
+                await self._redis.srem(self.RUNNING_KEY, queue_id)
+                stats["orphan_running_removed"] += 1
+                logger.info(f"Removed mismatched item from running set: {queue_id} (status: {item.status})")
 
         stats["total_cleaned"] = (
             stats["stale_pending_removed"] +
             stats["orphan_pending_removed"] +
-            stats["orphan_running_removed"]
+            stats["orphan_running_removed"] +
+            stats["stale_running_removed"]
         )
 
         if stats["total_cleaned"] > 0:

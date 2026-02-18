@@ -1433,3 +1433,137 @@ class TestQueueManagerEdgeCases:
 
             assert item.job_title == ""
             assert item.company == ""
+
+
+class TestQueueManagerCleanupStaleRunning:
+    """Tests for stale running item cleanup in cleanup_stale_items()."""
+
+    @pytest.fixture
+    def manager(self):
+        """Create manager with fake Redis."""
+        mgr = QueueManager(redis_url="redis://localhost:6379/0")
+        mgr._redis = FakeRedis()
+        mgr._connected = True
+        return mgr
+
+    @pytest.mark.asyncio
+    async def test_cleanup_removes_stale_running_items(self, manager):
+        """Should mark items stuck in running state as failed."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+
+            # Backdate started_at to 3 hours ago
+            dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
+            await manager._update_item(dequeued)
+
+            stats = await manager.cleanup_stale_items(max_age_minutes=120)
+
+            assert stats["stale_running_removed"] == 1
+            assert stats["total_cleaned"] == 1
+
+            # Item should be removed from running set
+            running = await manager._redis.smembers(manager.RUNNING_KEY)
+            assert dequeued.queue_id not in running
+
+            # Item should be in failed set
+            failed = await manager._redis.zrange(manager.FAILED_KEY, 0, -1)
+            assert dequeued.queue_id in failed
+
+            # Item status should be FAILED with error message
+            updated = await manager.get_item(dequeued.queue_id)
+            assert updated.status == QueueItemStatus.FAILED
+            assert "running for over 120 minutes" in updated.error
+            assert updated.completed_at is not None
+
+    @pytest.mark.asyncio
+    async def test_cleanup_preserves_recent_running_items(self, manager):
+        """Should NOT remove recently started running items."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+
+            # started_at is set by dequeue() to now — should not be cleaned up
+            stats = await manager.cleanup_stale_items(max_age_minutes=120)
+
+            assert stats["stale_running_removed"] == 0
+            assert stats["total_cleaned"] == 0
+
+            # Item should still be in running set
+            running = await manager._redis.smembers(manager.RUNNING_KEY)
+            assert dequeued.queue_id in running
+
+    @pytest.mark.asyncio
+    async def test_cleanup_removes_status_mismatch_from_running(self, manager):
+        """Should remove items from running set if their status is not RUNNING."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+
+            # Simulate status mismatch: item completed but still in running set
+            dequeued.status = QueueItemStatus.COMPLETED
+            dequeued.completed_at = datetime.utcnow()
+            await manager._update_item(dequeued)
+            # Don't remove from running set (simulating the bug)
+
+            stats = await manager.cleanup_stale_items(max_age_minutes=120)
+
+            assert stats["orphan_running_removed"] == 1
+
+            # Should be removed from running set
+            running = await manager._redis.smembers(manager.RUNNING_KEY)
+            assert dequeued.queue_id not in running
+
+    @pytest.mark.asyncio
+    async def test_cleanup_handles_mixed_running_items(self, manager):
+        """Should handle mix of healthy, stale, and orphan running items."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            # Healthy running item (recent)
+            item1 = await manager.enqueue("job1", "Recent", "Company")
+            dequeued1 = await manager.dequeue()
+
+            # Stale running item (old)
+            item2 = await manager.enqueue("job2", "Stale", "Company")
+            dequeued2 = await manager.dequeue()
+            dequeued2.started_at = datetime.utcnow() - timedelta(hours=5)
+            await manager._update_item(dequeued2)
+
+            # Orphan (no item data)
+            await manager._redis.sadd(manager.RUNNING_KEY, "q_orphan_abc")
+
+            stats = await manager.cleanup_stale_items(max_age_minutes=120)
+
+            assert stats["stale_running_removed"] == 1
+            assert stats["orphan_running_removed"] == 1
+            assert stats["total_cleaned"] == 2
+
+            # Healthy item should still be running
+            running = await manager._redis.smembers(manager.RUNNING_KEY)
+            assert dequeued1.queue_id in running
+
+    @pytest.mark.asyncio
+    async def test_cleanup_stale_running_publishes_failed_event(self, manager):
+        """Should publish 'failed' event for stale running items."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+            dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
+            await manager._update_item(dequeued)
+            mock_publish.reset_mock()
+
+            await manager.cleanup_stale_items(max_age_minutes=120)
+
+            # Should have published a 'failed' event
+            assert any(
+                call_args[0][0] == "failed"
+                for call_args in mock_publish.call_args_list
+            )
+
+    @pytest.mark.asyncio
+    async def test_cleanup_stats_include_stale_running(self, manager):
+        """Should include stale_running_removed in returned stats."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            stats = await manager.cleanup_stale_items(max_age_minutes=60)
+
+            assert "stale_running_removed" in stats
+            assert stats["stale_running_removed"] == 0
