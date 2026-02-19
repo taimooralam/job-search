@@ -534,36 +534,57 @@ async def url_to_pdf(request: URLToPDFRequest):
 # Uses multiple fallback selectors to handle LinkedIn DOM changes.
 _LINKEDIN_EXTRACT_JS = """
 () => {
-    const selectors = [
-        '.search-results-container .reusable-search__result-container',
-        '.search-results-container li.reusable-search__result-container',
-        '[data-chameleon-result-urn]',
-        '.scaffold-finite-scroll__content > li',
-        '.search-results-container > div > ul > li',
-        // Broader fallbacks for newer LinkedIn layouts
-        '[class*="search-result"]',
-        '[class*="feed-shared-update"]',
-        'main [class*="artdeco-list"] > li',
-        'main ul > li',
-    ];
+    // Strategy: LinkedIn uses hashed CSS class names that change frequently.
+    // Instead of relying on classes, find post containers by structure:
+    // - Posts live inside <li> elements within the main content area
+    // - Each post has links to /feed/update/ or /posts/ or profile URLs
+    // - Post text blocks are substantial (> 80 chars)
 
-    let containers = [];
-    let matchedSelector = '';
-    for (const sel of selectors) {
-        const found = document.querySelectorAll(sel);
-        if (found.length > 0) {
-            containers = found;
-            matchedSelector = sel;
-            break;
+    // Step 1: Find all list items in main content
+    const main = document.querySelector('main') || document.body;
+    const allLis = main.querySelectorAll('li');
+
+    // Step 2: Filter to likely post containers
+    // A post <li> typically has: substantial text, a feed/update link, and nested structure
+    const postContainers = [];
+    for (const li of allLis) {
+        const text = (li.innerText || '').trim();
+        if (text.length < 80) continue;
+
+        // Must have links (posts always link somewhere)
+        const links = li.querySelectorAll('a[href]');
+        if (links.length === 0) continue;
+
+        // Check if this li is NOT a child of another post-li we already found
+        // (avoid double-counting nested lis)
+        let isNested = false;
+        for (const existing of postContainers) {
+            if (existing.contains(li)) { isNested = true; break; }
+        }
+        if (isNested) continue;
+
+        // Check if any link points to a feed update, post, or profile
+        let hasPostLink = false;
+        for (const a of links) {
+            const href = a.getAttribute('href') || '';
+            if (href.includes('/feed/update/') || href.includes('/posts/') ||
+                href.includes('/pulse/') || href.includes('/in/')) {
+                hasPostLink = true;
+                break;
+            }
+        }
+
+        if (hasPostLink && text.length > 100) {
+            postContainers.push(li);
         }
     }
 
+    // Step 3: Extract data from each post container
     const results = [];
-    for (const el of containers) {
+    for (const el of postContainers) {
         const text = (el.innerText || '').trim();
-        if (!text || text.length < 30) continue;
 
-        // Try to find the post/content link
+        // Find the post/content URL
         let url = '';
         const allLinks = el.querySelectorAll('a[href]');
         for (const a of allLinks) {
@@ -573,42 +594,32 @@ _LINKEDIN_EXTRACT_JS = """
                 break;
             }
         }
-        // Fallback: first link with linkedin.com
-        if (!url) {
-            for (const a of allLinks) {
-                const href = a.getAttribute('href') || '';
-                if (href.includes('linkedin.com') && !href.includes('/search/')) {
-                    url = href;
+
+        // Find author: look for the first link to a profile (/in/)
+        let author = '';
+        for (const a of allLinks) {
+            const href = a.getAttribute('href') || '';
+            if (href.includes('/in/') && !href.includes('/feed/')) {
+                // The link text or its parent's text is likely the author name
+                const linkText = (a.innerText || '').trim().split('\\n')[0].trim();
+                if (linkText && linkText.length > 2 && linkText.length < 60) {
+                    author = linkText;
                     break;
                 }
             }
         }
 
-        // Try to extract author from actor/header area
-        let author = '';
-        const authorSelectors = [
-            '.update-components-actor__name',
-            '.feed-shared-actor__name',
-            '[data-anonymize="person-name"]',
-            'span[class*="actor-name"]',
-            'a[class*="actor"] span',
-        ];
-        for (const aSel of authorSelectors) {
-            const actorEl = el.querySelector(aSel);
-            if (actorEl) {
-                author = (actorEl.innerText || '').split('\\n')[0].trim();
-                if (author) break;
+        // Find engagement: look for text patterns like "X reactions" or "X likes"
+        let reactions = '';
+        const buttons = el.querySelectorAll('button, span');
+        for (const btn of buttons) {
+            const btnText = (btn.innerText || '').trim();
+            if (/\\d+\\s*(reaction|like|comment|repost)/i.test(btnText)) {
+                reactions = (reactions ? reactions + ' | ' : '') + btnText;
             }
         }
 
-        // Try to extract engagement counts
-        let reactions = '';
-        const socialEl = el.querySelector('[class*="social-details"], [class*="social-counts"]');
-        if (socialEl) {
-            reactions = (socialEl.innerText || '').trim();
-        }
-
-        results.push({text, url, author, reactions, _selector: matchedSelector});
+        results.push({text, url, author, reactions});
     }
     return results;
 }
@@ -727,20 +738,25 @@ async def scrape_linkedin(request: LinkedInScrapeRequest):
                     dom_debug = await page.evaluate("""() => {
                         const main = document.querySelector('main') || document.body;
                         const walk = (el, depth) => {
-                            if (depth > 4) return '';
+                            if (depth > 8) return '';
                             const tag = el.tagName?.toLowerCase() || '';
-                            const cls = el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).slice(0, 3).join('.') : '';
+                            const cls = el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).slice(0, 2).join('.') : '';
+                            const role = el.getAttribute && el.getAttribute('role') ? `[role=${el.getAttribute('role')}]` : '';
+                            const data = el.dataset ? Object.keys(el.dataset).slice(0, 2).map(k => `[data-${k}]`).join('') : '';
                             const kids = el.children ? Array.from(el.children).length : 0;
                             const textLen = (el.innerText || '').length;
-                            let out = '  '.repeat(depth) + `<${tag}${cls}> children=${kids} textLen=${textLen}\\n`;
-                            if (depth < 3 && el.children) {
-                                for (const child of Array.from(el.children).slice(0, 10)) {
+                            const indent = '  '.repeat(depth);
+                            let out = `${indent}<${tag}${cls}${role}${data}> ch=${kids} txt=${textLen}\\n`;
+                            if (el.children) {
+                                const limit = kids > 5 && depth > 3 ? 3 : 8;
+                                for (const child of Array.from(el.children).slice(0, limit)) {
                                     out += walk(child, depth + 1);
                                 }
+                                if (kids > limit) out += `${indent}  ... +${kids - limit} more\\n`;
                             }
                             return out;
                         };
-                        return walk(main, 0).substring(0, 2000);
+                        return walk(main, 0).substring(0, 4000);
                     }""")
                     logger.warning(f"0 results extracted. DOM structure:\\n{dom_debug}")
 
