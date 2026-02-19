@@ -708,13 +708,41 @@ async def scrape_linkedin(request: LinkedInScrapeRequest):
                     body_text = await page.evaluate("() => (document.body?.innerText || '').substring(0, 500)")
                     logger.warning(f"No search result selector matched. Body preview: {body_text[:300]}")
 
+                # Wait for dynamic content to render
+                await asyncio.sleep(3)
+
                 # Scroll to trigger lazy loading
                 for i in range(request.scroll_count):
                     await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                     await asyncio.sleep(2 + random.random())
 
+                # Small settle after last scroll
+                await asyncio.sleep(1)
+
                 # Extract results via JS
                 results = await page.evaluate(_LINKEDIN_EXTRACT_JS)
+
+                if not results:
+                    # Capture DOM structure for debugging selector mismatches
+                    dom_debug = await page.evaluate("""() => {
+                        const main = document.querySelector('main') || document.body;
+                        const walk = (el, depth) => {
+                            if (depth > 4) return '';
+                            const tag = el.tagName?.toLowerCase() || '';
+                            const cls = el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).slice(0, 3).join('.') : '';
+                            const kids = el.children ? Array.from(el.children).length : 0;
+                            const textLen = (el.innerText || '').length;
+                            let out = '  '.repeat(depth) + `<${tag}${cls}> children=${kids} textLen=${textLen}\\n`;
+                            if (depth < 3 && el.children) {
+                                for (const child of Array.from(el.children).slice(0, 10)) {
+                                    out += walk(child, depth + 1);
+                                }
+                            }
+                            return out;
+                        };
+                        return walk(main, 0).substring(0, 2000);
+                    }""")
+                    logger.warning(f"0 results extracted. DOM structure:\\n{dom_debug}")
 
                 await browser.close()
 
