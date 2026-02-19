@@ -1,14 +1,14 @@
 {
   "rate_limits": {
-    "max_calls_per_session": 50,
-    "max_calls_per_day": 150,
+    "max_calls_per_session": 100,
+    "max_calls_per_day": 200,
     "min_delay_seconds": 5,
     "max_delay_seconds": 15,
-    "session_max_duration_minutes": 30
+    "session_max_duration_minutes": 60
   },
   "warmup": {
     "warmup_period_days": 14,
-    "warmup_max_calls_per_day": 30
+    "warmup_max_calls_per_day": 100
   },
   "cooldowns": {
     "429": { "hours": 24, "description": "Rate limited — back off 24h" },
