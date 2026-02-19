@@ -1,14 +1,18 @@
-"""LinkedIn scraper — post/content discovery via Playwright.
+"""LinkedIn Intelligence Pipeline — scrape, classify, draft.
 
-Searches LinkedIn for posts matching AI-architect-relevant buzzwords
-from the rotation schedule. Uses the pdf-service Playwright endpoint
-to render search pages and extract post data from the DOM.
+Single-process pipeline that runs all three stages:
+  1. Scrape: Search LinkedIn for posts via Playwright (pdf-service)
+  2. Classify: Score each post with Claude Haiku for relevance
+  3. Draft: Generate comment/post-idea drafts for high-scoring posts
 
 Typical invocation (via cron at 3 AM Mon-Sat):
     python3 linkedin_search.py
 
-Test mode (validate cookies + 1 search call):
+Test mode (1 category, 2 keywords, then classify + draft):
     python3 linkedin_search.py --test
+
+Scrape only (skip classify + draft):
+    python3 linkedin_search.py --scrape-only
 """
 
 import os
@@ -165,7 +169,7 @@ def run_search(test_mode: bool = False) -> dict:
             continue
         break
 
-    # Log session
+    # Log scrape session
     summary = safety.get_session_summary()
     session = {
         "session_id": session_id,
@@ -178,10 +182,60 @@ def run_search(test_mode: bool = False) -> dict:
         **summary,
     }
     mongo_store.log_session(session)
-    logger.info("Session complete: %s", stats)
-    logger.info("Session details: %s", summary)
+    logger.info("Scrape complete: %s", stats)
+    logger.info("Scrape details: %s", summary)
 
     return session
+
+
+def run_pipeline(test_mode: bool = False, scrape_only: bool = False) -> dict:
+    """Execute the full pipeline: scrape → classify → draft.
+
+    Returns combined results from all stages.
+    """
+    # Stage 1: Scrape
+    logger.info("=" * 60)
+    logger.info("STAGE 1: SCRAPE")
+    logger.info("=" * 60)
+    scrape_result = run_search(test_mode=test_mode)
+
+    if "error" in scrape_result or scrape_only:
+        return scrape_result
+
+    # Stage 2: Classify
+    logger.info("=" * 60)
+    logger.info("STAGE 2: CLASSIFY (model: haiku)")
+    logger.info("=" * 60)
+    try:
+        from classifier import classify_items
+        classify_result = classify_items(test_mode=test_mode)
+        logger.info("Classify result: %s", classify_result)
+    except Exception as e:
+        logger.error("Classification failed (non-fatal): %s", e)
+        classify_result = {"classified": 0, "errors": 1, "error": str(e)}
+
+    # Stage 3: Draft
+    logger.info("=" * 60)
+    logger.info("STAGE 3: DRAFT (model: haiku)")
+    logger.info("=" * 60)
+    try:
+        from draft_generator import generate_drafts
+        draft_result = generate_drafts(test_mode=test_mode)
+        logger.info("Draft result: %s", draft_result)
+    except Exception as e:
+        logger.error("Draft generation failed (non-fatal): %s", e)
+        draft_result = {"comments": 0, "post_ideas": 0, "errors": 1, "error": str(e)}
+
+    combined = {
+        "scrape": scrape_result.get("stats", {}),
+        "classify": classify_result,
+        "drafts": draft_result,
+    }
+    logger.info("=" * 60)
+    logger.info("PIPELINE COMPLETE: %s", combined)
+    logger.info("=" * 60)
+
+    return combined
 
 
 # ---------------------------------------------------------------------------
@@ -191,10 +245,11 @@ def run_search(test_mode: bool = False) -> dict:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="LinkedIn Intelligence — Post Discovery")
+    parser = argparse.ArgumentParser(description="LinkedIn Intelligence Pipeline")
     parser.add_argument("--test", action="store_true", help="Test mode: 1 category, 2 keywords")
+    parser.add_argument("--scrape-only", action="store_true", help="Skip classify + draft stages")
     args = parser.parse_args()
 
-    result = run_search(test_mode=args.test)
+    result = run_pipeline(test_mode=args.test, scrape_only=args.scrape_only)
     if "error" in result:
         sys.exit(1)
