@@ -534,59 +534,73 @@ async def url_to_pdf(request: URLToPDFRequest):
 # Uses multiple fallback selectors to handle LinkedIn DOM changes.
 _LINKEDIN_EXTRACT_JS = """
 () => {
-    // Strategy: LinkedIn uses hashed CSS class names that change frequently.
-    // Instead of relying on classes, find post containers by structure:
-    // - Posts live inside <li> elements within the main content area
-    // - Each post has links to /feed/update/ or /posts/ or profile URLs
-    // - Post text blocks are substantial (> 80 chars)
+    // LinkedIn 2026 DOM structure for content search results:
+    // main > ... > container[data-testid] > div.post | hr | div.post | hr | ...
+    // Each post div starts with "Feed post", has 4+ links with /feed/ or /in/ hrefs,
+    // and 800+ chars of text. Posts are separated by <hr> elements.
+    // Class names are hashed (change on every deploy) — use structure only.
 
-    // Step 1: Find all list items in main content
     const main = document.querySelector('main') || document.body;
-    const allLis = main.querySelectorAll('li');
 
-    // Step 2: Filter to likely post containers
-    // A post <li> typically has: substantial text, a feed/update link, and nested structure
-    const postContainers = [];
-    for (const li of allLis) {
-        const text = (li.innerText || '').trim();
-        if (text.length < 80) continue;
+    // Step 1: Find the results container
+    // Primary: data-testid attribute (LinkedIn's component system)
+    let container = main.querySelector('[data-testid][data-componentType]');
 
-        // Must have links (posts always link somewhere)
-        const links = li.querySelectorAll('a[href]');
-        if (links.length === 0) continue;
-
-        // Check if this li is NOT a child of another post-li we already found
-        // (avoid double-counting nested lis)
-        let isNested = false;
-        for (const existing of postContainers) {
-            if (existing.contains(li)) { isNested = true; break; }
-        }
-        if (isNested) continue;
-
-        // Check if any link points to a feed update, post, or profile
-        let hasPostLink = false;
-        for (const a of links) {
-            const href = a.getAttribute('href') || '';
-            if (href.includes('/feed/update/') || href.includes('/posts/') ||
-                href.includes('/pulse/') || href.includes('/in/')) {
-                hasPostLink = true;
-                break;
+    // Fallback: find a div with 10+ children (posts + hr separators + misc)
+    // and substantial text content
+    if (!container) {
+        const candidates = main.querySelectorAll('div');
+        let best = null;
+        let bestKids = 0;
+        for (const div of candidates) {
+            const kids = div.children ? div.children.length : 0;
+            const textLen = (div.innerText || '').length;
+            // Look for the container with many children (posts + hrs + misc)
+            // and has <hr> children (the separator pattern)
+            const hasHrs = div.querySelector(':scope > hr') !== null;
+            if (kids >= 8 && textLen > 2000 && hasHrs && kids > bestKids) {
+                bestKids = kids;
+                best = div;
             }
         }
-
-        if (hasPostLink && text.length > 100) {
-            postContainers.push(li);
+        // Broader fallback if no hr-separated container found
+        if (!best) {
+            for (const div of candidates) {
+                const kids = div.children ? div.children.length : 0;
+                const textLen = (div.innerText || '').length;
+                if (kids >= 5 && textLen > 2000 && kids > bestKids) {
+                    bestKids = kids;
+                    best = div;
+                }
+            }
         }
+        container = best;
     }
 
-    // Step 3: Extract data from each post container
+    if (!container) return [];
+
+    // Step 2: Filter children to actual post divs (skip hrs, suggestions, feedback)
+    const children = Array.from(container.children);
     const results = [];
-    for (const el of postContainers) {
+
+    for (const el of children) {
+        // Skip non-div elements (hr separators)
+        if (el.tagName?.toLowerCase() !== 'div') continue;
+
         const text = (el.innerText || '').trim();
+        // Skip short elements (suggestions, feedback prompts, load more)
+        if (text.length < 100) continue;
+
+        // Must have feed/profile links to be a real post
+        const allLinks = Array.from(el.querySelectorAll('a[href]'));
+        const feedLinks = allLinks.filter(a => {
+            const h = a.getAttribute('href') || '';
+            return h.includes('/feed/') || h.includes('/posts/') || h.includes('/in/') || h.includes('/pulse/');
+        });
+        if (feedLinks.length < 2) continue;
 
         // Find the post/content URL
         let url = '';
-        const allLinks = el.querySelectorAll('a[href]');
         for (const a of allLinks) {
             const href = a.getAttribute('href') || '';
             if (href.includes('/feed/update/') || href.includes('/posts/') || href.includes('/pulse/')) {
@@ -595,27 +609,26 @@ _LINKEDIN_EXTRACT_JS = """
             }
         }
 
-        // Find author: look for the first link to a profile (/in/)
+        // Find author: first link to a profile (/in/)
         let author = '';
         for (const a of allLinks) {
             const href = a.getAttribute('href') || '';
             if (href.includes('/in/') && !href.includes('/feed/')) {
-                // The link text or its parent's text is likely the author name
                 const linkText = (a.innerText || '').trim().split('\\n')[0].trim();
-                if (linkText && linkText.length > 2 && linkText.length < 60) {
+                if (linkText && linkText.length > 1 && linkText.length < 80) {
                     author = linkText;
                     break;
                 }
             }
         }
 
-        // Find engagement: look for text patterns like "X reactions" or "X likes"
+        // Find engagement counts
         let reactions = '';
-        const buttons = el.querySelectorAll('button, span');
-        for (const btn of buttons) {
-            const btnText = (btn.innerText || '').trim();
-            if (/\\d+\\s*(reaction|like|comment|repost)/i.test(btnText)) {
-                reactions = (reactions ? reactions + ' | ' : '') + btnText;
+        const spans = el.querySelectorAll('button, span');
+        for (const s of spans) {
+            const t = (s.innerText || '').trim();
+            if (/\\d+\\s*(reaction|like|comment|repost|view)/i.test(t)) {
+                reactions = (reactions ? reactions + ' | ' : '') + t;
             }
         }
 
