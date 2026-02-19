@@ -1,18 +1,19 @@
 """
-PDF Service - FastAPI application for PDF generation.
+PDF Service - FastAPI application for PDF generation and LinkedIn scraping.
 
 Provides endpoints for converting HTML/CSS and TipTap JSON to PDF
-using Playwright/Chromium.
+using Playwright/Chromium, plus a LinkedIn search scraper endpoint.
 """
 
 import asyncio
 import logging
 import os
+import random
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from io import BytesIO
 
@@ -136,6 +137,20 @@ class URLToPDFRequest(BaseModel):
     pageSize: str = Field("letter", description="Page size: 'letter' or 'a4'")
     printBackground: bool = Field(True, description="Print background colors/images")
     waitForSelector: Optional[str] = Field(None, description="Optional CSS selector to wait for")
+
+
+class LinkedInScrapeRequest(BaseModel):
+    """Request to scrape LinkedIn search results via Playwright."""
+    url: str = Field(..., description="Full LinkedIn search URL")
+    cookies: List[dict] = Field(..., description='Playwright cookies, e.g. [{"name":"li_at","value":"...","domain":".linkedin.com","path":"/"}]')
+    scroll_count: int = Field(2, ge=0, le=5, description="Number of scrolls for lazy-loaded results")
+
+
+class LinkedInScrapeResponse(BaseModel):
+    """Response from LinkedIn scrape endpoint."""
+    results: List[dict]
+    result_count: int
+    url: str
 
 
 # ============================================================================
@@ -508,4 +523,188 @@ async def url_to_pdf(request: URLToPDFRequest):
             raise HTTPException(
                 status_code=500,
                 detail=f"PDF generation failed: {str(e)}"
+            )
+
+
+# ============================================================================
+# LinkedIn Scraping Endpoint
+# ============================================================================
+
+# JavaScript executed inside the browser to extract search results.
+# Uses multiple fallback selectors to handle LinkedIn DOM changes.
+_LINKEDIN_EXTRACT_JS = """
+() => {
+    const selectors = [
+        '.search-results-container .reusable-search__result-container',
+        '.search-results-container li.reusable-search__result-container',
+        '[data-chameleon-result-urn]',
+        '.scaffold-finite-scroll__content > li',
+        '.search-results-container > div > ul > li',
+    ];
+
+    let containers = [];
+    for (const sel of selectors) {
+        containers = document.querySelectorAll(sel);
+        if (containers.length > 0) break;
+    }
+
+    // Final fallback: grab all list items in the main content area
+    if (containers.length === 0) {
+        containers = document.querySelectorAll('main ul > li');
+    }
+
+    const results = [];
+    for (const el of containers) {
+        const text = (el.innerText || '').trim();
+        if (!text || text.length < 30) continue;
+
+        // Try to find the post/content link
+        let url = '';
+        const links = el.querySelectorAll('a[href*="linkedin.com"]');
+        for (const a of links) {
+            const href = a.getAttribute('href') || '';
+            if (href.includes('/feed/update/') || href.includes('/posts/') || href.includes('/pulse/')) {
+                url = href;
+                break;
+            }
+        }
+        // Fallback: first meaningful link
+        if (!url && links.length > 0) {
+            url = links[0].getAttribute('href') || '';
+        }
+
+        // Try to extract author from actor/header area
+        let author = '';
+        const actorEl = el.querySelector('.update-components-actor__name, .feed-shared-actor__name, [data-anonymize="person-name"]');
+        if (actorEl) {
+            author = (actorEl.innerText || '').split('\\n')[0].trim();
+        }
+
+        // Try to extract engagement counts
+        let reactions = '';
+        const socialEl = el.querySelector('.social-details-social-counts, .social-details-social-activity');
+        if (socialEl) {
+            reactions = (socialEl.innerText || '').trim();
+        }
+
+        results.push({text, url, author, reactions});
+    }
+    return results;
+}
+"""
+
+
+@app.post("/scrape-linkedin", response_model=LinkedInScrapeResponse)
+async def scrape_linkedin(request: LinkedInScrapeRequest):
+    """
+    Scrape LinkedIn search results using Playwright with cookie auth.
+
+    Navigates to a LinkedIn search URL with injected session cookies,
+    scrolls to load lazy content, then extracts post data from the DOM.
+
+    Args:
+        request: LinkedIn URL, cookies, and scroll settings
+
+    Returns:
+        JSON with extracted search results
+
+    Raises:
+        HTTPException: 400 for invalid input, 401 for expired cookies,
+                       500 for navigation errors, 503 for overload
+    """
+    # Validate URL is LinkedIn
+    if not request.url.startswith("https://www.linkedin.com/"):
+        raise HTTPException(status_code=400, detail="URL must be a LinkedIn URL (https://www.linkedin.com/...)")
+
+    # Validate li_at cookie is present
+    has_li_at = any(c.get("name") == "li_at" and c.get("value") for c in request.cookies)
+    if not request.cookies:
+        raise HTTPException(status_code=400, detail="Cookies are required")
+    if not has_li_at:
+        raise HTTPException(status_code=400, detail="li_at cookie is required for LinkedIn authentication")
+
+    # Check capacity
+    if _pdf_semaphore._value <= 0:
+        logger.warning("Service overloaded, rejecting LinkedIn scrape request")
+        raise HTTPException(
+            status_code=503,
+            detail="Service overloaded. Too many concurrent operations."
+        )
+
+    async with _pdf_semaphore:
+        try:
+            logger.info(f"Starting LinkedIn scrape: {request.url[:100]}...")
+
+            from playwright.async_api import async_playwright
+
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=PLAYWRIGHT_HEADLESS)
+                context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent=(
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/131.0.0.0 Safari/537.36"
+                    ),
+                )
+                await context.add_cookies(request.cookies)
+                page = await context.new_page()
+                page.set_default_timeout(PLAYWRIGHT_TIMEOUT)
+
+                # Navigate — LinkedIn blocks networkidle, use domcontentloaded
+                await page.goto(request.url, wait_until="domcontentloaded")
+
+                # Detect login redirect (cookies expired)
+                current_url = page.url
+                if "/login" in current_url or "/checkpoint" in current_url:
+                    await browser.close()
+                    raise HTTPException(
+                        status_code=401,
+                        detail="LinkedIn session expired — cookies are no longer valid"
+                    )
+
+                # Wait for search results to appear
+                result_selectors = [
+                    ".search-results-container",
+                    ".scaffold-finite-scroll__content",
+                    "main ul > li",
+                ]
+                for sel in result_selectors:
+                    try:
+                        await page.wait_for_selector(sel, timeout=10000)
+                        break
+                    except Exception:
+                        continue
+
+                # Scroll to trigger lazy loading
+                for i in range(request.scroll_count):
+                    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    await asyncio.sleep(2 + random.random())
+
+                # Extract results via JS
+                results = await page.evaluate(_LINKEDIN_EXTRACT_JS)
+
+                await browser.close()
+
+            logger.info(f"LinkedIn scrape completed: {len(results)} results extracted")
+
+            return LinkedInScrapeResponse(
+                results=results,
+                result_count=len(results),
+                url=request.url,
+            )
+
+        except HTTPException:
+            raise
+        except asyncio.TimeoutError:
+            logger.error(f"LinkedIn scrape timed out: {request.url}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"LinkedIn page load timed out after {PLAYWRIGHT_TIMEOUT}ms"
+            )
+        except Exception as e:
+            logger.error(f"LinkedIn scrape failed: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"LinkedIn scrape failed: {str(e)}"
             )

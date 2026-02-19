@@ -103,6 +103,7 @@ services:
     restart: unless-stopped
     networks:
       - job-pipeline
+      - n8n-prod_default  # Allows OpenClaw to reach pdf-service
 
 networks:
   job-pipeline:

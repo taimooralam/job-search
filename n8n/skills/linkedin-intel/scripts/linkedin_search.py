@@ -4,6 +4,9 @@ Uses the `linkedin-api` library with cookie-based auth to search for
 jobs and posts based on the day's rotation schedule. All calls are
 gated through SafetyManager for rate limiting and account protection.
 
+Content search (Phase 2) uses the pdf-service Playwright endpoint
+because the Voyager GraphQL API returns null entityResults for content.
+
 Typical invocation (via cron at 3 AM Mon-Sat):
     python3 linkedin_search.py
 
@@ -11,14 +14,17 @@ Test mode (validate cookies + 1 search call):
     python3 linkedin_search.py --test
 """
 
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import quote
 
+import requests
 from linkedin_api import Linkedin
 
 import mongo_store
-from linkedin_cookies import get_linkedin_auth, validate_cookies
+from linkedin_cookies import get_linkedin_auth, load_cookies, validate_cookies
 from safety_manager import SafetyManager
 from utils import generate_dedupe_hash, load_config, setup_logging
 
@@ -108,44 +114,129 @@ def search_jobs(api: Linkedin, keywords: str, limit: int, safety: SafetyManager)
         return []
 
 
-def search_posts(api: Linkedin, keywords: str, limit: int, safety: SafetyManager) -> list[dict]:
-    """Search LinkedIn posts/content with safety gating."""
+def search_content(keywords: str, cookies: list[dict], safety: SafetyManager) -> list[dict]:
+    """Search LinkedIn posts via Playwright-rendered page (pdf-service).
+
+    The Voyager GraphQL API returns null entityResult for content searches.
+    Instead, we ask pdf-service to render the search page in a real browser
+    and extract post data from the DOM.
+    """
     allowed, reason = safety.can_make_call()
     if not allowed:
-        logger.warning("Skipping post search for '%s': %s", keywords, reason)
+        logger.warning("Skipping content search for '%s': %s", keywords, reason)
+        return []
+
+    safety.record_call()
+    url = (
+        f"https://www.linkedin.com/search/results/content/"
+        f"?keywords={quote(keywords)}&origin=SWITCH_SEARCH_VERTICAL"
+    )
+
+    pdf_svc = os.environ.get("PDF_SERVICE_URL", "http://pdf-service:8001")
+    try:
+        resp = requests.post(
+            f"{pdf_svc}/scrape-linkedin",
+            json={"url": url, "cookies": cookies, "scroll_count": 2},
+            timeout=90,
+        )
+        safety.wait_between_calls()
+    except requests.RequestException as e:
+        logger.error("PDF service unreachable: %s", e)
+        return []
+
+    if resp.status_code != 200:
+        logger.warning("Scrape failed (%d): %s", resp.status_code, resp.text[:200])
+        return []
+
+    raw_posts = resp.json().get("results", [])
+    items = []
+    for post in raw_posts:
+        text = post.get("text", "")
+        item = {
+            "source": "linkedin",
+            "type": "post",
+            "title": (text[:120].split("\n")[0])[:200],
+            "author": post.get("author", ""),
+            "url": post.get("url", ""),
+            "content_preview": text[:500],
+            "full_content": text,
+            "raw_data": post,
+            "search_keyword": keywords,
+        }
+        item["dedupe_hash"] = generate_dedupe_hash(item["source"], item["url"], item["title"])
+        items.append(item)
+
+    logger.info("Content search '%s': %d posts found via Playwright", keywords, len(items))
+    return items
+
+
+def harvest_feed_posts(api: Linkedin, all_keywords: list[str], limit: int, safety: SafetyManager) -> list[dict]:
+    """Harvest relevant posts from the user's LinkedIn feed.
+
+    The linkedin-api library doesn't support keyword-based content search
+    (the GraphQL endpoint returns null entityResult for content type).
+    Instead, we fetch the user's feed and filter by relevance keywords.
+
+    This is actually higher quality — feed posts come from connections and
+    followed topics, which are pre-filtered by LinkedIn's algorithm.
+    """
+    allowed, reason = safety.can_make_call()
+    if not allowed:
+        logger.warning("Skipping feed harvest: %s", reason)
         return []
 
     try:
         safety.record_call()
-        results = api.search(
-            params={"keywords": keywords, "origin": "GLOBAL_SEARCH_HEADER"},
-            limit=limit,
-        )
+        posts = api.get_feed_posts(limit=limit)
         safety.wait_between_calls()
 
+        # Build keyword set for matching (lowercase)
+        kw_set = set()
+        for kw in all_keywords:
+            for word in kw.lower().split():
+                if len(word) > 3:  # Skip short words like "AI" handled separately
+                    kw_set.add(word)
+        # Add key terms that might be split
+        kw_set.update(["architect", "architecture", "togaf", "enterprise", "digital",
+                        "transformation", "governance", "agentic", "multi-agent",
+                        "platform", "modernization", "microservices", "cloud"])
+        # Short but important terms checked separately
+        short_terms = {"ai", "cto", "vp", "ml"}
+
         items = []
-        for result in results:
-            # linkedin-api returns mixed types — filter for content
-            entity_type = result.get("type", "")
-            if entity_type not in ("CONTENT", "POST"):
+        for post in posts:
+            content = post.get("content", "")
+            if not content or len(content) < 50:
                 continue
 
-            title = result.get("title", {}).get("text", "") if isinstance(result.get("title"), dict) else str(result.get("title", ""))
-            author = result.get("subtitle", {}).get("text", "") if isinstance(result.get("subtitle"), dict) else ""
+            content_lower = content.lower()
+            matched = [kw for kw in kw_set if kw in content_lower]
+            matched += [t for t in short_terms if f" {t} " in f" {content_lower} "]
+
+            if len(matched) < 2:
+                continue  # Require at least 2 keyword matches for relevance
+
+            author = post.get("author_name", "Unknown")
+            url = post.get("url", "")
+            title = content[:120].split("\n")[0]  # First line as title
 
             item = {
                 "source": "linkedin",
                 "type": "post",
-                "title": title[:200],
+                "title": title,
                 "author": author,
-                "url": result.get("navigationUrl", ""),
-                "content_preview": result.get("summary", {}).get("text", "")[:500] if isinstance(result.get("summary"), dict) else "",
-                "engagement": result.get("socialActivityCountsInsight", {}),
-                "raw_data": result,
-                "search_keyword": keywords,
+                "url": url,
+                "content_preview": content[:500],
+                "full_content": content,
+                "matched_keywords": matched[:10],
+                "raw_data": {k: v for k, v in post.items() if k != "old"},  # Skip bulky raw data
+                "search_keyword": "feed_harvest",
             }
             item["dedupe_hash"] = generate_dedupe_hash(item["source"], item["url"], item["title"])
             items.append(item)
+            logger.info("Feed post matched (%d keywords): %s by %s", len(matched), title[:60], author)
+
+        logger.info("Feed harvest: %d posts fetched, %d matched keywords", len(posts), len(items))
         return items
 
     except Exception as e:
@@ -184,6 +275,13 @@ def run_search(test_mode: bool = False) -> dict:
     api = Linkedin("", "", cookies=auth)
     logger.info("LinkedIn API initialized with cookie auth")
 
+    # Build Playwright-format cookies for content search (pdf-service)
+    raw_cookies = load_cookies()
+    playwright_cookies = [
+        {"name": name, "value": value, "domain": ".linkedin.com", "path": "/"}
+        for name, value in raw_cookies.items()
+    ]
+
     # Get today's rotation
     categories, depth = get_todays_categories()
     if not categories:
@@ -208,36 +306,56 @@ def run_search(test_mode: bool = False) -> dict:
 
     stats = {"inserted": 0, "duplicate": 0, "errors": 0, "total_found": 0}
 
+    # Collect all keywords across today's categories for feed filtering
+    all_keywords = []
+    for category in categories:
+        all_keywords.extend(keywords_config.get(category, [])[:max_kw_per_cat])
+
+    # Phase 1: Search jobs by keyword
     for category in categories:
         keywords = keywords_config.get(category, [])[:max_kw_per_cat]
         logger.info("Category '%s': %d keywords", category, len(keywords))
 
         for kw in keywords:
-            # Check safety before each keyword batch
             allowed, reason = safety.can_make_call()
             if not allowed:
-                logger.warning("Stopping: %s", reason)
+                logger.warning("Stopping job search: %s", reason)
                 break
 
-            # Search jobs
             jobs = search_jobs(api, kw, results_per_kw, safety)
             for item in jobs:
                 item["category"] = category
                 result = mongo_store.store_intel_item(item)
                 stats[result] = stats.get(result, 0) + 1
                 stats["total_found"] += 1
-
-            # Search posts
-            posts = search_posts(api, kw, results_per_kw, safety)
-            for item in posts:
-                item["category"] = category
-                result = mongo_store.store_intel_item(item)
-                stats[result] = stats.get(result, 0) + 1
-                stats["total_found"] += 1
-
         else:
             continue
-        break  # Break outer loop if inner loop was stopped by safety
+        break
+
+    # Phase 2: Search posts by keyword (via pdf-service Playwright scrape)
+    content_keywords = ["AI architect", "enterprise architecture", "agentic AI",
+                        "digital transformation", "TOGAF", "platform engineering"]
+    if test_mode:
+        content_keywords = content_keywords[:2]
+    for ckw in content_keywords:
+        allowed, _ = safety.can_make_call()
+        if not allowed:
+            break
+        posts = search_content(ckw, playwright_cookies, safety)
+        for item in posts:
+            item["category"] = "content_search"
+            result = mongo_store.store_intel_item(item)
+            stats[result] = stats.get(result, 0) + 1
+            stats["total_found"] += 1
+
+    # Phase 3: Harvest feed posts (single API call, keyword-filtered)
+    feed_limit = 10 if test_mode else 50
+    feed_posts = harvest_feed_posts(api, all_keywords, feed_limit, safety)
+    for item in feed_posts:
+        item["category"] = "feed"
+        result = mongo_store.store_intel_item(item)
+        stats[result] = stats.get(result, 0) + 1
+        stats["total_found"] += 1
 
     # Log session
     summary = safety.get_session_summary()

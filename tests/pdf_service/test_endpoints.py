@@ -331,6 +331,150 @@ class TestCVToPDFEndpoint:
             assert "CV_Test_Co_Director_Engineering.pdf" in cd
 
 
+class TestScrapeLinkedInEndpoint:
+    """Tests for /scrape-linkedin endpoint."""
+
+    VALID_COOKIES = [
+        {"name": "li_at", "value": "AQEDATest123", "domain": ".linkedin.com", "path": "/"},
+        {"name": "JSESSIONID", "value": "ajax:123", "domain": ".linkedin.com", "path": "/"},
+    ]
+    VALID_URL = "https://www.linkedin.com/search/results/content/?keywords=AI+architect"
+
+    def test_scrape_linkedin_rejects_non_linkedin_url(self, client):
+        """Test that non-LinkedIn URLs are rejected with 400."""
+        response = client.post(
+            "/scrape-linkedin",
+            json={
+                "url": "https://www.google.com/search?q=test",
+                "cookies": self.VALID_COOKIES,
+            },
+        )
+        assert response.status_code == 400
+        assert "LinkedIn URL" in response.json()["detail"]
+
+    def test_scrape_linkedin_rejects_missing_cookies(self, client):
+        """Test that empty cookies list is rejected with 400."""
+        response = client.post(
+            "/scrape-linkedin",
+            json={"url": self.VALID_URL, "cookies": []},
+        )
+        assert response.status_code == 400
+        assert "Cookies are required" in response.json()["detail"]
+
+    def test_scrape_linkedin_rejects_missing_li_at(self, client):
+        """Test that cookies without li_at are rejected with 400."""
+        response = client.post(
+            "/scrape-linkedin",
+            json={
+                "url": self.VALID_URL,
+                "cookies": [{"name": "JSESSIONID", "value": "ajax:123", "domain": ".linkedin.com", "path": "/"}],
+            },
+        )
+        assert response.status_code == 400
+        assert "li_at" in response.json()["detail"]
+
+    @patch("playwright.async_api.async_playwright")
+    def test_scrape_linkedin_success(self, mock_playwright, client):
+        """Test successful LinkedIn scrape returns structured results."""
+        fake_posts = [
+            {"text": "Great post about AI architecture", "url": "https://www.linkedin.com/feed/update/urn:li:activity:123", "author": "John Doe", "reactions": "42 reactions"},
+            {"text": "Enterprise transformation insights", "url": "https://www.linkedin.com/feed/update/urn:li:activity:456", "author": "Jane Smith", "reactions": "18 reactions"},
+        ]
+
+        mock_browser = AsyncMock()
+        mock_context = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.url = self.VALID_URL  # No redirect
+        mock_page.evaluate = AsyncMock(return_value=fake_posts)
+        mock_context.new_page = AsyncMock(return_value=mock_page)
+        mock_browser.new_context = AsyncMock(return_value=mock_context)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        response = client.post(
+            "/scrape-linkedin",
+            json={"url": self.VALID_URL, "cookies": self.VALID_COOKIES, "scroll_count": 1},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["result_count"] == 2
+        assert len(data["results"]) == 2
+        assert data["results"][0]["author"] == "John Doe"
+        assert data["url"] == self.VALID_URL
+
+    @patch("playwright.async_api.async_playwright")
+    def test_scrape_linkedin_handles_timeout(self, mock_playwright, client):
+        """Test that navigation timeouts return 500."""
+        import asyncio
+
+        mock_browser = AsyncMock()
+        mock_context = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.goto = AsyncMock(side_effect=asyncio.TimeoutError())
+        mock_context.new_page = AsyncMock(return_value=mock_page)
+        mock_browser.new_context = AsyncMock(return_value=mock_context)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        response = client.post(
+            "/scrape-linkedin",
+            json={"url": self.VALID_URL, "cookies": self.VALID_COOKIES},
+        )
+
+        assert response.status_code == 500
+        assert "timed out" in response.json()["detail"].lower()
+
+    @patch("pdf_service.app._pdf_semaphore")
+    def test_scrape_linkedin_respects_concurrency_limit(self, mock_semaphore, client):
+        """Test that scrape endpoint returns 503 when semaphore is full."""
+        mock_semaphore._value = 0
+
+        response = client.post(
+            "/scrape-linkedin",
+            json={"url": self.VALID_URL, "cookies": self.VALID_COOKIES},
+        )
+
+        assert response.status_code == 503
+        assert "overloaded" in response.json()["detail"].lower()
+
+    @patch("playwright.async_api.async_playwright")
+    def test_scrape_linkedin_detects_login_redirect(self, mock_playwright, client):
+        """Test that expired cookies (login redirect) return 401."""
+        mock_browser = AsyncMock()
+        mock_context = AsyncMock()
+        mock_page = AsyncMock()
+        # Simulate redirect to login page
+        mock_page.url = "https://www.linkedin.com/login?fromSignIn=true"
+        mock_context.new_page = AsyncMock(return_value=mock_page)
+        mock_browser.new_context = AsyncMock(return_value=mock_context)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        response = client.post(
+            "/scrape-linkedin",
+            json={"url": self.VALID_URL, "cookies": self.VALID_COOKIES},
+        )
+
+        assert response.status_code == 401
+        assert "expired" in response.json()["detail"].lower()
+
+
 class TestConcurrencyLimits:
     """Tests for concurrency limits and rate limiting."""
 
