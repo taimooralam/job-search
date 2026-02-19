@@ -540,17 +540,22 @@ _LINKEDIN_EXTRACT_JS = """
         '[data-chameleon-result-urn]',
         '.scaffold-finite-scroll__content > li',
         '.search-results-container > div > ul > li',
+        // Broader fallbacks for newer LinkedIn layouts
+        '[class*="search-result"]',
+        '[class*="feed-shared-update"]',
+        'main [class*="artdeco-list"] > li',
+        'main ul > li',
     ];
 
     let containers = [];
+    let matchedSelector = '';
     for (const sel of selectors) {
-        containers = document.querySelectorAll(sel);
-        if (containers.length > 0) break;
-    }
-
-    // Final fallback: grab all list items in the main content area
-    if (containers.length === 0) {
-        containers = document.querySelectorAll('main ul > li');
+        const found = document.querySelectorAll(sel);
+        if (found.length > 0) {
+            containers = found;
+            matchedSelector = sel;
+            break;
+        }
     }
 
     const results = [];
@@ -560,34 +565,50 @@ _LINKEDIN_EXTRACT_JS = """
 
         // Try to find the post/content link
         let url = '';
-        const links = el.querySelectorAll('a[href*="linkedin.com"]');
-        for (const a of links) {
+        const allLinks = el.querySelectorAll('a[href]');
+        for (const a of allLinks) {
             const href = a.getAttribute('href') || '';
             if (href.includes('/feed/update/') || href.includes('/posts/') || href.includes('/pulse/')) {
-                url = href;
+                url = href.startsWith('http') ? href : 'https://www.linkedin.com' + href;
                 break;
             }
         }
-        // Fallback: first meaningful link
-        if (!url && links.length > 0) {
-            url = links[0].getAttribute('href') || '';
+        // Fallback: first link with linkedin.com
+        if (!url) {
+            for (const a of allLinks) {
+                const href = a.getAttribute('href') || '';
+                if (href.includes('linkedin.com') && !href.includes('/search/')) {
+                    url = href;
+                    break;
+                }
+            }
         }
 
         // Try to extract author from actor/header area
         let author = '';
-        const actorEl = el.querySelector('.update-components-actor__name, .feed-shared-actor__name, [data-anonymize="person-name"]');
-        if (actorEl) {
-            author = (actorEl.innerText || '').split('\\n')[0].trim();
+        const authorSelectors = [
+            '.update-components-actor__name',
+            '.feed-shared-actor__name',
+            '[data-anonymize="person-name"]',
+            'span[class*="actor-name"]',
+            'a[class*="actor"] span',
+        ];
+        for (const aSel of authorSelectors) {
+            const actorEl = el.querySelector(aSel);
+            if (actorEl) {
+                author = (actorEl.innerText || '').split('\\n')[0].trim();
+                if (author) break;
+            }
         }
 
         // Try to extract engagement counts
         let reactions = '';
-        const socialEl = el.querySelector('.social-details-social-counts, .social-details-social-activity');
+        const socialEl = el.querySelector('[class*="social-details"], [class*="social-counts"]');
         if (socialEl) {
             reactions = (socialEl.innerText || '').trim();
         }
 
-        results.push({text, url, author, reactions});
+        results.push({text, url, author, reactions, _selector: matchedSelector});
     }
     return results;
 }
@@ -656,6 +677,9 @@ async def scrape_linkedin(request: LinkedInScrapeRequest):
 
                 # Detect login redirect (cookies expired)
                 current_url = page.url
+                page_title = await page.title()
+                logger.info(f"LinkedIn navigation complete — URL: {current_url[:120]}, title: {page_title[:80]}")
+
                 if "/login" in current_url or "/checkpoint" in current_url:
                     await browser.close()
                     raise HTTPException(
@@ -669,12 +693,20 @@ async def scrape_linkedin(request: LinkedInScrapeRequest):
                     ".scaffold-finite-scroll__content",
                     "main ul > li",
                 ]
+                matched_selector = None
                 for sel in result_selectors:
                     try:
                         await page.wait_for_selector(sel, timeout=10000)
+                        matched_selector = sel
+                        logger.info(f"Matched selector: {sel}")
                         break
                     except Exception:
                         continue
+
+                if not matched_selector:
+                    # Log page state for debugging
+                    body_text = await page.evaluate("() => (document.body?.innerText || '').substring(0, 500)")
+                    logger.warning(f"No search result selector matched. Body preview: {body_text[:300]}")
 
                 # Scroll to trigger lazy loading
                 for i in range(request.scroll_count):
