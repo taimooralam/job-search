@@ -60,6 +60,7 @@ def search_content(keywords: str, cookies: list[dict], safety: SafetyManager) ->
     url = (
         f"https://www.linkedin.com/search/results/content/"
         f"?keywords={quote(keywords)}&origin=SWITCH_SEARCH_VERTICAL"
+        f"&sortBy=%22date_posted%22"
     )
 
     pdf_svc = os.environ.get("PDF_SERVICE_URL", "http://pdf-service:8001")

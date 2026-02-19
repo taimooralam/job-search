@@ -591,19 +591,27 @@ _LINKEDIN_EXTRACT_JS = """
         // Skip short elements (suggestions, feedback prompts, load more)
         if (text.length < 100) continue;
 
-        // Must have feed/profile links to be a real post
+        // Must have feed/profile links to be a real post (exclude /pulse/ — those are articles)
         const allLinks = Array.from(el.querySelectorAll('a[href]'));
         const feedLinks = allLinks.filter(a => {
             const h = a.getAttribute('href') || '';
-            return h.includes('/feed/') || h.includes('/posts/') || h.includes('/in/') || h.includes('/pulse/');
+            return h.includes('/feed/') || h.includes('/posts/') || h.includes('/in/');
         });
         if (feedLinks.length < 2) continue;
 
-        // Find the post/content URL
+        // Skip Pulse articles — they have /pulse/ links but no /feed/update/ links
+        const hasPulseLink = allLinks.some(a => (a.getAttribute('href') || '').includes('/pulse/'));
+        const hasFeedLink = allLinks.some(a => {
+            const h = a.getAttribute('href') || '';
+            return h.includes('/feed/update/') || h.includes('/posts/');
+        });
+        if (hasPulseLink && !hasFeedLink) continue;
+
+        // Find the post/content URL (prefer /feed/update/ over /posts/)
         let url = '';
         for (const a of allLinks) {
             const href = a.getAttribute('href') || '';
-            if (href.includes('/feed/update/') || href.includes('/posts/') || href.includes('/pulse/')) {
+            if (href.includes('/feed/update/') || href.includes('/posts/')) {
                 url = href.startsWith('http') ? href : 'https://www.linkedin.com' + href;
                 break;
             }
