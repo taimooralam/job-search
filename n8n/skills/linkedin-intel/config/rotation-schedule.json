@@ -1,14 +1,14 @@
 {
   "schedule": {
-    "monday":    { "categories": ["target_jobs", "thought_leadership"], "depth": "full" },
-    "tuesday":   { "categories": ["freelance", "pain_points"], "depth": "full" },
-    "wednesday": { "categories": ["niche", "learning_related"], "depth": "full" },
-    "thursday":  { "categories": ["target_jobs", "pain_points"], "depth": "full" },
-    "friday":    { "categories": ["thought_leadership", "freelance"], "depth": "full" },
-    "saturday":  { "categories": ["target_jobs", "freelance", "thought_leadership", "pain_points", "niche", "learning_related"], "depth": "reduced" }
+    "monday":    { "categories": ["llm_foundations", "enterprise_ai"], "depth": "full" },
+    "tuesday":   { "categories": ["agentic_ai", "rag_knowledge"], "depth": "full" },
+    "wednesday": { "categories": ["frameworks_tools", "llm_foundations"], "depth": "full" },
+    "thursday":  { "categories": ["enterprise_ai", "agentic_ai"], "depth": "full" },
+    "friday":    { "categories": ["rag_knowledge", "frameworks_tools"], "depth": "full" },
+    "saturday":  { "categories": ["llm_foundations", "agentic_ai", "rag_knowledge", "frameworks_tools", "enterprise_ai"], "depth": "reduced" }
   },
   "depth_settings": {
-    "full": { "results_per_keyword": 25, "max_keywords_per_category": 10 },
-    "reduced": { "results_per_keyword": 10, "max_keywords_per_category": 3 }
+    "full": { "max_keywords_per_category": 6 },
+    "reduced": { "max_keywords_per_category": 3 }
   }
 }

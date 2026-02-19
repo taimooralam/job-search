@@ -1,60 +1,39 @@
 {
-  "target_jobs": [
-    "Enterprise Architect",
-    "Solution Architect",
-    "Chief Architect",
-    "VP Engineering",
-    "CTO",
-    "Head of Architecture",
-    "Digital Transformation Lead",
-    "Platform Architect",
-    "AI Architect",
-    "Cloud Architect"
+  "llm_foundations": [
+    "generative AI LLMs",
+    "transformer architecture deep learning",
+    "prompt engineering techniques",
+    "fine-tuning LLMs LoRA PEFT",
+    "RLHF reinforcement learning human feedback",
+    "chain of thought reasoning LLM"
   ],
-  "freelance": [
-    "freelance architect",
-    "contract solution architect",
-    "interim CTO",
-    "fractional CTO",
-    "architecture consulting",
-    "enterprise architecture advisory",
-    "digital transformation consultant"
+  "agentic_ai": [
+    "agentic AI workflows",
+    "multi-agent systems AI",
+    "AI agent tool use function calling",
+    "ReAct framework AI agents",
+    "AI agent governance safety",
+    "autonomous AI agents enterprise"
   ],
-  "thought_leadership": [
-    "enterprise architecture trends",
-    "TOGAF",
-    "digital transformation strategy",
-    "platform engineering",
-    "AI enterprise adoption",
-    "cloud native architecture",
-    "microservices governance",
-    "architecture decision records"
+  "rag_knowledge": [
+    "RAG retrieval augmented generation",
+    "vector databases embeddings search",
+    "knowledge graphs AI RAG",
+    "LangChain RAG applications",
+    "multimodal search RAG"
   ],
-  "pain_points": [
-    "architecture debt",
-    "legacy modernization",
-    "digital transformation failure",
-    "enterprise integration challenges",
-    "cloud migration problems",
-    "microservices complexity",
-    "architecture governance"
+  "frameworks_tools": [
+    "LangGraph AI agents",
+    "crewAI multi-agent framework",
+    "model context protocol MCP",
+    "Hugging Face open source models",
+    "AI coding assistants developer tools"
   ],
-  "niche": [
-    "Saudi Arabia technology",
-    "MENA digital transformation",
-    "GCC enterprise architecture",
-    "Middle East cloud adoption",
-    "Saudi Vision 2030 technology",
-    "NEOM technology",
-    "UAE digital strategy"
-  ],
-  "learning_related": [
-    "enterprise architecture certification",
-    "TOGAF certification",
-    "AWS Solutions Architect",
-    "Azure Solutions Architect",
-    "architecture patterns",
-    "domain driven design",
-    "event driven architecture"
+  "enterprise_ai": [
+    "enterprise AI architecture strategy",
+    "AI adoption enterprise transformation",
+    "AI platform engineering MLOps",
+    "responsible AI governance ethics",
+    "AI infrastructure scaling production"
   ]
 }
