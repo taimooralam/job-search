@@ -97,7 +97,16 @@ def opportunities():
         )
     except Exception as e:
         logger.error("Opportunities error: %s", e)
-        return render_template("intel_opportunities.html", error=str(e), items=[])
+        return render_template(
+            "intel_opportunities.html",
+            error=str(e),
+            items=[],
+            total=0,
+            page=1,
+            per_page=20,
+            total_pages=1,
+            filters={},
+        )
 
 
 @intel_bp.route("/opportunities/rows")
