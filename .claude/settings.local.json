@@ -1,3 +1,8 @@
 {
-  "outputStyle": "Explanatory"
+  "outputStyle": "Explanatory",
+  "permissions": {
+    "allow": [
+      "Bash(ssh root@gap-097 \"echo ''=== MEMORY ==='' && free -h && echo && echo ''=== DOCKER PROCESSES ==='' && docker ps --format ''table {{.Names}}\\\\t{{.Status}}\\\\t{{.Image}}'' && echo && echo ''=== DOCKER BUILD PROCESSES ==='' && ps aux | grep -i ''docker build\\\\|buildkit'' | grep -v grep && echo && echo ''=== DISK ==='' && df -h / && echo && echo ''=== DOCKER SYSTEM ==='' && docker system df\")"
+    ]
+  }
 }

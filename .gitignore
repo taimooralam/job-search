@@ -109,6 +109,7 @@ scripts/migrate_*.py
 # VPS deployment secrets
 vps/
 n8n/docker-compose.yml
+n8n/Dockerfile.openclaw
 
 # Star curator (personal)
 star-curator/
