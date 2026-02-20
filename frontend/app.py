@@ -3078,6 +3078,16 @@ def batch_job_rows_partial():
         # Stage 2: Add computed sort fields
         add_fields: Dict[str, Any] = {}
 
+        # _hasResolvedUrl: pre-computed field, jobs with resolved URLs float to top
+        # Convert stored boolean to sort-friendly int: 0 = resolved (first), 1 = not
+        add_fields["_hasResolvedUrl"] = {
+            "$cond": {
+                "if": {"$ifNull": ["$has_resolved_url", False]},
+                "then": 0,
+                "else": 1,
+            }
+        }
+
         # _locationPriority: tiered priority (1=Saudi, 2=UAE, 3=Others)
         location_branches = []
         for keyword, priority in LOCATION_PRIORITY.items():
@@ -3128,6 +3138,7 @@ def batch_job_rows_partial():
         # Stage 3: Sort by multi-criteria
         # Lower tier values = higher priority for location and role
         sort_spec = {
+            "_hasResolvedUrl": 1,    # Resolved URLs first (0 before 1)
             "_locationPriority": 1,  # Saudi(1) → UAE(2) → Others(3)
             "_seniorityRank": 1,     # CTO(0) → VP(1) → ... → SE(6)
             "score": -1,             # Higher scores first

@@ -1,6 +1,7 @@
 <!-- Single batch job row - used for both full list and HTMX row refresh -->
 {% set job_url = job.url or job.jobUrl %}
 {% set app_url = job.application_url or job_url %}
+{% set has_resolved_url = job.has_resolved_url|default(false) %}
 <tbody x-data="{ expanded: isJobExpanded('{{ job._id }}'), jobId: '{{ job._id }}', anyPopoverOpen: false }"
        x-on:queue:job-completed.window="if ($event.detail.jobId === jobId) htmx.trigger($el, 'refresh-row')"
        data-job-id="{{ job._id }}"
@@ -10,7 +11,7 @@
        hx-trigger="refresh-row"
        hx-swap="outerHTML">
     <!-- Main row -->
-    <tr class="job-row hover:theme-bg-hover border-b theme-border"
+    <tr class="job-row hover:theme-bg-hover border-b theme-border {% if has_resolved_url %}bg-emerald-50/50 dark:bg-emerald-950/20{% endif %}"
         :class="{ 'theme-bg-hover': expanded }"
         onmouseenter="if(window.JDPrefetch) JDPrefetch.prefetch('{{ job._id }}')"
         oncontextmenu="showBatchJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
