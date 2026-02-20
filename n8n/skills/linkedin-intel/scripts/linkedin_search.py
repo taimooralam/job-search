@@ -2,7 +2,7 @@
 
 Single-process pipeline that runs all three stages:
   1. Scrape: Search LinkedIn for posts via Playwright (pdf-service)
-  2. Classify: Score each post with Claude Haiku for relevance
+  2. Classify: Score each post with GPT-4o-mini for relevance
   3. Draft: Generate comment/post-idea drafts for high-scoring posts
 
 Typical invocation (via cron at 3 AM Mon-Sat):

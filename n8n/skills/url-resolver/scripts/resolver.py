@@ -1,6 +1,6 @@
 """URL Resolver — resolves direct application URLs for jobs in level-2.
 
-Uses the OpenClaw agent (Sonnet) with web_fetch to discover ATS endpoints
+Uses the OpenClaw agent (Codex) with web_fetch to discover ATS endpoints
 (Greenhouse, Lever, Workday, etc.) and extract direct application URLs.
 
 Usage:
@@ -29,7 +29,7 @@ logger = setup_logging("url-resolver")
 
 OPENCLAW_BIN = "node"
 OPENCLAW_SCRIPT = "/app/openclaw.mjs"
-AGENT_ID = "url-resolver-sonnet"
+AGENT_ID = "url-resolver"
 
 # ── Firecrawl setup ──────────────────────────────────────────────
 _firecrawl_app = None
@@ -94,7 +94,7 @@ Return ONLY valid JSON (no markdown):
 
 
 def resolve_with_agent(job: dict, config: dict) -> dict | None:
-    """Use the OpenClaw Sonnet agent to find the application URL.
+    """Use the OpenClaw agent to find the application URL.
 
     The agent has web_fetch capability and can discover ATS endpoints
     by trying common patterns (Greenhouse API, Lever, Workday, etc.).

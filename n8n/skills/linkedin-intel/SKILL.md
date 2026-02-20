@@ -28,7 +28,7 @@ python3 /home/node/skills/linkedin-intel/scripts/linkedin_search.py --test
 ```
 
 ### 2. Evening Analysis (8 PM Mon-Sat)
-Classifies new items with Claude Haiku and generates engagement drafts.
+Classifies new items with Codex (gpt-5.3-codex) and generates engagement drafts.
 
 ```bash
 python3 /home/node/skills/linkedin-intel/scripts/classifier.py
@@ -138,7 +138,7 @@ LinkedIn API → linkedin_intel (MongoDB)
 - `ATLAS_MONGODB_URI` — Atlas MongoDB for job pipeline
 - `TELEGRAM_BOT_TOKEN` — Telegram Bot API token
 - `TELEGRAM_CHAT_ID` — Telegram chat ID for briefings
-- `ANTHROPIC_API_KEY` — For Claude Haiku classification/drafts
+- Codex CLI auth — via mounted `/root/.codex/auth.json` (ChatGPT OAuth)
 - `RUNNER_URL` — Runner API URL for pipeline triggers
 - `RUNNER_API_SECRET` — Runner API authentication
 

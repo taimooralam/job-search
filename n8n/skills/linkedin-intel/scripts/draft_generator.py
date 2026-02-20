@@ -1,4 +1,4 @@
-"""Generate draft content (comments and post ideas) using Claude Code CLI.
+"""Generate draft content (comments and post ideas) using OpenAI Codex CLI.
 
 For high-relevance items (score >= 7, tagged respond-worthy), generates
 comment drafts. For items tagged as post-inspiration, generates post hooks.
@@ -22,7 +22,7 @@ from utils import load_brand_voice, setup_logging
 
 logger = setup_logging("draft-generator")
 
-DEFAULT_MODEL = "haiku"
+DEFAULT_MODEL = "gpt-5.3-codex"
 
 COMMENT_TEMPLATES = {
     "insight": "Share a specific insight or experience that adds to the discussion",
@@ -71,22 +71,27 @@ Return ONLY valid JSON, no markdown formatting.
 """
 
 
-def call_claude(prompt: str, model: str = DEFAULT_MODEL) -> str:
-    """Call Claude Code CLI and return the response text.
-
-    Unsets ANTHROPIC_API_KEY so Claude Code uses CLAUDE_CODE_OAUTH_TOKEN instead.
-    """
-    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
-    result = subprocess.run(
-        ["npx", "-y", "@anthropic-ai/claude-code", "-p", prompt, "--model", model, "--output-format", "text"],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=60,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Claude Code failed (exit {result.returncode}): {result.stderr.strip()}")
-    return result.stdout.strip()
+def call_llm(prompt: str, model: str = DEFAULT_MODEL) -> str:
+    """Call Codex CLI (exec mode) and return the response text."""
+    out_path = f"/tmp/codex-out-{os.getpid()}.txt"
+    # Codex CLI requires a git repo working directory
+    workdir = "/home/node/.openclaw/repos/agentic-ai"
+    try:
+        result = subprocess.run(
+            ["codex", "exec", prompt, "-m", model,
+             "--output-last-message", out_path, "--ephemeral"],
+            capture_output=True, text=True, timeout=120,
+            cwd=workdir,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Codex exec failed (exit {result.returncode}): {result.stderr.strip()}"
+            )
+        with open(out_path) as f:
+            return f.read().strip()
+    finally:
+        if os.path.exists(out_path):
+            os.unlink(out_path)
 
 
 def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict:
@@ -163,7 +168,7 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
             )
 
             safety.record_call()
-            comment_text = call_claude(prompt, model=model)
+            comment_text = call_llm(prompt, model=model)
             safety.wait_between_calls()
 
             mongo_store.store_draft({
@@ -203,7 +208,7 @@ def generate_drafts(test_mode: bool = False, model: str = DEFAULT_MODEL) -> dict
             )
 
             safety.record_call()
-            raw_text = call_claude(prompt, model=model)
+            raw_text = call_llm(prompt, model=model)
             safety.wait_between_calls()
 
             if raw_text.startswith("```"):
@@ -244,8 +249,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate content drafts from intel")
     parser.add_argument("--test", action="store_true", help="Generate 1 draft of each type")
-    parser.add_argument("--model", default=DEFAULT_MODEL, choices=["haiku", "sonnet"],
-                        help="Claude model to use (default: haiku)")
+    parser.add_argument("--model", default=DEFAULT_MODEL,
+                        choices=["gpt-5.3-codex", "gpt-4o-mini", "gpt-4o"],
+                        help="Codex model (default: gpt-5.3-codex)")
     args = parser.parse_args()
 
     result = generate_drafts(test_mode=args.test, model=args.model)

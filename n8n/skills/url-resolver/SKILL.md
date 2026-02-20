@@ -1,6 +1,6 @@
 ---
 title: URL Resolver
-description: Resolves direct application URLs (Greenhouse, Lever, Workday, etc.) for jobs missing them in the level-2 collection. Uses DuckDuckGo search + Claude Haiku extraction.
+description: Resolves direct application URLs (Greenhouse, Lever, Workday, etc.) for jobs missing them in the level-2 collection. Uses DuckDuckGo search + AI extraction.
 triggers:
   - resolve urls
   - find application urls
@@ -10,7 +10,7 @@ triggers:
 
 # URL Resolver Skill
 
-Automated cycle: **query MongoDB → search → extract with Claude → update**.
+Automated cycle: **query MongoDB → search → extract with AI → update**.
 
 ## Tasks
 
@@ -44,7 +44,7 @@ level-2 (MongoDB) → jobs missing application_url
                          ↓
                    DuckDuckGo search (4 templates per job)
                          ↓
-                   Claude Haiku extraction + validation
+                   Codex extraction + validation
                          ↓
                    Update MongoDB (application_url + tracking fields)
                          ↓
@@ -57,13 +57,13 @@ level-2 (MongoDB) → jobs missing application_url
 |-------|------|-------------|
 | `url_resolved_at` | datetime | When URL was resolved |
 | `url_resolution_source` | string | Description of where URL was found |
-| `url_resolution_confidence` | float | 0.0–1.0 confidence from Claude |
+| `url_resolution_confidence` | float | 0.0–1.0 confidence from AI |
 | `url_resolution_attempts` | int | Counter, capped at 3 |
 | `url_resolution_last_error` | string | Last failure reason |
 
 ## Environment Variables
 
 - `MONGODB_URI` — VPS MongoDB connection string
-- `ANTHROPIC_API_KEY` — For Claude Haiku URL extraction
+- OpenClaw model — `openrouter/openai/gpt-4o` via OpenRouter API key
 - `TELEGRAM_BOT_TOKEN` — Telegram Bot API token
 - `TELEGRAM_CHAT_ID` — Telegram chat ID for notifications

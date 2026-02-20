@@ -1,8 +1,8 @@
-"""Classify scraped LinkedIn items using Claude Code CLI.
+"""Classify scraped LinkedIn items using OpenAI Codex CLI.
 
 Uses batched classification — sends 10 items per CLI call to minimize
-subprocess overhead (~20s per call). Claude Haiku classifies all items
-in the batch and returns a JSON array.
+subprocess overhead. GPT-4o-mini classifies all items in the batch
+and returns a JSON array.
 
 Typical invocation (via cron, or chained from linkedin_search.py):
     python3 classifier.py
@@ -23,7 +23,7 @@ from utils import setup_logging
 
 logger = setup_logging("classifier")
 
-DEFAULT_MODEL = "haiku"
+DEFAULT_MODEL = "gpt-5.3-codex"
 BATCH_SIZE = 10
 
 BATCH_PROMPT = """\
@@ -65,24 +65,31 @@ ITEM {index}:
 """
 
 
-def call_claude(prompt: str, model: str = DEFAULT_MODEL) -> str:
-    """Call Claude Code CLI and return the response text."""
-    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
-    result = subprocess.run(
-        ["npx", "-y", "@anthropic-ai/claude-code", "-p", prompt,
-         "--model", model, "--output-format", "text"],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=120,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Claude Code failed (exit {result.returncode}): {result.stderr.strip()}")
-    return result.stdout.strip()
+def call_llm(prompt: str, model: str = DEFAULT_MODEL) -> str:
+    """Call Codex CLI (exec mode) and return the response text."""
+    out_path = f"/tmp/codex-out-{os.getpid()}.txt"
+    # Codex CLI requires a git repo working directory
+    workdir = "/home/node/.openclaw/repos/agentic-ai"
+    try:
+        result = subprocess.run(
+            ["codex", "exec", prompt, "-m", model,
+             "--output-last-message", out_path, "--ephemeral"],
+            capture_output=True, text=True, timeout=120,
+            cwd=workdir,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Codex exec failed (exit {result.returncode}): {result.stderr.strip()}"
+            )
+        with open(out_path) as f:
+            return f.read().strip()
+    finally:
+        if os.path.exists(out_path):
+            os.unlink(out_path)
 
 
 def classify_batch(batch: list[dict], model: str = DEFAULT_MODEL) -> list[dict]:
-    """Classify a batch of items in a single Claude call.
+    """Classify a batch of items in a single LLM call.
 
     Returns list of classification dicts, one per item.
     """
@@ -98,7 +105,7 @@ def classify_batch(batch: list[dict], model: str = DEFAULT_MODEL) -> list[dict]:
         )
 
     prompt = BATCH_PROMPT.format(count=len(batch), items=items_text)
-    raw_text = call_claude(prompt, model=model)
+    raw_text = call_llm(prompt, model=model)
 
     # Strip markdown fences if present
     if raw_text.startswith("```"):
@@ -205,8 +212,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Classify LinkedIn intel items")
     parser.add_argument("--test", action="store_true", help="Classify 1 batch of 3 items")
-    parser.add_argument("--model", default=DEFAULT_MODEL, choices=["haiku", "sonnet"],
-                        help="Claude model to use (default: haiku)")
+    parser.add_argument("--model", default=DEFAULT_MODEL,
+                        choices=["gpt-5.3-codex", "gpt-4o-mini", "gpt-4o"],
+                        help="Codex model (default: gpt-5.3-codex)")
     parser.add_argument("--no-edge", action="store_true", help="Skip edge detection")
     args = parser.parse_args()
 

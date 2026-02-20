@@ -110,6 +110,7 @@ scripts/migrate_*.py
 vps/
 n8n/docker-compose.yml
 n8n/Dockerfile.openclaw
+n8n/openclaw-init.sh
 
 # Star curator (personal)
 star-curator/
