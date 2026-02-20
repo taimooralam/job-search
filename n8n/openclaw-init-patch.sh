@@ -30,3 +30,18 @@ if [ -f "/home/node/linkedin-cookies.txt" ]; then
 else
   echo "[init] WARNING: linkedin-cookies.txt not found. LinkedIn scraping will fail."
 fi
+
+# ── URL Resolver init ──────────────────────────────────────────────
+echo "[init] Installing url-resolver dependencies..."
+python3 -m pip install --break-system-packages --quiet --no-cache-dir \
+  "duckduckgo-search>=6.0" "anthropic>=0.40" "firecrawl-py>=0.0.5"
+
+URL_RESOLVER_SRC=/home/node/skills/url-resolver
+URL_RESOLVER_LINK=/home/node/.openclaw/skills/url-resolver
+ln -sf "$URL_RESOLVER_SRC" "$URL_RESOLVER_LINK" 2>/dev/null || true
+
+if [ -f "$URL_RESOLVER_LINK/SKILL.md" ]; then
+  echo "[init] url-resolver skill verified."
+else
+  echo "[init] WARNING: url-resolver SKILL.md not found"
+fi

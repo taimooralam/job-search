@@ -1,0 +1,4 @@
+# URL Resolver — times in UTC (VPS timezone)
+# Runs every 30 minutes to resolve missing application URLs
+
+*/30 * * * * docker exec openclaw python3 /home/node/skills/url-resolver/scripts/resolver.py >> /var/log/url-resolver.log 2>&1
