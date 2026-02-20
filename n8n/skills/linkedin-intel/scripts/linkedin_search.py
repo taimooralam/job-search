@@ -30,6 +30,8 @@ from utils import generate_dedupe_hash, load_config, setup_logging
 
 logger = setup_logging("linkedin-search")
 
+MAX_POSTS_PER_RUN = 50
+
 
 def get_todays_categories() -> tuple[list[str], dict]:
     """Return today's keyword categories and depth settings from rotation schedule."""
@@ -83,10 +85,16 @@ def search_content(keywords: str, cookies: list[dict], safety: SafetyManager) ->
     items = []
     for post in raw_posts:
         text = post.get("text", "")
+        # Strip LinkedIn accessibility prefix ("Feed post\n...") from title
+        title_text = text
+        for prefix in ("Feed post\n", "Feed post "):
+            if title_text.startswith(prefix):
+                title_text = title_text[len(prefix):]
+                break
         item = {
             "source": "linkedin",
             "type": "post",
-            "title": (text[:120].split("\n")[0])[:200],
+            "title": (title_text[:120].split("\n")[0].strip())[:200],
             "author": post.get("author", ""),
             "url": post.get("url", ""),
             "content_preview": text[:500],
@@ -148,16 +156,22 @@ def run_search(test_mode: bool = False) -> dict:
         logger.info("TEST MODE: reduced to 1 category, 2 keywords")
 
     stats = {"inserted": 0, "duplicate": 0, "errors": 0, "total_found": 0}
+    cap_reached = False
 
     # Search posts by keyword (via pdf-service Playwright scrape)
     for category in categories:
+        if cap_reached:
+            break
         keywords = keywords_config.get(category, [])[:max_kw_per_cat]
         logger.info("Category '%s': %d keywords", category, len(keywords))
 
         for kw in keywords:
+            if cap_reached:
+                break
             allowed, reason = safety.can_make_call()
             if not allowed:
                 logger.warning("Stopping content search: %s", reason)
+                cap_reached = True
                 break
 
             posts = search_content(kw, playwright_cookies, safety)
@@ -166,9 +180,10 @@ def run_search(test_mode: bool = False) -> dict:
                 result = mongo_store.store_intel_item(item)
                 stats[result] = stats.get(result, 0) + 1
                 stats["total_found"] += 1
-        else:
-            continue
-        break
+
+            if stats["inserted"] >= MAX_POSTS_PER_RUN:
+                logger.info("Global cap reached (%d/%d inserted) — stopping", stats["inserted"], MAX_POSTS_PER_RUN)
+                cap_reached = True
 
     # Log scrape session
     summary = safety.get_session_summary()
