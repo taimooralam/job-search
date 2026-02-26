@@ -74,7 +74,7 @@ class TestListJobsAPI:
         assert "jobs" in data
         assert "pagination" in data
         assert data["pagination"]["page"] == 1
-        assert data["pagination"]["page_size"] == 10
+        assert data["pagination"]["page_size"] == 100
 
     def test_list_jobs_with_search(self, client, mock_db):
         """Test searching jobs.
