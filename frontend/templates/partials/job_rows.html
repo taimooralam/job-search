@@ -72,7 +72,8 @@
             {% for job in jobs %}
             {% set job_url = job.url or job.jobUrl %}
             {% set app_url = job.application_url or job_url %}
-            <tr class="job-row cursor-pointer"
+            {% set is_ai = job.is_ai_job|default(false) %}
+            <tr class="job-row cursor-pointer{% if is_ai %} border-l-2 border-l-purple-400{% endif %}"
                 x-data="{ anyPopoverOpen: false }"
                 data-job-id="{{ job._id }}"
                 onmouseenter="if(window.JDPrefetch) JDPrefetch.prefetch('{{ job._id }}')"
@@ -116,6 +117,12 @@
                         {% else %}
                         Auto
                         {% endif %}
+                    </span>
+                    {% endif %}
+                    {% if is_ai %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                          title="{{ (job.ai_categories or []) | join(', ') }}">
+                        AI
                     </span>
                     {% endif %}
                 </td>

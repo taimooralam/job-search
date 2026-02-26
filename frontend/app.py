@@ -577,6 +577,9 @@ def list_jobs():
     # Check for "leadership only" filter - filters to CTO/VP/Director roles (tiers 0-2)
     leadership_only = request.args.get("leadership_only", "").lower() == "true"
 
+    # Check for "AI jobs only" filter - filters to jobs classified as AI/GenAI/LLM
+    ai_only = request.args.get("ai_only", "").lower() == "true"
+
     # Status filter (can be multiple values)
     # Default: exclude 'discarded', 'applied', 'interview scheduled'
     statuses = request.args.getlist("statuses")
@@ -702,14 +705,16 @@ def list_jobs():
         "jobDescription": 1,  # Another fallback field name
         "extracted_jd": 1,  # Analyzed JD data for hover preview
         "fit_score": 1,  # For hover preview tooltip
+        "is_ai_job": 1,  # AI job classification
+        "ai_categories": 1,  # AI category list for badge tooltip
     }
 
     # GAP-007: Use aggregation pipeline for date filtering to handle mixed types
     # MongoDB $toDate normalizes both ISO strings AND Date objects to Date objects
     # This allows hour-level granularity regardless of how createdAt was stored
     has_date_filter = date_filter_from is not None or date_filter_to is not None
-    # Use aggregation for date filtering OR for default multi-criteria sorting OR for leadership filter
-    use_aggregation = has_date_filter or use_default_sort or leadership_only
+    # Use aggregation for date filtering OR for default multi-criteria sorting OR for leadership/AI filter
+    use_aggregation = has_date_filter or use_default_sort or leadership_only or ai_only
 
     if use_aggregation:
         # Build aggregation pipeline
@@ -729,6 +734,16 @@ def list_jobs():
                     "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
                     "then": {"$toDate": "$createdAt"},
                     "else": "$createdAt"  # Already a Date object
+                }
+            }
+
+        # Add AI job sort field: 0 = AI job (first), 1 = non-AI job
+        if use_default_sort or ai_only:
+            add_fields["_isAiJob"] = {
+                "$cond": {
+                    "if": {"$ifNull": ["$is_ai_job", False]},
+                    "then": 0,
+                    "else": 1,
                 }
             }
 
@@ -800,14 +815,20 @@ def list_jobs():
         if leadership_only:
             pipeline.append({"$match": {"_seniorityRank": {"$lte": 2}}})
 
+        # Stage 3c: Filter by AI jobs only
+        if ai_only:
+            pipeline.append({"$match": {"is_ai_job": True}})
+
         # Build sort specification
         if use_default_sort:
             # Multi-criteria sort (lower values = higher priority for tiers):
-            # 1. Location priority: Saudi(1) → UAE(2) → Others(3) - only if no location filter
-            # 2. Role priority: CTO(0) → VP(1) → Director(2) → Tech Lead(3) → Staff(4) → EM(5) → SE(6)
-            # 3. Score: higher scores first
-            # 4. Recency: most recent first
+            # 1. AI job priority: AI(0) → non-AI(1)
+            # 2. Location priority: Saudi(1) → UAE(2) → Others(3) - only if no location filter
+            # 3. Role priority: CTO(0) → VP(1) → Director(2) → Tech Lead(3) → Staff(4) → EM(5) → SE(6)
+            # 4. Score: higher scores first
+            # 5. Recency: most recent first
             sort_spec: Dict[str, int] = {}
+            sort_spec["_isAiJob"] = 1  # AI jobs first (0 before 1)
             if not has_location_filter:
                 sort_spec["_locationPriority"] = 1  # Lower tier = higher priority
             sort_spec["_seniorityRank"] = 1  # Lower tier = higher priority (leadership first)
@@ -3088,6 +3109,15 @@ def batch_job_rows_partial():
             }
         }
 
+        # _isAiJob: AI jobs float to top (0 = AI, 1 = non-AI)
+        add_fields["_isAiJob"] = {
+            "$cond": {
+                "if": {"$ifNull": ["$is_ai_job", False]},
+                "then": 0,
+                "else": 1,
+            }
+        }
+
         # _locationPriority: tiered priority (1=Saudi, 2=UAE, 3=Others)
         location_branches = []
         for keyword, priority in LOCATION_PRIORITY.items():
@@ -3139,6 +3169,7 @@ def batch_job_rows_partial():
         # Lower tier values = higher priority for location and role
         sort_spec = {
             "_hasResolvedUrl": 1,    # Resolved URLs first (0 before 1)
+            "_isAiJob": 1,           # AI jobs first (0 before 1)
             "_locationPriority": 1,  # Saudi(1) → UAE(2) → Others(3)
             "_seniorityRank": 1,     # CTO(0) → VP(1) → ... → SE(6)
             "score": -1,             # Higher scores first

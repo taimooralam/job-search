@@ -10,8 +10,9 @@
        hx-get="/partials/batch-job-row/{{ job._id }}"
        hx-trigger="refresh-row"
        hx-swap="outerHTML">
+    {% set is_ai = job.is_ai_job|default(false) %}
     <!-- Main row -->
-    <tr class="job-row hover:theme-bg-hover border-b theme-border {% if has_resolved_url %}bg-emerald-50/50 dark:bg-emerald-950/20{% endif %}"
+    <tr class="job-row hover:theme-bg-hover border-b theme-border {% if has_resolved_url %}bg-emerald-50/50 dark:bg-emerald-950/20{% endif %}{% if is_ai %} border-l-2 border-l-purple-400{% endif %}"
         :class="{ 'theme-bg-hover': expanded }"
         onmouseenter="if(window.JDPrefetch) JDPrefetch.prefetch('{{ job._id }}')"
         oncontextmenu="showBatchJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
@@ -62,6 +63,12 @@
                     {% else %}
                     Auto
                     {% endif %}
+                </span>
+                {% endif %}
+                {% if is_ai %}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 flex-shrink-0"
+                      title="{{ (job.ai_categories or []) | join(', ') }}">
+                    AI
                 </span>
                 {% endif %}
             </div>

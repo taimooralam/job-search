@@ -151,12 +151,21 @@ class StructureJDService(OperationService):
                 existing_annotations.get("annotation_version", 0) + 1
             )
 
+            # Re-classify AI categories with enriched extracted_jd
+            from src.common.ai_classifier import classify_job_document
+            enriched_doc = dict(job) if job else {}
+            enriched_doc["extracted_jd"] = processed_result
+            ai_result = classify_job_document(enriched_doc)
+
             result = repo.update_one(
                 {"_id": object_id},
                 {
                     "$set": {
                         "jd_annotations": existing_annotations,
                         "extracted_jd": processed_result,  # Also store full result
+                        "is_ai_job": ai_result.is_ai_job,
+                        "ai_categories": ai_result.ai_categories,
+                        "ai_category_count": ai_result.ai_category_count,
                         "updatedAt": datetime.utcnow(),
                     }
                 },
