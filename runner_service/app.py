@@ -1555,7 +1555,9 @@ async def startup_queue_polling_loop():
         )
         from runner_service.routes.operation_streaming import (
             create_operation_run,
+            create_operation_run_with_id,
             append_operation_log,
+            get_operation_state,
             get_runner_id,
         )
         from src.common.model_tiers import get_tier_from_string, ModelTier
@@ -1572,10 +1574,21 @@ async def startup_queue_polling_loop():
                 ):
                     item = await _queue_manager.dequeue()
                     if item:
-                        # Create operation run for log tracking
-                        run_id = create_operation_run(item.job_id, item.operation)
-                        append_operation_log(run_id, f"[poll] Picked up by {runner_id}")
-                        await _queue_manager.link_run_id(item.queue_id, run_id)
+                        # Reuse existing run_id from queue item if present
+                        # (created by the enqueue endpoint, possibly on a different runner).
+                        # This ensures the frontend keeps polling the same run_id.
+                        if item.run_id:
+                            run_id = item.run_id
+                            # Adopt the run into this runner's in-memory state
+                            # so logs are appended to the same run the frontend tracks.
+                            existing = get_operation_state(run_id)
+                            if not existing:
+                                create_operation_run_with_id(run_id, item.job_id, item.operation)
+                            append_operation_log(run_id, f"[poll] Picked up by {runner_id}")
+                        else:
+                            run_id = create_operation_run(item.job_id, item.operation)
+                            append_operation_log(run_id, f"[poll] Picked up by {runner_id}")
+                            await _queue_manager.link_run_id(item.queue_id, run_id)
 
                         # Convert tier string to ModelTier
                         tier = get_tier_from_string(item.processing_tier) or ModelTier.BALANCED

@@ -1950,10 +1950,12 @@ async def queue_operation(
         # Get position in queue
         position = await queue_manager.get_position(queue_item.queue_id)
 
-        # Create operation run for log tracking (links to queue item)
-        run_id = create_operation_run(job_id, operation)
-        append_operation_log(run_id, f"Queued {operation} for job {job_id}")
-        append_operation_log(run_id, f"Queue position: #{position}")
+        # Generate run_id for queue item linkage (no OperationState yet).
+        # The polling loop (_queue_polling_loop in app.py) will create the
+        # OperationState on the executing runner when it dequeues this item.
+        # This avoids stale in-memory state on a different runner when
+        # execution is load-balanced across multiple runner instances.
+        run_id = f"op_{operation}_{uuid.uuid4().hex[:12]}"
 
         # Link run_id to queue item (enables "View Logs" button)
         await queue_manager.link_run_id(queue_item.queue_id, run_id)
