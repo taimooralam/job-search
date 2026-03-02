@@ -33,7 +33,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pymongo.database import Database
 
-from src.common.ai_classifier import build_searchable_text, classify_job_text
+
 from src.common.dedupe import generate_dedupe_key as _generate_dedupe_key
 from src.common.repositories import (
     get_job_repository,
@@ -257,12 +257,6 @@ class IngestService:
         """
         from src.services.claude_quick_scorer import derive_tier_from_score
 
-        # Classify job for AI/GenAI/LLM categories
-        search_text = build_searchable_text(
-            title=job.title, description=job.description
-        )
-        classification = classify_job_text(search_text)
-
         return {
             "company": job.company,
             "title": job.title,
@@ -278,10 +272,10 @@ class IngestService:
             "quick_score": score,
             "quick_score_rationale": rationale,
             "tier": derive_tier_from_score(score),
-            # AI classification
-            "is_ai_job": classification.is_ai_job,
-            "ai_categories": classification.ai_categories,
-            "ai_category_count": classification.ai_category_count,
+            # AI classification deferred to batch pipeline (LLM classifier)
+            "is_ai_job": False,
+            "ai_categories": [],
+            "ai_category_count": 0,
             # Optional fields
             "salary": job.salary,
             "jobType": job.job_type,
