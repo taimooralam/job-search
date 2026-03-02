@@ -533,8 +533,18 @@ jobs:
         needs.changes.outputs.ci-changed == 'true'
       )
 
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Copy deployment files locally
         run: |
@@ -560,6 +570,9 @@ jobs:
           else
             echo "🔄 Code change - restarting with locally built images..."
           fi
+
+          # Pull latest images from GHCR (build jobs push to registry, not local)
+          docker compose -f docker-compose.runner.yml pull
 
           # Restart services (picks up new compose file - replicas defined in compose)
           # Note: deploy.replicas: 4 in compose file handles scaling automatically
