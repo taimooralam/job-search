@@ -700,10 +700,9 @@ def list_jobs():
         "country_code": 1,  # Cached country code from location
         "auto_discovered": 1,  # Auto-discovery badge
         "source": 1,  # Job source (indeed_auto, himalayas_auto, etc.)
-        "description": 1,  # For hover preview tooltip (truncated client-side)
-        "job_description": 1,  # Fallback field name for description
-        "jobDescription": 1,  # Another fallback field name
-        "extracted_jd": 1,  # Analyzed JD data for hover preview
+        # NOTE: description, job_description, jobDescription, and extracted_jd are
+        # intentionally excluded from the list projection to reduce payload (~4KB+ per doc).
+        # JD preview sidebar loads these via a separate /api/jobs/<id> call.
         "fit_score": 1,  # For hover preview tooltip
         "is_ai_job": 1,  # AI job classification
         "ai_categories": 1,  # AI category list for badge tooltip
@@ -724,18 +723,28 @@ def list_jobs():
         if mongo_query:
             pipeline.append({"$match": mongo_query})
 
-        # Stage 2: Add computed fields for sorting and date normalization
-        add_fields: Dict[str, Any] = {}
-
-        # Add normalized date field if date filtering is needed
+        # Stage 2: Date normalization + date filter (BEFORE expensive computed fields)
+        # This narrows the working set early so regex-heavy $addFields runs on fewer docs
         if has_date_filter:
-            add_fields["_normalizedDate"] = {
-                "$cond": {
-                    "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
-                    "then": {"$toDate": "$createdAt"},
-                    "else": "$createdAt"  # Already a Date object
+            pipeline.append({"$addFields": {
+                "_normalizedDate": {
+                    "$cond": {
+                        "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
+                        "then": {"$toDate": "$createdAt"},
+                        "else": "$createdAt"  # Already a Date object
+                    }
                 }
-            }
+            }})
+            date_match: Dict[str, Any] = {}
+            if date_filter_from:
+                date_match["$gte"] = date_filter_from
+            if date_filter_to:
+                date_match["$lte"] = date_filter_to
+            pipeline.append({"$match": {"_normalizedDate": date_match}})
+
+        # Stage 3: Expensive computed fields for sorting/filtering
+        # Runs AFTER date filter so only the narrowed set gets ~50 regex evaluations per doc
+        add_fields: Dict[str, Any] = {}
 
         # Add AI job sort field: 0 = AI job (first), 1 = non-AI job
         if use_default_sort or ai_only:
@@ -801,15 +810,6 @@ def list_jobs():
 
         if add_fields:
             pipeline.append({"$addFields": add_fields})
-
-        # Stage 3: Filter by normalized date (if date filtering is needed)
-        if has_date_filter:
-            date_match: Dict[str, Any] = {}
-            if date_filter_from:
-                date_match["$gte"] = date_filter_from
-            if date_filter_to:
-                date_match["$lte"] = date_filter_to
-            pipeline.append({"$match": {"_normalizedDate": date_match}})
 
         # Stage 3b: Filter by leadership roles (tiers 0-2: CTO, VP, Director)
         if leadership_only:
