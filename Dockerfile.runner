@@ -40,7 +40,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 # Install Claude Code CLI globally
 # Uses Max subscription auth via CLAUDE_CODE_OAUTH_TOKEN env var
 # Generate token with: claude setup-token (valid for 1 year)
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code firecrawl-cli
 
 # Create non-root user for Claude CLI security
 # Claude CLI refuses --dangerously-skip-permissions when running as root

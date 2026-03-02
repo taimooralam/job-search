@@ -8,6 +8,7 @@ from Layer 3 (Company Research) and Layer 2.5 (STAR Selector).
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 
+from src.common.config import Config
 from src.layer5.people_mapper import (
     PeopleMapper,
     people_mapper_node,
@@ -117,6 +118,7 @@ class TestSafeGetNested:
 class TestNullCompanyResearchHandling:
     """Test that Layer 5 handles missing/None company_research gracefully."""
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
@@ -163,6 +165,7 @@ class TestNullCompanyResearchHandling:
         # Should log warning but not error
         assert len(result.get("errors", [])) == 0
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
@@ -205,6 +208,7 @@ class TestNullCompanyResearchHandling:
         # Should not have errors
         assert len(result.get("errors", [])) == 0
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
@@ -297,6 +301,7 @@ class TestUpstreamDependencyValidation:
         # Should return empty contacts
         assert result["primary_contacts"] == []
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
@@ -396,6 +401,7 @@ class TestFormatFunctionsNullHandling:
 class TestNodeFunctionNullHandling:
     """Test people_mapper_node integration with null data."""
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')

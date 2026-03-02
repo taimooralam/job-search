@@ -18,15 +18,12 @@ import re
 from datetime import datetime, timedelta
 from typing import Callable, Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
-from firecrawl import FirecrawlApp
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.config import Config
 from src.common.repositories import (
     CompanyCacheRepositoryInterface,
     get_company_cache_repository,
 )
-from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, CompanySignal, CompanyResearch, ProgressCallback
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
@@ -37,54 +34,6 @@ from src.common.unified_llm import UnifiedLLM, invoke_unified_sync
 # Type alias for log callback function
 LogCallback = Callable[[str], None]
 
-
-# ===== FIRECRAWL RESPONSE NORMALIZER =====
-
-def _extract_search_results(search_response: Any) -> List[Any]:
-    """
-    Normalize FireCrawl search responses across SDK versions into a list of result objects.
-
-    Supports:
-      - New client (v4.8.0+): response.web (list of objects with .url / .markdown)
-      - Older client (v4.7.x and earlier): response.data
-      - Dict responses: {"web": [...]} or {"data": [...]}
-      - Bare lists: [ {...}, {...} ]
-
-    Args:
-        search_response: Response from FirecrawlApp.search()
-
-    Returns:
-        List of search result objects
-
-    Example:
-        >>> search_response = app.search("company news")
-        >>> results = _extract_search_results(search_response)
-        >>> for result in results:
-        ...     print(result.url, result.markdown)
-    """
-    if not search_response:
-        return []
-
-    # Attribute-based shapes (Pydantic models)
-    # New SDK v4.8.0+: response.web, response.news, response.images
-    results = getattr(search_response, "web", None)
-    if results is None and hasattr(search_response, "data"):
-        # Older SDK: response.data
-        results = getattr(search_response, "data", None)
-
-    # Dict shape (for test mocks or API changes)
-    if results is None and isinstance(search_response, dict):
-        results = (
-            search_response.get("web")
-            or search_response.get("data")
-            or search_response.get("results")
-        )
-
-    # Bare list shape (unlikely but defensive)
-    if results is None and isinstance(search_response, list):
-        results = search_response
-
-    return results or []
 
 
 # ===== PYDANTIC SCHEMA VALIDATION (Phase 5.1) =====
@@ -420,12 +369,12 @@ Summary (2-3 sentences):
 class CompanyResearcher:
     """
     Researches companies using web scraping and LLM analysis.
-    Phase 1.3: Includes MongoDB caching to reduce FireCrawl costs.
+    Phase 1.3: Includes MongoDB caching.
     Phase 5 enhancement: STAR-aware prompts and defensive fallback.
 
     Supports two execution backends:
     - Claude API (default): Uses Claude API with WebSearch for research
-    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+    - LLM-only (legacy): Uses UnifiedLLM for backward compatibility
     """
 
     def __init__(
@@ -443,7 +392,7 @@ class CompanyResearcher:
             tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
                   Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
             use_claude_api: If True (default), use Claude API with WebSearch.
-                           If False, use FireCrawl + OpenRouter (legacy mode).
+                           If False, use LLM-only (legacy mode).
             log_callback: Optional callback for log streaming (Redis live-tail).
                 Signature: (json_string: str) -> None
             progress_callback: Optional callback for granular LLM progress events.
@@ -464,16 +413,10 @@ class CompanyResearcher:
             self.firecrawl = None
             self.llm = None
         else:
-            # Legacy mode: FireCrawl + OpenRouter
+            # Legacy mode: LLM-only (Firecrawl removed)
             self.claude_researcher = None
-            # FireCrawl for web scraping
-            self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
-            # LLM for summarization (GAP-066: Token tracking enabled)
-            self.llm = create_tracked_llm(
-                model=Config.DEFAULT_MODEL,
-                temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual summaries
-                layer="layer3_company",
-            )
+            self.firecrawl = None
+            self.llm = None
 
     def _emit_log(self, data: Dict[str, Any]) -> None:
         """Emit a log event via log_callback if configured."""
@@ -600,7 +543,7 @@ class CompanyResearcher:
         Fallback Chain:
         1. Primary: Claude API WebSearch with original company name
         2a. If fails: Try name variations (DLOCAL -> dLocal, DLocal, etc.)
-        2b. If still fails: Try FireCrawl mode if available (legacy scraping)
+        2b. If still fails: LLM knowledge fallback (last resort)
         2c. If still fails: Use LLM knowledge fallback (training data, low confidence)
         3. If ALL fail: Return error with company_research: None
 
@@ -624,7 +567,7 @@ class CompanyResearcher:
             "model": CLAUDE_MODEL_TIERS.get(self.tier, "claude-sonnet-4-20250514"),
         })
 
-        # Check cache first (same caching logic as FireCrawl mode)
+        # Check cache first
         try:
             cached_data = self._check_cache(company)
             if cached_data:
@@ -684,75 +627,19 @@ class CompanyResearcher:
 
         self.logger.warning(f"[Fallback 2a] All name variations failed for {company}")
 
-        # ===== STEP 2b: Try FireCrawl mode if available =====
-        if self.firecrawl:
-            self.logger.info(f"[Fallback 2b] Trying FireCrawl mode for {company}")
-            try:
-                # Use the legacy research method
-                scraped_data = self._scrape_multiple_sources(company)
-                if scraped_data:
-                    # Extract STAR context if available
-                    star_domains, star_outcomes = self._extract_star_context(state)
-                    annotation_focus = self._extract_annotation_research_focus(state)
-
-                    company_research_output = self._analyze_company_signals(
-                        company, scraped_data,
-                        star_domains=star_domains,
-                        star_outcomes=star_outcomes,
-                        annotation_focus=annotation_focus,
-                        job_id=job_id
-                    )
-
-                    if company_research_output:
-                        self.logger.info(f"[Fallback 2b] FireCrawl mode successful for {company}")
-                        # Convert to result format
-                        company_research: CompanyResearch = {
-                            "summary": company_research_output.summary,
-                            "signals": [
-                                {
-                                    "type": sig.type,
-                                    "description": sig.description,
-                                    "date": sig.date,
-                                    "source": sig.source,
-                                }
-                                for sig in company_research_output.signals
-                            ],
-                            "url": company_research_output.url,
-                            "company_type": "employer",
-                        }
-
-                        # Cache the result
-                        try:
-                            self._store_cache(company, company_research=company_research_output, company_type="employer")
-                            self.logger.info(f"[Cache] ✓ Stored FireCrawl fallback research for {company}")
-                        except Exception as cache_error:
-                            self.logger.warning(f"[Cache] ✗ Failed to cache: {cache_error}")
-
-                        return {
-                            "company_research": company_research,
-                            "scraped_job_posting": None,
-                            "company_summary": company_research["summary"],
-                            "company_url": company_research["url"],
-                        }
-
-            except Exception as e:
-                self.logger.warning(f"[Fallback 2b] FireCrawl mode failed: {e}")
-        else:
-            self.logger.debug("[Fallback 2b] FireCrawl not available, skipping")
-
-        # ===== STEP 2c: LLM knowledge fallback (last resort) =====
-        self.logger.info(f"[Fallback 2c] Using LLM knowledge fallback for {company}")
+        # ===== STEP 2b: LLM knowledge fallback (last resort) =====
+        self.logger.info(f"[Fallback 2b] Using LLM knowledge fallback for {company}")
         try:
             llm_result = run_async(
                 self._research_with_llm_knowledge(company, job_title, job_description)
             )
             if llm_result:
-                self.logger.info(f"[Fallback 2c] LLM knowledge fallback successful for {company}")
+                self.logger.info(f"[Fallback 2b] LLM knowledge fallback successful for {company}")
                 # NOTE: Do NOT cache LLM knowledge results (may be stale)
                 return llm_result
 
         except Exception as e:
-            self.logger.warning(f"[Fallback 2c] LLM knowledge fallback failed: {e}")
+            self.logger.warning(f"[Fallback 2b] LLM knowledge fallback failed: {e}")
 
         # ===== ALL FALLBACKS FAILED =====
         error_msg = f"Claude API company research failed after all fallbacks: {primary_error}"
@@ -846,7 +733,7 @@ class CompanyResearcher:
 
         # Scrape job posting if URL available (for dossier completeness)
         scraped_job_posting = None
-        # In Claude API mode, we don't have FireCrawl available for job posting scraping
+        # In Claude API mode, we don't have scraping available for job posting
 
         return {
             "company_research": company_research,
@@ -855,58 +742,6 @@ class CompanyResearcher:
             "company_summary": company_research["summary"],
             "company_url": company_research["url"],
         }
-
-    def _assess_content_quality(self, content: str) -> str:
-        """
-        Phase 5.2: Content quality gate to detect boilerplate.
-
-        Detects low-value content (cookie policies, legal text, paywalls)
-        and assigns quality score for filtering.
-
-        Args:
-            content: Scraped content text
-
-        Returns:
-            "high", "medium", or "low" quality score
-        """
-        if not content or len(content) < 100:
-            return "low"
-
-        content_lower = content.lower()
-
-        # Low-value boilerplate indicators
-        boilerplate_phrases = [
-            "cookie policy", "privacy policy", "terms of service",
-            "we use cookies", "accept all cookies", "manage preferences",
-            "gdpr", "this website uses cookies", "cookie settings",
-            "please enable javascript", "javascript is required"
-        ]
-
-        boilerplate_count = sum(1 for phrase in boilerplate_phrases if phrase in content_lower)
-
-        # High boilerplate density = low quality
-        if boilerplate_count >= 3:
-            return "low"
-        elif boilerplate_count >= 1:
-            return "medium"
-
-        # Business content indicators
-        business_phrases = [
-            "funding", "raised", "series", "customers", "revenue",
-            "partnership", "acquisition", "launched", "product",
-            "team", "employees", "growth", "market", "ceo",
-            "founded", "investor", "valuation", "expansion"
-        ]
-
-        business_count = sum(1 for phrase in business_phrases if phrase in content_lower)
-
-        # High business density = high quality
-        if business_count >= 3:
-            return "high"
-        elif business_count >= 1:
-            return "medium"
-
-        return "low"
 
     def _extract_star_context(self, state: JobState) -> tuple[Optional[str], Optional[str]]:
         """
@@ -1320,67 +1155,6 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
         wait=wait_exponential(multiplier=1, min=2, max=5),
         reraise=True
     )
-    def _scrape_website(self, url: str, char_limit: int = 3000) -> Optional[str]:
-        """
-        Scrape company website using FireCrawl.
-
-        Phase 5.2: Increased character limit for better content extraction.
-
-        Args:
-            url: URL to scrape
-            char_limit: Character limit (default 3000, increased from 2000)
-
-        Returns:
-            Cleaned text content or None if scraping fails
-        """
-        try:
-            # Use FireCrawl's scrape endpoint
-            result = self.firecrawl.scrape(
-                url,
-                formats=['markdown'],  # Get clean markdown text
-                only_main_content=True  # Skip nav, footer, etc.
-            )
-
-            # Extract markdown content from Document object
-            if result and hasattr(result, 'markdown'):
-                content = result.markdown
-                # Phase 5.2: Increased limit (2000 → 3000) for better extraction
-                return content[:char_limit] if content else None
-
-            return None
-
-        except Exception as e:
-            self.logger.warning(f"FireCrawl scraping failed: {str(e)}")
-            raise  # Re-raise for retry logic
-
-    @retry(
-        stop=stop_after_attempt(2),
-        wait=wait_exponential(multiplier=1, min=1, max=5),
-        reraise=False
-    )
-    def _scrape_job_posting(self, job_url: str) -> Optional[str]:
-        """
-        Scrape the original job posting to preserve the written JD for the dossier.
-
-        Returns:
-            Markdown content truncated for prompt safety or None if scraping fails.
-        """
-        try:
-            if not job_url:
-                return None
-
-            result = self.firecrawl.scrape(
-                job_url,
-                formats=['markdown'],
-                only_main_content=True
-            )
-            if result and hasattr(result, "markdown"):
-                return result.markdown[:4000]
-        except Exception as e:
-            self.logger.warning(f"Job posting scrape failed: {e}")
-
-        return None
-
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -1439,424 +1213,26 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
 
         return result.content.strip()
 
-    @retry(
-        stop=stop_after_attempt(2),
-        wait=wait_exponential(multiplier=1, min=2, max=5),
-        reraise=True
-    )
-    def _search_with_firecrawl(self, query: str, source_name: str) -> Optional[Dict[str, str]]:
-        """
-        Search for a URL using FireCrawl search API and scrape the top result.
-
-        Args:
-            query: Search query string
-            source_name: Name of the source (for filtering results)
-
-        Returns:
-            Dict with {"url": str, "content": str} or None if search/scrape fails
-        """
-        try:
-            self.logger.info(f"[FireCrawl] {source_name} search query: {query}")
-            # Use FireCrawl search API to find relevant URLs
-            # Limit to top 3 results to save API calls
-            search_response = self.firecrawl.search(query, limit=3)
-
-            # Use normalizer to extract results (handles SDK version differences)
-            results = _extract_search_results(search_response)
-
-            if not results:
-                self.logger.info(f"No search results for {source_name}")
-                return None
-
-            # Extract the most relevant URL
-            # For LinkedIn/Crunchbase, prioritize URLs containing those domains
-            top_result = None
-            for result in results:
-                # Defensive URL extraction (handles both object attributes and dict keys)
-                url = getattr(result, "url", None) or (result.get("url") if isinstance(result, dict) else None)
-
-                if not url:
-                    continue
-
-                # Filter by source preference
-                if source_name == "linkedin" and "linkedin.com" in url.lower():
-                    top_result = url
-                    break
-                elif source_name == "crunchbase" and "crunchbase.com" in url.lower():
-                    top_result = url
-                    break
-                elif source_name == "news":
-                    # For news, accept first result
-                    top_result = url
-                    break
-                elif not top_result:
-                    # Fallback to first result if no domain match
-                    top_result = url
-
-            if not top_result:
-                self.logger.info(f"No suitable URL found for {source_name}")
-                return None
-
-            self.logger.info(f"Found URL for {source_name}: {top_result}")
-
-            # Scrape the top result
-            content = self._scrape_website(top_result)
-
-            if content:
-                return {
-                    "url": top_result,
-                    "content": content
-                }
-
-            return None
-
-        except Exception as e:
-            self.logger.warning(f"Search failed for {source_name}: {e}")
-            raise  # Re-raise for retry logic
-
-    def _scrape_multiple_sources(self, company: str) -> Dict[str, Dict[str, str]]:
-        """
-        Scrape company information from multiple sources (Phase 5.2 IMPROVED).
-
-        Phase 5.2 improvements:
-        - Keyword-based search queries (not LLM-style questions)
-        - Search operators for precision (site:, "quotes", OR, etc.)
-        - Content quality gate filtering
-        - Increased character limits for better extraction
-
-        Queries (keyword-based with operators):
-        1. "{company}" (about OR careers OR company) - Official site
-        2. "{company}" site:linkedin.com/company - LinkedIn
-        3. "{company}" site:crunchbase.com/organization - Crunchbase
-        4. "{company}" (funding OR acquisition OR partnership) 2024 - Recent news
-
-        Returns:
-            Dict with source_name -> {"url": str, "content": str, "quality": str}
-            Only includes sources with medium/high quality (low-quality filtered out).
-        """
-        # Phase 5.2: Keyword-based queries with search operators
-        queries = {
-            "official_site": f'"{company}" (about OR careers OR company)',
-            "linkedin": f'"{company}" site:linkedin.com/company',
-            "crunchbase": f'"{company}" site:crunchbase.com/organization',
-            "news": f'"{company}" (funding OR acquisition OR partnership OR launch) 2024',
-        }
-
-        scraped_data = {}
-
-        for source_name, query in queries.items():
-            try:
-                self.logger.info(f"Searching {source_name}: {query[:60]}...")
-
-                # Phase 5.2: All sources use FireCrawl search (no direct URL construction)
-                search_results = self._search_with_firecrawl(query, source_name)
-
-                if search_results:
-                    url = search_results['url']
-                    content = search_results['content']
-
-                    # Phase 5.2: Apply content quality gate
-                    quality = self._assess_content_quality(content)
-                    self.logger.info(f"Scraped {len(content)} chars from {source_name} (quality: {quality})")
-
-                    # Only keep medium/high quality sources
-                    if quality in ['medium', 'high']:
-                        scraped_data[source_name] = {
-                            "url": url,
-                            "content": content,
-                            "quality": quality
-                        }
-                        self.logger.info(f"✓ Kept {source_name} (quality: {quality})")
-                    else:
-                        self.logger.info(f"✗ Filtered {source_name} (low quality)")
-
-            except Exception as e:
-                self.logger.info(f"[Scrape] ✗ {source_name} failed (non-critical): {e}")
-                continue
-
-        return scraped_data
-
-    def _analyze_company_signals(
-        self,
-        company: str,
-        scraped_data: Dict[str, Dict[str, str]],
-        star_domains: Optional[str] = None,
-        star_outcomes: Optional[str] = None,
-        annotation_focus: Optional[str] = None,
-        job_id: str = "unknown"
-    ) -> CompanyResearchOutput:
-        """
-        Extract company signals from scraped content using LLM (Phase 5.2 enhanced).
-
-        Phase 5.2 enhancements:
-        - Reasoning-first prompts with transparency
-        - Quality assessment per source
-        - Few-shot examples
-        - STAR-aware when candidate context available
-        - Phase 4: Annotation-aware when JD annotations available
-
-        Migrated to UnifiedLLM: Uses step_name="analyze_company_signals" (middle tier).
-
-        Args:
-            company: Company name
-            scraped_data: Dict of {source_name: {"url": str, "content": str, "quality": str}}
-            star_domains: Optional candidate domain areas from selected STARs
-            star_outcomes: Optional candidate outcome types from selected STARs
-            annotation_focus: Optional focus areas from JD annotations
-            job_id: Job ID for tracking (optional)
-
-        Returns:
-            CompanyResearchOutput with validated signals and reasoning block
-
-        Raises:
-            ValueError: If LLM output is invalid JSON or fails validation
-        """
-        # Phase 5.2: Build concatenated content with quality indicators
-        content_sections = []
-        for source_name, data in scraped_data.items():
-            quality_tag = f"[quality: {data.get('quality', 'unknown')}]"
-            content_sections.append(
-                f"=== SOURCE: {source_name} ({data['url']}) {quality_tag} ===\n{data['content']}\n"
-            )
-
-        scraped_content = "\n".join(content_sections)
-
-        # Phase 4: Add annotation focus context if available
-        if annotation_focus:
-            annotation_section = (
-                f"\n\n=== CANDIDATE ANNOTATION FOCUS (Phase 4) ===\n"
-                f"Research signals should prioritize these areas based on candidate annotations:\n"
-                f"{annotation_focus}\n"
-                f"Look for company signals that align with these focus areas.\n"
-            )
-            scraped_content = annotation_section + scraped_content
-            self.logger.info(f"Annotation focus injected into research prompt")
-
-        # Phase 5: Use STAR-aware prompt if candidate context available
-        if star_domains and star_outcomes:
-            system_prompt = SYSTEM_PROMPT_COMPANY_SIGNALS_STAR_AWARE.format(
-                candidate_domains=star_domains,
-                candidate_outcomes=star_outcomes
-            )
-            self.logger.info(f"Using STAR-aware prompt (domains: {star_domains[:50]}...)")
-        else:
-            system_prompt = SYSTEM_PROMPT_COMPANY_SIGNALS
-
-        # Build user prompt
-        # Phase 5.2: Increased content limit (5000 -> 8000) for better extraction
-        user_prompt = USER_PROMPT_COMPANY_SIGNALS_TEMPLATE.format(
-            company=company,
-            scraped_content=scraped_content[:8000]  # Phase 5.2: Increased limit
-        )
-
-        # Use UnifiedLLM with step config for analyze_company_signals (middle tier)
-        result = invoke_unified_sync(
-            prompt=user_prompt,
-            step_name="analyze_company_signals",
-            system=system_prompt,
-            job_id=job_id,
-            validate_json=True,
-            progress_callback=self._progress_callback,
-        )
-
-        if not result.success:
-            self.logger.error(f"Company signals LLM call failed: {result.error}")
-            raise ValueError(f"LLM signal extraction failed: {result.error}")
-
-        # Log backend attribution
-        self.logger.info(f"Company signals via {result.backend} ({result.model}) in {result.duration_ms}ms")
-
-        # Use parsed_json if available, otherwise parse manually
-        if result.parsed_json:
-            data = result.parsed_json
-        else:
-            llm_output = result.content.strip()
-
-            # Phase 5.2: Simple JSON parsing (Python's json module handles nested structures)
-            # Remove markdown code blocks if present
-            if llm_output.startswith("```"):
-                llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
-                llm_output = re.sub(r'\s*```$', '', llm_output)
-                llm_output = llm_output.strip()
-
-            # Parse JSON directly - Python handles nested structures automatically
-            try:
-                data = json.loads(llm_output)
-            except json.JSONDecodeError as e:
-                self.logger.error(f"JSON parsing failed: {e}")
-                self.logger.error(f"LLM output:\n{llm_output}")
-                raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {llm_output[:500]}")
-
-        # Validate with Pydantic
-        try:
-            validated = CompanyResearchOutput(**data)
-        except ValidationError as e:
-            error_messages = []
-            for error in e.errors():
-                field = ' -> '.join(str(x) for x in error['loc'])
-                msg = error['msg']
-                error_messages.append(f"{field}: {msg}")
-
-            self.logger.error(f"Pydantic validation failed:")
-            self.logger.error(f"Errors: {error_messages}")
-            self.logger.error(f"LLM output:\n{result.content}")
-            self.logger.error(f"Parsed data:\n{json.dumps(data, indent=2)}")
-
-            raise ValueError(
-                f"CompanyResearch schema validation failed:\n" +
-                "\n".join(f"  - {msg}" for msg in error_messages) +
-                f"\nReceived data: {json.dumps(data, indent=2)[:500]}"
-            )
-
-        return validated
-
-    def _fallback_signal_extraction(
-        self,
-        company: str,
-        official_site_data: Dict[str, str],
-        job_id: str = "unknown"
-    ) -> CompanyResearchOutput:
-        """
-        Defensive fallback: Extract minimal signals from official site content only.
-
-        Phase 5 enhancement: When multi-source scrape yields 0 signals or LLM returns empty,
-        run a second-pass extraction using only official_site content with best-effort rules.
-
-        Migrated to UnifiedLLM: Uses step_name="fallback_signal_extraction" (middle tier).
-
-        Args:
-            company: Company name
-            official_site_data: {"url": str, "content": str} from official site
-            job_id: Job ID for tracking (optional)
-
-        Returns:
-            CompanyResearchOutput with at least 1 signal (or minimal valid output)
-        """
-        self.logger.info("Running fallback signal extraction from official site")
-
-        system_prompt = "You are a business analyst. Extract factual company information. Output JSON only."
-        user_prompt = f"""Analyze this official company website content and extract ANY factual information as signals.
-
-COMPANY: {company}
-
-SCRAPED CONTENT FROM OFFICIAL SITE:
-=== SOURCE: official_site ({official_site_data['url']}) ===
-{official_site_data['content'][:3000]}
-
-**EXTRACTION RULES (BEST-EFFORT):**
-1. Extract AT LEAST ONE signal from the content
-2. If no funding/acquisition/leadership news, use "growth" type for general facts:
-   - What industry/market they operate in
-   - What products/services they offer
-   - Company description or mission
-   - Technology stack or platforms used
-3. Use the official site URL as the source for all signals
-4. Summary should describe what the company does
-
-Output JSON only:
-{{"summary": "...", "signals": [...], "url": "{official_site_data['url']}"}}"""
-
-        # Use UnifiedLLM with step config for fallback_signal_extraction (middle tier)
-        result = invoke_unified_sync(
-            prompt=user_prompt,
-            step_name="fallback_signal_extraction",
-            system=system_prompt,
-            job_id=job_id,
-            validate_json=True,
-            progress_callback=self._progress_callback,
-        )
-
-        if not result.success:
-            self.logger.warning(f"Fallback signal extraction LLM call failed: {result.error}")
-            # Return minimal valid output
-            return CompanyResearchOutput(
-                summary=f"{company} is a business (limited information available from website).",
-                signals=[{
-                    "type": "growth",
-                    "description": f"{company} official website found",
-                    "date": "unknown",
-                    "source": official_site_data['url']
-                }],
-                url=official_site_data['url']
-            )
-
-        # Log backend attribution
-        self.logger.info(f"Fallback signals via {result.backend} ({result.model}) in {result.duration_ms}ms")
-
-        # Use parsed_json if available, otherwise parse manually
-        if result.parsed_json:
-            data = result.parsed_json
-        else:
-            llm_output = result.content.strip()
-            # Extract JSON
-            json_match = re.search(r'\{.*\}', llm_output, re.DOTALL)
-            json_str = json_match.group(0) if json_match else llm_output
-
-            try:
-                data = json.loads(json_str)
-            except json.JSONDecodeError as e:
-                self.logger.warning(f"Fallback JSON parsing failed: {e}, returning minimal output")
-                return CompanyResearchOutput(
-                    summary=f"{company} is a business (limited information available from website).",
-                    signals=[{
-                        "type": "growth",
-                        "description": f"{company} official website found",
-                        "date": "unknown",
-                        "source": official_site_data['url']
-                    }],
-                    url=official_site_data['url']
-                )
-
-        try:
-            # Ensure at least one signal if none extracted
-            if not data.get('signals'):
-                data['signals'] = [{
-                    "type": "growth",
-                    "description": f"{company} operates as a business (details from official website)",
-                    "date": "unknown",
-                    "source": official_site_data['url']
-                }]
-
-            return CompanyResearchOutput(**data)
-
-        except ValidationError as e:
-            # Last resort: return minimal valid output
-            self.logger.warning(f"Fallback validation failed: {e}, returning minimal output")
-            return CompanyResearchOutput(
-                summary=f"{company} is a business (limited information available from website).",
-                signals=[{
-                    "type": "growth",
-                    "description": f"{company} official website found",
-                    "date": "unknown",
-                    "source": official_site_data['url']
-                }],
-                url=official_site_data['url']
-            )
-
     def research_company(self, state: JobState) -> Dict[str, Any]:
         """
         Main function to research company and generate structured research.
 
         Supports two execution backends:
-        - Claude API (default): Uses Claude with WebSearch for research (new)
-        - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+        - Claude API (default): Uses Claude with WebSearch for research
+        - LLM-only (legacy): Uses UnifiedLLM for backward compatibility
 
         Strategy (when use_claude_api=True):
         - Uses Claude API with web_search tool for one-shot research
         - Caches results in MongoDB with 7-day TTL
         - Handles company type detection inline
 
-        Strategy (when use_claude_api=False - legacy FireCrawl mode):
+        Strategy (when use_claude_api=False - legacy LLM-only mode):
         0. Classify company type (employer vs recruitment agency)
         1. Check MongoDB cache (7-day TTL)
         2. If recruitment agency: minimal research (basic summary, no signals)
-        3. If employer: Extract STAR context if available (Phase 5 STAR-awareness)
-        4. If cache miss, scrape multiple sources (official site, LinkedIn, Crunchbase, news)
-        5. Extract structured signals via LLM (JSON-only with Pydantic validation)
-        6. If 0 signals extracted, run defensive fallback on official_site content
-        7. Store result in cache with CompanyResearch structure
-        8. Fall back to legacy approach if Phase 5.1 fails
-        9. Log any errors but don't block pipeline
+        3. LLM summarization from general knowledge
+        4. Store result in cache
+        5. Log any errors but don't block pipeline
 
         Args:
             state: Current JobState with company name (and optionally selected_stars)
@@ -1875,9 +1251,8 @@ Output JSON only:
             self.logger.info(f"Using Claude API ({self.tier} tier) for company research")
             return self._research_company_with_claude_api(state)
 
-        # Legacy FireCrawl + OpenRouter mode
-        self.logger.info("Using FireCrawl + OpenRouter (legacy mode) for company research")
-        scraped_job_posting = self._scrape_job_posting(state.get("job_url", ""))
+        # Legacy mode: LLM-only (Firecrawl removed)
+        self.logger.info("Using LLM-only (legacy mode, Firecrawl removed) for company research")
 
         # Step 0: Classify company type (employer vs recruitment agency)
         company_type = self._classify_company_type(state)
@@ -1892,161 +1267,54 @@ Output JSON only:
             self.logger.info("Recruitment agency detected - using minimal research flow")
             company_research: CompanyResearch = {
                 "summary": f"{company} is a recruitment/staffing agency sourcing candidates for their clients.",
-                "signals": [],  # No business signals needed for agencies
+                "signals": [],
                 "url": self._construct_company_url(company),
                 "company_type": "recruitment_agency"
             }
             return {
                 "company_research": company_research,
-                "scraped_job_posting": scraped_job_posting,
+                "scraped_job_posting": None,
                 "company_summary": company_research["summary"],
                 "company_url": company_research["url"]
             }
-
-        # Phase 5 STAR-awareness: Extract candidate context if available (employers only)
-        star_domains, star_outcomes = self._extract_star_context(state)
-        if star_domains:
-            self.logger.info(f"STAR context available: {len(star_domains.split(', '))} domain(s)")
-
-        # Phase 4: Extract annotation research focus if available
-        annotation_focus = self._extract_annotation_research_focus(state)
-        if annotation_focus:
-            self.logger.info(f"Annotation focus available: {annotation_focus[:80]}...")
 
         # Step 1: Check cache first
         try:
             cached_data = self._check_cache(company)
             if cached_data:
-                if scraped_job_posting:
-                    cached_data["scraped_job_posting"] = scraped_job_posting
                 return cached_data
         except Exception as e:
             self.logger.info(f"[Cache] Check failed, proceeding with fresh research: {e}")
 
-        # Cache miss - proceed with Phase 5.1 research
+        # Step 2: LLM-only research (no Firecrawl scraping)
         try:
-            # Step 1: Multi-source scraping (Phase 5.1)
-            self.logger.info("Phase 5.1: Multi-source scraping")
-            scraped_data = self._scrape_multiple_sources(company)
+            company_url = self._construct_company_url(company)
+            company_summary = self._summarize_with_llm(company, None, job_id=job_id)
+            self.logger.info(f"Generated summary ({len(company_summary)} chars)")
 
-            if not scraped_data:
-                raise ValueError("No sources successfully scraped")
-
-            self.logger.info(f"Scraped {len(scraped_data)} source(s)")
-
-            # Step 2: Extract signals via LLM (Phase 5.1 + STAR-aware + Annotation-aware)
-            self.logger.info("Extracting company signals via LLM")
-            company_research_output = self._analyze_company_signals(
-                company, scraped_data,
-                star_domains=star_domains,
-                star_outcomes=star_outcomes,
-                annotation_focus=annotation_focus,
-                job_id=job_id
-            )
-
-            self.logger.info(f"Extracted {len(company_research_output.signals)} signal(s)")
-
-            # Emit signal extraction result log
-            signals_count = len(company_research_output.signals)
-            signal_types = [sig.type for sig in company_research_output.signals]
-            self._emit_log({
-                "message": f"Found {signals_count} company signals",
-                "signals_count": signals_count,
-                "signal_types": signal_types[:5],  # Limit to first 5 for brevity
-            })
-
-            # Phase 5 defensive fallback: If 0 signals, try second-pass extraction
-            if len(company_research_output.signals) == 0 and 'official_site' in scraped_data:
-                self.logger.warning("No signals extracted, running fallback extraction")
-                company_research_output = self._fallback_signal_extraction(
-                    company, scraped_data['official_site'],
-                    job_id=job_id
-                )
-                self.logger.info(f"Fallback extracted {len(company_research_output.signals)} signal(s)")
-
-            # Step 3: Store in cache (Phase 5.1 format)
+            # Store in cache
             try:
-                # Pass company_type="employer" since agencies return early before this point
-                self._store_cache(company, company_research=company_research_output, company_type="employer")
-                self.logger.info(f"[Cache] ✓ Stored research for {company}")
-            except Exception as e:
-                self.logger.error(f"[Cache] ✗ Failed to cache results (future lookups will re-scrape): {e}")
-
-            # Convert to TypedDict format for JobState
-            company_research: CompanyResearch = {
-                "summary": company_research_output.summary,
-                "signals": [
-                    {
-                        "type": sig.type,
-                        "description": sig.description,
-                        "date": sig.date,
-                        "source": sig.source
-                    }
-                    for sig in company_research_output.signals
-                ],
-                "url": company_research_output.url,
-                "company_type": "employer"  # Classified as direct employer
-            }
-
-            # Emit completion log with summary
-            summary_preview = company_research_output.summary[:100] + "..." if len(company_research_output.summary) > 100 else company_research_output.summary
-            self._emit_log({
-                "message": f"Company research complete: {len(company_research_output.signals)} signals found",
-                "summary_preview": summary_preview,
-                "signals_count": len(company_research_output.signals),
-            })
+                self._store_cache(company, summary=company_summary, url=company_url, company_type="employer")
+                self.logger.info(f"[Cache] Stored LLM research for {company}")
+            except Exception as cache_error:
+                self.logger.error(f"[Cache] Failed to cache results: {cache_error}")
 
             return {
-                "company_research": company_research,
-                "scraped_job_posting": scraped_job_posting,
-                # Legacy fields for backward compatibility
-                "company_summary": company_research_output.summary,
-                "company_url": company_research_output.url
+                "company_summary": company_summary,
+                "company_url": company_url,
+                "scraped_job_posting": None,
             }
 
         except Exception as e:
-            # Phase 5.1 failed - fall back to legacy approach (Phase 1.3)
-            self.logger.warning(f"Phase 5.1 research failed: {e}")
-            self.logger.info("Falling back to legacy single-source approach")
+            error_msg = f"Layer 3 (Company Researcher) failed: {str(e)}"
+            self.logger.error(error_msg)
 
-            try:
-                # Legacy single-source scraping
-                company_url = self._construct_company_url(company)
-                website_content = self._scrape_website(company_url)
-
-                if website_content:
-                    self.logger.info(f"Legacy scrape: {len(website_content)} chars from {company_url}")
-                else:
-                    self.logger.info("Using LLM general knowledge fallback")
-
-                company_summary = self._summarize_with_llm(company, website_content, job_id=job_id)
-                self.logger.info(f"Generated summary ({len(company_summary)} chars)")
-
-                # Store in cache (legacy format)
-                try:
-                    # Legacy path is only reached for employers (agencies return early)
-                    self._store_cache(company, summary=company_summary, url=company_url, company_type="employer")
-                    self.logger.info(f"[Cache] ✓ Stored legacy research for {company}")
-                except Exception as cache_error:
-                    self.logger.error(f"[Cache] ✗ Failed to cache legacy results: {cache_error}")
-
-                return {
-                    "company_summary": company_summary,
-                    "company_url": company_url,
-                    "scraped_job_posting": scraped_job_posting
-                }
-
-            except Exception as legacy_error:
-                # Complete failure - log error and return empty
-                error_msg = f"Layer 3 (Company Researcher) failed: {str(legacy_error)}"
-                self.logger.error(error_msg)
-
-                return {
-                    "company_summary": None,
-                    "company_url": None,
-                    "scraped_job_posting": scraped_job_posting,
-                    "errors": state.get("errors", []) + [error_msg]
-                }
+            return {
+                "company_summary": None,
+                "company_url": None,
+                "scraped_job_posting": None,
+                "errors": state.get("errors", []) + [error_msg]
+            }
 
 
 # ===== LANGGRAPH NODE FUNCTION =====
@@ -2061,14 +1329,14 @@ def company_researcher_node(
 
     Supports two execution backends:
     - Claude API (default): Uses Claude with WebSearch for research
-    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+    - LLM-only (legacy): Uses UnifiedLLM for backward compatibility
 
     Args:
         state: Current job processing state
         tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
               Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
         use_claude_api: If True (default), use Claude API with WebSearch.
-                       If False, use FireCrawl + OpenRouter (legacy mode).
+                       If False, use LLM-only (legacy mode).
 
     Returns:
         Dictionary with updates to merge into state
@@ -2076,7 +1344,7 @@ def company_researcher_node(
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
-    backend_name = f"Claude API ({tier} tier)" if use_claude_api else "FireCrawl + OpenRouter (legacy)"
+    backend_name = f"Claude API ({tier} tier)" if use_claude_api else "LLM-only (legacy)"
     logger.info("="*60)
     logger.info(f"LAYER 3: Company Researcher - {backend_name}")
     logger.info("="*60)

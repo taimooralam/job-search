@@ -109,21 +109,18 @@ class TestMinimalAgencyResearch:
     """Test that agencies get minimal research."""
 
     @patch('src.layer3.company_researcher.CompanyResearcher._classify_company_type')
-    @patch('src.layer3.company_researcher.CompanyResearcher._scrape_job_posting')
-    def test_agency_research_returns_minimal_data(self, mock_scrape, mock_classify):
+    def test_agency_research_returns_minimal_data(self, mock_classify):
         """Agency research returns minimal data with company_type set."""
         from src.layer3.company_researcher import CompanyResearcher
 
         mock_classify.return_value = "recruitment_agency"
-        mock_scrape.return_value = "Job posting content"
 
         with patch.object(CompanyResearcher, '__init__', lambda x: None):
             researcher = CompanyResearcher.__new__(CompanyResearcher)
             researcher.logger = MagicMock()
-            researcher.use_claude_api = False  # Use legacy FireCrawl path for test
+            researcher.use_claude_api = False  # Use legacy LLM-only path for test
             researcher._log_callback = None  # Required for _emit_log method
             researcher._classify_company_type = mock_classify
-            researcher._scrape_job_posting = mock_scrape
             researcher._construct_company_url = lambda x: f"https://{x.lower().replace(' ', '-')}.com"
 
             state = {"company": "Hays Recruitment", "job_url": "https://linkedin.com/jobs/123"}

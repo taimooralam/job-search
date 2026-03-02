@@ -205,110 +205,122 @@ class TestPydanticModels:
         assert "at most 6" in str(exc_info.value).lower()
 
 
-# ===== TESTS: FireCrawl Multi-Source Discovery =====
+# ===== TESTS: Firecrawl Fallback Discovery =====
 
-class TestFireCrawlContactDiscovery:
-    """Test multi-source FireCrawl contact discovery."""
+class TestFirecrawlFallbackDiscovery:
+    """Test _firecrawl_fallback_discover() with 2-credit cap."""
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
     @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    def test_searches_company_team_page(self, mock_firecrawl_class, sample_job_state, firecrawl_team_page_result):
-        """Scrapes company team/about page for contacts."""
+    def test_firecrawl_fallback_uses_max_2_credits(self, mock_firecrawl_class, sample_job_state):
+        """Firecrawl fallback makes at most 2 API calls (1 search + 1 scrape)."""
         mock_firecrawl = MagicMock()
-        mock_firecrawl.scrape_url.return_value = firecrawl_team_page_result
+
+        # Mock LinkedIn search response
+        mock_search_result = MagicMock()
+        mock_search_result.url = "https://www.linkedin.com/in/sarahchen"
+        mock_search_result.title = "Sarah Chen - VP Engineering at TechCorp"
+        mock_search_result.description = "VP Engineering at TechCorp"
+        mock_search_response = MagicMock()
+        mock_search_response.web = [mock_search_result]
+        mock_search_response.data = [mock_search_result]
+        mock_firecrawl.search.return_value = mock_search_response
+
+        # Mock team page scrape
+        mock_scrape_result = MagicMock()
+        mock_scrape_result.markdown = "Team page content with contacts"
+        mock_firecrawl.scrape_url.return_value = mock_scrape_result
+
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mapper = PeopleMapper()
-        raw_contacts = mapper._scrape_company_team_page(
-            company="TechCorp",
-            company_url="https://techcorp.com"
-        )
+        mapper = PeopleMapper(use_claude_api=False)
+        raw_content, found = mapper._firecrawl_fallback_discover(sample_job_state)
 
-        # Should have scraped team page
-        assert mock_firecrawl.scrape_url.called
-        assert raw_contacts is not None
-        assert "Sarah Chen" in raw_contacts or "VP Engineering" in raw_contacts
+        # At most 1 search call + 1 scrape call = 2 total Firecrawl API calls
+        total_calls = mock_firecrawl.search.call_count + mock_firecrawl.scrape_url.call_count
+        assert total_calls <= 2
+
+    @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.FirecrawlApp')
+    def test_firecrawl_fallback_skipped_when_disabled(self, mock_firecrawl_class, sample_job_state):
+        """Firecrawl fallback returns False when firecrawl_disabled=True."""
+        mock_firecrawl_class.return_value = MagicMock()
+
+        mapper = PeopleMapper(use_claude_api=False)
+        raw_content, found = mapper._firecrawl_fallback_discover(sample_job_state)
+
+        assert found is False
+        # Firecrawl should not have been called
+        assert mock_firecrawl_class.return_value.search.call_count == 0
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
     @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    def test_searches_linkedin_with_firecrawl(self, mock_firecrawl_class, sample_job_state):
-        """Uses FireCrawl search to find LinkedIn profiles (Option A - metadata extraction)."""
+    def test_firecrawl_fallback_linkedin_search_extracts_contacts(self, mock_firecrawl_class, sample_job_state):
+        """Firecrawl fallback LinkedIn search extracts contact metadata from results."""
         mock_firecrawl = MagicMock()
-        mock_search_response = MagicMock()
 
-        # Mock search results with realistic LinkedIn profile metadata
+        # Mock LinkedIn search with realistic profile metadata
         mock_linkedin_result = MagicMock()
-        mock_linkedin_result.url = "https://www.linkedin.com/in/sarahchen"
-        mock_linkedin_result.title = "Sarah Chen - VP Engineering at TechCorp"
-        mock_linkedin_result.description = "VP Engineering at TechCorp · Experience: TechCorp · Location: San Francisco"
-
-        # Support both old and new SDK formats
+        mock_linkedin_result.url = "https://www.linkedin.com/in/johnsmith"
+        mock_linkedin_result.title = "John Smith - Engineering Manager at TechCorp"
+        mock_linkedin_result.description = "Engineering Manager at TechCorp · San Francisco"
+        mock_search_response = MagicMock()
         mock_search_response.web = [mock_linkedin_result]
         mock_search_response.data = [mock_linkedin_result]
         mock_firecrawl.search.return_value = mock_search_response
+
+        # Scrape returns nothing for this test
+        mock_firecrawl.scrape_url.side_effect = Exception("No team page")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mapper = PeopleMapper()
-        contacts = mapper._search_linkedin_contacts(
-            company="TechCorp",
-            department="engineering"
-        )
+        mapper = PeopleMapper(use_claude_api=False)
+        raw_content, found = mapper._firecrawl_fallback_discover(sample_job_state)
 
-        # Should have searched for LinkedIn with SEO-style queries
-        mock_firecrawl.search.assert_called()
-        call_args = mock_firecrawl.search.call_args[0][0]
-        assert "TechCorp" in call_args
-        assert "site:linkedin.com/in" in call_args or "LinkedIn" in call_args
+        # LinkedIn search should have been called
+        assert mock_firecrawl.search.called
+        search_query = mock_firecrawl.search.call_args[0][0]
+        assert "TechCorp" in search_query
+        assert "linkedin.com/in" in search_query or "manager" in search_query.lower() or "director" in search_query.lower()
 
-        # Should return list of contact dicts (Option A improvement)
-        assert isinstance(contacts, list)
-        if contacts:  # If extraction succeeded
-            assert "name" in contacts[0]
-            assert "role" in contacts[0]
-            assert "linkedin_url" in contacts[0]
+        # Should have found contacts from the LinkedIn search
+        assert found is True
+        assert "John Smith" in raw_content or "Firecrawl LinkedIn Fallback" in raw_content
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
     @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    def test_searches_for_hiring_manager(self, mock_firecrawl_class, sample_job_state):
-        """Searches for hiring manager using title + company (Option A - metadata extraction)."""
+    def test_firecrawl_fallback_team_page_scrape(self, mock_firecrawl_class, sample_job_state, firecrawl_team_page_result):
+        """Firecrawl fallback team page scrape uses max_attempts=1."""
         mock_firecrawl = MagicMock()
-        mock_search_response = MagicMock()
 
-        # Mock senior leadership search result
-        mock_leader_result = MagicMock()
-        mock_leader_result.url = "https://www.linkedin.com/in/johnsmith"
-        mock_leader_result.title = "John Smith - CTO at TechCorp"
-        mock_leader_result.description = "Chief Technology Officer at TechCorp"
+        # LinkedIn search returns nothing
+        empty_response = MagicMock()
+        empty_response.web = []
+        empty_response.data = []
+        mock_firecrawl.search.return_value = empty_response
 
-        # Support both old and new SDK formats
-        mock_search_response.web = [mock_leader_result]
-        mock_search_response.data = [mock_leader_result]
-        mock_firecrawl.search.return_value = mock_search_response
+        # Team page scrape returns content on first attempt
+        mock_firecrawl.scrape_url.return_value = firecrawl_team_page_result
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mapper = PeopleMapper()
-        contacts = mapper._search_hiring_manager(
-            company="TechCorp",
-            title="Senior Software Engineer"
-        )
+        mapper = PeopleMapper(use_claude_api=False)
+        raw_content, found = mapper._firecrawl_fallback_discover(sample_job_state)
 
-        # Should search for senior leadership with SEO-style query
-        mock_firecrawl.search.assert_called()
-        call_args = mock_firecrawl.search.call_args[0][0]
-        assert "TechCorp" in call_args
-        assert "CTO" in call_args or "VP Engineering" in call_args or "LinkedIn" in call_args
+        # Team page scrape should have been called with only 1 attempt
+        # (max_attempts=1 means only the first TEAM_PAGE_PATHS entry is tried)
+        assert mock_firecrawl.scrape_url.call_count <= 1
 
-        # Should return list of contact dicts (Option A improvement)
-        assert isinstance(contacts, list)
+        # Should have found content
+        if mock_firecrawl.scrape_url.called:
+            assert found is True
+            assert "Firecrawl Team Page Fallback" in raw_content or "Leadership" in raw_content
 
-    @patch('src.layer5.people_mapper.FirecrawlApp')
-    def test_deduplicates_contacts_across_sources(self, mock_firecrawl_class, sample_job_state):
+    def test_deduplicates_contacts_across_sources(self, sample_job_state):
         """Deduplicates same person found in multiple sources."""
-        # Mock multiple sources returning same person
-        mapper = PeopleMapper()
+        with patch('src.layer5.people_mapper.FirecrawlApp'):
+            mapper = PeopleMapper(use_claude_api=False)
 
         raw_contacts = [
             {"name": "Sarah Chen", "role": "VP Engineering", "source": "team_page"},
@@ -327,37 +339,22 @@ class TestFireCrawlContactDiscovery:
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
     @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    def test_searches_crunchbase_team(self, mock_firecrawl_class, sample_job_state):
-        """Uses FireCrawl search to find Crunchbase team page."""
+    def test_searches_company_team_page(self, mock_firecrawl_class, sample_job_state, firecrawl_team_page_result):
+        """_scrape_company_team_page scrapes company team/about page for contacts."""
         mock_firecrawl = MagicMock()
-        mock_search_response = MagicMock()
-        crunchbase_result = MagicMock()
-        crunchbase_result.url = "https://www.crunchbase.com/organization/techcorp/people"
-        crunchbase_result.markdown = """
-        TechCorp Leadership Team on Crunchbase:
-        - Sarah Chen, VP Engineering
-        - Michael Torres, CTO
-        - Jennifer Liu, Head of Product
-        - David Kim, Director of Engineering
-        """
-        # Support both old and new SDK formats
-        mock_search_response.web = [crunchbase_result]
-        mock_search_response.data = [crunchbase_result]
-        mock_firecrawl.search.return_value = mock_search_response
+        mock_firecrawl.scrape_url.return_value = firecrawl_team_page_result
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mapper = PeopleMapper()
-        raw_contacts = mapper._search_crunchbase_team(company="TechCorp")
+        mapper = PeopleMapper(use_claude_api=False)
+        raw_contacts = mapper._scrape_company_team_page(
+            company="TechCorp",
+            company_url="https://techcorp.com"
+        )
 
-        # Should have searched for Crunchbase
-        mock_firecrawl.search.assert_called()
-        call_args = mock_firecrawl.search.call_args[0][0]
-        assert "TechCorp" in call_args
-        assert "Crunchbase" in call_args or "crunchbase" in call_args.lower()
-
-        # Should return markdown content
+        # Should have scraped team page
+        assert mock_firecrawl.scrape_url.called
         assert raw_contacts is not None
-        assert "Sarah Chen" in raw_contacts or "Leadership" in raw_contacts
+        assert "Sarah Chen" in raw_contacts or "VP Engineering" in raw_contacts
 
 
 # ===== TESTS: LLM Classification and Enrichment =====
@@ -749,27 +746,34 @@ class TestOutreachPackageGeneration:
 # ===== TESTS: Integration and Quality Gates =====
 
 @pytest.mark.integration
-@patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
-@patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
-@patch('src.layer5.people_mapper.FirecrawlApp')
+@patch('src.layer5.people_mapper.ClaudeWebResearcher')
 @patch('src.layer5.people_mapper.invoke_unified_sync')
-def test_people_mapper_node_integration(mock_invoke, mock_firecrawl_class, sample_job_state):
-    """Integration test for people_mapper_node."""
-    # Mock FireCrawl with valid search results to trigger LLM classification path
-    mock_firecrawl = MagicMock()
-    # Create mock search results with .web attribute (new SDK) and .data attribute (old SDK)
-    mock_search_result = MagicMock()
-    mock_search_result.url = "https://techcorp.com/team"
-    mock_search_result.markdown = "Team page with contacts"
-    mock_search_response = MagicMock()
-    mock_search_response.web = [mock_search_result]
-    mock_search_response.data = [mock_search_result]
-    mock_firecrawl.search.return_value = mock_search_response
-    mock_firecrawl.scrape_url.return_value = MagicMock(markdown="Team page content")
-    mock_firecrawl_class.return_value = mock_firecrawl
+def test_people_mapper_node_integration(mock_invoke, mock_researcher_class, sample_job_state):
+    """Integration test for people_mapper_node using Claude API discovery backend."""
+    # Mock ClaudeWebResearcher to return contacts (Phase 1 discovery)
+    mock_researcher = MagicMock()
+    mock_result = MagicMock()
+    mock_result.success = True
+    mock_result.searches_performed = 2
+    mock_result.duration_ms = 800
+    mock_result.model = "claude-sonnet-4-5"
+    mock_result.input_tokens = 500
+    mock_result.output_tokens = 300
+    mock_result.data = {
+        "primary_contacts": [
+            {"name": "Sarah Chen", "role": "VP Engineering", "linkedin_url": "https://linkedin.com/in/sarahchen", "why_relevant": "Hiring manager"},
+        ],
+        "secondary_contacts": [
+            {"name": "Alex K", "role": "Product", "linkedin_url": "https://linkedin.com/in/alex", "why_relevant": "Product partner"},
+        ]
+    }
+
+    async def mock_research_people(*args, **kwargs):
+        return mock_result
+    mock_researcher.research_people = mock_research_people
+    mock_researcher_class.return_value = mock_researcher
 
     # Mock LLM for classification
-    mock_llm = MagicMock()
     classification_response = MagicMock()
     classification_response.content = json.dumps({
         "primary_contacts": [
@@ -803,16 +807,18 @@ def test_people_mapper_node_integration(mock_invoke, mock_firecrawl_class, sampl
         "Looking forward to connecting.\n\nBest regards, [Your Name]"
     )
     outreach_response.content = json.dumps({
-        "linkedin_message": "Reduced incidents 75% at AdTech. Interested in TechCorp platform challenges.\nBest. Taimoor Alam",
-        "subject": "Solving Legacy Monolith Incidents with Proven Results",  # 7 words, mentions "legacy monolith incidents"
-        "email_body": email_body
+        "linkedin_connection_message": "Reduced incidents 75% at AdTech. calendly.com/taimooralam/15min Best. Taimoor Alam",
+        "linkedin_inmail_subject": "Platform engineering expertise",
+        "linkedin_inmail": "At AdTech, I led modernization reducing incidents 75%. Interested in TechCorp platform challenges. Best. Taimoor Alam",
+        "email_subject": "Solving Legacy Monolith Incidents with Proven Results",
+        "email_body": email_body,
+        "already_applied_frame": "adding_context"
     })
 
     mock_invoke.side_effect = [classification_response] + [outreach_response] * 8  # 1 classification + 8 outreach calls
-    # mock_invoke is patched at function level
 
-    # Run node with FireCrawl backend (use_claude_api=False)
-    updates = people_mapper_node(sample_job_state, use_claude_api=False)
+    # Run node with Claude API backend (default)
+    updates = people_mapper_node(sample_job_state, use_claude_api=True)
 
     # Assertions
     # GAP-060: Limits total contacts to 5 (max 3 primary + 2 secondary)
@@ -824,7 +830,7 @@ def test_people_mapper_node_integration(mock_invoke, mock_firecrawl_class, sampl
 
     # Each contact should have outreach
     for contact in updates["primary_contacts"]:
-        assert "linkedin_message" in contact
+        assert "linkedin_message" in contact or "linkedin_connection_message" in contact
         assert "email_subject" in contact
         assert "email_body" in contact
 
@@ -833,25 +839,32 @@ def test_people_mapper_node_integration(mock_invoke, mock_firecrawl_class, sampl
 class TestPeopleMapperQualityGates:
     """Test Phase 7 quality gates."""
 
-    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
-    @patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
-    @patch('src.layer5.people_mapper.FirecrawlApp')
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
-    def test_quality_gate_minimum_primary_contacts(self, mock_invoke, mock_firecrawl_class, sample_job_state):
+    def test_quality_gate_minimum_primary_contacts(self, mock_invoke, mock_researcher_class, sample_job_state):
         """Quality gate: verifies GAP-060 contact limits (3 primary + 2 secondary)."""
-        # Setup mocks with valid search results to trigger LLM classification path
-        mock_firecrawl = MagicMock()
-        mock_search_result = MagicMock()
-        mock_search_result.url = "https://techcorp.com/team"
-        mock_search_result.markdown = "Team page with contacts"
-        mock_search_response = MagicMock()
-        mock_search_response.web = [mock_search_result]
-        mock_search_response.data = [mock_search_result]
-        mock_firecrawl.search.return_value = mock_search_response
-        mock_firecrawl.scrape_url.return_value = MagicMock(markdown="Content")
-        mock_firecrawl_class.return_value = mock_firecrawl
+        # Mock ClaudeWebResearcher to return contacts (triggers LLM classification path)
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.searches_performed = 2
+        mock_result.duration_ms = 500
+        mock_result.model = "claude-sonnet-4-5"
+        mock_result.input_tokens = 400
+        mock_result.output_tokens = 200
+        mock_result.data = {
+            "primary_contacts": [
+                {"name": f"Person {i}", "role": f"Role {i}", "linkedin_url": f"https://li.com/{i}", "why_relevant": f"Primary {i}"}
+                for i in range(2)
+            ],
+            "secondary_contacts": []
+        }
 
-        mock_llm = MagicMock()
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_researcher_class.return_value = mock_researcher
+
         classification_response = MagicMock()
         classification_response.content = json.dumps({
             "primary_contacts": [
@@ -879,15 +892,17 @@ class TestPeopleMapperQualityGates:
             "Looking forward to connecting.\n\nBest regards, [Your Name]"
         )
         outreach_response.content = json.dumps({
-            "linkedin_message": "Interested in the role.\nBest. Taimoor Alam",
-            "subject": "Solving Legacy Monolith Issues with Engineering Excellence",  # 7 words, pain-focused
-            "email_body": email_body
+            "linkedin_connection_message": "Interested in role. calendly.com/taimooralam/15min Best. Taimoor Alam",
+            "linkedin_inmail_subject": "Engineering expertise",
+            "linkedin_inmail": "Interested in the role at TechCorp. Best. Taimoor Alam",
+            "email_subject": "Solving Legacy Monolith Issues with Engineering Excellence",
+            "email_body": email_body,
+            "already_applied_frame": "adding_context"
         })
         mock_invoke.side_effect = [classification_response] + [outreach_response] * 8
-        # mock_invoke is patched at function level
 
-        # Use FireCrawl backend (use_claude_api=False)
-        mapper = PeopleMapper(use_claude_api=False)
+        # Use Claude API backend (use_claude_api=True is default)
+        mapper = PeopleMapper(use_claude_api=True)
         result = mapper.map_people(sample_job_state)
 
         # GAP-060: LLM returns 4 primary + 4 secondary, limits to 3 primary + 2 secondary
@@ -895,17 +910,11 @@ class TestPeopleMapperQualityGates:
         assert len(result["primary_contacts"]) == 3  # GAP-060 limit: max 3 primary
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
-    @patch('src.layer5.people_mapper.FirecrawlApp')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
-    def test_quality_gate_specific_why_relevant(self, mock_invoke, mock_firecrawl_class, sample_job_state):
+    def test_quality_gate_specific_why_relevant(self, mock_invoke, sample_job_state):
         """Quality gate: why_relevant is specific and grounded."""
-        # Setup mocks — FireCrawl disabled via Config patch above, so synthetic contacts used.
-        # No classification LLM call occurs; synthetic contacts have hardcoded why_relevant.
-        mock_firecrawl = MagicMock()
-        mock_firecrawl_class.return_value = mock_firecrawl
-
-        mock_llm = MagicMock()
-        # mock_invoke is patched at function level
+        # Firecrawl disabled via Config patch above → synthetic contacts used.
+        # use_claude_api=False and firecrawl disabled → synthetic contacts path (no LLM classification call).
 
         # FireCrawl disabled → synthetic contacts path (no LLM classification call)
         mapper = PeopleMapper(use_claude_api=False)
@@ -1105,10 +1114,11 @@ class TestClaudeAPIDiscoveryBackend:
         # Verify contacts have expected fields
         assert result["primary_contacts"][0]["name"] == "Sarah Chen"
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_claude_api_discovery_fallback_on_failure(self, mock_invoke, mock_researcher_class, sample_job_state):
-        """Claude API backend falls back to synthetic contacts on failure."""
+        """Claude API failure falls back to Phase 2 Firecrawl (if enabled) or Phase 3 synthetic contacts."""
         # Mock ClaudeWebResearcher to fail
         mock_researcher = MagicMock()
         mock_result = MagicMock()
@@ -1122,22 +1132,19 @@ class TestClaudeAPIDiscoveryBackend:
         mock_researcher.research_people = mock_research_people
         mock_researcher_class.return_value = mock_researcher
 
-        # Mock LLM (not called when Claude API fails - synthetic contacts used)
-        mock_llm = MagicMock()
-        # mock_invoke is patched at function level
-
-        # Create mapper with Claude API backend
+        # Firecrawl disabled → Phase 3 synthetic contacts used after Claude failure
         mapper = PeopleMapper(tier="balanced", use_claude_api=True)
         result = mapper.map_people(sample_job_state, skip_outreach=True)
 
-        # Should fall back to synthetic contacts
+        # Should fall back to synthetic contacts (Phase 3)
         assert len(result["primary_contacts"]) >= 1
         assert result["primary_contacts"][0].get("is_synthetic", False)
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_claude_api_discovery_empty_results_fallback(self, mock_invoke, mock_researcher_class, sample_job_state):
-        """Claude API backend falls back when no contacts found."""
+        """Claude API backend falls back to Phase 3 synthetic contacts when no contacts found."""
         # Mock ClaudeWebResearcher to return empty results
         mock_researcher = MagicMock()
         mock_result = MagicMock()
@@ -1154,15 +1161,11 @@ class TestClaudeAPIDiscoveryBackend:
         mock_researcher.research_people = mock_research_people
         mock_researcher_class.return_value = mock_researcher
 
-        # Mock LLM
-        mock_llm = MagicMock()
-        # mock_invoke is patched at function level
-
-        # Create mapper with Claude API backend
+        # Create mapper with Claude API backend (Firecrawl disabled → Phase 3 synthetic)
         mapper = PeopleMapper(tier="balanced", use_claude_api=True)
         result = mapper.map_people(sample_job_state, skip_outreach=True)
 
-        # Should fall back to synthetic contacts
+        # Should fall back to synthetic contacts (Phase 3)
         assert len(result["primary_contacts"]) >= 1
         assert result["primary_contacts"][0].get("is_synthetic", False)
 
@@ -1176,12 +1179,118 @@ class TestClaudeAPIDiscoveryBackend:
                 mock_researcher_class.assert_called_once_with(tier="fast")
 
     def test_mapper_initializes_with_firecrawl_backend(self):
-        """PeopleMapper initializes with FireCrawl backend when use_claude_api=False."""
-        with patch('src.layer5.people_mapper.invoke_unified_sync'):
+        """PeopleMapper still initializes FirecrawlApp when key present and not disabled."""
+        with patch.object(Config, 'FIRECRAWL_API_KEY', 'test-key'):
+            with patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False):
+                with patch('src.layer5.people_mapper.FirecrawlApp') as mock_firecrawl:
+                    # use_claude_api=False: no ClaudeWebResearcher, Firecrawl initialized
+                    mapper = PeopleMapper(use_claude_api=False)
+                    assert mapper.use_claude_api is False
+                    assert mapper.claude_researcher is None
+                    mock_firecrawl.assert_called_once()
+
+    def test_mapper_initializes_firecrawl_when_key_present(self):
+        """PeopleMapper initializes Firecrawl even when use_claude_api=True, if key is present."""
+        with patch('src.layer5.people_mapper.ClaudeWebResearcher'):
             with patch.object(Config, 'FIRECRAWL_API_KEY', 'test-key'):
                 with patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False):
                     with patch('src.layer5.people_mapper.FirecrawlApp') as mock_firecrawl:
-                        mapper = PeopleMapper(use_claude_api=False)
-                        assert mapper.use_claude_api is False
-                        assert mapper.claude_researcher is None
+                        mapper = PeopleMapper(use_claude_api=True)
+                        # Firecrawl is initialized as fallback even when Claude API is primary
+                        assert mapper.firecrawl_disabled is False
                         mock_firecrawl.assert_called_once()
+
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_claude_primary_then_firecrawl_fallback(self, mock_invoke, mock_researcher_class, sample_job_state):
+        """Phase 1 (Claude) → Phase 2 (Firecrawl) flow when Claude returns no contacts."""
+        # Phase 1: Claude finds no contacts
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.searches_performed = 2
+        mock_result.duration_ms = 400
+        mock_result.data = {"primary_contacts": [], "secondary_contacts": []}
+
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_researcher_class.return_value = mock_researcher
+
+        # Firecrawl is disabled (DISABLE_FIRECRAWL_OUTREACH=True via patch above)
+        # So Phase 2 is skipped and Phase 3 (synthetic) is used
+        mapper = PeopleMapper(use_claude_api=True)
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Should arrive at Phase 3: synthetic contacts
+        assert len(result["primary_contacts"]) >= 1
+        assert all(c.get("is_synthetic") for c in result["primary_contacts"])
+
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_firecrawl_skipped_when_claude_finds_contacts(self, mock_invoke, mock_researcher_class, sample_job_state):
+        """Phase 2 (Firecrawl) is not invoked when Phase 1 (Claude) succeeds."""
+        # Phase 1: Claude successfully finds contacts
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.searches_performed = 2
+        mock_result.duration_ms = 500
+        mock_result.model = "claude-sonnet-4-5"
+        mock_result.input_tokens = 300
+        mock_result.output_tokens = 150
+        mock_result.data = {
+            "primary_contacts": [
+                {"name": "Sarah Chen", "role": "VP Engineering", "linkedin_url": "https://linkedin.com/in/sarah", "why_relevant": "Hiring manager"},
+            ],
+            "secondary_contacts": []
+        }
+
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_researcher_class.return_value = mock_researcher
+
+        # Mock LLM for classification
+        classification_response = MagicMock()
+        classification_response.content = json.dumps({
+            "primary_contacts": [
+                {"name": "Sarah Chen", "role": "VP Engineering", "linkedin_url": "https://linkedin.com/in/sarah",
+                 "why_relevant": "Direct hiring manager for platform team engineering", "recent_signals": []},
+                {"name": "John Smith", "role": "Recruiter", "linkedin_url": "https://linkedin.com/in/john",
+                 "why_relevant": "Talent acquisition lead for all engineering positions", "recent_signals": []},
+                {"name": "Emily Davis", "role": "Engineering Director", "linkedin_url": "https://linkedin.com/in/emily",
+                 "why_relevant": "Technical leadership driving infrastructure decisions", "recent_signals": []},
+                {"name": "Chris Wilson", "role": "Hiring Manager", "linkedin_url": "https://linkedin.com/in/chris",
+                 "why_relevant": "Direct team lead responsible for role requirements", "recent_signals": []},
+            ],
+            "secondary_contacts": [
+                {"name": "Mike Lee", "role": "Senior Engineer", "linkedin_url": "https://linkedin.com/in/mike",
+                 "why_relevant": "Potential peer engineer and close collaborator", "recent_signals": []},
+                {"name": "Alex Kim", "role": "Product Manager", "linkedin_url": "https://linkedin.com/in/alex",
+                 "why_relevant": "Cross-functional product partner on joint initiatives", "recent_signals": []},
+                {"name": "Lisa Wang", "role": "Staff Engineer", "linkedin_url": "https://linkedin.com/in/lisa",
+                 "why_relevant": "Technical mentor and senior collaborator on platform", "recent_signals": []},
+                {"name": "David Brown", "role": "DevOps Lead", "linkedin_url": "https://linkedin.com/in/david",
+                 "why_relevant": "Infrastructure collaboration partner for DevOps work", "recent_signals": []},
+            ]
+        })
+        mock_invoke.return_value = classification_response
+
+        with patch.object(Config, 'FIRECRAWL_API_KEY', 'test-key'), \
+             patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False), \
+             patch('src.layer5.people_mapper.FirecrawlApp') as mock_firecrawl_class:
+            mock_firecrawl = MagicMock()
+            mock_firecrawl_class.return_value = mock_firecrawl
+
+            mapper = PeopleMapper(use_claude_api=True)
+            result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Phase 2 (Firecrawl) should NOT have been called since Phase 1 succeeded
+        assert mock_firecrawl.search.call_count == 0
+        assert mock_firecrawl.scrape_url.call_count == 0
+
+        # Should have real contacts from classification (not synthetic)
+        assert len(result["primary_contacts"]) >= 1
+        assert not result["primary_contacts"][0].get("is_synthetic", False)

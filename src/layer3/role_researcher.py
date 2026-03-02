@@ -17,7 +17,6 @@ import re
 import traceback
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
-from firecrawl import FirecrawlApp
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
@@ -27,44 +26,6 @@ from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
 from src.common.utils import run_async
-
-
-# ===== FIRECRAWL RESPONSE NORMALIZER =====
-
-def _extract_search_results(search_response: Any) -> List[Any]:
-    """
-    Normalize FireCrawl search responses across SDK versions.
-
-    Supports:
-      - New client (v4.8.0+): response.web
-      - Older client: response.data
-      - Dict responses: {"web": [...]} or {"data": [...]}
-      - Bare lists: [ {...}, {...} ]
-
-    Returns:
-        List of search result objects, or empty list if no results.
-    """
-    if not search_response:
-        return []
-
-    # Attribute-based shapes (Pydantic models)
-    results = getattr(search_response, "web", None)
-    if results is None and hasattr(search_response, "data"):
-        results = getattr(search_response, "data", None)
-
-    # Dict shape (for test mocks or API changes)
-    if results is None and isinstance(search_response, dict):
-        results = (
-            search_response.get("web")
-            or search_response.get("data")
-            or search_response.get("results")
-        )
-
-    # Bare list shape
-    if results is None and isinstance(search_response, list):
-        results = search_response
-
-    return results or []
 
 
 # ===== PYDANTIC SCHEMA VALIDATION (Phase 5.2) =====
@@ -200,7 +161,7 @@ class RoleResearcher:
 
     Supports two execution backends:
     - Claude API (default): Uses Claude with WebSearch for research
-    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+    - LLM-only (legacy): Uses UnifiedLLM for backward compatibility
     """
 
     def __init__(
@@ -216,7 +177,7 @@ class RoleResearcher:
             tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
                   Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
             use_claude_api: If True (default), use Claude API with WebSearch.
-                           If False, use FireCrawl + UnifiedLLM (legacy mode).
+                           If False, use LLM-only (legacy mode).
             progress_callback: Optional callback for granular LLM progress events.
                 Signature: (event, message, data) -> None
         """
@@ -231,10 +192,9 @@ class RoleResearcher:
             self.claude_researcher = ClaudeWebResearcher(tier=tier)
             self.firecrawl = None
         else:
-            # Legacy mode: FireCrawl + UnifiedLLM (via invoke_unified_sync)
+            # Legacy mode: LLM-only (Firecrawl removed)
             self.claude_researcher = None
-            # FireCrawl for role-specific context (Phase 5.2)
-            self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+            self.firecrawl = None
 
     def _extract_star_context(self, state: JobState) -> tuple[Optional[str], Optional[str]]:
         """
@@ -282,7 +242,7 @@ class RoleResearcher:
 
         This is the primary research method when use_claude_api=True. It uses
         Claude's built-in web_search tool to find and synthesize role information
-        in a single API call, replacing the multi-step FireCrawl + LLM approach.
+        in a single API call, replacing the previous multi-step approach.
 
         Args:
             state: JobState with title, company, job_description, company_research
@@ -370,96 +330,6 @@ class RoleResearcher:
                 "errors": state.get("errors", []) + [error_msg],
                 "role_research_traceback": tb,
             }
-
-    @retry(
-        stop=stop_after_attempt(2),
-        wait=wait_exponential(multiplier=1, min=2, max=5),
-        reraise=True
-    )
-    def _scrape_role_context(
-        self,
-        title: str,
-        company: str,
-        industry: Optional[str] = None
-    ) -> Optional[str]:
-        """
-        Scrape role-specific context using FireCrawl (ROADMAP Phase 5.2).
-
-        Queries (LLM-style but keyword-rich):
-        1. "responsibilities and scope for {title} at {company}"
-        2. "KPIs and success metrics for {title} in {industry or 'similar SaaS companies'}"
-
-        Args:
-            title: Job title
-            company: Company name
-            industry: Industry name (optional, extracted from job description)
-
-        Returns:
-            Combined scraped content or None if scraping fails
-        """
-        try:
-            # Build queries per ROADMAP Phase 5.2 (LLM-style)
-            queries = [
-                (
-                    f"What does a {title} typically own at {company}? "
-                    f"Focus on engineering leadership, day-to-day impact, and team size."
-                ),
-                (
-                    f"How is a {title} measured in {industry or 'similar SaaS companies'}? "
-                    f"List the KPIs and success metrics that leaders watch."
-                ),
-            ]
-
-            scraped_content = []
-
-            for query in queries:
-                try:
-                    self.logger.info(f"[FireCrawl] Role search query: {query[:80]}...")
-
-                    # Use FireCrawl search API
-                    search_response = self.firecrawl.search(query, limit=2)
-
-                    # Use normalizer to extract results (handles SDK version differences)
-                    results = _extract_search_results(search_response)
-
-                    if not results:
-                        continue
-
-                    # Get first result
-                    if len(results) > 0:
-                        top_result = results[0]
-                        # Defensive URL extraction (handles both object attributes and dict keys)
-                        url = getattr(top_result, "url", None) or (top_result.get("url") if isinstance(top_result, dict) else None)
-
-                        if url:
-                            self.logger.info(f"Found role context: {url}")
-
-                            # Scrape the URL
-                            scrape_result = self.firecrawl.scrape(
-                                url,
-                                formats=['markdown'],
-                                only_main_content=True
-                            )
-
-                            if scrape_result and hasattr(scrape_result, 'markdown'):
-                                content = scrape_result.markdown
-                                # Limit to 1000 chars per query to avoid huge prompts
-                                if content:
-                                    scraped_content.append(content[:1000])
-                                    self.logger.info(f"Scraped {len(content[:1000])} chars")
-
-                except Exception as e:
-                    self.logger.warning(f"Query failed: {e}")
-                    continue
-
-            if scraped_content:
-                return "\n\n".join(scraped_content)
-
-            return None
-
-        except Exception as e:
-            self.logger.warning(f"Role context scraping failed: {e}")
-            return None
 
     @retry(
         stop=stop_after_attempt(3),
@@ -584,7 +454,7 @@ class RoleResearcher:
 
         Supports two execution backends:
         - Claude API (default): Uses Claude with WebSearch for research
-        - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+        - LLM-only (legacy): Uses UnifiedLLM for backward compatibility
 
         Phase 5 enhancement: STAR-aware role analysis when candidate context available.
 
@@ -600,8 +470,8 @@ class RoleResearcher:
             self.logger.info(f"[Research Backend] Using Claude API ({self.tier} tier) for role research")
             return self._research_role_with_claude_api(state)
 
-        # Legacy FireCrawl + OpenRouter mode
-        self.logger.info(f"[Research Backend] Using FireCrawl + OpenRouter (legacy mode) for role research")
+        # Legacy LLM-only mode (Firecrawl removed)
+        self.logger.info(f"[Research Backend] Using LLM-only (legacy mode) for role research")
 
         try:
             # Extract company signals if available (from Phase 5.1)
@@ -614,36 +484,14 @@ class RoleResearcher:
             if star_domains:
                 self.logger.info(f"STAR context available for role analysis: {len(star_domains.split(', '))} domain(s)")
 
-            # Phase 5.2 ROADMAP: Scrape role-specific context
-            self.logger.info(f"Scraping role-specific context for: {state['title']}")
-            role_context = None
-            try:
-                # Extract industry from job description if available (simple heuristic)
-                industry = None
-                # Could enhance this to extract industry from JD, but keeping simple for now
-
-                role_context = self._scrape_role_context(
-                    title=state["title"],
-                    company=state["company"],
-                    industry=industry
-                )
-
-                if role_context:
-                    self.logger.info(f"Scraped {len(role_context)} chars of role context")
-                else:
-                    self.logger.info("No role context found, using job description only")
-            except Exception as scrape_error:
-                self.logger.warning(f"Role context scraping failed: {scrape_error}, continuing without it")
-                role_context = None
-
-            # Analyze role (Phase 5 STAR-aware)
+            # Analyze role (Phase 5 STAR-aware, no Firecrawl scraping)
             self.logger.info(f"Analyzing role: {state['title']}")
             role_research_output = self._analyze_role(
                 title=state["title"],
                 company=state["company"],
                 job_description=state["job_description"],
                 company_signals=company_signals,
-                role_context=role_context,
+                role_context=None,
                 star_domains=star_domains,
                 star_outcomes=star_outcomes,
                 job_id=state.get("job_id"),
@@ -687,14 +535,14 @@ def role_researcher_node(
 
     Supports two execution backends:
     - Claude API (default): Uses Claude with WebSearch for research
-    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+    - LLM-only (legacy): Uses UnifiedLLM for backward compatibility
 
     Args:
         state: Current job processing state
         tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
               Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
         use_claude_api: If True (default), use Claude API with WebSearch.
-                       If False, use FireCrawl + OpenRouter (legacy mode).
+                       If False, use LLM-only (legacy mode).
 
     Returns:
         Dictionary with updates to merge into state
@@ -702,7 +550,7 @@ def role_researcher_node(
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3.5")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
-    backend_name = f"Claude API ({tier} tier)" if use_claude_api else "FireCrawl + OpenRouter (legacy)"
+    backend_name = f"Claude API ({tier} tier)" if use_claude_api else "LLM-only (legacy)"
     logger.info("="*60)
     logger.info(f"LAYER 3.5: Role Researcher - {backend_name}")
     logger.info("="*60)

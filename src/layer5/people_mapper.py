@@ -507,7 +507,7 @@ class PeopleMapper:
 
     Supports two discovery backends:
     - Claude API (default): Uses Claude API with WebSearch for contact discovery
-    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+    - Firecrawl fallback: 2-credit budget for LinkedIn search + team page scrape
     """
 
     def __init__(
@@ -691,13 +691,15 @@ class PeopleMapper:
     # ===== FIRECRAWL MULTI-SOURCE DISCOVERY =====
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
-    def _scrape_company_team_page(self, company: str, company_url: str) -> Optional[str]:
+    def _scrape_company_team_page(self, company: str, company_url: str, max_attempts: int = 6) -> Optional[str]:
         """
         Scrape company team/about page for contact names and roles.
 
         Args:
             company: Company name
             company_url: Company website URL
+            max_attempts: Maximum number of team page paths to try (default 6,
+                          use 1 for budget-constrained fallback mode).
 
         Returns:
             Markdown content from team page (or None)
@@ -706,7 +708,7 @@ class PeopleMapper:
             return None
         try:
             # GAP-051: Use expanded team page paths for better coverage
-            team_urls = [f"{company_url.rstrip('/')}{path}" for path in TEAM_PAGE_PATHS]
+            team_urls = [f"{company_url.rstrip('/')}{path}" for path in TEAM_PAGE_PATHS[:max_attempts]]
 
             for url in team_urls:
                 try:
@@ -725,235 +727,6 @@ class PeopleMapper:
 
         except Exception as e:
             self.logger.warning(f"Team page scraping failed: {e}")
-            return None
-
-    @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
-    def _search_linkedin_contacts(
-        self,
-        company: str,
-        department: str = "engineering",
-        title: Optional[str] = None
-    ) -> List[Dict[str, str]]:
-        """
-        Search LinkedIn for company employees using FireCrawl search (Option A - improved).
-
-        Uses SEO-style queries and extracts contacts from search result metadata
-        instead of trying to scrape LinkedIn pages (which often fails).
-
-        Args:
-            company: Company name
-            department: Department to search (e.g., "engineering", "product")
-            title: Specific job title to target (optional)
-
-        Returns:
-            List of contact dicts with name, role, linkedin_url, source
-        """
-        if self.firecrawl_disabled or not self.firecrawl:
-            return []
-
-        contacts = []
-
-        try:
-            # GAP-051: Try company name variations for better matching
-            company_variations = get_company_name_variations(company)
-            self.logger.info(f"[GAP-051] Company variations: {company_variations}")
-
-            for company_variant in company_variations:
-                # Run multiple targeted queries
-                queries = [
-                    QUERY_TEMPLATES["recruiters"].format(company=company_variant, department=department),
-                    QUERY_TEMPLATES["recruiters_alt"].format(company=company_variant),
-                    QUERY_TEMPLATES["leadership"].format(company=company_variant, department=department),
-                ]
-
-                if title:
-                    queries.append(QUERY_TEMPLATES["hiring_manager"].format(company=company_variant, title=title))
-
-                for query in queries:
-                    try:
-                        self.logger.info(f"[FireCrawl] LinkedIn query: {query[:80]}...")
-                        search_response = self._firecrawl_search(query, limit=5)
-
-                        # GAP-051: Log result count for debugging
-                        results = _extract_search_results(search_response)
-                        self.logger.info(f"[FireCrawl] Got {len(results)} results")
-
-                        # Extract contacts from metadata
-                        for result in results:
-                            contact = self._extract_contact_from_search_result(result, company)
-                            if contact:
-                                contacts.append(contact)
-                                self.logger.info(f"Found: {contact['name']} - {contact['role']}")
-
-                    except Exception as e:
-                        self.logger.warning(f"Query failed: {e}")
-                        continue
-
-                # GAP-051: If we found contacts with this variation, don't try others
-                if contacts:
-                    self.logger.info(f"[GAP-051] Found {len(contacts)} contacts using '{company_variant}'")
-                    break
-
-            self.logger.info(f"Found {len(contacts)} contacts from LinkedIn search")
-            return contacts
-
-        except Exception as e:
-            self.logger.warning(f"LinkedIn search failed: {e}")
-            return []
-
-    def _build_annotation_enhanced_queries(
-        self,
-        company: str,
-        title: str,
-        jd_annotations: Optional[Dict[str, Any]] = None,
-    ) -> List[str]:
-        """
-        Phase 8 (GAP-086): Build enhanced SEO queries using annotation keywords.
-
-        Uses must_have keywords from JD annotations to find contacts with
-        relevant technical expertise.
-
-        Args:
-            company: Company name
-            title: Job title
-            jd_annotations: JD annotations dict with annotations list
-
-        Returns:
-            List of enhanced query strings for FireCrawl search
-        """
-        if not jd_annotations:
-            return []
-
-        annotations = jd_annotations.get("annotations", [])
-        if not annotations:
-            return []
-
-        # Extract must_have keywords
-        keywords = []
-        for ann in annotations:
-            if ann.get("requirement_type") == "must_have" and ann.get("is_active", True):
-                # Get keyword from matching_skill or suggested_keywords
-                skill = ann.get("matching_skill")
-                if skill:
-                    keywords.append(skill)
-                else:
-                    suggested = ann.get("suggested_keywords", [])
-                    if suggested:
-                        keywords.append(suggested[0])
-
-        if not keywords:
-            return []
-
-        # Deduplicate while preserving order
-        seen = set()
-        unique_keywords = []
-        for kw in keywords:
-            if kw.lower() not in seen:
-                seen.add(kw.lower())
-                unique_keywords.append(kw)
-
-        queries = []
-
-        # Build queries with top 3 keywords
-        top_keywords = unique_keywords[:3]
-        if top_keywords:
-            # Query 1: LinkedIn engineers with these skills
-            keyword_or = " OR ".join(f'"{kw}"' for kw in top_keywords)
-            queries.append(
-                f'site:linkedin.com/in "{company}" ({keyword_or}) engineer'
-            )
-
-            # Query 2: Technical leadership with these skills
-            if len(top_keywords) >= 2:
-                queries.append(
-                    f'site:linkedin.com/in "{company}" ({top_keywords[0]} OR {top_keywords[1]}) "tech lead" OR "engineering manager"'
-                )
-
-        self.logger.info(f"[Phase 8] Built {len(queries)} annotation-enhanced queries using keywords: {top_keywords}")
-        return queries
-
-    @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
-    def _search_hiring_manager(self, company: str, title: str) -> List[Dict[str, str]]:
-        """
-        Search for hiring manager using job title + company (Option A - improved).
-
-        Uses SEO-style queries and extracts contacts from search result metadata.
-
-        Args:
-            company: Company name
-            title: Job title
-
-        Returns:
-            List of contact dicts with name, role, linkedin_url, source
-        """
-        if self.firecrawl_disabled or not self.firecrawl:
-            return []
-
-        contacts = []
-
-        try:
-            # Use targeted query for senior leadership
-            query = QUERY_TEMPLATES["senior_leadership"].format(company=company)
-            self.logger.info(f"[FireCrawl] Hiring manager query: {query[:80]}...")
-
-            search_response = self._firecrawl_search(query, limit=5)
-            results = _extract_search_results(search_response)
-
-            # Extract contacts from metadata
-            for result in results:
-                contact = self._extract_contact_from_search_result(result, company)
-                if contact:
-                    contacts.append(contact)
-                    self.logger.info(f"Found: {contact['name']} - {contact['role']}")
-
-            self.logger.info(f"Found {len(contacts)} senior contacts")
-            return contacts
-
-        except Exception as e:
-            self.logger.warning(f"Hiring manager search failed: {e}")
-            return []
-
-    @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
-    def _search_crunchbase_team(self, company: str) -> Optional[str]:
-        """
-        Search Crunchbase for company team information using FireCrawl search.
-
-        Args:
-            company: Company name
-
-        Returns:
-            Markdown content from Crunchbase team page
-        """
-        if self.firecrawl_disabled or not self.firecrawl:
-            return None
-        try:
-            # LLM-style query focusing on leadership team information
-            query = (
-                f"{company} leadership team on Crunchbase "
-                f"(VP Engineering, CTO, Head of Talent, Directors)"
-            )
-            self.logger.info(f"[FireCrawl] Crunchbase search query: {query[:80]}...")
-            search_response = self._firecrawl_search(query, limit=2)
-
-            # Use normalizer to extract results (handles SDK version differences)
-            results = _extract_search_results(search_response)
-
-            if results:
-                # Find Crunchbase URL
-                for result in results:
-                    # Defensive URL extraction (handles both object attributes and dict keys)
-                    url = getattr(result, "url", None) or (result.get("url") if isinstance(result, dict) else None)
-
-                    if url and 'crunchbase.com' in url.lower():
-                        # Return markdown content (handle both attribute and dict access)
-                        markdown = getattr(result, 'markdown', None) or (result.get('markdown') if isinstance(result, dict) else None)
-                        if markdown:
-                            return markdown[:1500]
-
-            return None
-
-        except Exception as e:
-            self.logger.warning(f"Crunchbase team search failed: {e}")
             return None
 
     def _deduplicate_contacts(self, raw_contacts: List[Dict[str, str]]) -> List[Dict[str, str]]:
@@ -1123,107 +896,6 @@ class PeopleMapper:
             "secondary_contacts": secondary_contacts
         }
 
-    def _discover_contacts(self, state: JobState) -> Tuple[str, bool]:
-        """
-        Multi-source contact discovery using FireCrawl (Phase 7.2.2 - Option A improved).
-
-        Uses SEO-style queries and extracts contacts from search result metadata
-        instead of relying on markdown scraping.
-
-        Queries:
-        1. Company team/about page (legacy scraping)
-        2. LinkedIn recruiter search (metadata extraction)
-        3. LinkedIn leadership search (metadata extraction)
-        4. Hiring manager search (metadata extraction)
-        5. Crunchbase team (legacy scraping)
-
-        Returns:
-            Tuple of (formatted contact data for LLM, found_any_contacts)
-        """
-        if self.firecrawl_disabled or not self.firecrawl:
-            self.logger.info("FireCrawl outreach discovery disabled (role-based contacts only)")
-            return "FireCrawl discovery is disabled. Use role-based identifiers.", False
-
-        company = state.get("company", "")
-        title = state.get("title", "")
-        company_url = _safe_get_nested(state, "company_research", "url", default="")
-
-        all_contacts = []
-        raw_content_parts = []
-
-        self.logger.info("Discovering contacts from multiple sources (Option A - improved)")
-
-        # Source 1: Company team page (legacy - still useful for smaller companies)
-        team_page = self._scrape_company_team_page(company, company_url)
-        if team_page:
-            raw_content_parts.append(f"[SOURCE: Company Team Page]\n{team_page}\n")
-            self.logger.info(f"Scraped company team page ({len(team_page)} chars)")
-
-        # Source 2: LinkedIn contacts (recruiters + leadership)
-        linkedin_contacts = self._search_linkedin_contacts(company, "engineering", title)
-        if linkedin_contacts:
-            all_contacts.extend(linkedin_contacts)
-            # Format for LLM
-            contact_strs = [
-                f"- {c['name']} ({c['role']}) - {c['linkedin_url']}"
-                for c in linkedin_contacts
-            ]
-            raw_content_parts.append(f"[SOURCE: LinkedIn Search]\n" + "\n".join(contact_strs) + "\n")
-
-        # Source 3: Hiring managers / senior leadership
-        manager_contacts = self._search_hiring_manager(company, title)
-        if manager_contacts:
-            all_contacts.extend(manager_contacts)
-            # Format for LLM
-            contact_strs = [
-                f"- {c['name']} ({c['role']}) - {c['linkedin_url']}"
-                for c in manager_contacts
-            ]
-            raw_content_parts.append(f"[SOURCE: Senior Leadership Search]\n" + "\n".join(contact_strs) + "\n")
-
-        # Source 4: Crunchbase team (legacy)
-        crunchbase_content = self._search_crunchbase_team(company)
-        if crunchbase_content:
-            raw_content_parts.append(f"[SOURCE: Crunchbase Team]\n{crunchbase_content}\n")
-            self.logger.info(f"Searched Crunchbase team ({len(crunchbase_content)} chars)")
-
-        # Source 5 (Phase 8 - GAP-086): Annotation-enhanced queries
-        jd_annotations = state.get("jd_annotations")
-        if jd_annotations:
-            enhanced_queries = self._build_annotation_enhanced_queries(company, title, jd_annotations)
-            if enhanced_queries:
-                self.logger.info(f"[Phase 8] Running {len(enhanced_queries)} annotation-enhanced queries")
-                for query in enhanced_queries:
-                    try:
-                        self.logger.info(f"[FireCrawl] Annotation query: {query[:80]}...")
-                        search_response = self._firecrawl_search(query, limit=5)
-                        results = _extract_search_results(search_response)
-                        self.logger.info(f"[FireCrawl] Got {len(results)} results from annotation query")
-
-                        for result in results:
-                            contact = self._extract_contact_from_search_result(result, company)
-                            if contact:
-                                all_contacts.append(contact)
-                                self.logger.info(f"[Phase 8] Found: {contact['name']} - {contact['role']}")
-                    except Exception as e:
-                        self.logger.warning(f"Annotation query failed: {e}")
-                        continue
-
-                if all_contacts:
-                    contact_strs = [f"- {c['name']} ({c['role']}) - {c['linkedin_url']}" for c in all_contacts[-5:]]
-                    raw_content_parts.append(f"[SOURCE: Annotation-Enhanced Search]\n" + "\n".join(contact_strs) + "\n")
-
-        # Deduplicate contacts
-        if all_contacts:
-            all_contacts = self._deduplicate_contacts(all_contacts)
-            self.logger.info(f"Total unique contacts found: {len(all_contacts)}")
-
-        if not raw_content_parts:
-            self.logger.warning("No contacts found via FireCrawl (will use role-based fallback)")
-            return f"No specific contacts found. Use role-based identifiers for {company}.", False
-
-        return "\n---\n".join(raw_content_parts), True
-
     def _discover_contacts_with_claude_api(self, state: JobState) -> Tuple[str, bool]:
         """
         Contact discovery using Claude API with WebSearch (new backend).
@@ -1322,6 +994,83 @@ class PeopleMapper:
         except Exception as e:
             self.logger.error(f"[Claude API] People discovery failed: {e}")
             return f"Claude API error: {str(e)}. Use role-based identifiers for {company}.", False
+
+    def _firecrawl_fallback_discover(self, state: JobState) -> Tuple[str, bool]:
+        """
+        Firecrawl fallback discovery with hard 2-credit cap per job.
+
+        Used when Claude WebSearch finds insufficient contacts. Limits Firecrawl
+        usage to at most 2 API calls:
+          - Credit 1: LinkedIn search for engineering contacts
+          - Credit 2: Team page scrape (single path attempt)
+
+        Args:
+            state: JobState with company, title, company_research
+
+        Returns:
+            Tuple of (formatted contact data for classification LLM, found_any_contacts)
+        """
+        if self.firecrawl_disabled or not self.firecrawl:
+            return "Firecrawl fallback disabled.", False
+
+        company = state.get("company", "")
+        title = state.get("title", "")
+        company_url = _safe_get_nested(state, "company_research", "url", default="")
+
+        firecrawl_calls = 0
+        MAX_CALLS = 2
+        all_contacts = []
+        raw_parts = []
+
+        self.logger.info(f"[Firecrawl Fallback] Starting 2-credit fallback for {company}")
+
+        # Credit 1: Single LinkedIn search
+        if firecrawl_calls < MAX_CALLS:
+            try:
+                query = f'site:linkedin.com/in "{company}" engineering (manager OR director OR recruiter)'
+                self.logger.info(f"[Firecrawl Fallback] Credit 1: LinkedIn search")
+                search_response = self._firecrawl_search(query, limit=5)
+                firecrawl_calls += 1
+
+                results = _extract_search_results(search_response)
+                for result in results:
+                    contact = self._extract_contact_from_search_result(result, company)
+                    if contact:
+                        all_contacts.append(contact)
+
+                if all_contacts:
+                    contact_strs = [
+                        f"- {c['name']} ({c['role']}) - {c['linkedin_url']}"
+                        for c in all_contacts
+                    ]
+                    raw_parts.append(f"[SOURCE: Firecrawl LinkedIn Fallback]\n" + "\n".join(contact_strs) + "\n")
+                    self.logger.info(f"[Firecrawl Fallback] Found {len(all_contacts)} contacts from LinkedIn")
+            except Exception as e:
+                self.logger.warning(f"[Firecrawl Fallback] LinkedIn search failed: {e}")
+
+        # Credit 2: Team page scrape (single attempt)
+        if firecrawl_calls < MAX_CALLS and company_url:
+            try:
+                self.logger.info(f"[Firecrawl Fallback] Credit 2: Team page scrape")
+                team_content = self._scrape_company_team_page(company, company_url, max_attempts=1)
+                firecrawl_calls += 1
+
+                if team_content:
+                    raw_parts.append(f"[SOURCE: Firecrawl Team Page Fallback]\n{team_content}\n")
+                    self.logger.info(f"[Firecrawl Fallback] Scraped team page ({len(team_content)} chars)")
+            except Exception as e:
+                self.logger.warning(f"[Firecrawl Fallback] Team page scrape failed: {e}")
+
+        self.logger.info(f"[Firecrawl Fallback] Used {firecrawl_calls}/{MAX_CALLS} credits")
+
+        if not raw_parts:
+            return f"Firecrawl fallback found no contacts for {company}.", False
+
+        # Deduplicate contacts
+        if all_contacts:
+            all_contacts = self._deduplicate_contacts(all_contacts)
+
+        return "\n---\n".join(raw_parts), bool(all_contacts or raw_parts)
 
     # ===== LLM CLASSIFICATION AND ENRICHMENT =====
 
@@ -2295,33 +2044,24 @@ Return the three letters separated by \"---\" lines.
             }
 
         try:
-            # Step 1: Multi-source discovery (for regular employers only)
-            # Route to Claude API or FireCrawl based on configuration
+            # Step 1: Contact discovery (Phase 1: Claude WebSearch, Phase 2: Firecrawl fallback)
+            raw_contacts, found_contacts = "", False
+
+            # Phase 1: Claude WebSearch (primary)
             if self.use_claude_api and self.claude_researcher:
-                # Claude API path (new backend)
-                self.logger.info("[Discovery] Using Claude API for contact discovery")
+                self.logger.info("[Discovery] Phase 1: Using Claude API for contact discovery")
                 raw_contacts, found_contacts = self._discover_contacts_with_claude_api(state)
-            elif self.firecrawl_disabled:
-                # FireCrawl disabled and Claude API not configured
-                raw_contacts, found_contacts = (
-                    "Contact discovery is disabled. Use role-based identifiers.",
-                    False
-                )
-            else:
-                # FireCrawl path (legacy backend)
-                self.logger.info("[Discovery] Using FireCrawl for contact discovery")
-                raw_contacts, found_contacts = self._discover_contacts(state)
+
+            # Phase 2: Firecrawl fallback (2-credit cap) if Claude found insufficient contacts
+            if not found_contacts and not self.firecrawl_disabled and self.firecrawl:
+                self.logger.info("[Discovery] Phase 2: Firecrawl fallback (2-credit cap)")
+                fc_raw, fc_found = self._firecrawl_fallback_discover(state)
+                if fc_found:
+                    raw_contacts = (raw_contacts + "\n---\n" + fc_raw) if raw_contacts else fc_raw
+                    found_contacts = True
 
             if not found_contacts:
-                fallback_reason = (
-                    "Claude API contact discovery returned no results (role-based synthetic contacts)."
-                    if self.use_claude_api
-                    else (
-                        "FireCrawl outreach discovery disabled (role-based synthetic contacts)."
-                        if self.firecrawl_disabled
-                        else "No contacts found via FireCrawl - using role-based synthetic contacts."
-                    )
-                )
+                fallback_reason = "Contact discovery returned no results (role-based synthetic contacts)."
                 self.logger.warning(fallback_reason)
                 synthetic = self._generate_synthetic_contacts(state)
                 primary_contacts = synthetic["primary_contacts"]
@@ -2474,7 +2214,7 @@ def people_mapper_node(
 
     Supports two discovery backends:
     - Claude API (default): Uses Claude API with WebSearch for contact discovery
-    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+    - Firecrawl fallback: 2-credit budget for LinkedIn search + team page scrape
 
     Args:
         state: Current job state

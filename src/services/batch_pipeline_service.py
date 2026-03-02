@@ -3,10 +3,11 @@ Batch Pipeline Service - Complete Move-to-Batch Orchestrator
 
 Orchestrates the complete batch processing pipeline when a job is moved to batch:
 1. Full Extraction (JD processing, pain points, fit scoring) + Annotations + Persona
-2. Company Research (Layer 3) + Role Research (Layer 3.5) + People Mapping (Layer 5)
-3. CV Generation (6-phase orchestrator)
-4. Upload CV to Google Drive
-5. Upload Dossier to Google Drive
+2. Form Scraping (optional, if application_url exists)
+3. Company Research (Layer 3) + Role Research (Layer 3.5) + People Mapping (Layer 5)
+4. CV Generation (6-phase orchestrator)
+5. Upload CV to Google Drive
+6. Upload Dossier to Google Drive
 
 Each step emits progress to Redis for frontend polling (Redis transparency).
 On failure, continues to next step (except extraction which is required foundation).
@@ -36,11 +37,12 @@ class BatchPipelineService(OperationService):
     Orchestrates complete batch processing pipeline.
 
     Steps:
-    1-3. Full Extraction + Annotations + Persona (FullExtractionService)
-    4.   Company Research + Role Research + People Mapping (CompanyResearchService)
-    5.   CV Generation (CVGenerationService)
-    6.   Upload CV to Google Drive
-    7.   Upload Dossier to Google Drive
+    1-3.  Full Extraction + Annotations + Persona (FullExtractionService)
+    3.5.  Form Scraping (optional, if application_url exists)
+    4.    Company Research + Role Research + People Mapping (CompanyResearchService)
+    5.    CV Generation (CVGenerationService)
+    6.    Upload CV to Google Drive
+    7.    Upload Dossier to Google Drive
     """
 
     operation_name = "batch-pipeline"
@@ -243,6 +245,72 @@ class BatchPipelineService(OperationService):
                 output_tokens=total_output_tokens,
                 model_used=tier.value,
             )
+
+        # =====================================================================
+        # STEP 3.5: Form Discovery + Scraping
+        # Search for official posting → scrape form fields → generate answers
+        # =====================================================================
+        _emit_progress("form_scraping", "running", "Searching for official job posting...")
+        form_step_start = datetime.utcnow()
+
+        try:
+            job = self._get_job(job_id)
+            company = (job or {}).get("company", "")
+            title = (job or {}).get("title", "")
+            fallback_url = (job or {}).get("application_url") or (job or {}).get("job_url")
+        except Exception:
+            company, title, fallback_url = "", "", None
+
+        if company and title:
+            try:
+                from src.services.form_scraper_service import FormScraperService
+
+                form_service = FormScraperService()
+                form_result = await form_service.discover_and_scrape_form(
+                    job_id=job_id,
+                    company=company,
+                    title=title,
+                    fallback_url=fallback_url,
+                    progress_callback=progress_callback,
+                )
+
+                form_duration = int((datetime.utcnow() - form_step_start).total_seconds() * 1000)
+                fields_count = len(form_result.get("fields", [])) if form_result else 0
+                answers_count = len(form_result.get("planned_answers", [])) if form_result else 0
+
+                step_results["form_scraping"] = {
+                    "success": bool(form_result and form_result.get("success")),
+                    "fields_count": fields_count,
+                    "answers_count": answers_count,
+                    "discovered_url": form_result.get("discovered_url"),
+                    "url_saved": form_result.get("url_saved", False),
+                    "duration_ms": form_duration,
+                }
+
+                if form_result and form_result.get("success"):
+                    _emit_progress("form_scraping", "completed",
+                        f"Scraped {fields_count} fields, generated {answers_count} answers")
+                elif form_result and form_result.get("url_saved"):
+                    _emit_progress("form_scraping", "completed",
+                        f"Saved application URL (form scraping not possible)")
+                else:
+                    error_msg = form_result.get("error", "Unknown error") if form_result else "No result"
+                    _emit_progress("form_scraping", "failed", f"Form scraping failed: {error_msg}")
+
+            except Exception as e:
+                form_duration = int((datetime.utcnow() - form_step_start).total_seconds() * 1000)
+                step_results["form_scraping"] = {
+                    "success": False,
+                    "error": str(e),
+                    "duration_ms": form_duration,
+                }
+                _emit_progress("form_scraping", "failed", f"Form scraping failed: {e}")
+                # Non-critical — pipeline continues
+        else:
+            step_results["form_scraping"] = {
+                "success": False,
+                "error": "Missing company or title for form discovery",
+            }
 
         # =====================================================================
         # STEP 4: Company Research + Role Research + People Mapping

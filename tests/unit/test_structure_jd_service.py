@@ -200,17 +200,12 @@ class TestStructureJDServiceGetJob:
 
         assert result == sample_job_document
 
-    def test_returns_none_for_not_found(self, sample_job_id, mock_db_client):
+    def test_returns_none_for_not_found(self, sample_job_id, mock_job_repository):
         """Should return None if job not found."""
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_db_client.__getitem__ = MagicMock(return_value=MagicMock())
-        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+        mock_job_repository.find_one.return_value = None
 
-        service = StructureJDService(db_client=mock_db_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._get_job(sample_job_id)
+        service = StructureJDService(job_repository=mock_job_repository)
+        result = service._get_job(sample_job_id)
 
         assert result is None
 

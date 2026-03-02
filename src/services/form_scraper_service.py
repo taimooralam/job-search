@@ -4,12 +4,26 @@ Form Scraper Service
 Scrapes job application forms and extracts form fields using FireCrawl and LLM.
 Caches scraped forms in MongoDB to avoid re-scraping.
 
+Two modes of operation:
+1. Direct scrape: scrape_form(url) → extract fields → generate answers
+2. Discovery mode: discover_and_scrape_form(company, title) →
+   search for official posting → scrape → extract → answer
+
 Usage:
     service = FormScraperService()
+
+    # Direct scrape (existing URL)
     result = await service.scrape_form(
         job_id="...",
         application_url="https://...",
-        force_refresh=False
+    )
+
+    # Discovery mode (batch pipeline)
+    result = await service.discover_and_scrape_form(
+        job_id="...",
+        company="TechCorp",
+        title="Software Engineer",
+        fallback_url="https://linkedin.com/jobs/...",
     )
 """
 
@@ -553,3 +567,171 @@ class FormScraperService:
             "scraped_at": scrape_result.get("scraped_at"),
             "from_cache": scrape_result.get("from_cache", False),
         }
+
+    # ===== DISCOVERY MODE: SEARCH → SCRAPE → ANSWER =====
+
+    def _search_official_posting(
+        self, company: str, title: str
+    ) -> Optional[str]:
+        """
+        Use Firecrawl search to find the official job posting URL.
+
+        Tries two search strategies:
+        1. Direct careers page search: "{company}" "{title}" apply careers
+        2. Broader search: "{company}" "{title}" job application
+
+        Args:
+            company: Company name
+            title: Job title
+
+        Returns:
+            Official posting URL if found, None otherwise
+        """
+        # Domains to exclude (aggregators, not official postings)
+        AGGREGATOR_DOMAINS = {
+            "linkedin.com", "indeed.com", "glassdoor.com", "ziprecruiter.com",
+            "monster.com", "dice.com", "simplyhired.com", "careerbuilder.com",
+            "jooble.org", "adzuna.com", "reed.co.uk", "seek.com.au",
+            "google.com/search",
+        }
+
+        def _is_aggregator(url: str) -> bool:
+            url_lower = url.lower()
+            return any(domain in url_lower for domain in AGGREGATOR_DOMAINS)
+
+        def _extract_results(search_response) -> List[Dict[str, Any]]:
+            """Extract results from Firecrawl search response."""
+            results = getattr(search_response, "data", None)
+            if results is None:
+                results = getattr(search_response, "web", None)
+            if results is None and isinstance(search_response, list):
+                results = search_response
+            return results or []
+
+        queries = [
+            f'"{company}" "{title}" apply careers',
+            f'"{company}" "{title}" job application',
+        ]
+
+        for query in queries:
+            try:
+                logger.info(f"[FormScraper] Searching: {query[:80]}...")
+                response = self.firecrawl.search(query, limit=5)
+                results = _extract_results(response)
+
+                for result in results:
+                    url = None
+                    if isinstance(result, dict):
+                        url = result.get("url") or result.get("link")
+                    elif hasattr(result, "url"):
+                        url = result.url
+
+                    if url and not _is_aggregator(url):
+                        logger.info(f"[FormScraper] Found official posting: {url}")
+                        return url
+
+            except Exception as e:
+                logger.warning(f"[FormScraper] Search failed for query '{query[:50]}': {e}")
+                continue
+
+        logger.info(f"[FormScraper] No official posting found for {company} - {title}")
+        return None
+
+    async def discover_and_scrape_form(
+        self,
+        job_id: str,
+        company: str,
+        title: str,
+        fallback_url: Optional[str] = None,
+        force_refresh: bool = False,
+        progress_callback: Optional[callable] = None,
+    ) -> Dict[str, Any]:
+        """
+        Full discovery pipeline: search → scrape → extract fields → generate answers.
+
+        This is the batch pipeline entry point. It first uses Firecrawl to
+        search for the official job posting, then scrapes it for form fields,
+        and finally uses Sonnet to fill out answers from the job schema.
+
+        Fallback behavior:
+        - If search finds a URL but scraping/answering fails, saves only the
+          discovered application_url to the job document.
+        - If search fails entirely, falls back to scraping fallback_url.
+
+        Args:
+            job_id: MongoDB job ID
+            company: Company name for search
+            title: Job title for search
+            fallback_url: URL to try if search fails (e.g., job.application_url)
+            force_refresh: Whether to bypass cache
+            progress_callback: Optional callback for progress updates
+
+        Returns:
+            Dict with fields, planned_answers, discovered_url, or error
+        """
+        def emit_progress(step: str, status: str, message: str):
+            if progress_callback:
+                progress_callback(step, status, message)
+
+        # Step 1: Search for official posting URL
+        emit_progress("form_search", "processing",
+            f"Searching for official {company} posting...")
+        discovered_url = None
+        try:
+            discovered_url = self._search_official_posting(company, title)
+        except Exception as e:
+            logger.warning(f"[FormScraper] Discovery search error: {e}")
+
+        if discovered_url:
+            emit_progress("form_search", "completed",
+                f"Found official posting: {discovered_url[:60]}...")
+        else:
+            emit_progress("form_search", "completed",
+                "No official posting found, trying fallback URL")
+
+        # Determine which URL to scrape
+        scrape_url = discovered_url or fallback_url
+
+        if not scrape_url:
+            return {
+                "success": False,
+                "error": "No official posting found and no fallback URL available",
+                "fields": [],
+                "discovered_url": None,
+            }
+
+        # Step 2-4: Scrape → extract fields → generate answers
+        # Reuse existing scrape_and_generate_answers for the heavy lifting
+        result = await self.scrape_and_generate_answers(
+            job_id=job_id,
+            application_url=scrape_url,
+            force_refresh=force_refresh,
+            progress_callback=progress_callback,
+        )
+
+        # Attach discovered URL to result
+        result["discovered_url"] = discovered_url
+
+        # Fallback: if we discovered a URL but scraping/answering failed,
+        # save just the application_url so the detail page can show it
+        if discovered_url and not result.get("success"):
+            try:
+                repo = self._get_job_repository()
+                repo.update_one(
+                    {"_id": ObjectId(job_id)},
+                    {
+                        "$set": {
+                            "application_url": discovered_url,
+                            "updatedAt": datetime.utcnow(),
+                        }
+                    },
+                )
+                logger.info(
+                    f"[FormScraper] Saved discovered URL for job {job_id}: "
+                    f"{discovered_url[:60]}"
+                )
+                result["url_saved"] = True
+            except Exception as e:
+                logger.warning(f"[FormScraper] Failed to save discovered URL: {e}")
+
+        return result
