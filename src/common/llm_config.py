@@ -136,6 +136,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "grader": StepConfig(tier="low", use_fallback=False),
     "ensemble_header": StepConfig(tier="middle", use_fallback=False),
     "improver": StepConfig(tier="low", use_fallback=False),
+    "cv_tailorer": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
 
     # Layer 2: Pain Point Miner
     "pain_point_extraction": StepConfig(tier="middle"),
