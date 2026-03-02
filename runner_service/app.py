@@ -135,6 +135,10 @@ _service_start_time = time.time()
 # Queue management (Redis-backed, optional)
 _queue_manager: Optional["QueueManager"] = None
 
+# Strong references to background asyncio tasks to prevent GC collection.
+# See: https://docs.python.org/3/library/asyncio-task.html#creating-tasks
+_background_tasks: set = set()
+
 
 def _status_url(run_id: str) -> str:
     """Build relative status URL."""
@@ -1525,8 +1529,10 @@ async def startup_heartbeat_loop():
                 logger.warning(f"Heartbeat failed: {e}")
             await asyncio.sleep(HEARTBEAT_INTERVAL_SECONDS)
 
-    # Start heartbeat as background task
-    asyncio.create_task(heartbeat_loop())
+    # Start heartbeat as background task (store ref to prevent GC)
+    task = asyncio.create_task(heartbeat_loop())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     logger.info("Heartbeat loop started for multi-runner coordination")
 
 
@@ -1613,12 +1619,18 @@ async def startup_queue_polling_loop():
                                 auto_persona=True,
                             )
                         )
+            except asyncio.CancelledError:
+                logger.warning("[poll] Queue polling loop cancelled, restarting...")
+                raise  # Let the outer handler restart or propagate
             except Exception as e:
                 logger.warning(f"[poll] Queue polling error: {e}")
 
             await asyncio.sleep(QUEUE_POLL_INTERVAL_SECONDS)
 
-    asyncio.create_task(_queue_polling_loop())
+    # Store ref to prevent GC from silently cancelling the task
+    task = asyncio.create_task(_queue_polling_loop())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     logger.info("Queue polling loop started for pending job recovery")
 
 
@@ -1659,7 +1671,10 @@ async def startup_queue_cleanup_loop():
                 logger.warning(f"Queue cleanup loop error: {e}")
             await asyncio.sleep(QUEUE_CLEANUP_INTERVAL)
 
-    asyncio.create_task(_cleanup_loop())
+    # Store ref to prevent GC from silently cancelling the task
+    task = asyncio.create_task(_cleanup_loop())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     logger.info("Queue cleanup loop started for stale item recovery")
 
 
