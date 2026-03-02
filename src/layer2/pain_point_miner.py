@@ -1416,9 +1416,13 @@ class PainPointMiner:
             })
 
             # Emit LLM response preview to frontend for debugging
-            preview_len = min(300, len(llm_result.content))
+            # Strip <reasoning> tags and markdown bold so the CLI panel shows clean text
+            preview_text = re.sub(r'<reasoning>.*?</reasoning>', '', llm_result.content, flags=re.DOTALL).strip()
+            preview_text = re.sub(r'\*\*(.+?)\*\*', r'\1', preview_text)
+            preview_text = re.sub(r'</?[a-z_]+>', '', preview_text)  # strip remaining XML tags
+            preview_len = min(300, len(preview_text))
             self._emit_log({
-                "message": f"LLM response preview: {llm_result.content[:preview_len]}{'...' if len(llm_result.content) > preview_len else ''}",
+                "message": f"LLM response preview: {preview_text[:preview_len]}{'...' if len(preview_text) > preview_len else ''}",
                 "response_length": len(llm_result.content),
             })
 
