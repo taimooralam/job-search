@@ -3444,3 +3444,63 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
             status_code=500,
             detail=f"Upload failed: {str(e)}",
         )
+
+
+# =============================================================================
+# AI Classification (LLM-based)
+# =============================================================================
+
+
+class AIClassifyResponse(BaseModel):
+    """Response for AI classification endpoint."""
+    success: bool
+    is_ai_job: bool = False
+    ai_categories: List[str] = Field(default_factory=list)
+    ai_category_count: int = 0
+    ai_rationale: Optional[str] = None
+
+
+@router.post(
+    "/{job_id}/classify-ai",
+    response_model=AIClassifyResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Classify job AI relevance using LLM",
+    description="Uses Haiku LLM to semantically classify whether a job is AI-relevant.",
+)
+async def classify_ai(job_id: str) -> AIClassifyResponse:
+    """
+    Classify a job's AI relevance using LLM (Haiku).
+
+    Fetches job from MongoDB, runs LLM classification, and updates the document
+    with is_ai_job, ai_categories, ai_rationale, and ai_classified_at.
+    """
+    from src.services.ai_classifier_llm import classify_job_document_llm
+
+    job = _validate_job_exists_sync(job_id)
+
+    # Run classification (Haiku is fast, no need for background task)
+    result = classify_job_document_llm(job)
+
+    # Update MongoDB
+    repo = get_job_repository()
+    repo.update_one(
+        {"_id": ObjectId(job_id)},
+        {
+            "$set": {
+                "is_ai_job": result.is_ai_job,
+                "ai_categories": result.ai_categories,
+                "ai_category_count": result.ai_category_count,
+                "ai_rationale": result.ai_rationale,
+                "ai_classified_at": result.ai_classified_at,
+                "updatedAt": datetime.utcnow(),
+            }
+        },
+    )
+
+    return AIClassifyResponse(
+        success=True,
+        is_ai_job=result.is_ai_job,
+        ai_categories=result.ai_categories,
+        ai_category_count=result.ai_category_count,
+        ai_rationale=result.ai_rationale,
+    )

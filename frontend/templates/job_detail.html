@@ -100,6 +100,12 @@
                             <span class="status-badge {{ (job.status or 'not processed') | replace(' ', '-') }}">
                                 {{ job.status or 'not processed' }}
                             </span>
+                            {% if job.is_ai_job %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                  title="{{ (job.ai_categories or []) | join(', ') }}">
+                                AI
+                            </span>
+                            {% endif %}
                             {% if job.score is not none %}
                             <span class="fit-score-pill">{{ job.score }}%</span>
                             {% endif %}
@@ -2214,6 +2220,33 @@
                     {{ job.fit_rationale }}
                 </div>
                 {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AI Classification Card -->
+        {% if job.ai_rationale is defined and job.ai_rationale %}
+        <div class="job-detail-card">
+            <h2 class="job-detail-card-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                AI Classification
+            </h2>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium {{ 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' if job.is_ai_job else 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' }}">
+                        {{ 'AI Relevant' if job.is_ai_job else 'Not AI' }}
+                    </span>
+                    {% for cat in (job.ai_categories or []) %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-50 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                        {{ cat | replace('_', ' ') }}
+                    </span>
+                    {% endfor %}
+                </div>
+                <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {{ job.ai_rationale }}
+                </div>
             </div>
         </div>
         {% endif %}

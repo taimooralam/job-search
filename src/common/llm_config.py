@@ -180,6 +180,9 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     # Job Scoring - MANDATORY Claude CLI (avoid invalid OpenAI key fallback)
     "quick_scorer": StepConfig(tier="low", use_fallback=False),
 
+    # AI Classification - Haiku for semantic AI job detection
+    "ai_classification": StepConfig(tier="low", use_fallback=False),
+
     # Layer 2.5: STAR Selector - selects best STAR records for roles
     "star_selection": StepConfig(tier="middle"),
 

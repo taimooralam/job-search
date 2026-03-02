@@ -436,11 +436,11 @@ class FullExtractionService(OperationService):
                             f"Normalized LinkedIn URL: {current_url} -> {normalized_url}"
                         )
 
-            # Re-classify AI categories with enriched extracted_jd
-            from src.common.ai_classifier import classify_job_document
+            # Re-classify AI categories with LLM (semantic, not regex)
+            from src.services.ai_classifier_llm import classify_job_document_llm
             enriched_doc = dict(job) if job else {}
             enriched_doc["extracted_jd"] = extracted_jd
-            ai_result = classify_job_document(enriched_doc)
+            ai_result = classify_job_document_llm(enriched_doc)
 
             # Build update document
             update_doc = {
@@ -460,10 +460,12 @@ class FullExtractionService(OperationService):
                 "fit_category": fit_data.get("fit_category"),
                 # Annotation signals (for UI heatmap)
                 "annotation_signals": fit_data.get("annotation_signals"),
-                # AI classification (re-classified with full extracted_jd)
+                # AI classification (LLM-based with rationale)
                 "is_ai_job": ai_result.is_ai_job,
                 "ai_categories": ai_result.ai_categories,
                 "ai_category_count": ai_result.ai_category_count,
+                "ai_rationale": getattr(ai_result, "ai_rationale", None),
+                "ai_classified_at": getattr(ai_result, "ai_classified_at", None),
                 # Metadata
                 "full_extraction_completed_at": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),

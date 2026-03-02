@@ -151,11 +151,11 @@ class StructureJDService(OperationService):
                 existing_annotations.get("annotation_version", 0) + 1
             )
 
-            # Re-classify AI categories with enriched extracted_jd
-            from src.common.ai_classifier import classify_job_document
+            # Re-classify AI categories with LLM (semantic, not regex)
+            from src.services.ai_classifier_llm import classify_job_document_llm
             enriched_doc = dict(job) if job else {}
             enriched_doc["extracted_jd"] = processed_result
-            ai_result = classify_job_document(enriched_doc)
+            ai_result = classify_job_document_llm(enriched_doc)
 
             result = repo.update_one(
                 {"_id": object_id},
@@ -166,6 +166,8 @@ class StructureJDService(OperationService):
                         "is_ai_job": ai_result.is_ai_job,
                         "ai_categories": ai_result.ai_categories,
                         "ai_category_count": ai_result.ai_category_count,
+                        "ai_rationale": getattr(ai_result, "ai_rationale", None),
+                        "ai_classified_at": getattr(ai_result, "ai_classified_at", None),
                         "updatedAt": datetime.utcnow(),
                     }
                 },
