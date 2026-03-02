@@ -395,6 +395,11 @@ class CVGenerationService(OperationService):
             "location": job.get("location", ""),
         }
 
+        # Include AI classification for conditional CV sections
+        if job.get("is_ai_job"):
+            state["is_ai_job"] = job["is_ai_job"]
+            state["ai_categories"] = job.get("ai_categories", [])
+
         # Include annotations if requested and available
         if use_annotations and job.get("jd_annotations"):
             state["jd_annotations"] = job["jd_annotations"]

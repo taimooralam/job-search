@@ -295,6 +295,10 @@ class JobState(TypedDict):
     outreach_packages: Optional[List[OutreachPackage]]  # Per-contact outreach (Phase 7/9)
     fallback_cover_letters: Optional[List[str]]  # Fallback when no contacts discovered
 
+    # ===== AI CLASSIFICATION (from ai_classifier.py) =====
+    is_ai_job: Optional[bool]
+    ai_categories: Optional[List[str]]
+
     # ===== LAYER 6: Generator (SIMPLIFIED) =====
     # TODAY: Simple cover letter + basic CV
     # FUTURE: Will add per-person outreach templates

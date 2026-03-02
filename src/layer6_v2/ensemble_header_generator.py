@@ -374,6 +374,7 @@ class EnsembleHeaderGenerator:
             years_experience=years_experience,
             jd_pain_points=extracted_jd.get("pain_points", []),
             candidate_differentiators=extracted_jd.get("differentiators", []),
+            extracted_jd=extracted_jd,
         )
 
         # Add schema guidance for JSON response

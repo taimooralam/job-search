@@ -211,20 +211,41 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
         return text
 
     def _build_persona_context(
-        self, grouped: Dict[str, List[Dict[str, Any]]]
+        self,
+        grouped: Dict[str, List[Dict[str, Any]]],
+        ideal_candidate_profile: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Build the full persona context string for the LLM prompt.
 
-        Includes identity, passion, and strength dimensions.
+        Includes identity, passion, and strength dimensions, plus
+        optional ideal candidate profile from JD extraction for alignment.
 
         Args:
             grouped: Grouped persona annotations
+            ideal_candidate_profile: Optional ICP from extracted_jd for JD alignment
 
         Returns:
             Formatted context string for prompt
         """
         lines = []
+
+        # === IDEAL CANDIDATE ALIGNMENT (from JD — what the job is looking for) ===
+        if ideal_candidate_profile:
+            icp = ideal_candidate_profile
+            lines.append("=== WHAT THE JD IS LOOKING FOR ===")
+            if icp.get("identity_statement"):
+                lines.append(f"  \u2022 Ideal candidate: {icp['identity_statement']}")
+            if icp.get("archetype"):
+                lines.append(f"  \u2022 Archetype: {icp['archetype']}")
+            if icp.get("key_traits"):
+                lines.append(f"  \u2022 Key traits: {', '.join(icp['key_traits'][:5])}")
+            if icp.get("culture_signals"):
+                lines.append(f"  \u2022 Culture: {', '.join(icp['culture_signals'][:4])}")
+            lines.append("")
+            lines.append("Align the persona statement with the ideal candidate profile above,")
+            lines.append("while staying grounded in the candidate's actual identity and strengths below.")
+            lines.append("")
 
         # === IDENTITY DIMENSION ===
         identity_lines = []
@@ -350,6 +371,7 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
         jd_annotations: Dict[str, Any],
         job_id: str = "unknown",
         struct_logger: Optional["StructuredLogger"] = None,
+        ideal_candidate_profile: Optional[Dict[str, Any]] = None,
     ) -> Optional[SynthesizedPersona]:
         """
         Synthesize persona from identity, passion, and strength annotations using Claude CLI.
@@ -360,6 +382,7 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
             jd_annotations: Full jd_annotations dict from job document
             job_id: Job ID for logging and tracking
             struct_logger: Optional StructuredLogger for Redis live-tail visibility
+            ideal_candidate_profile: Optional ICP from extracted_jd for JD alignment
 
         Returns:
             SynthesizedPersona if relevant annotations exist, else None
@@ -373,8 +396,8 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
             logger.debug("No persona-relevant annotations found, skipping synthesis")
             return None
 
-        # Build context for prompt
-        persona_context = self._build_persona_context(grouped)
+        # Build context for prompt (include ICP for JD alignment if available)
+        persona_context = self._build_persona_context(grouped, ideal_candidate_profile)
 
         logger.info(
             f"Synthesizing persona from {total_annotations} annotations "

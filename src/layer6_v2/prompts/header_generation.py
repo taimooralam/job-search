@@ -215,6 +215,7 @@ def build_profile_user_prompt(
     jd_pain_points: list = None,
     candidate_differentiators: list = None,
     role_persona: dict = None,
+    extracted_jd: dict = None,
 ) -> str:
     """
     Build the user prompt for hybrid executive summary generation.
@@ -231,6 +232,7 @@ def build_profile_user_prompt(
         jd_pain_points: Pain points extracted from JD (for key achievements)
         candidate_differentiators: Unique strengths (for tagline differentiation)
         role_persona: Persona data from role_skills_taxonomy.json (optional)
+        extracted_jd: Full extracted_jd dict for ideal_candidate_profile injection (optional)
 
     Returns:
         Formatted user prompt
@@ -293,6 +295,23 @@ TAGLINE TEMPLATES (adapt to candidate's actual achievements):
             persona_text += f"""HEADLINE PATTERN: {headline_pattern}
 """
 
+    # Ideal candidate alignment (from JD extraction)
+    icp_text = ""
+    extracted_jd = extracted_jd or {}
+    if extracted_jd.get("ideal_candidate_profile"):
+        icp = extracted_jd["ideal_candidate_profile"]
+        archetype = icp.get("archetype", "")
+        identity = icp.get("identity_statement", "")
+        traits = icp.get("key_traits", [])
+        if archetype or identity:
+            icp_text = f"""
+=== IDEAL CANDIDATE ALIGNMENT (from JD — mirror this positioning) ===
+JD ARCHETYPE: {archetype}
+JD IDENTITY: {identity}
+KEY TRAITS TO MIRROR: {', '.join(traits[:5])}
+Align the tagline and narrative to mirror these traits while staying grounded in actual achievements.
+"""
+
     return f"""Generate a HYBRID EXECUTIVE SUMMARY for {candidate_name}.
 
 === TARGET ROLE ===
@@ -300,7 +319,7 @@ EXACT JOB TITLE: {job_title}
 ROLE CATEGORY: {role_category}
 YEARS OF EXPERIENCE: {years_experience}+
 REGIONAL VARIANT: {regional_variant}
-{regional_instructions}{persona_text}
+{regional_instructions}{persona_text}{icp_text}
 === GROUNDED JD KEYWORDS (pre-verified - ONLY use these) ===
 {keywords_text}
 {pain_points_text}{differentiators_text}
@@ -699,6 +718,7 @@ def build_persona_user_prompt(
     jd_pain_points: list = None,
     candidate_differentiators: list = None,
     role_persona: dict = None,
+    extracted_jd: dict = None,
 ) -> str:
     """
     Build the user prompt for persona-specific hybrid executive summary generation.
@@ -716,6 +736,7 @@ def build_persona_user_prompt(
         jd_pain_points: Pain points extracted from JD
         candidate_differentiators: Unique strengths
         role_persona: Persona data from role_skills_taxonomy.json (optional)
+        extracted_jd: Full extracted_jd dict for ideal_candidate_profile injection (optional)
 
     Returns:
         Formatted user prompt for specific persona
@@ -780,13 +801,29 @@ POWER VERBS: {', '.join(power_verbs[:6])}
 METRIC PRIORITIES: {', '.join(metric_priorities[:4])}
 """
 
+    # Ideal candidate alignment (from JD extraction)
+    icp_text = ""
+    extracted_jd = extracted_jd or {}
+    if extracted_jd.get("ideal_candidate_profile"):
+        icp = extracted_jd["ideal_candidate_profile"]
+        archetype = icp.get("archetype", "")
+        identity = icp.get("identity_statement", "")
+        traits = icp.get("key_traits", [])
+        if archetype or identity:
+            icp_text = f"""
+=== IDEAL CANDIDATE ALIGNMENT (from JD — mirror this positioning) ===
+JD ARCHETYPE: {archetype}
+JD IDENTITY: {identity}
+KEY TRAITS TO MIRROR: {', '.join(traits[:5])}
+"""
+
     return f"""Generate a {persona.upper()}-focused HYBRID EXECUTIVE SUMMARY for {candidate_name}.
 {emphasis}
 === TARGET ROLE ===
 EXACT JOB TITLE: {job_title}
 ROLE CATEGORY: {role_category}
 YEARS OF EXPERIENCE: {years_experience}+
-{pain_points_text}{differentiators_text}{role_persona_text}
+{pain_points_text}{differentiators_text}{role_persona_text}{icp_text}
 === GROUNDED JD KEYWORDS (ONLY use these) ===
 {keywords_text}
 
@@ -1080,11 +1117,26 @@ TARGET ROLE: {jd_title}
 {chr(10).join(f'- {p}' for p in jd_pain_points[:3])}
 """
 
+    # Ideal candidate alignment (from JD extraction)
+    icp_context = ""
+    if extracted_jd and extracted_jd.get("ideal_candidate_profile"):
+        icp = extracted_jd["ideal_candidate_profile"]
+        archetype = icp.get("archetype", "")
+        identity = icp.get("identity_statement", "")
+        traits = icp.get("key_traits", [])
+        if archetype or identity:
+            icp_context = f"""
+=== IDEAL CANDIDATE ALIGNMENT (from JD — mirror this positioning) ===
+JD ARCHETYPE: {archetype}
+JD IDENTITY: {identity}
+KEY TRAITS TO MIRROR: {', '.join(traits[:5])}
+"""
+
     return f"""Generate a VALUE PROPOSITION STATEMENT for this candidate.
 
 === ROLE CATEGORY: {role_category.upper()} ===
 {role_templates}
-{jd_context}
+{jd_context}{icp_context}
 === CANDIDATE SCOPE INDICATORS (use these exact numbers) ===
 {scope_text if scope_text else "- Extract from achievements below"}
 {emphasis_text}

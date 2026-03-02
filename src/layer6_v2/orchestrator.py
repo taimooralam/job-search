@@ -125,6 +125,50 @@ def should_include_github(job_title: str, job_description: str = "") -> bool:
     return False
 
 
+def should_include_ai_section(state: Dict[str, Any]) -> bool:
+    """Determine if AI-specific CV sections (Lantern project, AI header) should be included."""
+    return bool(state.get("is_ai_job", False))
+
+
+def _load_lantern_project() -> Optional[Dict[str, Any]]:
+    """
+    Load Lantern project section from data/master-cv/projects/lantern.md.
+
+    Parses the markdown format:
+    - Line 1: # Title — Subtitle
+    - Line 2: github: url
+    - Line 3: stack: technologies
+    - After ## Bullets: bullet list items
+
+    Returns:
+        Dict with title, github, stack, bullets keys, or None if file not found.
+    """
+    lantern_path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern.md"
+    if not lantern_path.exists():
+        return None
+
+    text = lantern_path.read_text(encoding="utf-8")
+    lines = text.strip().split("\n")
+
+    result = {"title": "", "github": "", "stack": "", "bullets": []}
+    in_bullets = False
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            result["title"] = stripped[2:].strip()
+        elif stripped.startswith("github:"):
+            result["github"] = stripped[len("github:"):].strip()
+        elif stripped.startswith("stack:"):
+            result["stack"] = stripped[len("stack:"):].strip()
+        elif stripped == "## Bullets":
+            in_bullets = True
+        elif in_bullets and stripped.startswith("- "):
+            result["bullets"].append(stripped[2:].strip())
+
+    return result if result["title"] else None
+
+
 from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
 from src.layer6_v2.role_generator import (
     RoleGenerator,
@@ -134,7 +178,7 @@ from src.layer6_v2.role_generator import (
 )
 from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
 from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
-from src.layer6_v2.header_generator import HeaderGenerator, generate_header
+from src.layer6_v2.header_generator import HeaderGenerator, generate_header, _load_role_persona
 from src.layer6_v2.ensemble_header_generator import (
     EnsembleHeaderGenerator,
     generate_ensemble_header,
@@ -527,6 +571,33 @@ class CVGeneratorV2:
                 "within_budget": self.word_budget is None or stitched_cv.total_word_count <= self.word_budget,
             })
 
+            # AI Gate: Override role_category for AI/GenAI/LLM jobs
+            is_ai = should_include_ai_section(state)
+            self._emit_log("ai_classification",
+                f"AI job: {'Yes' if is_ai else 'No'}" +
+                (f" ({', '.join(state.get('ai_categories', []))})" if is_ai else ""))
+            self._emit_struct_log("ai_classification", {
+                "is_ai_job": is_ai,
+                "ai_categories": state.get("ai_categories", []),
+                "role_category": extracted_jd.get("role_category"),
+                "role_category_override": "ai_architect" if is_ai else None,
+            })
+            if is_ai:
+                extracted_jd["role_category"] = "ai_architect"
+                self._logger.info("  AI job detected — using ai_architect role category")
+
+            # Log persona sources available for synthesis
+            self._emit_struct_log("persona_sources", {
+                "has_synthesized_persona": bool(jd_annotations and jd_annotations.get("synthesized_persona")),
+                "has_ideal_candidate_profile": bool(extracted_jd.get("ideal_candidate_profile")),
+                "has_role_persona": bool(_load_role_persona(extracted_jd.get("role_category", ""))),
+                "persona_sources_count": sum([
+                    bool(jd_annotations and jd_annotations.get("synthesized_persona")),
+                    bool(extracted_jd.get("ideal_candidate_profile")),
+                    bool(_load_role_persona(extracted_jd.get("role_category", ""))),
+                ]),
+            })
+
             # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")
             self._emit_log("phase_start", "Generating profile header...", phase=5)
@@ -656,7 +727,8 @@ class CVGeneratorV2:
             # GAP-014: Pass job location for Middle East relocation tagline
             job_location = extracted_jd.get("location", "") or state.get("location", "")
             cv_text = self._assemble_cv_text(
-                header_output, stitched_cv, candidate_data, job_location, extracted_jd
+                header_output, stitched_cv, candidate_data, job_location, extracted_jd,
+                state=state,
             )
 
             # Phase 5.5 (GAP-089): ATS keyword validation
@@ -1423,6 +1495,7 @@ class CVGeneratorV2:
             "cto": "Technology Executive",
             "tech_lead": "Technical Leader",
             "senior_engineer": "Software Engineer",
+            "ai_architect": "AI Architect",
         }
         return title_map.get(role_category, "Engineering Professional")
 
@@ -1433,6 +1506,7 @@ class CVGeneratorV2:
         candidate: CandidateData,
         job_location: str = "",
         extracted_jd: Dict = None,
+        state: Dict = None,
     ) -> str:
         """Assemble the full CV markdown text with formatting.
 
@@ -1521,6 +1595,19 @@ class CVGeneratorV2:
                 skill_names = ", ".join(section.skill_names)
                 lines.append(f"**{section.category}:** {skill_names}")
         lines.append("")
+
+        # AI-specific: Insert Lantern project section ABOVE Professional Experience
+        if state and should_include_ai_section(state):
+            lantern = _load_lantern_project()
+            if lantern:
+                lines.append(f"**{lantern['title']} (Portfolio — GitHub: {lantern['github']})**")
+                for bullet in lantern["bullets"]:
+                    lines.append(f"• {bullet}")
+                lines.append(f"**Stack:** {lantern['stack']}")
+                lines.append("")
+                self._logger.info("  Inserted Lantern project section (AI job)")
+            else:
+                self._logger.warning("  AI job but Lantern project file not found")
 
         # Professional Experience - bold section header
         lines.append("**PROFESSIONAL EXPERIENCE**")

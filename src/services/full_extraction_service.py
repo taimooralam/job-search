@@ -747,7 +747,13 @@ class FullExtractionService(OperationService):
                         jd_annotations = job.get("jd_annotations", {}) if job else {}
 
                         if builder.has_persona_annotations(jd_annotations):
-                            persona = await builder.synthesize(jd_annotations, job_id)
+                            # Pass ideal_candidate_profile for JD alignment
+                            extracted_jd = job.get("extracted_jd", {}) if job else {}
+                            icp = extracted_jd.get("ideal_candidate_profile") if extracted_jd else None
+                            persona = await builder.synthesize(
+                                jd_annotations, job_id,
+                                ideal_candidate_profile=icp,
+                            )
                             if persona:
                                 self._persist_persona(job_id, persona)
                                 persona_result = {

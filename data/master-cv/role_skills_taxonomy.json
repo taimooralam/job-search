@@ -1813,6 +1813,193 @@
       "max_sections": 4,
       "max_skills_per_section": 5,
       "lax_multiplier": 1.3
+    },
+    "ai_architect": {
+      "display_name": "AI Architect",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "LLM Reliability & Evaluation",
+          "description": "LLM gateway design, evaluation pipelines, quality gates, request validation"
+        },
+        "section_2": {
+          "name": "Agentic AI & Orchestration",
+          "description": "Event-driven architecture, multi-provider routing, agent frameworks, CQRS patterns"
+        },
+        "section_3": {
+          "name": "Production Operations & Observability",
+          "description": "Prometheus, Grafana, OpenSearch, CloudWatch, monitoring, incident management"
+        },
+        "section_4": {
+          "name": "AI Governance & Engineering Leadership",
+          "description": "GDPR, compliance, risk analysis, stakeholder management, mentoring, hiring"
+        }
+      },
+      "persona": {
+        "identity_statement": "production infrastructure expert applying 11 years of distributed systems rigor to AI systems",
+        "voice": "technically deep, infrastructure-grounded, AI-forward",
+        "tagline_templates": [
+          "Production infrastructure leader applying {years} years of distributed systems rigor to LLM reliability, evaluation, and governance at scale.",
+          "{Identity} bringing {metric_hook} to AI system reliability and observability."
+        ],
+        "power_verbs": [
+          "architected",
+          "instrumented",
+          "evaluated",
+          "governed",
+          "orchestrated",
+          "hardened",
+          "scaled",
+          "traced",
+          "audited",
+          "mentored"
+        ],
+        "metric_priorities": [
+          "reliability",
+          "latency",
+          "evaluation_coverage",
+          "cost_optimization"
+        ],
+        "headline_pattern": "{Title} | {Years}+ Years Production Systems & Engineering Leadership",
+        "key_achievement_focus": [
+          "zero downtime",
+          "observability at scale",
+          "compliance",
+          "cost optimization",
+          "team building"
+        ],
+        "differentiators": [
+          "infrastructure-to-AI bridge",
+          "production operations depth",
+          "compliance expertise",
+          "observability"
+        ],
+        "metric_emphasis": 0.5,
+        "high_impact_themes": [
+          "LLM gateway design with quality gates and fallback routing",
+          "Production observability (Prometheus, Grafana, tracing)",
+          "Multi-provider AI routing with cost optimization",
+          "AI governance and compliance frameworks",
+          "Team building and engineering culture"
+        ],
+        "red_flags_to_avoid": [
+          "Claiming deep ML/training expertise without evidence",
+          "Overstating AI research vs applied engineering",
+          "Missing infrastructure and operations grounding",
+          "No quantified reliability or performance metrics"
+        ],
+        "board_level_language": false,
+        "expected_team_size_range": "6-15",
+        "expected_budget_range": null,
+        "ats_priority": "high"
+      },
+      "sections": [
+        {
+          "name": "LLM Reliability & Evaluation",
+          "priority": 1,
+          "description": "LLM gateway design, evaluation pipelines, quality gates",
+          "skills": [
+            "LLM Gateway Design",
+            "Quality Gates",
+            "Request Validation",
+            "Evaluation Pipelines",
+            "Prompt Engineering",
+            "Model Routing"
+          ],
+          "jd_signals": [
+            "llm",
+            "large language model",
+            "genai",
+            "generative ai",
+            "ai",
+            "machine learning",
+            "evaluation",
+            "quality",
+            "prompt",
+            "rag",
+            "retrieval"
+          ]
+        },
+        {
+          "name": "Agentic AI & Orchestration",
+          "priority": 2,
+          "description": "Event-driven AI systems, multi-provider routing, agent frameworks",
+          "skills": [
+            "Event-Driven Architecture",
+            "Multi-Provider Routing",
+            "Agent Frameworks",
+            "CQRS Patterns",
+            "API Gateway Design",
+            "Microservices"
+          ],
+          "jd_signals": [
+            "agent",
+            "agentic",
+            "orchestration",
+            "event-driven",
+            "microservices",
+            "api",
+            "routing",
+            "langchain",
+            "langgraph",
+            "workflow"
+          ]
+        },
+        {
+          "name": "Production Operations & Observability",
+          "priority": 3,
+          "description": "Monitoring, tracing, incident management for AI systems",
+          "skills": [
+            "Prometheus",
+            "Grafana",
+            "Docker",
+            "Kubernetes",
+            "CI/CD",
+            "AWS"
+          ],
+          "jd_signals": [
+            "monitoring",
+            "observability",
+            "prometheus",
+            "grafana",
+            "docker",
+            "kubernetes",
+            "aws",
+            "cloud",
+            "devops",
+            "infrastructure",
+            "production"
+          ]
+        },
+        {
+          "name": "AI Governance & Engineering Leadership",
+          "priority": 4,
+          "description": "Compliance, team building, stakeholder management",
+          "skills": [
+            "Engineering Leadership",
+            "GDPR Compliance",
+            "Risk Analysis",
+            "Stakeholder Management",
+            "Mentoring",
+            "Technical Hiring"
+          ],
+          "jd_signals": [
+            "governance",
+            "compliance",
+            "gdpr",
+            "leadership",
+            "team",
+            "hiring",
+            "mentor",
+            "stakeholder",
+            "risk",
+            "ethics"
+          ]
+        }
+      ],
+      "max_sections": 4,
+      "max_skills_per_section": 6,
+      "lax_multiplier": 1.3
     }
   },
   "skill_aliases": {
