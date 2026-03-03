@@ -150,13 +150,15 @@ def _load_lantern_project() -> Optional[Dict[str, Any]]:
     text = lantern_path.read_text(encoding="utf-8")
     lines = text.strip().split("\n")
 
-    result = {"title": "", "github": "", "stack": "", "bullets": []}
+    result = {"title": "", "description": "", "github": "", "stack": "", "bullets": []}
     in_bullets = False
 
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("# "):
             result["title"] = stripped[2:].strip()
+        elif stripped.startswith("description:"):
+            result["description"] = stripped[len("description:"):].strip()
         elif stripped.startswith("github:"):
             result["github"] = stripped[len("github:"):].strip()
         elif stripped.startswith("stack:"):
@@ -1601,6 +1603,8 @@ class CVGeneratorV2:
             lantern = _load_lantern_project()
             if lantern:
                 lines.append(f"**{lantern['title']} (Portfolio — GitHub: {lantern['github']})**")
+                if lantern.get("description"):
+                    lines.append(lantern["description"])
                 for bullet in lantern["bullets"]:
                     lines.append(f"• {bullet}")
                 lines.append(f"**Stack:** {lantern['stack']}")
