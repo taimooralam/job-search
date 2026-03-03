@@ -89,7 +89,8 @@ Return JSON:
 Valid categories: ai_general, genai_llm, agentic_ai, rag_retrieval, mlops_llmops, fine_tuning, ai_governance, prompt_engineering, data_science
 
 Rules:
-- "is_ai_job" = true only if the role has meaningful AI/ML relevance (not just mentioning "AI" in passing)
+- AUTOMATIC: If the job title contains any of these terms, ALWAYS classify as is_ai_job=true: "AI", "Gen AI", "GenAI", "Generative AI", "Agentic AI", "AGI", "LLM", "Machine Learning", "ML"
+- For other titles, "is_ai_job" = true only if the role has meaningful AI/ML relevance (not just mentioning "AI" in passing in the description)
 - Choose 0-3 most relevant categories
 - If not an AI job, return empty categories and explain why"""
 
