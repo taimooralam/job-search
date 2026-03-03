@@ -169,8 +169,8 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "jd_structure_parsing": StepConfig(tier="low"),
     "jd_extraction": StepConfig(tier="middle", use_fallback=False),
 
-    # Cover Letter - Haiku tier (structured + templated, doesn't need Sonnet)
-    "cover_letter_generation": StepConfig(tier="low", use_fallback=False),
+    # Cover Letter - Sonnet tier, single attempt, no retries
+    "cover_letter_generation": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
 
     # LinkedIn
     "linkedin_optimization": StepConfig(tier="middle"),

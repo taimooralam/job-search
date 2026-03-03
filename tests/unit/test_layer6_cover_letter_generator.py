@@ -372,61 +372,48 @@ class TestCoverLetterGenerator:
         assert "TechCorp" in result  # Contains company name
 
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
-    def test_retry_on_invalid_output(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics, valid_cover_letter):
-        """Generator retries on validation failure and succeeds with valid output."""
+    def test_single_attempt_no_retry(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics):
+        """Generator makes a single attempt and returns result even if validation warns."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
 
-        # First call returns invalid, second returns valid
-        mock_invoke.side_effect = [
-            LLMResult(
-                content=invalid_cover_letter_no_metrics,
-                backend="claude_cli",
-                model="claude-opus-4-5-20251101",
-                tier="high",
-                duration_ms=1234,
-                success=True,
-            ),
-            LLMResult(
-                content=valid_cover_letter,
-                backend="claude_cli",
-                model="claude-opus-4-5-20251101",
-                tier="high",
-                duration_ms=1234,
-                success=True,
-            ),
-        ]
-
-        generator = CoverLetterGenerator()
-        result = generator.generate_cover_letter(sample_job_state)
-
-        # Should succeed with valid output after retry
-        assert result == valid_cover_letter
-        assert mock_invoke.call_count == 2
-
-    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
-    def test_raises_after_max_retries(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics):
-        """Generator raises error after exhausting retries."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
-        from src.common.unified_llm import LLMResult
-
-        # Mock invoke_unified_sync to always return invalid
         mock_invoke.return_value = LLMResult(
             content=invalid_cover_letter_no_metrics,
             backend="claude_cli",
-            model="claude-opus-4-5-20251101",
-            tier="high",
+            model="claude-sonnet-4-5-20250929",
+            tier="middle",
             duration_ms=1234,
             success=True,
         )
 
         generator = CoverLetterGenerator()
+        result = generator.generate_cover_letter(sample_job_state)
 
-        with pytest.raises(ValueError):
-            generator.generate_cover_letter(sample_job_state)
+        # Should return the result after single attempt (no retry)
+        assert result == invalid_cover_letter_no_metrics
+        assert mock_invoke.call_count == 1
 
-        # Should have tried multiple times (1 initial + 2 retries = 3 total)
-        assert mock_invoke.call_count == 3
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_returns_result_even_with_validation_warnings(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics):
+        """Generator returns result even when validation logs warnings."""
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
+
+        mock_invoke.return_value = LLMResult(
+            content=invalid_cover_letter_no_metrics,
+            backend="claude_cli",
+            model="claude-sonnet-4-5-20250929",
+            tier="middle",
+            duration_ms=1234,
+            success=True,
+        )
+
+        generator = CoverLetterGenerator()
+        result = generator.generate_cover_letter(sample_job_state)
+
+        # Should return the content (validation warns, doesn't raise)
+        assert result is not None
+        assert mock_invoke.call_count == 1
 
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_includes_company_research_in_prompt(self, mock_invoke, sample_job_state, valid_cover_letter):
@@ -500,27 +487,26 @@ class TestCoverLetterGenerator:
         has_metric = any(pattern in result for pattern in ["75%", "100x", "$2M", "$500K", "99.99%"])
         assert has_metric, "Cover letter should reference STAR metrics"
 
-    def test_validates_on_generation(self, sample_job_state):
-        """Generator validates output before returning."""
+    def test_validates_on_generation_warns_not_raises(self, sample_job_state):
+        """Generator validates output and warns on failure instead of raising."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
 
-        # This test verifies the integration: generate -> validate -> return
-        # We'll use a mock that returns invalid output to trigger validation
         with patch('src.layer6.cover_letter_generator.invoke_unified_sync') as mock_invoke:
             mock_invoke.return_value = LLMResult(
                 content="Too short",
                 backend="claude_cli",
-                model="claude-opus-4-5-20251101",
-                tier="high",
+                model="claude-sonnet-4-5-20250929",
+                tier="middle",
                 duration_ms=1234,
                 success=True,
             )
 
             generator = CoverLetterGenerator()
+            result = generator.generate_cover_letter(sample_job_state)
 
-            with pytest.raises(ValueError):
-                generator.generate_cover_letter(sample_job_state)
+            # Should return the content even though validation fails
+            assert result == "Too short"
 
 
 # ===== QUALITY GATE TESTS =====

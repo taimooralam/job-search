@@ -1001,17 +1001,13 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         # Call LLM via Claude Code CLI (mandatory - no fallback)
         cover_letter = self._call_llm(system_prompt, user_prompt)
 
-        # Validate
+        # Validate — single attempt, warn on failure (no retries)
         try:
             validate_cover_letter(cover_letter, state)
-            return cover_letter
         except ValueError as e:
-            if attempt <= self.max_validation_retries:
-                self.logger.warning(f"Cover letter validation failed (attempt {attempt}/{self.max_validation_retries + 1}): {e}")
-                self.logger.info(f"Retrying with stricter prompt...")
-                return self._generate_with_retry(state, attempt + 1)
-            else:
-                raise ValueError(f"Cover letter validation failed after {self.max_validation_retries + 1} attempts: {e}")
+            self.logger.warning(f"Cover letter validation issue (non-blocking): {e}")
+
+        return cover_letter
 
     def generate_cover_letter(self, state: JobState) -> str:
         """

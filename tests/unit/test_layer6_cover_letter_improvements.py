@@ -351,23 +351,24 @@ class TestCoverLetterGeneratorIntegration:
         assert "85%" in result or "16x" in result
 
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
-    def test_generator_fails_after_max_retries(self, mock_invoke, sample_job_state):
-        """Generator should raise error after exhausting retries."""
+    def test_generator_warns_on_invalid_output(self, mock_invoke, sample_job_state):
+        """Generator should warn (not raise) on invalid output and return it."""
         from src.common.unified_llm import LLMResult
 
-        # Always return invalid output (too short)
         invalid_letter = """Short letter without required elements."""
 
         mock_invoke.return_value = LLMResult(
             content=invalid_letter,
             backend="claude_cli",
-            model="claude-opus-4-5-20251101",
-            tier="high",
+            model="claude-sonnet-4-5-20250929",
+            tier="middle",
             duration_ms=1234,
             success=True,
         )
 
         generator = CoverLetterGenerator()
+        result = generator.generate_cover_letter(sample_job_state)
 
-        with pytest.raises(ValueError):
-            generator.generate_cover_letter(sample_job_state)
+        # Should return the content (single attempt, warn on failure)
+        assert result == invalid_letter
+        assert mock_invoke.call_count == 1
