@@ -131,10 +131,10 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     # Layer 6 V2: CV Generation
     # IMPORTANT: use_fallback=False ensures Claude CLI is mandatory for CV quality
     # If Claude CLI fails, the generation will fail loudly rather than silently using gpt-4o
-    "header_generator": StepConfig(tier="middle", use_fallback=False),
-    "role_generator": StepConfig(tier="middle", use_fallback=False),
+    "header_generator": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
+    "role_generator": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
     "grader": StepConfig(tier="low", use_fallback=False),
-    "ensemble_header": StepConfig(tier="middle", use_fallback=False),
+    "ensemble_header": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
     "improver": StepConfig(tier="low", use_fallback=False),
     "cv_tailorer": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
 
