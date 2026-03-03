@@ -242,25 +242,23 @@ class TestQualityGates:
         with pytest.raises(ValueError, match="paragraph"):
             validate_cover_letter(short_letter, sample_job_state)
 
-    def test_paragraph_count_maximum_5_paragraphs(self, sample_job_state):
-        """Cover letter must have at most 5 substantial paragraphs."""
-        # 6 paragraphs - should fail
-        long_letter = """Your Series B funding signals growth requiring API performance improvements to reduce customer churn through systematic latency reduction and infrastructure optimization strategies across the organization.
+    def test_paragraph_count_over_5_warns_not_errors(self, sample_job_state):
+        """Cover letter with >5 paragraphs should warn, not raise."""
+        # 6 paragraphs - should warn but still pass paragraph gate
+        long_letter = """Your Series B funding signals growth requiring API performance improvements to reduce customer churn through systematic latency reduction and infrastructure optimization strategies across the organization and its engineering teams building next generation platforms.
 
-At TechCorp I reduced API p99 latency from 800ms to 120ms achieving 85% improvement that recovered $2M in annual recurring revenue through Redis caching and query optimization techniques.
+At TechCorp I reduced API p99 latency from 800ms to 120ms achieving 85% improvement that recovered $2M in annual recurring revenue through Redis caching and query optimization techniques applied systematically across the entire backend infrastructure.
 
-At DataCo I automated deployment pipelines reducing cycle time from 4 hours to 15 minutes through GitHub Actions and infrastructure as code implementation strategies and practices.
+At DataCo I automated deployment pipelines reducing cycle time from 4 hours to 15 minutes through GitHub Actions and infrastructure as code implementation strategies and practices that transformed the engineering organization.
 
-My experience with microservices architecture and cloud infrastructure positions me well to address your technical challenges around scalability and performance optimization requirements effectively.
+My experience with microservices architecture and cloud infrastructure positions me well to address your technical challenges around scalability and performance optimization requirements effectively and comprehensively across the stack.
 
-I have deep expertise in both backend engineering and DevOps practices that enable rapid delivery of high-quality software solutions meeting business objectives and engineering excellence.
+I have deep expertise in both backend engineering and DevOps practices that enable rapid delivery of high-quality software solutions meeting business objectives and engineering excellence standards consistently.
 
-My track record demonstrates consistent delivery of measurable improvements in system performance and operational efficiency across multiple organizations and technology stacks successfully.
+My track record demonstrates consistent delivery of measurable improvements in system performance and operational efficiency across multiple organizations and technology stacks successfully. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
-I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
-
-        with pytest.raises(ValueError, match="paragraph"):
-            validate_cover_letter(long_letter, sample_job_state)
+        # Should NOT raise - just logs a warning
+        validate_cover_letter(long_letter, sample_job_state)
 
     def test_word_count_minimum_180_words(self, sample_job_state):
         """Cover letter must be at least 180 words."""

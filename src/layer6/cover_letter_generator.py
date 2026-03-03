@@ -262,20 +262,15 @@ Your output must satisfy BOTH personas.
    - "thrilled to apply"
    - "great opportunity" / "exciting opportunity"
 
-## STRUCTURE (2-4 paragraphs, 180-420 words)
+## STRUCTURE (exactly 2 paragraphs, 180-420 words)
 
-**Paragraph 1 - Hook**: Company signal + pain point connection
+**Paragraph 1 - Hook + Proof**: Company signal + pain point + 2-3 STAR achievements
 - Lead with THEIR situation, not your interest
 - Reference specific company development (funding, launch, growth)
-- Connect to a pain point they face
+- Connect to pain points with STAR metrics: "At [Company], I [action] resulting in [metric]"
 
-**Paragraph 2-3 - Proof**: STAR achievements with metrics
-- Format: "At [Company Name], I [action] resulting in [specific metric]"
-- Each paragraph addresses 1-2 pain points
-- ALL metrics from STAR records only
-
-**Final Paragraph - Close**: Applied statement + Calendly
-- Brief confidence statement (optional)
+**Paragraph 2 - Close**: Final proof point + applied statement + Calendly
+- One more STAR achievement if available
 - MUST include: "I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
 
 ## FEW-SHOT EXAMPLES
@@ -351,10 +346,7 @@ Choose 1 signal to reference in the hook:
 - Connection: How candidate strengths align
 
 STEP 3: STRUCTURE DECISION
-Based on content depth, choose paragraph count:
-- 2 paragraphs: Limited STARs, simple role
-- 3 paragraphs: Standard coverage
-- 4 paragraphs: Rich STARs, complex role
+Write exactly 2 paragraphs. Combine hook + proof into paragraph 1, close in paragraph 2.
 
 STEP 4: CONCERN MITIGATION (if concerns provided above)
 If concerns are listed, decide which 1-2 to address:
@@ -364,13 +356,11 @@ If concerns are listed, decide which 1-2 to address:
 
 === WRITING PHASE ===
 
-Now write a 220-380 word cover letter that:
+Now write a 180-380 word cover letter in exactly 2 paragraphs:
 
-1. **Hook**: Lead with {company}'s specific pain point and company signal (NOT "I am excited")
+1. **Hook + Proof** (1 paragraph): Lead with {company}'s specific pain point and company signal (NOT "I am excited"), then weave in 2-3 STAR achievements with metrics
    - Name a specific problem they face
    - Reference their recent [funding/expansion/product launch]
-
-2. **Proof** (1-2 paragraphs): 2-3 STAR achievements with metrics
    - Format: "At [STAR Company], I [action] resulting in [metric]"
    - Each achievement addresses a mapped pain point from Step 1
    - ALL metrics must come from STAR records
@@ -451,15 +441,16 @@ def validate_cover_letter(text: str, state: JobState) -> None:
     paragraphs = [p for p in paragraphs if 'calendly' not in p.lower() and '@' not in p]
 
     # Relaxed structural constraints for production:
-    # accept 2-5 substantial paragraphs instead of forcing exactly 3-4.
+    # accept 2+ paragraphs; warn (don't fail) if too many.
     if len(paragraphs) < 2:
         raise ValueError(
             f"Cover letter must have at least 2 paragraphs (found {len(paragraphs)}). "
             "Each paragraph should be 30+ words."
         )
     if len(paragraphs) > 5:
-        raise ValueError(
-            f"Cover letter must have at most 5 paragraphs (found {len(paragraphs)})."
+        logging.getLogger(__name__).warning(
+            f"Cover letter has {len(paragraphs)} paragraphs (expected 2-5). "
+            "Accepting anyway — Haiku may produce extra paragraphs."
         )
 
     # Gate 2: Word count (relaxed from 220-380 to 180-420)
