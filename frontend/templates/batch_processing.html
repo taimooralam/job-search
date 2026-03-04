@@ -661,7 +661,7 @@ ${lines.join('\n')}
 Instructions:
 1. For each job, find the direct application page on the company's careers site or ATS (e.g., Greenhouse, Lever, Workday, etc.)
 2. If the existing applicationUrl looks correct, keep it as-is
-3. If you can't find a URL, use an empty string
+3. If you can't find a direct application URL, use the jobUrl provided for that job as fallback — never return an empty string
 
 Return ONLY a JSON array with this exact format (no markdown, no explanation):
 [{"id": "...", "applicationUrl": "..."}]`;
@@ -715,12 +715,17 @@ Return ONLY a JSON array with this exact format (no markdown, no explanation):
                         continue;
                     }
 
-                    // Skip empty URLs
-                    if (!entry.applicationUrl) {
+                    // Fall back to original jobUrl if Perplexity returned empty
+                    let url = entry.applicationUrl;
+                    if (!url) {
+                        const batchJob = (window.batchJobsData || []).find(j => j.id === entry.id);
+                        url = batchJob?.jobUrl || '';
+                    }
+                    if (!url) {
                         this.results.push({
                             id: i,
                             success: false,
-                            message: `${entry.id}: no URL found`
+                            message: `${entry.id}: no URL found (no jobUrl fallback)`
                         });
                         continue;
                     }
@@ -729,15 +734,16 @@ Return ONLY a JSON array with this exact format (no markdown, no explanation):
                         const resp = await fetch(`/api/jobs/${entry.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ application_url: entry.applicationUrl })
+                            body: JSON.stringify({ application_url: url })
                         });
 
                         if (resp.ok) {
                             successCount++;
+                            const usedFallback = url !== entry.applicationUrl;
                             this.results.push({
                                 id: i,
                                 success: true,
-                                message: `${entry.id}: URL updated`
+                                message: `${entry.id}: URL updated${usedFallback ? ' (jobUrl fallback)' : ''}`
                             });
                         } else {
                             this.results.push({
