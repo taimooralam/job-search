@@ -3,11 +3,13 @@ Batch Pipeline Service - Complete Move-to-Batch Orchestrator
 
 Orchestrates the complete batch processing pipeline when a job is moved to batch:
 1. Full Extraction (JD processing, pain points, fit scoring) + Annotations + Persona
-2. Form Scraping (optional, if application_url exists)
-3. Company Research (Layer 3) + Role Research (Layer 3.5) + People Mapping (Layer 5)
-4. CV Generation (6-phase orchestrator)
-5. Upload CV to Google Drive
-6. Upload Dossier to Google Drive
+2. CV Generation (6-phase orchestrator)
+3. Upload CV to Google Drive
+4. Upload Dossier to Google Drive
+
+Form scraping, company/role research, and people mapping are disabled by default
+for token optimization. Enable via ENABLE_COMPANY_RESEARCH, ENABLE_ROLE_RESEARCH,
+ENABLE_PEOPLE_MAPPER, ENABLE_COVER_LETTER flags in config.
 
 Each step emits progress to Redis for frontend polling (Redis transparency).
 On failure, continues to next step (except extraction which is required foundation).
@@ -37,12 +39,11 @@ class BatchPipelineService(OperationService):
     Orchestrates complete batch processing pipeline.
 
     Steps:
-    1-3.  Full Extraction + Annotations + Persona (FullExtractionService)
-    3.5.  Form Scraping (optional, if application_url exists)
-    4.    Company Research + Role Research + People Mapping (CompanyResearchService)
-    5.    CV Generation (CVGenerationService)
-    6.    Upload CV to Google Drive
-    7.    Upload Dossier to Google Drive
+    1.  Full Extraction + Annotations + Persona (FullExtractionService)
+    2.  Company Research + Role Research + People Mapping (if enabled via config flags)
+    3.  CV Generation (CVGenerationService)
+    4.  Upload CV to Google Drive
+    5.  Upload Dossier to Google Drive
     """
 
     operation_name = "batch-pipeline"
@@ -247,123 +248,63 @@ class BatchPipelineService(OperationService):
             )
 
         # =====================================================================
-        # STEP 3.5: Form Discovery + Scraping
-        # Search for official posting → scrape form fields → generate answers
+        # STEP 2: Company Research + Role Research + People Mapping (if enabled)
         # =====================================================================
-        _emit_progress("form_scraping", "running", "Searching for official job posting...")
-        form_step_start = datetime.utcnow()
+        from src.common.config import Config
 
-        try:
-            job = self._get_job(job_id)
-            company = (job or {}).get("company", "")
-            title = (job or {}).get("title", "")
-            fallback_url = (job or {}).get("application_url") or (job or {}).get("job_url")
-        except Exception:
-            company, title, fallback_url = "", "", None
+        if Config.ENABLE_COMPANY_RESEARCH:
+            _emit_progress("company_research", "running", "Starting company and role research...")
 
-        if company and title:
             try:
-                from src.services.form_scraper_service import FormScraperService
+                from src.services.company_research_service import CompanyResearchService
 
-                form_service = FormScraperService()
-                form_result = await form_service.discover_and_scrape_form(
+                research_service = CompanyResearchService(repository=self._repository)
+                research_result = await research_service.execute(
                     job_id=job_id,
-                    company=company,
-                    title=title,
-                    fallback_url=fallback_url,
+                    tier=tier,
+                    force_refresh=False,
                     progress_callback=progress_callback,
+                    log_callback=log_callback,
+                    parent_run_id=run_id,
                 )
 
-                form_duration = int((datetime.utcnow() - form_step_start).total_seconds() * 1000)
-                fields_count = len(form_result.get("fields", [])) if form_result else 0
-                answers_count = len(form_result.get("planned_answers", [])) if form_result else 0
-
-                step_results["form_scraping"] = {
-                    "success": bool(form_result and form_result.get("success")),
-                    "fields_count": fields_count,
-                    "answers_count": answers_count,
-                    "discovered_url": form_result.get("discovered_url"),
-                    "url_saved": form_result.get("url_saved", False),
-                    "duration_ms": form_duration,
+                step_results["company_research"] = {
+                    "success": research_result.success,
+                    "error": research_result.error,
+                    "duration_ms": research_result.duration_ms,
                 }
+                total_cost += research_result.cost_usd
+                total_input_tokens += research_result.input_tokens
+                total_output_tokens += research_result.output_tokens
 
-                if form_result and form_result.get("success"):
-                    _emit_progress("form_scraping", "completed",
-                        f"Scraped {fields_count} fields, generated {answers_count} answers")
-                elif form_result and form_result.get("url_saved"):
-                    _emit_progress("form_scraping", "completed",
-                        f"Saved application URL (form scraping not possible)")
+                if research_result.success:
+                    _emit_progress("company_research", "completed", "Company and role research completed")
                 else:
-                    error_msg = form_result.get("error", "Unknown error") if form_result else "No result"
-                    _emit_progress("form_scraping", "failed", f"Form scraping failed: {error_msg}")
+                    _emit_progress("company_research", "failed", f"Research failed: {research_result.error}")
+                    if stop_on_failure:
+                        return self._build_partial_result(
+                            run_id, start_time, step_results, total_cost,
+                            total_input_tokens, total_output_tokens, tier,
+                            stopped_at="company_research"
+                        )
 
             except Exception as e:
-                form_duration = int((datetime.utcnow() - form_step_start).total_seconds() * 1000)
-                step_results["form_scraping"] = {
-                    "success": False,
-                    "error": str(e),
-                    "duration_ms": form_duration,
-                }
-                _emit_progress("form_scraping", "failed", f"Form scraping failed: {e}")
-                # Non-critical — pipeline continues
-        else:
-            step_results["form_scraping"] = {
-                "success": False,
-                "error": "Missing company or title for form discovery",
-            }
-
-        # =====================================================================
-        # STEP 4: Company Research + Role Research + People Mapping
-        # =====================================================================
-        _emit_progress("company_research", "running", "Starting company and role research...")
-
-        try:
-            from src.services.company_research_service import CompanyResearchService
-
-            research_service = CompanyResearchService(repository=self._repository)
-            research_result = await research_service.execute(
-                job_id=job_id,
-                tier=tier,
-                force_refresh=False,
-                progress_callback=progress_callback,
-                log_callback=log_callback,
-                parent_run_id=run_id,  # Pass parent's run_id for unified logging
-            )
-
-            step_results["company_research"] = {
-                "success": research_result.success,
-                "error": research_result.error,
-                "duration_ms": research_result.duration_ms,
-            }
-            total_cost += research_result.cost_usd
-            total_input_tokens += research_result.input_tokens
-            total_output_tokens += research_result.output_tokens
-
-            if research_result.success:
-                _emit_progress("company_research", "completed", "Company and role research completed")
-            else:
-                _emit_progress("company_research", "failed", f"Research failed: {research_result.error}")
+                error_msg = f"Company research exception: {str(e)}"
+                logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                step_results["company_research"] = {"success": False, "error": error_msg}
+                _emit_progress("company_research", "failed", error_msg)
                 if stop_on_failure:
                     return self._build_partial_result(
                         run_id, start_time, step_results, total_cost,
                         total_input_tokens, total_output_tokens, tier,
                         stopped_at="company_research"
                     )
-
-        except Exception as e:
-            error_msg = f"Company research exception: {str(e)}"
-            logger.error(f"{error_msg}\n{traceback.format_exc()}")
-            step_results["company_research"] = {"success": False, "error": error_msg}
-            _emit_progress("company_research", "failed", error_msg)
-            if stop_on_failure:
-                return self._build_partial_result(
-                    run_id, start_time, step_results, total_cost,
-                    total_input_tokens, total_output_tokens, tier,
-                    stopped_at="company_research"
-                )
+        else:
+            _emit_progress("company_research", "skipped", "Company research disabled (token optimization)")
+            step_results["company_research"] = {"success": True, "skipped": True}
 
         # =====================================================================
-        # STEP 5: CV Generation
+        # STEP 3: CV Generation
         # =====================================================================
         _emit_progress("cv_generation", "running", "Starting CV generation...")
 
@@ -500,7 +441,7 @@ class BatchPipelineService(OperationService):
 
         _emit_log({
             "level": "info" if all_success else "warning",
-            "message": f"Batch pipeline completed: {steps_completed}/7 steps succeeded",
+            "message": f"Batch pipeline completed: {steps_completed}/{len(step_results)} steps succeeded",
             "step": "complete",
             "steps_completed": steps_completed,
             "steps_failed": steps_failed,

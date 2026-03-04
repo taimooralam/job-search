@@ -149,11 +149,15 @@ def create_workflow() -> StateGraph:
     workflow.add_node("pain_point_miner", pain_point_miner_node)
     if Config.ENABLE_STAR_SELECTOR:
         workflow.add_node("star_selector", select_stars)  # Phase 1.3
-    workflow.add_node("company_researcher", company_researcher_node)  # Phase 5.1
-    workflow.add_node("role_researcher", role_researcher_node)  # Phase 5.2
+    if Config.ENABLE_COMPANY_RESEARCH:
+        workflow.add_node("company_researcher", company_researcher_node)  # Phase 5.1
+    if Config.ENABLE_ROLE_RESEARCH:
+        workflow.add_node("role_researcher", role_researcher_node)  # Phase 5.2
     workflow.add_node("opportunity_mapper", opportunity_mapper_node)
-    workflow.add_node("people_mapper", people_mapper_node)  # Phase 7
-    workflow.add_node("outreach_generator", outreach_generator_node)  # Phase 9
+    if Config.ENABLE_PEOPLE_MAPPER:
+        workflow.add_node("people_mapper", people_mapper_node)  # Phase 7
+    if Config.ENABLE_OUTREACH:
+        workflow.add_node("outreach_generator", outreach_generator_node)  # Phase 9
     # CV Generator: V2 (6-phase pipeline) or legacy
     if Config.ENABLE_CV_GEN_V2:
         workflow.add_node("generator", cv_generator_v2_node)  # CV Gen V2
@@ -163,7 +167,7 @@ def create_workflow() -> StateGraph:
         logger.info("Using legacy CV generator")
     workflow.add_node("output_publisher", output_publisher_node)
 
-    # Define sequential edges
+    # Define sequential edges with conditional node skipping
     # Layer 1.4 (if enabled) is the entry point, otherwise Layer 2
     if Config.ENABLE_JD_EXTRACTOR:
         workflow.set_entry_point("jd_extractor")
@@ -171,16 +175,37 @@ def create_workflow() -> StateGraph:
     else:
         workflow.set_entry_point("pain_point_miner")
 
+    # After pain_point_miner, route through enabled nodes to opportunity_mapper
+    # Build the chain: pain_point_miner -> [star_selector] -> [company_researcher] -> [role_researcher] -> opportunity_mapper
+    prev_node = "pain_point_miner"
+
     if Config.ENABLE_STAR_SELECTOR:
-        workflow.add_edge("pain_point_miner", "star_selector")  # Layer 2 -> Layer 2.5
-        workflow.add_edge("star_selector", "company_researcher")  # Layer 2.5 -> Layer 3.0
-    else:
-        workflow.add_edge("pain_point_miner", "company_researcher")
-    workflow.add_edge("company_researcher", "role_researcher")  # Layer 3.0 -> Layer 3.5 (Phase 5)
-    workflow.add_edge("role_researcher", "opportunity_mapper")  # Layer 3.5 -> Layer 4
-    workflow.add_edge("opportunity_mapper", "people_mapper")  # Layer 4 -> Layer 5
-    workflow.add_edge("people_mapper", "outreach_generator")  # Layer 5 -> Layer 6b (Phase 9)
-    workflow.add_edge("outreach_generator", "generator")  # Layer 6b -> Layer 6a
+        workflow.add_edge(prev_node, "star_selector")
+        prev_node = "star_selector"
+
+    if Config.ENABLE_COMPANY_RESEARCH:
+        workflow.add_edge(prev_node, "company_researcher")
+        prev_node = "company_researcher"
+
+    if Config.ENABLE_ROLE_RESEARCH:
+        workflow.add_edge(prev_node, "role_researcher")
+        prev_node = "role_researcher"
+
+    workflow.add_edge(prev_node, "opportunity_mapper")
+
+    # After opportunity_mapper, route through enabled nodes to generator
+    # Build the chain: opportunity_mapper -> [people_mapper] -> [outreach_generator] -> generator
+    prev_node = "opportunity_mapper"
+
+    if Config.ENABLE_PEOPLE_MAPPER:
+        workflow.add_edge(prev_node, "people_mapper")
+        prev_node = "people_mapper"
+
+    if Config.ENABLE_OUTREACH:
+        workflow.add_edge(prev_node, "outreach_generator")
+        prev_node = "outreach_generator"
+
+    workflow.add_edge(prev_node, "generator")
     workflow.add_edge("generator", "output_publisher")  # Layer 6a -> Layer 7
     workflow.add_edge("output_publisher", END)
 

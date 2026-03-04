@@ -334,6 +334,27 @@ class CompanyResearchService(OperationService):
         run_id = self.create_run_id(parent_run_id)
         model = self.get_model(tier)
 
+        # Check feature flags - return early if all research is disabled
+        from src.common.config import Config
+        if not Config.ENABLE_COMPANY_RESEARCH and not Config.ENABLE_ROLE_RESEARCH and not Config.ENABLE_PEOPLE_MAPPER:
+            logger.info(f"[{run_id[:16]}] Company/role research and people mapping disabled via config flags")
+            return self.create_success_result(
+                run_id=run_id,
+                data={
+                    "company_research": None,
+                    "role_research": None,
+                    "primary_contacts": None,
+                    "secondary_contacts": None,
+                    "skipped": True,
+                    "reason": "Disabled via ENABLE_COMPANY_RESEARCH/ENABLE_ROLE_RESEARCH/ENABLE_PEOPLE_MAPPER flags",
+                },
+                cost_usd=0.0,
+                duration_ms=0,
+                input_tokens=0,
+                output_tokens=0,
+                model_used=model,
+            )
+
         logger.info(
             f"[{run_id[:16]}] Starting company research for job {job_id} "
             f"(tier={tier.value}, model={model}, force_refresh={force_refresh})"

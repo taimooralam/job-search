@@ -214,6 +214,17 @@ class TestBuildJobState:
 class TestCompanyResearchServiceExecute:
     """Test execute() method."""
 
+    @pytest.fixture(autouse=True)
+    def enable_research_flags(self):
+        """Enable research feature flags for all tests in this class."""
+        with patch.multiple(
+            "src.common.config.Config",
+            ENABLE_COMPANY_RESEARCH=True,
+            ENABLE_ROLE_RESEARCH=True,
+            ENABLE_PEOPLE_MAPPER=True,
+        ):
+            yield
+
     @pytest.mark.asyncio
     @patch.object(CompanyResearchService, "_fetch_job")
     async def test_execute_returns_error_when_job_not_found(self, mock_fetch):
@@ -671,6 +682,17 @@ class TestCompanyResearchServiceCost:
 class TestCompanyResearchServiceIntegration:
     """Integration-style tests with mocked external dependencies."""
 
+    @pytest.fixture(autouse=True)
+    def enable_research_flags(self):
+        """Enable research feature flags for all tests in this class."""
+        with patch.multiple(
+            "src.common.config.Config",
+            ENABLE_COMPANY_RESEARCH=True,
+            ENABLE_ROLE_RESEARCH=True,
+            ENABLE_PEOPLE_MAPPER=True,
+        ):
+            yield
+
     @pytest.mark.asyncio
     @patch("src.services.company_research_service.CompanyResearcher")
     @patch("src.services.company_research_service.RoleResearcher")
@@ -759,6 +781,17 @@ class TestCompanyResearchServiceIntegration:
 
 class TestCompanyResearchServicePeopleResearch:
     """Test people research integration in company research service."""
+
+    @pytest.fixture(autouse=True)
+    def enable_research_flags(self):
+        """Enable research feature flags for all tests in this class."""
+        with patch.multiple(
+            "src.common.config.Config",
+            ENABLE_COMPANY_RESEARCH=True,
+            ENABLE_ROLE_RESEARCH=True,
+            ENABLE_PEOPLE_MAPPER=True,
+        ):
+            yield
 
     @pytest.mark.asyncio
     @patch('src.services.company_research_service.CompanyResearcher')
@@ -1069,6 +1102,21 @@ class TestContactDiscoveryCacheBehavior:
     - force_refresh=True is used
 
     This is because contacts are role-specific and must be discovered fresh
+
+    Note: All tests require research flags enabled."""
+
+    @pytest.fixture(autouse=True)
+    def enable_research_flags(self):
+        """Enable research feature flags for all tests in this class."""
+        with patch.multiple(
+            "src.common.config.Config",
+            ENABLE_COMPANY_RESEARCH=True,
+            ENABLE_ROLE_RESEARCH=True,
+            ENABLE_PEOPLE_MAPPER=True,
+        ):
+            yield
+
+    """(Continued) Contact discovery is role-specific and must be discovered fresh
     for each job application.
     """
 

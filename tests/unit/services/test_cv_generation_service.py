@@ -900,6 +900,7 @@ class TestCVGenerationServiceIntegration:
     """Integration-style tests for complete execution flow."""
 
     @pytest.mark.asyncio
+    @patch("src.common.config.Config.ENABLE_COVER_LETTER", True)
     async def test_full_execution_flow_success(
         self, mock_repository, sample_job, sample_cv_result
     ):
@@ -935,6 +936,7 @@ class TestCVGenerationServiceIntegration:
         assert result.data["cover_letter"] == "Cover letter text"
 
     @pytest.mark.asyncio
+    @patch("src.common.config.Config.ENABLE_COVER_LETTER", True)
     async def test_full_execution_flow_with_cover_letter_failure(
         self, mock_repository, sample_job, sample_cv_result
     ):
@@ -959,6 +961,7 @@ class TestCVGenerationServiceIntegration:
         assert result.data["cover_letter"] is None
 
     @pytest.mark.asyncio
+    @patch("src.common.config.Config.ENABLE_COVER_LETTER", True)
     async def test_full_execution_includes_cover_letter_in_layer_status(
         self, mock_repository, sample_job, sample_cv_result
     ):

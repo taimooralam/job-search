@@ -70,6 +70,12 @@ class Config:
     ENABLE_REMOTE_PUBLISHING: bool = os.getenv("ENABLE_REMOTE_PUBLISHING", "false").lower() == "true"
     # Disable FireCrawl-backed people discovery/outreach by default (use role-based contacts instead)
     DISABLE_FIRECRAWL_OUTREACH: bool = os.getenv("DISABLE_FIRECRAWL_OUTREACH", "true").lower() == "true"
+    # Token optimization flags (defaults: disabled to minimize cost)
+    ENABLE_COMPANY_RESEARCH: bool = os.getenv("ENABLE_COMPANY_RESEARCH", "false").lower() == "true"
+    ENABLE_ROLE_RESEARCH: bool = os.getenv("ENABLE_ROLE_RESEARCH", "false").lower() == "true"
+    ENABLE_PEOPLE_MAPPER: bool = os.getenv("ENABLE_PEOPLE_MAPPER", "false").lower() == "true"
+    ENABLE_OUTREACH: bool = os.getenv("ENABLE_OUTREACH", "false").lower() == "true"
+    ENABLE_COVER_LETTER: bool = os.getenv("ENABLE_COVER_LETTER", "false").lower() == "true"
     # Use MongoDB for master CV data (edited via CV Editor) instead of local files
     USE_MASTER_CV_MONGODB: bool = os.getenv("USE_MASTER_CV_MONGODB", "true").lower() == "true"
 

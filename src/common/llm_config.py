@@ -167,7 +167,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
 
     # JD Processing
     "jd_structure_parsing": StepConfig(tier="low"),
-    "jd_extraction": StepConfig(tier="middle", use_fallback=False),
+    "jd_extraction": StepConfig(tier="low", use_fallback=False),
 
     # Cover Letter - Sonnet tier, single attempt, no retries
     "cover_letter_generation": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
@@ -176,7 +176,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "linkedin_optimization": StepConfig(tier="middle"),
 
     # Outreach Generation - MANDATORY Claude CLI for quality
-    "outreach_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+    "outreach_generation": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
 
     # Job Scoring - MANDATORY Claude CLI (avoid invalid OpenAI key fallback)
     "quick_scorer": StepConfig(tier="low", use_fallback=False),
@@ -197,7 +197,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "answer_generation": StepConfig(tier="middle"),
 
     # Layer 6: Recruiter Cover Letter - MANDATORY Claude CLI for quality
-    "recruiter_cover_letter": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+    "recruiter_cover_letter": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
 }
 
 

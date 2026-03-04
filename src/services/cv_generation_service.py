@@ -211,29 +211,40 @@ class CVGenerationService(OperationService):
                 await emit_progress("cv_generator", "success", cv_success_msg)
                 logger.info(f"[{run_id[:16]}] CV generated: {word_count} words")
 
-                # Step 5.5: Generate cover letter (non-blocking on failure)
-                await emit_progress("cover_letter", "processing", "Generating cover letter")
-                logger.info(f"[{run_id[:16]}] Generating cover letter")
-                cover_letter = self._generate_cover_letter(state)
+                # Step 5.5: Generate cover letter (conditional on feature flag)
+                from src.common.config import Config
+                cover_letter = None
 
-                if cover_letter:
-                    cl_word_count = len(cover_letter.split())
-                    cl_success_msg = f"Generated {cl_word_count} word cover letter"
-                    layer_status["cover_letter"] = {
-                        "status": "success",
-                        "word_count": cl_word_count,
-                        "message": cl_success_msg
-                    }
-                    await emit_progress("cover_letter", "success", cl_success_msg)
-                    logger.info(f"[{run_id[:16]}] Cover letter generated: {cl_word_count} words")
+                if Config.ENABLE_COVER_LETTER:
+                    await emit_progress("cover_letter", "processing", "Generating cover letter")
+                    logger.info(f"[{run_id[:16]}] Generating cover letter")
+                    cover_letter = self._generate_cover_letter(state)
+
+                    if cover_letter:
+                        cl_word_count = len(cover_letter.split())
+                        cl_success_msg = f"Generated {cl_word_count} word cover letter"
+                        layer_status["cover_letter"] = {
+                            "status": "success",
+                            "word_count": cl_word_count,
+                            "message": cl_success_msg
+                        }
+                        await emit_progress("cover_letter", "success", cl_success_msg)
+                        logger.info(f"[{run_id[:16]}] Cover letter generated: {cl_word_count} words")
+                    else:
+                        cl_warning_msg = "Cover letter generation skipped (see logs)"
+                        layer_status["cover_letter"] = {
+                            "status": "warning",
+                            "message": cl_warning_msg
+                        }
+                        await emit_progress("cover_letter", "warning", cl_warning_msg)
+                        logger.warning(f"[{run_id[:16]}] Cover letter generation failed or skipped")
                 else:
-                    cl_warning_msg = "Cover letter generation skipped (see logs)"
                     layer_status["cover_letter"] = {
-                        "status": "warning",
-                        "message": cl_warning_msg
+                        "status": "skipped",
+                        "message": "Cover letter disabled (token optimization)"
                     }
-                    await emit_progress("cover_letter", "warning", cl_warning_msg)
-                    logger.warning(f"[{run_id[:16]}] Cover letter generation failed or skipped")
+                    await emit_progress("cover_letter", "skipped", "Disabled (token optimization)")
+                    logger.info(f"[{run_id[:16]}] Cover letter generation disabled via ENABLE_COVER_LETTER")
 
                 # Step 6: Persist to MongoDB
                 await emit_progress("persist", "processing", "Saving CV and cover letter to database")

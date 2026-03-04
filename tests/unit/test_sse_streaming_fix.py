@@ -170,6 +170,12 @@ class TestAsyncEmitProgress:
             assert len([s for s in sleep_calls if s == 0]) >= 4
 
     @pytest.mark.asyncio
+    @patch.multiple(
+        "src.common.config.Config",
+        ENABLE_COMPANY_RESEARCH=True,
+        ENABLE_ROLE_RESEARCH=True,
+        ENABLE_PEOPLE_MAPPER=True,
+    )
     async def test_company_research_emit_progress_is_async(self, mock_job_doc, mock_progress_callback):
         """CompanyResearchService.execute calls progress callback asynchronously."""
         # Create mock repository
