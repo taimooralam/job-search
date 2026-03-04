@@ -337,7 +337,7 @@
         {% set job_url = job.url or job.jobUrl %}
         {% set app_url = job.application_url or job_url %}
         {
-            id: {{ job._id | tojson }},
+            id: "{{ job._id }}",
             title: {{ (job.title or '') | tojson }},
             company: {{ (job.company or '') | tojson }},
             appUrl: {{ (app_url or '') | tojson }},
