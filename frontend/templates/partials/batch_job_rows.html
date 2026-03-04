@@ -331,6 +331,21 @@
         }
     }
 
+    // Batch jobs data for prompt generation (rebuilt on every HTMX swap)
+    window.batchJobsData = [
+        {% for job in jobs %}
+        {% set job_url = job.url or job.jobUrl %}
+        {% set app_url = job.application_url or job_url %}
+        {
+            id: {{ job._id | tojson }},
+            title: {{ (job.title or '') | tojson }},
+            company: {{ (job.company or '') | tojson }},
+            appUrl: {{ (app_url or '') | tojson }},
+            jobUrl: {{ (job_url or '') | tojson }}
+        }{{ ',' if not loop.last }}
+        {% endfor %}
+    ];
+
     // Sync the header checkbox with the main one
     document.addEventListener('DOMContentLoaded', function() {
         const headerCheckbox = document.getElementById('batch-select-all-header');

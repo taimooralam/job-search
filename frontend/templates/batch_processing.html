@@ -24,6 +24,80 @@
             </div>
         </div>
         <div class="flex items-center gap-4">
+            <!-- Copy URL Prompt for Perplexity -->
+            <button onclick="generateUrlPrompt(this)"
+                    class="btn btn-sm btn-ghost flex items-center gap-1.5"
+                    title="Copy Perplexity prompt to find application URLs">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                </svg>
+                <span class="text-xs font-medium hidden sm:inline">URL Prompt</span>
+            </button>
+            <!-- Import URLs Dropdown -->
+            <div class="relative" x-data="urlImport()">
+                <button @click="open = !open"
+                        class="btn btn-sm btn-ghost flex items-center gap-1.5"
+                        :class="{'bg-green-50 dark:bg-green-900/20': open}"
+                        title="Import application URLs from Perplexity JSON">
+                    <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    <span class="text-xs font-medium hidden sm:inline">Import URLs</span>
+                    <svg class="h-3 w-3 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="open" @click.away="open = false"
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="absolute z-50 mt-1 right-0 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg border theme-border p-3"
+                     x-cloak>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-medium theme-text-secondary">
+                            Paste Perplexity JSON response
+                        </label>
+                        <textarea x-model="input" x-ref="urlInput"
+                                  placeholder='[{"id": "abc123", "applicationUrl": "https://..."}]'
+                                  rows="6"
+                                  class="form-input text-sm w-full resize-none font-mono"
+                                  @keydown.ctrl.enter="importUrls()"
+                                  @keydown.meta.enter="importUrls()"></textarea>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs theme-text-tertiary" x-show="!loading">Ctrl+Enter to import</span>
+                            <span class="text-xs text-green-600" x-show="loading" x-text="'Updating ' + progress + '...'"></span>
+                            <button @click="importUrls()"
+                                    :disabled="loading || !input.trim()"
+                                    class="btn btn-sm btn-success disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span x-show="!loading">Import</span>
+                                <span x-show="loading" class="flex items-center gap-1">
+                                    <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Importing...
+                                </span>
+                            </button>
+                        </div>
+                        <div x-show="results.length > 0" class="max-h-40 overflow-y-auto text-xs space-y-1 border-t theme-border pt-2 mt-1">
+                            <template x-for="r in results" :key="r.id">
+                                <div :class="r.success ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'" class="flex items-start gap-1">
+                                    <span x-text="r.success ? '✓' : '✗'" class="flex-shrink-0"></span>
+                                    <span x-text="r.message" class="break-all"></span>
+                                </div>
+                            </template>
+                        </div>
+                        <button x-show="results.length > 0 && !loading"
+                                @click="results = []; input = ''"
+                                class="text-xs theme-text-tertiary hover:theme-text-primary underline self-end">
+                            Clear results
+                        </button>
+                    </div>
+                </div>
+            </div>
             <!-- LinkedIn Multi-Import Dropdown -->
             {% include 'components/linkedin_import.html' %}
             <!-- Indeed Multi-Import Dropdown -->
@@ -558,6 +632,139 @@ html, body {
     // ============================================================================
 
     const batchSelectedJobs = new Set();
+
+    // ============================================================================
+    // URL Prompt Generation & Import
+    // ============================================================================
+
+    /**
+     * Generate a Perplexity-ready prompt listing all batch jobs and their URLs,
+     * then copy it to clipboard.
+     */
+    function generateUrlPrompt(button) {
+        const jobs = window.batchJobsData || [];
+        if (jobs.length === 0) {
+            showToast('No jobs in batch to generate prompt for', 'warning');
+            return;
+        }
+
+        const lines = jobs.map(j => {
+            const appStatus = j.appUrl ? j.appUrl : 'MISSING';
+            return `- ID: ${j.id} | "${j.title}" at ${j.company} | applicationUrl: ${appStatus} | jobUrl: ${j.jobUrl || 'none'}`;
+        });
+
+        const prompt = `I need you to find the correct **direct application URL** (the actual apply/careers page, not just the job listing) for each of these jobs. For jobs that already have an applicationUrl, verify it's still valid and correct. For jobs marked MISSING, research the correct URL.
+
+Jobs:
+${lines.join('\n')}
+
+Instructions:
+1. For each job, find the direct application page on the company's careers site or ATS (e.g., Greenhouse, Lever, Workday, etc.)
+2. If the existing applicationUrl looks correct, keep it as-is
+3. If you can't find a URL, use an empty string
+
+Return ONLY a JSON array with this exact format (no markdown, no explanation):
+[{"id": "...", "applicationUrl": "..."}]`;
+
+        copyToClipboard(prompt, 'Perplexity prompt', button);
+    }
+
+    /**
+     * Alpine.js component for importing URLs from Perplexity JSON response.
+     */
+    function urlImport() {
+        return {
+            open: false,
+            input: '',
+            loading: false,
+            progress: '',
+            results: [],
+
+            async importUrls() {
+                let entries;
+                try {
+                    // Handle markdown-wrapped JSON (```json ... ```)
+                    let raw = this.input.trim();
+                    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (fenceMatch) raw = fenceMatch[1].trim();
+                    entries = JSON.parse(raw);
+                } catch (e) {
+                    showToast('Invalid JSON — paste the array from Perplexity', 'error');
+                    return;
+                }
+
+                if (!Array.isArray(entries) || entries.length === 0) {
+                    showToast('Expected a JSON array of {id, applicationUrl}', 'error');
+                    return;
+                }
+
+                this.loading = true;
+                this.results = [];
+                let successCount = 0;
+
+                for (let i = 0; i < entries.length; i++) {
+                    const entry = entries[i];
+                    this.progress = `${i + 1}/${entries.length}`;
+
+                    if (!entry.id || typeof entry.applicationUrl !== 'string') {
+                        this.results.push({
+                            id: i,
+                            success: false,
+                            message: `Entry ${i + 1}: missing id or applicationUrl`
+                        });
+                        continue;
+                    }
+
+                    // Skip empty URLs
+                    if (!entry.applicationUrl) {
+                        this.results.push({
+                            id: i,
+                            success: false,
+                            message: `${entry.id}: no URL found`
+                        });
+                        continue;
+                    }
+
+                    try {
+                        const resp = await fetch(`/api/jobs/${entry.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ application_url: entry.applicationUrl })
+                        });
+
+                        if (resp.ok) {
+                            successCount++;
+                            this.results.push({
+                                id: i,
+                                success: true,
+                                message: `${entry.id}: URL updated`
+                            });
+                        } else {
+                            this.results.push({
+                                id: i,
+                                success: false,
+                                message: `${entry.id}: ${resp.status} error`
+                            });
+                        }
+                    } catch (e) {
+                        this.results.push({
+                            id: i,
+                            success: false,
+                            message: `${entry.id}: ${e.message}`
+                        });
+                    }
+                }
+
+                this.loading = false;
+                showToast(`Updated ${successCount}/${entries.length} URLs`, successCount > 0 ? 'success' : 'warning');
+
+                // Refresh table rows to reflect updated URLs
+                if (successCount > 0 && typeof htmx !== 'undefined') {
+                    htmx.trigger(document.body, 'refresh');
+                }
+            }
+        };
+    }
 
     // ============================================================================
     // Batch Job Context Menu
