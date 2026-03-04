@@ -67,6 +67,40 @@ class FullExtractionService(OperationService):
         repo = self._get_repository()
         return repo.find_one({"_id": object_id})
 
+    def _persist_jd_sections(
+        self,
+        job_id: str,
+        processed_jd: Dict[str, Any],
+        extracted_jd: Optional[Dict[str, Any]],
+    ) -> bool:
+        """
+        Persist JD sections to MongoDB so auto-annotations can read them.
+
+        This is a partial persist that runs before annotation generation,
+        saving only the fields that annotations need (processed_jd_sections).
+        The full persist (_persist_results) runs later with fit scoring data.
+        """
+        try:
+            object_id = ObjectId(job_id)
+        except Exception:
+            logger.error(f"Invalid job ID for JD sections persist: {job_id}")
+            return False
+
+        repo = self._get_repository()
+        try:
+            job = repo.find_one({"_id": object_id})
+            existing = job.get("jd_annotations", {}) if job else {}
+            existing["processed_jd_html"] = processed_jd.get("html")
+            existing["processed_jd_sections"] = processed_jd.get("sections")
+            existing["content_hash"] = processed_jd.get("content_hash")
+
+            update = {"jd_annotations": existing, "extracted_jd": extracted_jd}
+            result = repo.update_one({"_id": object_id}, {"$set": update})
+            return result.modified_count > 0 or result.matched_count > 0
+        except Exception as e:
+            logger.error(f"Failed to persist JD sections for {job_id}: {e}")
+            return False
+
     def _get_jd_text(self, job: Dict[str, Any]) -> str:
         """Extract JD text from job document."""
         jd_text = (
@@ -660,7 +694,46 @@ class FullExtractionService(OperationService):
                 await emit_progress("pain_points", "success", f"Found {pain_count} pain points")
                 logger.info(f"[{run_id[:16]}] Layer 2 complete: {pain_count} pain points")
 
-                # 6. Run Layer 4: Fit Scoring (with annotation signals)
+                # 6. Persist JD sections + Auto-generate annotations (before fit scoring)
+                # Annotations must be generated BEFORE fit scoring so the annotation-based
+                # score blending in OpportunityMapper has data to work with on first run.
+                annotation_result = {"created": 0, "skipped": 0}
+                if auto_annotate:
+                    # 6a. Persist JD sections to MongoDB so annotation_suggester can read them
+                    self._persist_jd_sections(job_id, processed_jd, extracted_jd)
+                    logger.info(f"[{run_id[:16]}] Persisted JD sections for annotation generation")
+
+                    # 6b. Generate annotations
+                    await emit_progress("annotations", "processing", "Generating annotations")
+                    if log_callback:
+                        log_callback(_json.dumps({"message": "Auto-generating annotations..."}))
+
+                    try:
+                        from src.services.annotation_suggester import generate_annotations_for_job
+                        annotation_result = generate_annotations_for_job(job_id, extracted_jd)
+
+                        if annotation_result.get("success"):
+                            created = annotation_result.get("created", 0)
+                            skipped = annotation_result.get("skipped", 0)
+                            await emit_progress("annotations", "success", f"Created {created} annotations")
+                            if log_callback:
+                                log_callback(_json.dumps({
+                                    "message": f"Auto-generated {created} annotations, skipped {skipped}"
+                                }))
+                            logger.info(f"[{run_id[:16]}] Auto-annotations: {created} created, {skipped} skipped")
+                        else:
+                            error = annotation_result.get("error", "Unknown error")
+                            await emit_progress("annotations", "failed", f"Failed: {error}")
+                            logger.warning(f"[{run_id[:16]}] Auto-annotation failed: {error}")
+                    except Exception as ann_err:
+                        await emit_progress("annotations", "failed", f"Error: {ann_err}")
+                        logger.error(f"[{run_id[:16]}] Auto-annotation error: {ann_err}")
+
+                    # 6c. Reload job from MongoDB to pick up fresh annotations
+                    job = self._get_job(job_id) or job
+                    logger.info(f"[{run_id[:16]}] Reloaded job with {len(job.get('jd_annotations', {}).get('annotations', []))} annotations")
+
+                # 7. Run Layer 4: Fit Scoring (now with annotation signals from step 6)
                 await emit_progress("fit_scoring", "processing", "Calculating fit score")
                 logger.info(f"[{run_id[:16]}] Running Layer 4: Fit Scoring")
 
@@ -690,7 +763,7 @@ class FullExtractionService(OperationService):
                     logger.info(f"[{run_id[:16]}] Annotation score: {annotation_signals['annotation_score']}, "
                                f"summary: {annotation_signals['annotation_summary']}")
 
-                # 7. Persist results (pass both processed_jd and extracted_jd)
+                # 8. Persist all results (processed_jd, extracted_jd, pain_points, fit_data)
                 await emit_progress("save_results", "processing", "Saving to database")
                 if log_callback:
                     log_callback(_json.dumps({"message": "Persisting extraction results to database..."}))
@@ -704,34 +777,6 @@ class FullExtractionService(OperationService):
                 else:
                     await emit_progress("save_results", "failed", "Persistence failed")
                     logger.warning(f"[{run_id[:16]}] Failed to persist results")
-
-                # 8. Auto-generate annotations if enabled
-                annotation_result = {"created": 0, "skipped": 0}
-                if auto_annotate:
-                    await emit_progress("annotations", "processing", "Generating annotations")
-                    if log_callback:
-                        log_callback(_json.dumps({"message": "Auto-generating annotations..."}))
-
-                    try:
-                        from src.services.annotation_suggester import generate_annotations_for_job
-                        annotation_result = generate_annotations_for_job(job_id, extracted_jd)
-
-                        if annotation_result.get("success"):
-                            created = annotation_result.get("created", 0)
-                            skipped = annotation_result.get("skipped", 0)
-                            await emit_progress("annotations", "success", f"Created {created} annotations")
-                            if log_callback:
-                                log_callback(_json.dumps({
-                                    "message": f"Auto-generated {created} annotations, skipped {skipped}"
-                                }))
-                            logger.info(f"[{run_id[:16]}] Auto-annotations: {created} created, {skipped} skipped")
-                        else:
-                            error = annotation_result.get("error", "Unknown error")
-                            await emit_progress("annotations", "failed", f"Failed: {error}")
-                            logger.warning(f"[{run_id[:16]}] Auto-annotation failed: {error}")
-                    except Exception as ann_err:
-                        await emit_progress("annotations", "failed", f"Error: {ann_err}")
-                        logger.error(f"[{run_id[:16]}] Auto-annotation error: {ann_err}")
 
                 # 9. Auto-synthesize persona if enabled and annotations were created
                 persona_result = None
