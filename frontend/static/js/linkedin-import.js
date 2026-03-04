@@ -61,12 +61,20 @@ function linkedinImport() {
 
                     const data = await resp.json();
 
+                    let message;
+                    if (data.success && data.duplicate) {
+                        message = `${data.title || ids[i]}: Already exists`;
+                    } else if (data.success) {
+                        const pipelineStatus = data.pipeline_queued ? ' (pipeline queued)' : '';
+                        message = `Imported: ${data.title || ids[i]}${pipelineStatus}`;
+                    } else {
+                        message = `${ids[i]}: ${data.error || 'Unknown error'}`;
+                    }
+
                     this.results.push({
                         id: i,
                         success: data.success,
-                        message: data.success
-                            ? `Imported: ${data.job?.title || ids[i]}`
-                            : `${ids[i]}: ${data.error || 'Unknown error'}`
+                        message
                     });
                 } catch (e) {
                     this.results.push({

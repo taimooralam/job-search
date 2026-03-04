@@ -1488,6 +1488,34 @@ def import_linkedin_job():
         # Forward the response from runner service
         if response.status_code == 200:
             result = response.json()
+
+            # Auto-queue batch-pipeline for non-duplicate imports
+            # Same behavior as move-to-batch: extraction → research → CV → uploads
+            if result.get("success") and not result.get("duplicate"):
+                imported_job_id = result.get("job_id")
+                if imported_job_id:
+                    try:
+                        queue_resp = requests.post(
+                            f"{runner_url}/api/jobs/{imported_job_id}/operations/batch-pipeline/queue",
+                            json={"tier": "quality"},
+                            headers={
+                                "Authorization": f"Bearer {runner_token}",
+                                "Content-Type": "application/json",
+                            },
+                            timeout=5.0,
+                        )
+                        if queue_resp.status_code == 200:
+                            queue_data = queue_resp.json()
+                            result["pipeline_queued"] = True
+                            result["pipeline_run_id"] = queue_data.get("run_id")
+                            logger.info(f"Auto-queued batch-pipeline for imported job {imported_job_id}")
+                        else:
+                            result["pipeline_queued"] = False
+                            logger.warning(f"Failed to auto-queue pipeline for {imported_job_id}: {queue_resp.status_code}")
+                    except Exception as queue_err:
+                        result["pipeline_queued"] = False
+                        logger.warning(f"Error auto-queuing pipeline for {imported_job_id}: {queue_err}")
+
             return jsonify(result), 200
         else:
             # Try to get error message from runner
