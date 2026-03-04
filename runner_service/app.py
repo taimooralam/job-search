@@ -1490,8 +1490,10 @@ async def startup_queue_manager():
         # Start cross-runner event listener for multi-instance state sync
         await _queue_manager.start_event_listener()
 
-        # Restore any interrupted runs from previous instance
-        restored = await _queue_manager.restore_interrupted_runs()
+        # Restore runs interrupted by THIS runner's previous instance
+        from runner_service.routes.operation_streaming import get_runner_id
+        this_runner_id = get_runner_id()
+        restored = await _queue_manager.restore_interrupted_runs(runner_id=this_runner_id)
         if restored:
             logger.info(f"Restored {len(restored)} interrupted runs to queue")
 
@@ -1578,7 +1580,7 @@ async def startup_queue_polling_loop():
                     and _queue_manager.is_connected
                     and _semaphore._value > 0  # Runner has capacity
                 ):
-                    item = await _queue_manager.dequeue()
+                    item = await _queue_manager.dequeue(runner_id=runner_id)
                     if item:
                         # Reuse existing run_id from queue item if present
                         # (created by the enqueue endpoint, possibly on a different runner).

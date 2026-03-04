@@ -40,6 +40,7 @@ class QueueItem:
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
     run_id: Optional[str] = None      # Links to RunState when running
+    runner_id: Optional[str] = None   # Which runner is executing this item
     position: int = 0                  # Queue position (1-indexed, 0 = not in queue)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -57,6 +58,7 @@ class QueueItem:
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "error": self.error,
             "run_id": self.run_id,
+            "runner_id": self.runner_id,
             "position": self.position,
         }
 
@@ -94,6 +96,7 @@ class QueueItem:
             completed_at=parse_datetime(data.get("completed_at", "")),
             error=data.get("error") or None,
             run_id=data.get("run_id") or None,
+            runner_id=data.get("runner_id") or None,
             position=int(data.get("position", 0)),
         )
 
@@ -115,6 +118,7 @@ class QueueItem:
             "completed_at": self.completed_at.isoformat() if self.completed_at else "",
             "error": self.error or "",
             "run_id": self.run_id or "",
+            "runner_id": self.runner_id or "",
             "position": str(self.position),
         }
 

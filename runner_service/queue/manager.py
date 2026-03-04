@@ -230,11 +230,15 @@ class QueueManager:
         logger.info(f"Enqueued job {job_id} as {queue_id} (position {item.position})")
         return item
 
-    async def dequeue(self) -> Optional[QueueItem]:
+    async def dequeue(self, runner_id: Optional[str] = None) -> Optional[QueueItem]:
         """
         Get next job from queue (FIFO).
 
-        Moves item from pending to running.
+        Moves item from pending to running and tags with runner_id
+        so restore_interrupted_runs can identify ownership.
+
+        Args:
+            runner_id: ID of the runner claiming this item
 
         Returns:
             QueueItem or None if queue is empty
@@ -255,16 +259,17 @@ class QueueManager:
         # Move to running set
         await self._redis.sadd(self.RUNNING_KEY, queue_id)
 
-        # Update item status
+        # Update item status and tag with runner ownership
         item.status = QueueItemStatus.RUNNING
         item.started_at = datetime.utcnow()
+        item.runner_id = runner_id
         item.position = 0  # No longer in queue
         await self._update_item(item)
 
         # Publish event
         await self._publish_event("started", item)
 
-        logger.info(f"Dequeued {queue_id} for job {item.job_id}")
+        logger.info(f"Dequeued {queue_id} for job {item.job_id} (runner={runner_id})")
         return item
 
     async def complete(
@@ -857,11 +862,17 @@ class QueueManager:
 
         return count
 
-    async def restore_interrupted_runs(self) -> List[QueueItem]:
+    async def restore_interrupted_runs(self, runner_id: Optional[str] = None) -> List[QueueItem]:
         """
-        Restore any runs that were interrupted (in running state after restart).
+        Restore runs that were interrupted by THIS runner restarting.
 
-        Moves interrupted runs back to pending queue.
+        Only restores items tagged with the given runner_id (set during dequeue).
+        Items owned by other runners are left alone — they may still be executing.
+        Items with no runner_id (legacy) are also restored as a fallback.
+
+        Args:
+            runner_id: The ID of the runner that is restarting. If None,
+                       restores all items (legacy behavior).
 
         Returns:
             List of restored items
@@ -870,20 +881,32 @@ class QueueManager:
             return []
 
         restored = []
+        skipped = 0
         running_ids = await self._redis.smembers(self.RUNNING_KEY)
 
         for queue_id in running_ids:
             item = await self.get_item(queue_id)
-            if item:
-                # Move back to pending
-                await self._redis.srem(self.RUNNING_KEY, queue_id)
-                item.status = QueueItemStatus.PENDING
-                item.started_at = None
-                item.run_id = None
-                await self._update_item(item)
-                await self._redis.rpush(self.PENDING_KEY, queue_id)
-                restored.append(item)
-                logger.info(f"Restored interrupted run {queue_id} for job {item.job_id}")
+            if not item:
+                continue
+
+            # Only restore items owned by this runner (or untagged legacy items)
+            if runner_id and item.runner_id and item.runner_id != runner_id:
+                skipped += 1
+                continue
+
+            # Move back to pending
+            await self._redis.srem(self.RUNNING_KEY, queue_id)
+            item.status = QueueItemStatus.PENDING
+            item.started_at = None
+            item.run_id = None
+            item.runner_id = None
+            await self._update_item(item)
+            await self._redis.rpush(self.PENDING_KEY, queue_id)
+            restored.append(item)
+            logger.info(f"Restored interrupted run {queue_id} for job {item.job_id}")
+
+        if skipped:
+            logger.info(f"Skipped {skipped} running items owned by other runners")
 
         return restored
 
