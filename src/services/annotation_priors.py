@@ -184,6 +184,12 @@ EMBEDDING_DIM = 384
 # Batch size for computing embeddings during rebuild
 EMBEDDING_BATCH_SIZE = 64
 
+# Annotations per chunk (~3.5MB each at 384-dim float32)
+CHUNK_SIZE = 1000
+
+# Hard cap on embeddings (most recent annotations only)
+MAX_EMBEDDING_ANNOTATIONS = 10_000
+
 
 # ============================================================================
 # PRIORS DOCUMENT CONFIGURATION
@@ -301,6 +307,75 @@ class PriorsDocument(TypedDict):
 
 
 # ============================================================================
+# IN-MEMORY EMBEDDING CACHE
+# ============================================================================
+
+
+class _EmbeddingCache:
+    """In-memory cache for loaded embeddings, keyed on version."""
+    _instance: Optional['_EmbeddingCache'] = None
+
+    def __init__(self):
+        self.version: int = -1
+        self.sentence_index: Optional[SentenceIndex] = None
+
+    @classmethod
+    def get(cls) -> '_EmbeddingCache':
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def is_valid(self, version: int) -> bool:
+        return self.version == version and self.sentence_index is not None
+
+    def store(self, version: int, index: SentenceIndex):
+        self.version = version
+        self.sentence_index = index
+
+    def invalidate(self):
+        self.version = -1
+        self.sentence_index = None
+
+
+def load_sentence_index_from_chunks(version: int) -> Optional[SentenceIndex]:
+    """Load and assemble sentence index from chunked storage."""
+    cache = _EmbeddingCache.get()
+    if cache.is_valid(version):
+        logger.debug(f"Using cached embedding index (version={version})")
+        return cache.sentence_index
+
+    from src.common.repositories import get_embedding_chunks_repository
+    repo = get_embedding_chunks_repository()
+
+    chunks = repo.find(
+        {"version": version},
+        sort=[("chunk_index", 1)],
+    )
+
+    if not chunks:
+        return None
+
+    all_embeddings, all_texts, all_metadata = [], [], []
+    for chunk in chunks:
+        all_embeddings.extend(chunk["embeddings"])
+        all_texts.extend(chunk["texts"])
+        all_metadata.extend(chunk["metadata"])
+
+    index: SentenceIndex = {
+        "embeddings": all_embeddings,
+        "texts": all_texts,
+        "metadata": all_metadata,
+        "built_at": chunks[0].get("created_at", ""),
+        "model": EMBEDDING_MODEL,
+        "count": len(all_texts),
+    }
+
+    cache.store(version, index)
+    logger.info(f"Loaded {len(all_texts)} embeddings from {len(chunks)} chunks (version={version})")
+    return index
+
+
+# ============================================================================
 # LOAD / SAVE FUNCTIONS
 # ============================================================================
 
@@ -351,6 +426,13 @@ def load_priors() -> PriorsDocument:
         doc = repo.find_one({"_id": PRIORS_DOC_ID})
 
         if doc:
+            # Detect chunked format: embeddings stored in embedding_chunks collection
+            si = doc.get("sentence_index", {})
+            if not si.get("embeddings") and si.get("count", 0) > 0:
+                chunk_index = load_sentence_index_from_chunks(doc.get("version", 0))
+                if chunk_index:
+                    doc["sentence_index"] = chunk_index
+
             logger.debug(f"Loaded priors: {doc.get('stats', {}).get('total_annotations_at_build', 0)} annotations indexed")
             return doc  # type: ignore
 
@@ -385,12 +467,27 @@ def save_priors(priors: PriorsDocument) -> bool:
         from src.common.repositories import get_priors_repository
 
         repo = get_priors_repository()
+
+        # Update timestamp on the original (backward compat for callers)
         priors["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Strip embeddings from save copy (stored in embedding_chunks collection)
+        si = priors.get("sentence_index", {})
+        stripped_si = {
+            "embeddings": [],
+            "texts": [],
+            "metadata": [],
+            "built_at": si.get("built_at", ""),
+            "model": si.get("model", EMBEDDING_MODEL),
+            "count": si.get("count", 0),
+        }
+
+        save_doc = {**priors, "sentence_index": stripped_si}
 
         result = repo.replace_one(
             {"_id": PRIORS_DOC_ID},
-            priors,
-            upsert=True
+            save_doc,
+            upsert=True,
         )
 
         logger.debug(f"Saved priors: matched={result.matched_count}, modified={result.modified_count}")
@@ -429,7 +526,8 @@ def should_rebuild_priors(priors: PriorsDocument) -> bool:
     stats = priors.get("stats", {})
 
     # No index yet - definitely rebuild
-    if not sentence_index.get("embeddings"):
+    # In chunked format, embeddings list may be empty but count > 0
+    if not sentence_index.get("embeddings") and sentence_index.get("count", 0) == 0:
         logger.info("Rebuild needed: no embeddings exist")
         return True
 
@@ -472,10 +570,11 @@ def _load_all_annotations() -> List[Dict[str, Any]]:
     repo = get_job_repository()
     annotations = []
 
-    # Find all jobs with annotations
+    # Find all jobs with annotations, sorted by recency (most recent first)
     jobs = repo.find(
         filter={"jd_annotations.annotations": {"$exists": True, "$ne": []}},
-        projection={"_id": 1, "jd_annotations.annotations": 1}
+        projection={"_id": 1, "jd_annotations.annotations": 1, "created_at": 1},
+        sort=[("created_at", -1)],
     )
 
     for job in jobs:
@@ -498,7 +597,14 @@ def _load_all_annotations() -> List[Dict[str, Any]]:
                 "job_id": job_id,
             })
 
-    logger.info(f"Loaded {len(annotations)} annotations from {len(jobs)} jobs")
+            if len(annotations) >= MAX_EMBEDDING_ANNOTATIONS:
+                break
+
+        if len(annotations) >= MAX_EMBEDDING_ANNOTATIONS:
+            break
+
+    annotations = annotations[:MAX_EMBEDDING_ANNOTATIONS]
+    logger.info(f"Loaded {len(annotations)} annotations (cap={MAX_EMBEDDING_ANNOTATIONS})")
     return annotations
 
 
@@ -664,8 +770,9 @@ def rebuild_priors(priors: PriorsDocument) -> PriorsDocument:
     """
     Rebuild the sentence_index by re-embedding all historical annotations.
 
-    This is a batch operation that takes ~15-30 seconds for 3000 annotations.
-    Should be called when should_rebuild_priors() returns True.
+    Uses chunked storage: embeddings are written to embedding_chunks collection
+    in chunks of CHUNK_SIZE vectors. A new version number enables zero-downtime
+    rebuilds (old version remains readable until new version is complete).
 
     Args:
         priors: Current priors document (will be mutated)
@@ -673,10 +780,10 @@ def rebuild_priors(priors: PriorsDocument) -> PriorsDocument:
     Returns:
         Updated priors document with new sentence_index
     """
-    logger.info("Starting priors rebuild...")
+    logger.info("Starting priors rebuild (chunked storage)...")
     start_time = datetime.now()
 
-    # 1. Load all annotations
+    # 1. Load annotations (capped at MAX_EMBEDDING_ANNOTATIONS, sorted by recency)
     all_annotations = _load_all_annotations()
 
     if not all_annotations:
@@ -687,41 +794,157 @@ def rebuild_priors(priors: PriorsDocument) -> PriorsDocument:
     texts = [a["text"] for a in all_annotations]
     embeddings = _compute_embeddings(texts)
 
-    # 3. Update sentence_index
+    # 3. Write chunks with NEW version (zero-downtime)
+    new_version = priors.get("version", 0) + 1
+    metadata_list = [
+        {
+            "relevance": a["relevance"],
+            "requirement": a["requirement"],
+            "passion": a["passion"],
+            "identity": a["identity"],
+            "job_id": a["job_id"],
+        }
+        for a in all_annotations
+    ]
+    chunk_count = _write_embedding_chunks(
+        new_version, texts, embeddings.tolist(), all_annotations
+    )
+
+    # 4. Update sentence_index (kept in-memory for current session)
     now = datetime.now(timezone.utc).isoformat()
     priors["sentence_index"] = {
         "embeddings": embeddings.tolist(),
         "texts": texts,
-        "metadata": [
-            {
-                "relevance": a["relevance"],
-                "requirement": a["requirement"],
-                "passion": a["passion"],
-                "identity": a["identity"],
-                "job_id": a["job_id"],
-            }
-            for a in all_annotations
-        ],
+        "metadata": metadata_list,
         "built_at": now,
         "model": EMBEDDING_MODEL,
         "count": len(all_annotations),
     }
 
-    # 4. Recompute skill_priors
+    # 5. Update version and stats
+    priors["version"] = new_version
     priors["skill_priors"] = _recompute_skill_priors(all_annotations)
-
-    # 5. Update stats
     priors["stats"]["total_annotations_at_build"] = len(all_annotations)
     priors["stats"]["annotations_since_build"] = 0
     priors["stats"]["last_rebuild"] = now
 
-    # 6. Increment version
-    priors["version"] = priors.get("version", 0) + 1
+    # 6. Update in-memory cache
+    _EmbeddingCache.get().store(new_version, priors["sentence_index"])
+
+    # 7. Delete OLD version chunks (cleanup)
+    _delete_old_chunks(new_version)
 
     duration = (datetime.now() - start_time).total_seconds()
-    logger.info(f"Priors rebuild complete: {len(all_annotations)} annotations indexed in {duration:.1f}s")
+    logger.info(
+        f"Priors rebuild complete: {len(all_annotations)} annotations indexed "
+        f"in {chunk_count} chunks, {duration:.1f}s"
+    )
 
     return priors
+
+
+# ============================================================================
+# CHUNK HELPER FUNCTIONS
+# ============================================================================
+
+
+def _write_embedding_chunks(
+    version: int,
+    texts: List[str],
+    embeddings: List[List[float]],
+    annotations: List[Dict[str, Any]],
+) -> int:
+    """Write embeddings as chunks to embedding_chunks collection.
+
+    Returns:
+        Number of chunks written.
+    """
+    from src.common.repositories import get_embedding_chunks_repository
+    repo = get_embedding_chunks_repository()
+    now = datetime.now(timezone.utc).isoformat()
+
+    chunks = []
+    for i in range(0, len(texts), CHUNK_SIZE):
+        end = min(i + CHUNK_SIZE, len(texts))
+        chunks.append({
+            "version": version,
+            "chunk_index": i // CHUNK_SIZE,
+            "embeddings": embeddings[i:end],
+            "texts": texts[i:end],
+            "metadata": [
+                {
+                    "relevance": a["relevance"],
+                    "requirement": a["requirement"],
+                    "passion": a["passion"],
+                    "identity": a["identity"],
+                    "job_id": a["job_id"],
+                }
+                for a in annotations[i:end]
+            ],
+            "count": end - i,
+            "created_at": now,
+        })
+
+    if chunks:
+        repo.insert_many(chunks)
+    logger.info(f"Wrote {len(chunks)} embedding chunks (version={version})")
+    return len(chunks)
+
+
+def _delete_old_chunks(current_version: int) -> int:
+    """Delete chunks from previous versions."""
+    from src.common.repositories import get_embedding_chunks_repository
+    repo = get_embedding_chunks_repository()
+    deleted = repo.delete_many({"version": {"$lt": current_version}})
+    if deleted:
+        logger.info(f"Cleaned up {deleted} old embedding chunks")
+    return deleted
+
+
+def migrate_inline_to_chunks(priors: PriorsDocument) -> bool:
+    """One-time migration: move inline embeddings to chunked storage.
+
+    Detects inline format (sentence_index.embeddings non-empty) and
+    writes them as chunks. Call manually or on first rebuild after migration.
+
+    Returns:
+        True if migration was performed, False if already chunked or empty.
+    """
+    si = priors.get("sentence_index", {})
+    if not si.get("embeddings"):
+        return False
+
+    version = priors.get("version", 1)
+    texts = si.get("texts", [])
+    embeddings = si.get("embeddings", [])
+    metadata_list = si.get("metadata", [])
+
+    if not texts:
+        return False
+
+    # Build annotation-like dicts from metadata
+    annotations = []
+    for i, meta in enumerate(metadata_list):
+        annotations.append({
+            "text": texts[i] if i < len(texts) else "",
+            "relevance": meta.get("relevance"),
+            "requirement": meta.get("requirement"),
+            "passion": meta.get("passion"),
+            "identity": meta.get("identity"),
+            "job_id": meta.get("job_id", ""),
+        })
+
+    # Cap if needed
+    if len(annotations) > MAX_EMBEDDING_ANNOTATIONS:
+        annotations = annotations[-MAX_EMBEDDING_ANNOTATIONS:]
+        texts = texts[-MAX_EMBEDDING_ANNOTATIONS:]
+        embeddings = embeddings[-MAX_EMBEDDING_ANNOTATIONS:]
+
+    chunk_count = _write_embedding_chunks(version, texts, embeddings, annotations)
+    logger.info(
+        f"Migrated {len(texts)} inline embeddings to {chunk_count} chunks"
+    )
+    return True
 
 
 # ============================================================================

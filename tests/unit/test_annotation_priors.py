@@ -30,6 +30,13 @@ from src.services.annotation_priors import (
     get_owned_skills,
     NO_LEARNING_SECTIONS,
     SKILL_REQUIREMENT_SECTIONS,
+    CHUNK_SIZE,
+    MAX_EMBEDDING_ANNOTATIONS,
+    _EmbeddingCache,
+    load_sentence_index_from_chunks,
+    _write_embedding_chunks,
+    _delete_old_chunks,
+    migrate_inline_to_chunks,
 )
 
 
@@ -142,6 +149,9 @@ class TestSavePriors:
         assert call_args[0][0] == {"_id": PRIORS_DOC_ID}
         assert call_args[1]["upsert"] is True
         assert result is True
+        # Saved doc should have stripped embeddings
+        saved_doc = call_args[0][1]
+        assert saved_doc["sentence_index"]["embeddings"] == []
 
     def test_updates_timestamp_on_save(self, mock_repo, sample_priors):
         """Should update updated_at timestamp when saving."""
@@ -188,15 +198,28 @@ class TestShouldRebuildPriors:
         }
 
     def test_rebuild_when_no_embeddings(self, base_priors):
-        """Should rebuild when no embeddings exist."""
+        """Should rebuild when no embeddings exist and count is 0."""
         # Arrange
         base_priors["sentence_index"]["embeddings"] = []
+        base_priors["sentence_index"]["count"] = 0
 
         # Act
         result = should_rebuild_priors(base_priors)
 
         # Assert
         assert result is True
+
+    def test_no_rebuild_when_chunked_format(self, base_priors):
+        """Should NOT rebuild when embeddings empty but count > 0 (chunked format)."""
+        # Arrange - chunked format: embeddings stored in embedding_chunks collection
+        base_priors["sentence_index"]["embeddings"] = []
+        base_priors["sentence_index"]["count"] = 5000
+
+        # Act
+        result = should_rebuild_priors(base_priors)
+
+        # Assert
+        assert result is False
 
     def test_rebuild_when_no_built_at(self, base_priors):
         """Should rebuild when built_at timestamp is missing."""
@@ -611,6 +634,23 @@ class TestGetPriorsStats:
 class TestRebuildPriors:
     """Tests for rebuild_priors function."""
 
+    @pytest.fixture(autouse=True)
+    def reset_cache(self):
+        """Reset embedding cache before each test."""
+        _EmbeddingCache.get().invalidate()
+        yield
+        _EmbeddingCache.get().invalidate()
+
+    @pytest.fixture
+    def mock_chunks_repo(self):
+        """Mock embedding chunks repository."""
+        from src.common.repositories import WriteResult
+        mock_repository = MagicMock()
+        mock_repository.insert_many.return_value = WriteResult(matched_count=0, modified_count=2)
+        mock_repository.delete_many.return_value = 0
+        with patch("src.common.repositories.get_embedding_chunks_repository", return_value=mock_repository):
+            yield mock_repository
+
     @pytest.fixture
     def mock_load_annotations(self):
         """Mock _load_all_annotations."""
@@ -643,7 +683,7 @@ class TestRebuildPriors:
             mock.return_value = np.random.rand(2, 384)
             yield mock
 
-    def test_rebuilds_sentence_index(self, mock_load_annotations, mock_embeddings):
+    def test_rebuilds_sentence_index(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
         """Should rebuild sentence_index with embeddings and metadata."""
         # Arrange
         priors = _empty_priors()
@@ -659,7 +699,47 @@ class TestRebuildPriors:
         assert result["sentence_index"]["model"] == "all-MiniLM-L6-v2"
         assert result["sentence_index"]["built_at"] is not None
 
-    def test_recomputes_skill_priors(self, mock_load_annotations, mock_embeddings):
+    def test_writes_chunks(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
+        """Should write embedding chunks to the chunks collection."""
+        # Arrange
+        priors = _empty_priors()
+
+        # Act
+        rebuild_priors(priors)
+
+        # Assert
+        mock_chunks_repo.insert_many.assert_called_once()
+        chunks = mock_chunks_repo.insert_many.call_args[0][0]
+        assert len(chunks) == 1  # 2 annotations < CHUNK_SIZE, so 1 chunk
+        assert chunks[0]["version"] == 2  # version incremented from 1
+        assert chunks[0]["chunk_index"] == 0
+        assert chunks[0]["count"] == 2
+
+    def test_deletes_old_chunks(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
+        """Should delete old version chunks after rebuild."""
+        # Arrange
+        priors = _empty_priors()
+
+        # Act
+        rebuild_priors(priors)
+
+        # Assert
+        mock_chunks_repo.delete_many.assert_called_once_with({"version": {"$lt": 2}})
+
+    def test_updates_cache(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
+        """Should update the in-memory embedding cache after rebuild."""
+        # Arrange
+        priors = _empty_priors()
+
+        # Act
+        result = rebuild_priors(priors)
+
+        # Assert
+        cache = _EmbeddingCache.get()
+        assert cache.is_valid(result["version"])
+        assert cache.sentence_index["count"] == 2
+
+    def test_recomputes_skill_priors(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
         """Should recompute skill_priors from annotations."""
         # Arrange
         priors = _empty_priors()
@@ -674,7 +754,7 @@ class TestRebuildPriors:
         # Python appears in both annotations
         assert "python" in result["skill_priors"]
 
-    def test_updates_stats(self, mock_load_annotations, mock_embeddings):
+    def test_updates_stats(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
         """Should update stats after rebuild."""
         # Arrange
         priors = _empty_priors()
@@ -688,7 +768,7 @@ class TestRebuildPriors:
         assert result["stats"]["annotations_since_build"] == 0
         assert result["stats"]["last_rebuild"] is not None
 
-    def test_increments_version(self, mock_load_annotations, mock_embeddings):
+    def test_increments_version(self, mock_load_annotations, mock_embeddings, mock_chunks_repo):
         """Should increment version number."""
         # Arrange
         priors = _empty_priors()
@@ -1005,3 +1085,394 @@ class TestGetOwnedSkills:
             # All should be lowercase
             for skill in owned:
                 assert skill == skill.lower()
+
+
+# ============================================================================
+# CHUNKED STORAGE TESTS
+# ============================================================================
+
+
+class TestEmbeddingCache:
+    """Tests for _EmbeddingCache class."""
+
+    @pytest.fixture(autouse=True)
+    def reset_cache(self):
+        """Reset cache between tests."""
+        _EmbeddingCache.get().invalidate()
+        yield
+        _EmbeddingCache.get().invalidate()
+
+    def test_invalid_by_default(self):
+        """Cache should be invalid by default."""
+        cache = _EmbeddingCache.get()
+        assert not cache.is_valid(1)
+
+    def test_store_and_retrieve(self):
+        """Should store and retrieve sentence index by version."""
+        cache = _EmbeddingCache.get()
+        index = {"embeddings": [[0.1] * 384], "texts": ["test"], "metadata": [], "count": 1}
+        cache.store(42, index)
+        assert cache.is_valid(42)
+        assert cache.sentence_index == index
+
+    def test_invalid_for_different_version(self):
+        """Should be invalid when queried with different version."""
+        cache = _EmbeddingCache.get()
+        cache.store(1, {"count": 1})
+        assert not cache.is_valid(2)
+
+    def test_invalidate_clears_cache(self):
+        """Should clear cache on invalidate."""
+        cache = _EmbeddingCache.get()
+        cache.store(1, {"count": 1})
+        cache.invalidate()
+        assert not cache.is_valid(1)
+
+    def test_singleton_pattern(self):
+        """Should return same instance."""
+        a = _EmbeddingCache.get()
+        b = _EmbeddingCache.get()
+        assert a is b
+
+
+class TestLoadSentenceIndexFromChunks:
+    """Tests for load_sentence_index_from_chunks function."""
+
+    @pytest.fixture(autouse=True)
+    def reset_cache(self):
+        """Reset cache between tests."""
+        _EmbeddingCache.get().invalidate()
+        yield
+        _EmbeddingCache.get().invalidate()
+
+    @pytest.fixture
+    def mock_chunks_repo(self):
+        """Mock embedding chunks repository."""
+        mock_repository = MagicMock()
+        with patch("src.common.repositories.get_embedding_chunks_repository", return_value=mock_repository):
+            yield mock_repository
+
+    def test_loads_and_concatenates_chunks(self, mock_chunks_repo):
+        """Should load chunks and concatenate into single SentenceIndex."""
+        # Arrange
+        mock_chunks_repo.find.return_value = [
+            {
+                "version": 1,
+                "chunk_index": 0,
+                "embeddings": [[0.1] * 384, [0.2] * 384],
+                "texts": ["text1", "text2"],
+                "metadata": [{"relevance": "r1"}, {"relevance": "r2"}],
+                "created_at": "2024-01-01T00:00:00Z",
+            },
+            {
+                "version": 1,
+                "chunk_index": 1,
+                "embeddings": [[0.3] * 384],
+                "texts": ["text3"],
+                "metadata": [{"relevance": "r3"}],
+                "created_at": "2024-01-01T00:00:00Z",
+            },
+        ]
+
+        # Act
+        result = load_sentence_index_from_chunks(1)
+
+        # Assert
+        assert result is not None
+        assert result["count"] == 3
+        assert len(result["embeddings"]) == 3
+        assert len(result["texts"]) == 3
+        assert result["texts"] == ["text1", "text2", "text3"]
+
+    def test_returns_none_when_no_chunks(self, mock_chunks_repo):
+        """Should return None when no chunks found."""
+        mock_chunks_repo.find.return_value = []
+        result = load_sentence_index_from_chunks(1)
+        assert result is None
+
+    def test_caches_result(self, mock_chunks_repo):
+        """Should cache result and return from cache on second call."""
+        mock_chunks_repo.find.return_value = [
+            {
+                "version": 1,
+                "chunk_index": 0,
+                "embeddings": [[0.1] * 384],
+                "texts": ["text1"],
+                "metadata": [{"relevance": "r1"}],
+                "created_at": "2024-01-01T00:00:00Z",
+            },
+        ]
+
+        # First call loads from repo
+        result1 = load_sentence_index_from_chunks(1)
+        # Second call should use cache
+        result2 = load_sentence_index_from_chunks(1)
+
+        assert result1 == result2
+        mock_chunks_repo.find.assert_called_once()  # Only called once
+
+    def test_queries_with_correct_filter_and_sort(self, mock_chunks_repo):
+        """Should query with version filter and chunk_index sort."""
+        mock_chunks_repo.find.return_value = []
+        load_sentence_index_from_chunks(42)
+
+        mock_chunks_repo.find.assert_called_once_with(
+            {"version": 42},
+            sort=[("chunk_index", 1)],
+        )
+
+
+class TestWriteEmbeddingChunks:
+    """Tests for _write_embedding_chunks function."""
+
+    @pytest.fixture
+    def mock_chunks_repo(self):
+        """Mock embedding chunks repository."""
+        from src.common.repositories import WriteResult
+        mock_repository = MagicMock()
+        mock_repository.insert_many.return_value = WriteResult(matched_count=0, modified_count=1)
+        with patch("src.common.repositories.get_embedding_chunks_repository", return_value=mock_repository):
+            yield mock_repository
+
+    def test_single_chunk_for_small_data(self, mock_chunks_repo):
+        """Should produce 1 chunk for data smaller than CHUNK_SIZE."""
+        texts = [f"text{i}" for i in range(100)]
+        embeddings = [[0.1] * 384 for _ in range(100)]
+        annotations = [
+            {"text": f"text{i}", "relevance": "r", "requirement": "m",
+             "passion": "n", "identity": "p", "job_id": f"j{i}"}
+            for i in range(100)
+        ]
+
+        count = _write_embedding_chunks(1, texts, embeddings, annotations)
+
+        assert count == 1
+        mock_chunks_repo.insert_many.assert_called_once()
+        chunks = mock_chunks_repo.insert_many.call_args[0][0]
+        assert len(chunks) == 1
+        assert chunks[0]["count"] == 100
+        assert chunks[0]["version"] == 1
+        assert chunks[0]["chunk_index"] == 0
+
+    def test_multiple_chunks_for_large_data(self, mock_chunks_repo):
+        """Should split into multiple chunks when exceeding CHUNK_SIZE."""
+        n = CHUNK_SIZE + 500  # 1500 items = 2 chunks
+        texts = [f"text{i}" for i in range(n)]
+        embeddings = [[0.1] * 384 for _ in range(n)]
+        annotations = [
+            {"text": f"text{i}", "relevance": "r", "requirement": "m",
+             "passion": "n", "identity": "p", "job_id": f"j{i}"}
+            for i in range(n)
+        ]
+
+        count = _write_embedding_chunks(1, texts, embeddings, annotations)
+
+        assert count == 2
+        chunks = mock_chunks_repo.insert_many.call_args[0][0]
+        assert chunks[0]["count"] == CHUNK_SIZE
+        assert chunks[0]["chunk_index"] == 0
+        assert chunks[1]["count"] == 500
+        assert chunks[1]["chunk_index"] == 1
+
+    def test_empty_data_writes_nothing(self, mock_chunks_repo):
+        """Should not call insert_many for empty data."""
+        count = _write_embedding_chunks(1, [], [], [])
+        assert count == 0
+        mock_chunks_repo.insert_many.assert_not_called()
+
+
+class TestDeleteOldChunks:
+    """Tests for _delete_old_chunks function."""
+
+    @pytest.fixture
+    def mock_chunks_repo(self):
+        mock_repository = MagicMock()
+        mock_repository.delete_many.return_value = 5
+        with patch("src.common.repositories.get_embedding_chunks_repository", return_value=mock_repository):
+            yield mock_repository
+
+    def test_deletes_older_versions(self, mock_chunks_repo):
+        """Should delete chunks with version < current."""
+        deleted = _delete_old_chunks(3)
+        mock_chunks_repo.delete_many.assert_called_once_with({"version": {"$lt": 3}})
+        assert deleted == 5
+
+
+class TestSavePriorsStripsEmbeddings:
+    """Tests that save_priors strips embeddings before saving."""
+
+    @pytest.fixture(autouse=True)
+    def reset_repo(self):
+        from src.common.repositories import reset_priors_repository
+        reset_priors_repository()
+        yield
+        reset_priors_repository()
+
+    @pytest.fixture
+    def mock_repo(self):
+        from src.common.repositories import WriteResult
+        mock_repository = MagicMock()
+        mock_repository.replace_one.return_value = WriteResult(matched_count=1, modified_count=1)
+        with patch("src.common.repositories.get_priors_repository", return_value=mock_repository):
+            yield mock_repository
+
+    def test_strips_embeddings_from_saved_doc(self, mock_repo):
+        """Saved document should have empty embeddings (stored in chunks)."""
+        priors = _empty_priors()
+        priors["sentence_index"]["embeddings"] = [[0.1] * 384, [0.2] * 384]
+        priors["sentence_index"]["texts"] = ["text1", "text2"]
+        priors["sentence_index"]["metadata"] = [{"r": 1}, {"r": 2}]
+        priors["sentence_index"]["count"] = 2
+
+        save_priors(priors)
+
+        # Check what was actually saved
+        saved_doc = mock_repo.replace_one.call_args[0][1]
+        assert saved_doc["sentence_index"]["embeddings"] == []
+        assert saved_doc["sentence_index"]["texts"] == []
+        assert saved_doc["sentence_index"]["metadata"] == []
+        assert saved_doc["sentence_index"]["count"] == 2  # Count preserved
+
+    def test_preserves_in_memory_embeddings(self, mock_repo):
+        """Original priors dict should retain embeddings in-memory."""
+        priors = _empty_priors()
+        original_embeddings = [[0.1] * 384, [0.2] * 384]
+        priors["sentence_index"]["embeddings"] = original_embeddings
+
+        save_priors(priors)
+
+        # In-memory priors should still have embeddings
+        assert priors["sentence_index"]["embeddings"] == original_embeddings
+
+
+class TestLoadPriorsChunkedFormat:
+    """Tests that load_priors hydrates from chunks when in chunked format."""
+
+    @pytest.fixture(autouse=True)
+    def reset_repos(self):
+        from src.common.repositories import reset_priors_repository
+        reset_priors_repository()
+        _EmbeddingCache.get().invalidate()
+        yield
+        reset_priors_repository()
+        _EmbeddingCache.get().invalidate()
+
+    def test_hydrates_from_chunks(self):
+        """Should load embeddings from chunks when inline embeddings are empty."""
+        mock_priors_repo = MagicMock()
+        mock_priors_repo.find_one.return_value = {
+            "_id": PRIORS_DOC_ID,
+            "version": 3,
+            "sentence_index": {
+                "embeddings": [],
+                "texts": [],
+                "metadata": [],
+                "count": 2,
+                "built_at": "2024-01-01T00:00:00Z",
+                "model": "all-MiniLM-L6-v2",
+            },
+            "skill_priors": {},
+            "stats": {"total_annotations_at_build": 2},
+        }
+
+        mock_chunks_repo = MagicMock()
+        mock_chunks_repo.find.return_value = [
+            {
+                "version": 3,
+                "chunk_index": 0,
+                "embeddings": [[0.1] * 384, [0.2] * 384],
+                "texts": ["text1", "text2"],
+                "metadata": [{"relevance": "r1"}, {"relevance": "r2"}],
+                "created_at": "2024-01-01T00:00:00Z",
+            },
+        ]
+
+        with patch("src.common.repositories.get_priors_repository", return_value=mock_priors_repo), \
+             patch("src.common.repositories.get_embedding_chunks_repository", return_value=mock_chunks_repo):
+            result = load_priors()
+
+        assert len(result["sentence_index"]["embeddings"]) == 2
+        assert result["sentence_index"]["texts"] == ["text1", "text2"]
+        assert result["sentence_index"]["count"] == 2
+
+    def test_no_hydration_when_inline(self):
+        """Should use inline embeddings when they exist (legacy format)."""
+        mock_priors_repo = MagicMock()
+        inline_embeddings = [[0.5] * 384]
+        mock_priors_repo.find_one.return_value = {
+            "_id": PRIORS_DOC_ID,
+            "version": 1,
+            "sentence_index": {
+                "embeddings": inline_embeddings,
+                "texts": ["inline_text"],
+                "metadata": [{"relevance": "r"}],
+                "count": 1,
+                "built_at": "2024-01-01T00:00:00Z",
+                "model": "all-MiniLM-L6-v2",
+            },
+            "skill_priors": {},
+            "stats": {"total_annotations_at_build": 1},
+        }
+
+        with patch("src.common.repositories.get_priors_repository", return_value=mock_priors_repo):
+            result = load_priors()
+
+        # Should use inline, not try to load chunks
+        assert result["sentence_index"]["embeddings"] == inline_embeddings
+
+
+class TestMigrateInlineToChunks:
+    """Tests for migrate_inline_to_chunks function."""
+
+    @pytest.fixture
+    def mock_chunks_repo(self):
+        from src.common.repositories import WriteResult
+        mock_repository = MagicMock()
+        mock_repository.insert_many.return_value = WriteResult(matched_count=0, modified_count=1)
+        with patch("src.common.repositories.get_embedding_chunks_repository", return_value=mock_repository):
+            yield mock_repository
+
+    def test_migrates_inline_embeddings(self, mock_chunks_repo):
+        """Should write inline embeddings as chunks."""
+        priors = _empty_priors()
+        priors["version"] = 5
+        priors["sentence_index"]["embeddings"] = [[0.1] * 384, [0.2] * 384]
+        priors["sentence_index"]["texts"] = ["text1", "text2"]
+        priors["sentence_index"]["metadata"] = [
+            {"relevance": "r1", "requirement": "m1", "passion": "p1", "identity": "i1", "job_id": "j1"},
+            {"relevance": "r2", "requirement": "m2", "passion": "p2", "identity": "i2", "job_id": "j2"},
+        ]
+
+        result = migrate_inline_to_chunks(priors)
+
+        assert result is True
+        mock_chunks_repo.insert_many.assert_called_once()
+        chunks = mock_chunks_repo.insert_many.call_args[0][0]
+        assert chunks[0]["version"] == 5
+        assert chunks[0]["count"] == 2
+
+    def test_returns_false_when_already_chunked(self, mock_chunks_repo):
+        """Should return False when embeddings are already empty (chunked)."""
+        priors = _empty_priors()
+        priors["sentence_index"]["embeddings"] = []
+
+        result = migrate_inline_to_chunks(priors)
+
+        assert result is False
+        mock_chunks_repo.insert_many.assert_not_called()
+
+    def test_caps_at_max_annotations(self, mock_chunks_repo):
+        """Should cap migration at MAX_EMBEDDING_ANNOTATIONS."""
+        n = MAX_EMBEDDING_ANNOTATIONS + 500
+        priors = _empty_priors()
+        priors["sentence_index"]["embeddings"] = [[0.1] * 384] * n
+        priors["sentence_index"]["texts"] = [f"text{i}" for i in range(n)]
+        priors["sentence_index"]["metadata"] = [
+            {"relevance": "r", "requirement": "m", "passion": "p", "identity": "i", "job_id": "j"}
+        ] * n
+
+        migrate_inline_to_chunks(priors)
+
+        chunks = mock_chunks_repo.insert_many.call_args[0][0]
+        total_count = sum(c["count"] for c in chunks)
+        assert total_count == MAX_EMBEDDING_ANNOTATIONS

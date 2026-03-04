@@ -16,6 +16,7 @@ from typing import Optional
 
 from .base import JobRepositoryInterface
 from .priors_repository import PriorsRepositoryInterface
+from .embedding_chunks_repository import EmbeddingChunksRepositoryInterface
 
 logger = logging.getLogger(__name__)
 
@@ -209,3 +210,46 @@ def reset_priors_repository() -> None:
 
     _priors_repository_instance = None
     logger.info("Priors repository singleton reset")
+
+
+# Singleton embedding chunks repository instance
+_embedding_chunks_repository_instance: Optional[EmbeddingChunksRepositoryInterface] = None
+
+
+def get_embedding_chunks_repository() -> EmbeddingChunksRepositoryInterface:
+    """
+    Get the embedding chunks repository instance.
+
+    Factory function for the embedding_chunks collection.
+    Uses singleton pattern for connection pooling.
+
+    Returns:
+        EmbeddingChunksRepositoryInterface implementation
+    """
+    global _embedding_chunks_repository_instance
+
+    if _embedding_chunks_repository_instance is None:
+        config = RepositoryConfig.from_env()
+
+        from .embedding_chunks_repository import AtlasEmbeddingChunksRepository
+        _embedding_chunks_repository_instance = AtlasEmbeddingChunksRepository(
+            mongodb_uri=config.atlas_uri,
+            database=config.database,
+            collection="embedding_chunks",
+        )
+        logger.info("Initialized Atlas embedding chunks repository")
+
+    return _embedding_chunks_repository_instance
+
+
+def reset_embedding_chunks_repository() -> None:
+    """Reset the embedding chunks repository singleton."""
+    global _embedding_chunks_repository_instance
+
+    if _embedding_chunks_repository_instance is not None:
+        from .embedding_chunks_repository import AtlasEmbeddingChunksRepository
+        if isinstance(_embedding_chunks_repository_instance, AtlasEmbeddingChunksRepository):
+            AtlasEmbeddingChunksRepository.reset_connection()
+
+    _embedding_chunks_repository_instance = None
+    logger.info("Embedding chunks repository singleton reset")

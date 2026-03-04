@@ -580,10 +580,13 @@ def generate_annotations_for_job(
             logger.warning(f"Invalid extracted_jd type: {type(extracted_jd)}, using job document")
             extracted_jd = job.get("extracted_jd") or {}
 
-        # 3. Load priors (rebuild disabled — priors doc exceeds MongoDB 16MB limit
-        # at 21K+ annotations. Skill priors still work; only semantic matching is stale.
-        # TODO: migrate embeddings to chunked storage, then re-enable rebuild.)
+        # 3. Load priors + rebuild if needed (chunked storage for embeddings)
         priors = load_priors()
+
+        if should_rebuild_priors(priors):
+            logger.info("Rebuilding annotation priors (chunked storage)...")
+            priors = rebuild_priors(priors)
+            save_priors(priors)
 
         # 4. Load master CV data
         master_cv = _load_master_cv_data()
@@ -688,10 +691,11 @@ def generate_annotations_for_job(
             if result.matched_count == 0:
                 return {"success": False, "error": "Failed to save annotations"}
 
-        # 9. Update priors stats (save disabled — doc exceeds 16MB limit)
+        # 9. Update priors stats and save (chunked storage keeps doc under 16MB)
         priors["stats"]["total_suggestions_made"] = (
             priors["stats"].get("total_suggestions_made", 0) + len(new_annotations)
         )
+        save_priors(priors)
 
         logger.info(f"Generated {len(new_annotations)} annotations, skipped {skipped}")
 

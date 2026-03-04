@@ -65,11 +65,14 @@ from .form_cache_repository import (
     get_form_cache_repository,
     reset_form_cache_repository,
 )
+from .embedding_chunks_repository import EmbeddingChunksRepositoryInterface
 from .config import (
     get_job_repository,
     reset_repository,
     get_priors_repository,
     reset_priors_repository,
+    get_embedding_chunks_repository,
+    reset_embedding_chunks_repository,
     RepositoryConfig,
     SyncMode,
 )
@@ -108,6 +111,10 @@ __all__ = [
     "get_form_cache_repository",
     "reset_form_cache_repository",
     "FormCacheRepositoryInterface",
+    # Embedding chunks repository
+    "get_embedding_chunks_repository",
+    "reset_embedding_chunks_repository",
+    "EmbeddingChunksRepositoryInterface",
     # Shared
     "WriteResult",
     "RepositoryConfig",
