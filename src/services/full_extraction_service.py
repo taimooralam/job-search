@@ -4,7 +4,6 @@ Full Extraction Service - Phase 4 Implementation
 Service for running the complete JD extraction pipeline:
 - Layer 1.4: JD Structuring (parse into sections)
 - Layer 2: Pain Point Mining (extract pain points, strategic needs, etc.)
-- Layer 4: Fit Scoring (opportunity mapping)
 
 Combines all results into a single badge showing extraction status.
 
@@ -35,9 +34,9 @@ logger = logging.getLogger(__name__)
 
 class FullExtractionService(OperationService):
     """
-    Service for full JD extraction including structuring, pain points, and fit scoring.
+    Service for full JD extraction including structuring and pain points.
 
-    Runs Layer 1.4 + Layer 2 + Layer 4 and persists combined results.
+    Runs Layer 1.4 + Layer 2 and persists combined results.
     """
 
     operation_name = "full-extraction"
@@ -470,12 +469,6 @@ class FullExtractionService(OperationService):
                             f"Normalized LinkedIn URL: {current_url} -> {normalized_url}"
                         )
 
-            # Re-classify AI categories with LLM (semantic, not regex)
-            from src.services.ai_classifier_llm import classify_job_document_llm
-            enriched_doc = dict(job) if job else {}
-            enriched_doc["extracted_jd"] = extracted_jd
-            ai_result = classify_job_document_llm(enriched_doc)
-
             # Build update document
             update_doc = {
                 "jd_annotations": existing_annotations,
@@ -488,18 +481,6 @@ class FullExtractionService(OperationService):
                 "strategic_needs": pain_points_data.get("strategic_needs", []),
                 "risks_if_unfilled": pain_points_data.get("risks_if_unfilled", []),
                 "success_metrics": pain_points_data.get("success_metrics", []),
-                # Layer 4 results
-                "fit_score": fit_data.get("fit_score"),
-                "fit_rationale": fit_data.get("fit_rationale"),
-                "fit_category": fit_data.get("fit_category"),
-                # Annotation signals (for UI heatmap)
-                "annotation_signals": fit_data.get("annotation_signals"),
-                # AI classification (LLM-based with rationale)
-                "is_ai_job": ai_result.is_ai_job,
-                "ai_categories": ai_result.ai_categories,
-                "ai_category_count": ai_result.ai_category_count,
-                "ai_rationale": getattr(ai_result, "ai_rationale", None),
-                "ai_classified_at": getattr(ai_result, "ai_classified_at", None),
                 # Metadata
                 "full_extraction_completed_at": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),
@@ -566,7 +547,7 @@ class FullExtractionService(OperationService):
         **kwargs,
     ) -> OperationResult:
         """
-        Execute full extraction operation (Layer 1.4 + Layer 2 + Layer 4).
+        Execute full extraction operation (Layer 1.4 + Layer 2).
 
         Optionally generates annotations and persona after extraction.
 
@@ -733,37 +714,10 @@ class FullExtractionService(OperationService):
                     job = self._get_job(job_id) or job
                     logger.info(f"[{run_id[:16]}] Reloaded job with {len(job.get('jd_annotations', {}).get('annotations', []))} annotations")
 
-                # 7. Run Layer 4: Fit Scoring (now with annotation signals from step 6)
-                await emit_progress("fit_scoring", "processing", "Calculating fit score")
-                logger.info(f"[{run_id[:16]}] Running Layer 4: Fit Scoring")
+                # 7. Skip Layer 4 (fit scoring) in batch — available via standalone full-extraction
+                fit_data = {}
 
-                # Log annotation aggregation before fit scoring
-                existing_annotations = job.get("jd_annotations", {}).get("annotations", [])
-                if existing_annotations:
-                    match_count = sum(1 for a in existing_annotations if a.get("relevance") in ("core_strength", "extremely_relevant", "relevant", "tangential"))
-                    gap_count = sum(1 for a in existing_annotations if a.get("relevance") == "gap")
-                    if log_callback:
-                        log_callback(_json.dumps({"message": f"Aggregating annotations: {match_count} matches, {gap_count} gaps"}))
-
-                fit_data = self._run_layer_4(job, jd_text, pain_points_data, log_callback=log_callback)
-                fit_score = fit_data.get("fit_score")
-                fit_category = fit_data.get("fit_category")
-                annotation_signals = fit_data.get("annotation_signals", {})
-                layer_status["layer_4"] = {
-                    "status": "success",
-                    "fit_score": fit_score,
-                    "fit_category": fit_category,
-                    "annotation_score": annotation_signals.get("annotation_score"),
-                    "annotation_summary": annotation_signals.get("annotation_summary"),
-                    "message": f"Fit score: {fit_score} ({fit_category})"
-                }
-                await emit_progress("fit_scoring", "success", f"Score: {fit_score} ({fit_category})")
-                logger.info(f"[{run_id[:16]}] Layer 4 complete: score={fit_score}, category={fit_category}")
-                if annotation_signals.get("annotation_score"):
-                    logger.info(f"[{run_id[:16]}] Annotation score: {annotation_signals['annotation_score']}, "
-                               f"summary: {annotation_signals['annotation_summary']}")
-
-                # 8. Persist all results (processed_jd, extracted_jd, pain_points, fit_data)
+                # 8. Persist all results (processed_jd, extracted_jd, pain_points)
                 await emit_progress("save_results", "processing", "Saving to database")
                 if log_callback:
                     log_callback(_json.dumps({"message": "Persisting extraction results to database..."}))
@@ -834,7 +788,7 @@ class FullExtractionService(OperationService):
                     log_callback(_json.dumps({"message": f"Estimated cost: ${cost_usd:.4f} ({tier.value} tier)"}))
 
                 # 11. Build combined response with layer status
-                layers_completed = ["1.4-processor", "1.4-extractor", "2", "4"]
+                layers_completed = ["1.4-processor", "1.4-extractor", "2"]
                 if auto_annotate and annotation_result.get("created", 0) > 0:
                     layers_completed.append("auto-annotations")
                 if auto_persona and persona_result:
@@ -846,14 +800,6 @@ class FullExtractionService(OperationService):
                     "section_count": section_count,
                     "pain_points_count": pain_count,
                     "strategic_needs_count": len(pain_points_data.get("strategic_needs", [])),
-                    "fit_score": fit_score,
-                    "fit_category": fit_category,
-                    "fit_rationale": fit_data.get("fit_rationale"),
-                    # Include annotation-based signals
-                    "annotation_signals": annotation_signals,
-                    "annotation_score": annotation_signals.get("annotation_score"),
-                    "good_match_count": annotation_signals.get("good_match_count", 0),
-                    "gap_count": annotation_signals.get("gap_count", 0),
                     # Auto-annotation results
                     "auto_annotations_created": annotation_result.get("created", 0),
                     "auto_annotations_skipped": annotation_result.get("skipped", 0),
@@ -866,8 +812,7 @@ class FullExtractionService(OperationService):
 
                 logger.info(
                     f"[{run_id[:16]}] Full extraction complete: "
-                    f"{section_count} sections, {pain_count} pain points, "
-                    f"fit={fit_score}/{fit_category}"
+                    f"{section_count} sections, {pain_count} pain points"
                 )
 
                 result = self.create_success_result(

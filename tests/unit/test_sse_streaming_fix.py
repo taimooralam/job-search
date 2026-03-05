@@ -105,12 +105,6 @@ class TestAsyncEmitProgress:
                  "pain_points": ["Scale to 10M users"],
                  "strategic_needs": ["Cloud migration"]
              }), \
-             patch.object(service, '_run_layer_4', return_value={
-                 "fit_score": 85,
-                 "fit_category": "strong",
-                 "fit_rationale": "Good match",
-                 "annotation_signals": {}
-             }), \
              patch.object(service, '_persist_results', return_value=True):
 
             # Execute with progress callback
@@ -121,12 +115,12 @@ class TestAsyncEmitProgress:
             )
 
             # Verify callback was called multiple times
-            assert mock_progress_callback.call_count >= 4
+            assert mock_progress_callback.call_count >= 3
             # Verify callback received expected layer keys
             layer_keys = [call[0] for call in mock_progress_callback.calls_list]
             assert "jd_processor" in layer_keys
             assert "pain_points" in layer_keys
-            assert "fit_scoring" in layer_keys
+            assert "save_results" in layer_keys
 
     @pytest.mark.asyncio
     async def test_emit_progress_yields_to_event_loop(self, mock_job_doc, mock_llm_metadata):
@@ -154,9 +148,6 @@ class TestAsyncEmitProgress:
              )), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
-             patch.object(service, '_run_layer_4', return_value={
-                 "fit_score": 80, "fit_category": "good", "annotation_signals": {}
-             }), \
              patch.object(service, '_persist_results', return_value=True), \
              patch('asyncio.sleep', side_effect=tracking_sleep):
 
@@ -280,9 +271,6 @@ class TestAsyncEmitProgress:
              )), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
-             patch.object(service, '_run_layer_4', return_value={
-                 "fit_score": 80, "fit_category": "good", "annotation_signals": {}
-             }), \
              patch.object(service, '_persist_results', return_value=True):
 
             # Should not raise even though callback fails
@@ -487,9 +475,6 @@ class TestSSEStreamingIntegration:
              patch.object(service, '_run_jd_processor', side_effect=delayed_jd_processor), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', side_effect=delayed_layer_2), \
-             patch.object(service, '_run_layer_4', return_value={
-                 "fit_score": 80, "fit_category": "good", "annotation_signals": {}
-             }), \
              patch.object(service, '_persist_results', return_value=True):
 
             start_time = asyncio.get_event_loop().time()
@@ -524,9 +509,6 @@ class TestSSEStreamingIntegration:
              )), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
-             patch.object(service, '_run_layer_4', return_value={
-                 "fit_score": 80, "fit_category": "good", "annotation_signals": {}
-             }), \
              patch.object(service, '_persist_results', return_value=True):
 
             await service.execute(
