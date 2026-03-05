@@ -3006,18 +3006,21 @@ async def all_ops_batch(
                 logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
                 append_operation_log(run_id, f"Queue unavailable: {e}")
 
-        # Submit directly to executor for true parallel execution (fire-and-forget)
-        # Unlike BackgroundTasks which runs async tasks sequentially, this runs them in parallel
-        submit_service_task(
-            _execute_all_ops_bulk_task(
-                run_id=run_id,
-                job_id=job_id,
-                tier=tier,
-                use_llm=request.use_llm if request.use_llm is not None else True,
-                force_refresh=request.force_refresh or False,
-                queue_id=queue_id,
+        # Jobs are picked up and executed exclusively by the poll loop,
+        # which enforces MAX_CONCURRENCY via the semaphore.
+        # Direct fire-and-forget here was bypassing concurrency control.
+        if not queue_id:
+            # No queue manager — fall back to direct execution
+            submit_service_task(
+                _execute_all_ops_bulk_task(
+                    run_id=run_id,
+                    job_id=job_id,
+                    tier=tier,
+                    use_llm=request.use_llm if request.use_llm is not None else True,
+                    force_refresh=request.force_refresh or False,
+                    queue_id=queue_id,
+                )
             )
-        )
 
         responses.append(BulkOperationRunInfo(
             run_id=run_id,
