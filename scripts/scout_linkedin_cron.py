@@ -46,6 +46,18 @@ from src.common.dedupe import generate_dedupe_key
 # ---------------------------------------------------------------------------
 
 HOURLY_QUOTA = 20
+MAX_US_JOBS = 5  # Cap US-located jobs per batch to prioritize international roles
+
+# US state abbreviations for location detection
+_US_STATES = (
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
+    "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
+    "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
+    "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+    "WI", "WY", "DC",
+)
+_US_STATE_SUFFIXES = tuple(f", {s}" for s in _US_STATES)
+
 CATEGORY_WEIGHTS = {
     "ai": 0.40,
     "leadership": 0.20,
@@ -282,6 +294,68 @@ def apply_quota(jobs: List[Dict[str, Any]], quota: int = HOURLY_QUOTA) -> List[D
 
 
 # ---------------------------------------------------------------------------
+# US location cap
+# ---------------------------------------------------------------------------
+
+
+def is_us_job(job: Dict[str, Any]) -> bool:
+    """Detect if a job is located in the United States."""
+    location = (job.get("location") or "").strip()
+    if not location:
+        return False
+    loc_lower = location.lower()
+    if "united states" in loc_lower or ", usa" in loc_lower:
+        return True
+    # Match ", CA", ", NY", ", TX" etc. at end of location string
+    return location.endswith(_US_STATE_SUFFIXES)
+
+
+def cap_us_jobs(
+    selected: List[Dict[str, Any]],
+    remaining_pool: List[Dict[str, Any]],
+    max_us: int = MAX_US_JOBS,
+) -> List[Dict[str, Any]]:
+    """
+    Enforce a cap on US jobs, backfilling with non-US jobs from the pool.
+
+    Takes the selected list (from apply_quota), removes excess US jobs
+    (keeping top-scored ones), and backfills from remaining_pool with
+    non-US jobs sorted by score.
+    """
+    us_jobs = [j for j in selected if is_us_job(j)]
+    non_us_jobs = [j for j in selected if not is_us_job(j)]
+
+    if len(us_jobs) <= max_us:
+        logger.info(f"US cap: {len(us_jobs)} US jobs (within limit of {max_us})")
+        return selected
+
+    # Keep top-scored US jobs up to cap
+    us_jobs.sort(key=lambda j: j.get("score", 0), reverse=True)
+    kept_us = us_jobs[:max_us]
+    dropped_count = len(us_jobs) - max_us
+
+    # Build set of selected job IDs to avoid duplicates when backfilling
+    selected_ids = {j["job_id"] for j in kept_us + non_us_jobs}
+
+    # Backfill from remaining pool with non-US jobs
+    backfill_candidates = [
+        j for j in remaining_pool
+        if j["job_id"] not in selected_ids and not is_us_job(j)
+    ]
+    backfill_candidates.sort(key=lambda j: j.get("score", 0), reverse=True)
+    backfill = backfill_candidates[:dropped_count]
+
+    result = non_us_jobs + kept_us + backfill
+    result.sort(key=lambda j: j.get("score", 0), reverse=True)
+
+    logger.info(
+        f"US cap: {len(us_jobs)} US found → kept {max_us}, "
+        f"backfilled {len(backfill)} non-US jobs"
+    )
+    return result
+
+
+# ---------------------------------------------------------------------------
 # MongoDB insertion
 # ---------------------------------------------------------------------------
 
@@ -449,6 +523,11 @@ def main():
     logger.info("Step 4: Applying category quotas...")
     selected = apply_quota(new_jobs, quota=args.quota)
     logger.info(f"Selected: {len(selected)} jobs (quota: {args.quota})")
+
+    # Step 4b: Cap US jobs and backfill with international roles
+    logger.info("Step 4b: Applying US location cap...")
+    selected = cap_us_jobs(selected, remaining_pool=new_jobs, max_us=MAX_US_JOBS)
+    logger.info(f"After US cap: {len(selected)} jobs")
 
     # Step 5: Insert into MongoDB
     logger.info("Step 5: Inserting into MongoDB...")
