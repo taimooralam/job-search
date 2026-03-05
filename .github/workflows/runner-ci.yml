@@ -575,7 +575,7 @@ jobs:
           docker compose -f docker-compose.runner.yml pull
 
           # Restart services (picks up new compose file - replicas defined in compose)
-          # Note: deploy.replicas: 4 in compose file handles scaling automatically
+          # Note: deploy.replicas: 1 in compose file (single stable runner mode)
           docker compose -f docker-compose.runner.yml up -d --remove-orphans
 
           # Clean up old images
@@ -585,36 +585,30 @@ jobs:
           echo "Waiting for services to start..."
           sleep 30
 
-          # Check all runner replicas are healthy (4 runners expected)
-          echo "Checking runner health (all replicas)..."
+          # Check runner-1 is healthy (single replica mode)
+          echo "Checking runner health..."
           HEALTHY_RUNNERS=0
-          for i in 1 2 3 4; do
-            CONTAINER="job-runner-runner-$i"
-            if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
-              echo "✅ $CONTAINER is healthy"
-              HEALTHY_RUNNERS=$((HEALTHY_RUNNERS + 1))
-            else
-              echo "⚠️ $CONTAINER not healthy yet"
-            fi
-          done
+          CONTAINER="job-runner-runner-1"
+          if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
+            echo "✅ $CONTAINER is healthy"
+            HEALTHY_RUNNERS=1
+          else
+            echo "⚠️ $CONTAINER not healthy yet"
+          fi
 
-          # Require at least 3 of 4 runners healthy (allows for one slow starter)
-          if [[ $HEALTHY_RUNNERS -lt 3 ]]; then
-            echo "❌ Only $HEALTHY_RUNNERS/4 runners healthy, waiting 30s more..."
+          # Require runner-1 to be healthy
+          if [[ $HEALTHY_RUNNERS -lt 1 ]]; then
+            echo "❌ Only $HEALTHY_RUNNERS/1 runners healthy, waiting 30s more..."
             sleep 30
-            HEALTHY_RUNNERS=0
-            for i in 1 2 3 4; do
-              CONTAINER="job-runner-runner-$i"
-              if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
-                HEALTHY_RUNNERS=$((HEALTHY_RUNNERS + 1))
-              fi
-            done
-            if [[ $HEALTHY_RUNNERS -lt 3 ]]; then
-              echo "❌ Only $HEALTHY_RUNNERS/4 runners healthy after retry"
+            if docker inspect --format='{{.State.Health.Status}}' $CONTAINER 2>/dev/null | grep -q "healthy"; then
+              HEALTHY_RUNNERS=1
+            fi
+            if [[ $HEALTHY_RUNNERS -lt 1 ]]; then
+              echo "❌ Only $HEALTHY_RUNNERS/1 runners healthy after retry"
               exit 1
             fi
           fi
-          echo "✅ $HEALTHY_RUNNERS/4 runners healthy"
+          echo "✅ $HEALTHY_RUNNERS/1 runners healthy"
 
           # Check PDF service health via any runner's network
           echo "Checking PDF service health..."
