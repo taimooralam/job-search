@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     environment:
-      - MAX_CONCURRENCY=3
+      - MAX_CONCURRENCY=1
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
@@ -20,7 +20,7 @@ services:
       # Use `claude setup-token` to generate a long-lived token (valid 1 year)
       - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
-    # Scaling: 4 runners × 3 concurrent = 12 parallel jobs
+    # Scaling: 4 runners × 1 concurrent = 4 parallel jobs (reduced from 3 to prevent OOM kills)
     deploy:
       replicas: 4
       resources:
