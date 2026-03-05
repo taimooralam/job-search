@@ -1464,6 +1464,19 @@ def get_main_loop() -> Optional[asyncio.AbstractEventLoop]:
     return _main_loop
 
 
+def release_semaphore() -> None:
+    """
+    Release the global concurrency semaphore.
+
+    Called by _execute_queued_operation (operations.py) when a queued job
+    finishes, so the poll loop can pick up the next job.
+    """
+    try:
+        _semaphore.release()
+    except ValueError:
+        pass
+
+
 @app.on_event("startup")
 async def startup_store_event_loop():
     """Store reference to main event loop for thread-safe callbacks."""
@@ -1580,7 +1593,14 @@ async def startup_queue_polling_loop():
                     and _queue_manager.is_connected
                     and _semaphore._value > 0  # Runner has capacity
                 ):
+                    # Acquire before dequeue so the semaphore count is decremented
+                    # atomically — prevents a second poll from also dequeuing
+                    # while the first job hasn't started yet.
+                    await _semaphore.acquire()
                     item = await _queue_manager.dequeue(runner_id=runner_id)
+                    if not item:
+                        # Nothing in queue — release immediately
+                        _semaphore.release()
                     if item:
                         # Reuse existing run_id from queue item if present
                         # (created by the enqueue endpoint, possibly on a different runner).

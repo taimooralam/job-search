@@ -1935,6 +1935,28 @@ async def queue_operation(
         )
 
     try:
+        # Dedup: reject if same (job_id, operation) is already pending or running
+        from runner_service.queue.models import QueueItemStatus
+
+        existing = await queue_manager.get_item_by_job_id_and_operation(job_id, operation)
+        if existing and existing.status in (
+            QueueItemStatus.PENDING, QueueItemStatus.RUNNING
+        ):
+            position = await queue_manager.get_position(existing.queue_id) if existing.status == QueueItemStatus.PENDING else 0
+            logger.warning(
+                f"Dedup: {operation} for job {job_id} already {existing.status.value} "
+                f"as {existing.queue_id}"
+            )
+            return QueueOperationResponse(
+                success=True,
+                queue_id=existing.queue_id,
+                job_id=job_id,
+                operation=operation,
+                status=existing.status.value,
+                position=position,
+                run_id=existing.run_id or "",
+            )
+
         # Fetch job details for queue display (async to avoid blocking)
         job_title, company = await _get_job_details_for_bulk(job_id)
 
@@ -2263,6 +2285,11 @@ async def _execute_queued_operation(
                 _queue_fail_threadsafe(queue_manager, queue_id, str(e))
             except Exception:
                 pass
+    finally:
+        # Always release the semaphore acquired by the poll loop,
+        # so the next pending job can be dequeued.
+        from runner_service.app import release_semaphore
+        release_semaphore()
 
 
 async def _get_last_operation_run(job_id: str, operation: str) -> Optional[Dict[str, Any]]:
