@@ -613,24 +613,24 @@ class TestModelConfiguration:
     """Test model configuration via constructor and env vars."""
 
     def test_default_model(self):
-        """Default model is claude-opus-4-5-20251101."""
+        """Default model uses middle tier (Sonnet)."""
         extractor = ClaudeJDExtractor()
-        assert "opus" in extractor.model.lower()
+        assert "sonnet" in extractor.model.lower()
 
     def test_custom_model_override(self):
         """Custom model can be specified."""
         extractor = ClaudeJDExtractor(model="claude-sonnet-4-20250514")
         assert extractor.model == "claude-sonnet-4-20250514"
 
-    @patch.dict('os.environ', {'CLAUDE_CODE_MODEL': 'claude-haiku-3-20240307'})
-    def test_env_var_model(self):
-        """Model from env var is used when no explicit model given."""
-        extractor = ClaudeJDExtractor()
-        assert extractor.model == "claude-haiku-3-20240307"
+    def test_tier_based_model(self):
+        """Model is selected based on tier, not env var."""
+        extractor = ClaudeJDExtractor(tier="low")
+        assert "haiku" in extractor.model.lower()
+        extractor_high = ClaudeJDExtractor(tier="high")
+        assert "opus" in extractor_high.model.lower()
 
-    @patch.dict('os.environ', {'CLAUDE_CODE_MODEL': 'env-model'})
-    def test_explicit_model_overrides_env(self):
-        """Explicit model parameter overrides env var."""
+    def test_explicit_model_overrides_tier(self):
+        """Explicit model parameter overrides tier-based selection."""
         extractor = ClaudeJDExtractor(model="explicit-model")
         assert extractor.model == "explicit-model"
 

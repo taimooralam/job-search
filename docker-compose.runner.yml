@@ -19,7 +19,7 @@ services:
       # Claude Code CLI OAuth token (Max subscription - set in .env file on server)
       # Use `claude setup-token` to generate a long-lived token (valid 1 year)
       - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
-      - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
+      - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-sonnet-4-5-20250929}
     # Scaling: 4 runners × 1 concurrent = 4 parallel jobs (reduced from 3 to prevent OOM kills)
     deploy:
       replicas: 4

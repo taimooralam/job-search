@@ -320,9 +320,6 @@ class JDExtractor:
         log_callback: Optional callback for log streaming (Redis live-tail)
     """
 
-    # Default model - can be overridden via CLAUDE_CODE_MODEL env var
-    DEFAULT_MODEL = "claude-opus-4-5-20251101"
-
     def __init__(
         self,
         model: Optional[str] = None,
@@ -335,13 +332,14 @@ class JDExtractor:
         Initialize the JD extractor.
 
         Args:
-            model: Claude model ID. Defaults to CLAUDE_CODE_MODEL env var or Opus 4.5.
+            model: Explicit Claude model ID override. If None, uses tier mapping.
             timeout: CLI timeout in seconds (default 120s).
             log_callback: Optional callback for log events (for Redis live-tail).
             tier: LLM tier for UnifiedLLM ("low", "middle", "high"). Default "middle".
             progress_callback: Optional callback for granular LLM progress events.
         """
-        self.model = model or os.getenv("CLAUDE_CODE_MODEL", self.DEFAULT_MODEL)
+        from src.common.claude_cli import CLAUDE_MODEL_TIERS
+        self.model = model or CLAUDE_MODEL_TIERS.get(tier, CLAUDE_MODEL_TIERS["middle"])
         self.timeout = timeout
         self._log_callback = log_callback or self._default_log
         self.tier: TierType = tier

@@ -167,13 +167,17 @@ class ClaudeCLI:
         self._log_callback = log_callback or self._default_log
 
     def _get_model_for_tier(self, tier: TierType) -> str:
-        """Get Claude model ID for the given tier."""
-        # Allow env var override for testing
-        env_override = os.getenv("CLAUDE_CODE_MODEL")
-        if env_override:
-            logger.debug(f"Using model from CLAUDE_CODE_MODEL env: {env_override}")
-            return env_override
+        """Get Claude model ID for the given tier.
 
+        Uses the CLAUDE_MODEL_TIERS mapping directly so each step gets
+        the model appropriate for its configured tier (low=Haiku,
+        middle=Sonnet, high=Opus).
+
+        Note: CLAUDE_CODE_MODEL env var is intentionally NOT used here.
+        It was previously overriding ALL tiers to a single model (Opus),
+        defeating the entire tier system and inflating costs.
+        Use model_override param in __init__ for explicit per-call overrides.
+        """
         return CLAUDE_MODEL_TIERS.get(tier, CLAUDE_MODEL_TIERS["middle"])
 
     def _default_log(self, job_id: str, level: str, data: Dict[str, Any]) -> None:

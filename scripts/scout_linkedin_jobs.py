@@ -106,6 +106,8 @@ REGION_CONFIGS = {
     "emea": {
         "locations": [
             "United Kingdom", "Germany", "Netherlands", "Ireland",
+            "France", "Switzerland", "Sweden", "Denmark", "Norway",
+            "Finland", "Belgium", "Spain", "Portugal", "Italy", "Poland",
         ]
     },
     "pakistan": {"location": "Pakistan"},

@@ -45,8 +45,8 @@ from src.common.dedupe import generate_dedupe_key
 # Configuration
 # ---------------------------------------------------------------------------
 
-HOURLY_QUOTA = 20
-MAX_US_JOBS = 5  # Cap US-located jobs per batch to prioritize international roles
+HOURLY_QUOTA = 10
+MAX_US_JOBS = 2  # Cap US-located jobs per batch to prioritize international roles
 
 # US state abbreviations for location detection
 _US_STATES = (
@@ -59,9 +59,9 @@ _US_STATES = (
 _US_STATE_SUFFIXES = tuple(f", {s}" for s in _US_STATES)
 
 CATEGORY_WEIGHTS = {
-    "ai": 0.40,
+    "ai": 0.50,
     "leadership": 0.20,
-    "engineering": 0.20,
+    "engineering": 0.10,
     "architect": 0.20,
 }
 
@@ -80,14 +80,28 @@ ROLE_TO_CATEGORY = {
 TIME_FILTER = "r3600"  # last hour
 MAX_PAGES = 2
 
-# Each combo: (regions, remote_only, few_applicants)
+# Search strategy:
+#
+# Combo 1 — Global remote (few applicants): Best signal, low competition roles
+# Combo 2 — Global remote (all): Wider net for remote roles anywhere
+# Combo 3 — Priority regions on-site/hybrid (few applicants): EMEA, MENA, Pakistan, APAC
+# Combo 4 — Priority regions on-site/hybrid (all): Same regions, no applicant filter
+# Combo 5 — US remote only (few applicants): Small taste of US market
+#
+# Why "remote" is its own combo and not bundled with regions:
+#   LinkedIn's f_WT=2 (remote filter) is global — adding region locations alongside
+#   it was redundant and biased results toward those specific countries. Separating
+#   them gives clean coverage: remote=global, regions=on-site/hybrid.
+
 SEARCH_COMBOS = [
-    # Remote jobs everywhere — both few and many applicants
-    (["remote", "us", "emea", "mena", "asia_pacific"], True, True),
-    (["remote", "us", "emea", "mena", "asia_pacific"], True, False),
-    # MENA & Asia-Pacific: also search non-remote (on-site/hybrid)
-    (["mena", "asia_pacific"], False, True),
-    (["mena", "asia_pacific"], False, False),
+    # Global remote — catches remote roles worldwide without location bias
+    (["remote"], True, True),
+    (["remote"], True, False),
+    # Priority regions — on-site/hybrid roles in target geographies
+    (["emea", "mena", "pakistan", "asia_pacific"], False, True),
+    (["emea", "mena", "pakistan", "asia_pacific"], False, False),
+    # US — remote only, few applicants only (minimal US presence)
+    (["us"], True, True),
 ]
 
 # Runner API
