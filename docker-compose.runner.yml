@@ -71,6 +71,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    # Use tini as PID 1 to reap zombie child processes (Playwright/Chrome)
+    init: true
     restart: unless-stopped
     depends_on:
       pdf-service:
@@ -100,6 +102,8 @@ services:
       timeout: 15s
       retries: 5
       start_period: 90s
+    # Use tini as PID 1 to reap zombie child processes (Playwright/Chrome)
+    init: true
     restart: unless-stopped
     networks:
       - job-pipeline
