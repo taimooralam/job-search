@@ -882,21 +882,26 @@ class QueueManager:
 
     async def restore_interrupted_runs(self, runner_id: Optional[str] = None) -> List[QueueItem]:
         """
-        Restore runs that were interrupted by THIS runner restarting.
+        Restore runs interrupted by dead runners.
 
-        Only restores items tagged with the given runner_id (set during dequeue).
-        Items owned by other runners are left alone — they may still be executing.
-        Items with no runner_id (legacy) are also restored as a fallback.
+        Uses Redis heartbeats to detect live vs dead runners:
+        - If a running item's runner_id has an active heartbeat key, that runner
+          is still alive and processing the item — leave it alone.
+        - If the heartbeat key is missing (TTL expired), the runner is dead —
+          restore the item to the front of the pending queue (LIFO priority).
+        - Items with no runner_id (legacy) are always restored.
 
         Args:
-            runner_id: The ID of the runner that is restarting. If None,
-                       restores all items (legacy behavior).
+            runner_id: Unused — kept for API compatibility. Detection is now
+                       heartbeat-based rather than runner_id matching.
 
         Returns:
             List of restored items
         """
         if not self._redis:
             return []
+
+        HEARTBEAT_PREFIX = "runners:heartbeat:"
 
         restored = []
         skipped = 0
@@ -907,24 +912,28 @@ class QueueManager:
             if not item:
                 continue
 
-            # Only restore items owned by this runner (or untagged legacy items)
-            if runner_id and item.runner_id and item.runner_id != runner_id:
-                skipped += 1
-                continue
+            # If item has a runner_id, check if that runner is still alive via heartbeat
+            if item.runner_id:
+                heartbeat_key = f"{HEARTBEAT_PREFIX}{item.runner_id}"
+                is_alive = await self._redis.exists(heartbeat_key)
+                if is_alive:
+                    skipped += 1
+                    continue  # Runner is live — leave item alone
 
-            # Move back to pending
+            # Runner is dead (heartbeat gone) or item has no runner_id — restore it
             await self._redis.srem(self.RUNNING_KEY, queue_id)
             item.status = QueueItemStatus.PENDING
             item.started_at = None
             item.run_id = None
             item.runner_id = None
             await self._update_item(item)
-            await self._redis.rpush(self.PENDING_KEY, queue_id)
+            # LPUSH = front of queue (LIFO) so interrupted jobs get picked up first
+            await self._redis.lpush(self.PENDING_KEY, queue_id)
             restored.append(item)
-            logger.info(f"Restored interrupted run {queue_id} for job {item.job_id}")
+            logger.info(f"Restored interrupted run {queue_id} for job {item.job_id} (dead runner)")
 
         if skipped:
-            logger.info(f"Skipped {skipped} running items owned by other runners")
+            logger.info(f"Skipped {skipped} running items owned by live runners")
 
         return restored
 
