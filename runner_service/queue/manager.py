@@ -892,8 +892,9 @@ class QueueManager:
         - Items with no runner_id (legacy) are always restored.
 
         Args:
-            runner_id: Unused — kept for API compatibility. Detection is now
-                       heartbeat-based rather than runner_id matching.
+            runner_id: This runner's own ID. Items owned by this runner are
+                       always restored (previous process instance). Items owned
+                       by other runners use heartbeat detection.
 
         Returns:
             List of restored items
@@ -912,15 +913,21 @@ class QueueManager:
             if not item:
                 continue
 
-            # If item has a runner_id, check if that runner is still alive via heartbeat
             if item.runner_id:
-                heartbeat_key = f"{HEARTBEAT_PREFIX}{item.runner_id}"
-                is_alive = await self._redis.exists(heartbeat_key)
-                if is_alive:
-                    skipped += 1
-                    continue  # Runner is live — leave item alone
+                # Always restore items owned by THIS runner — they're from our
+                # previous process instance (heartbeat key may still be alive
+                # from the old TTL if container restarted within 30 seconds).
+                if item.runner_id == runner_id:
+                    pass  # fall through to restore
+                else:
+                    # Other runner: check heartbeat to see if it's still alive
+                    heartbeat_key = f"{HEARTBEAT_PREFIX}{item.runner_id}"
+                    is_alive = await self._redis.exists(heartbeat_key)
+                    if is_alive:
+                        skipped += 1
+                        continue  # Other runner is live — leave item alone
 
-            # Runner is dead (heartbeat gone) or item has no runner_id — restore it
+            # Dead runner, own runner, or no runner_id — restore it
             await self._redis.srem(self.RUNNING_KEY, queue_id)
             item.status = QueueItemStatus.PENDING
             item.started_at = None
