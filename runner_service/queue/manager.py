@@ -933,14 +933,17 @@ class QueueManager:
         Clean up stale/orphaned queue items.
 
         Removes:
-        1. Pending items older than max_age_minutes that haven't started
-        2. Queue IDs in pending list that have no corresponding item data
+        1. Queue IDs in pending list that have no corresponding item data (orphans)
+        2. Items in pending list whose status is no longer PENDING (status mismatch)
         3. Queue IDs in running set that have no corresponding item data
         4. Running items stuck for longer than max_age_minutes (started but never completed)
         5. Items in running set whose status is not RUNNING (status mismatch)
 
+        NOTE: Pending items are intentionally NOT timed out by age. A job waiting in a
+        large backlog is valid — only running items can go stale (dead runner scenario).
+
         Args:
-            max_age_minutes: Maximum age for pending items before cleanup
+            max_age_minutes: Maximum age for RUNNING items before they are considered stale
 
         Returns:
             Dict with cleanup statistics
@@ -959,7 +962,7 @@ class QueueManager:
         from datetime import timedelta
         cutoff_time = datetime.utcnow() - timedelta(minutes=max_age_minutes)
 
-        # Clean up pending queue
+        # Clean up pending queue — orphans and status mismatches only, never timeout by age
         pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
         for queue_id in pending_ids:
             item = await self.get_item(queue_id)
@@ -969,22 +972,6 @@ class QueueManager:
                 await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
                 stats["orphan_pending_removed"] += 1
                 logger.info(f"Removed orphan pending queue_id: {queue_id}")
-            elif item.status == QueueItemStatus.PENDING and item.created_at < cutoff_time:
-                # Stale: pending for too long without being picked up
-                await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
-                # Mark as failed with timeout reason
-                item.status = QueueItemStatus.FAILED
-                item.error = f"Stale: pending for over {max_age_minutes} minutes"
-                item.completed_at = datetime.utcnow()
-                await self._update_item(item)
-                # Add to failed set for visibility
-                await self._redis.zadd(
-                    self.FAILED_KEY,
-                    {queue_id: item.completed_at.timestamp()}
-                )
-                await self._publish_event("failed", item)
-                stats["stale_pending_removed"] += 1
-                logger.info(f"Removed stale pending {queue_id} for job {item.job_id} (created: {item.created_at})")
             elif item.status != QueueItemStatus.PENDING:
                 # Item in pending list but status is not pending (completed/failed/etc)
                 await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
