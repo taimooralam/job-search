@@ -3191,11 +3191,26 @@ def batch_job_rows_partial():
             }
         }
 
+        # _hasCv: jobs with any CV float to top (0 = has CV, 1 = no CV)
+        # Matches template logic: generated_cv OR cv_output OR cv_text
+        add_fields["_hasCv"] = {
+            "$cond": {
+                "if": {"$or": [
+                    {"$ifNull": ["$generated_cv", False]},
+                    {"$ifNull": ["$cv_output", False]},
+                    {"$ifNull": ["$cv_text", False]},
+                ]},
+                "then": 0,
+                "else": 1,
+            }
+        }
+
         pipeline.append({"$addFields": add_fields})
 
         # Stage 3: Sort by multi-criteria
-        # Lower tier values = higher priority for location and role
+        # Jobs with CV on top (latest first), then remaining by priority
         sort_spec = {
+            "_hasCv": 1,             # Jobs with CV first (0 before 1)
             "_hasResolvedUrl": 1,    # Resolved URLs first (0 before 1)
             "_isAiJob": 1,           # AI jobs first (0 before 1)
             "_locationPriority": 1,  # Saudi(1) → UAE(2) → Others(3)
