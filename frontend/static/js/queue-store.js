@@ -20,6 +20,7 @@ document.addEventListener('alpine:init', () => {
         running: [],
         failed: [],
         history: [],
+        stats: {},
 
         // UI state
         queueDropdownOpen: false,
@@ -30,7 +31,7 @@ document.addEventListener('alpine:init', () => {
 
         // Computed properties
         get pendingCount() {
-            return this.pending.length;
+            return this.stats.total_pending ?? this.pending.length;
         },
 
         get runningCount() {
@@ -38,7 +39,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         get failedCount() {
-            return this.failed.length;
+            return this.stats.total_failed ?? this.failed.length;
         },
 
         get totalActive() {
@@ -134,6 +135,7 @@ document.addEventListener('alpine:init', () => {
             this.running = state.running || [];
             this.failed = state.failed || [];
             this.history = state.history || [];
+            this.stats = state.stats || {};
 
             // Detect items that completed/failed since last poll
             const newRunningIds = new Set(this.running.map(i => i.job_id));
