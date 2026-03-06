@@ -218,7 +218,7 @@ class QueueManager:
             self.ITEM_TTL_SECONDS
         )
 
-        # Add to pending queue (LPUSH = add to head, RPOP = remove from tail = FIFO)
+        # Add to pending queue (LPUSH = add to head, LPOP = remove from head = LIFO/newest-first)
         await self._redis.lpush(self.PENDING_KEY, queue_id)
 
         # Calculate position
@@ -232,7 +232,7 @@ class QueueManager:
 
     async def dequeue(self, runner_id: Optional[str] = None) -> Optional[QueueItem]:
         """
-        Get next job from queue (FIFO).
+        Get next job from queue (LIFO — most recently added first).
 
         Moves item from pending to running and tags with runner_id
         so restore_interrupted_runs can identify ownership.
@@ -246,8 +246,8 @@ class QueueManager:
         if not self._redis:
             raise RuntimeError("Queue manager not connected")
 
-        # RPOP = remove from tail (oldest item)
-        queue_id = await self._redis.rpop(self.PENDING_KEY)
+        # LPOP = remove from head (newest item — LIFO, most recently added first)
+        queue_id = await self._redis.lpop(self.PENDING_KEY)
         if not queue_id:
             return None
 
