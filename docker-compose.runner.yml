@@ -22,7 +22,7 @@ services:
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-sonnet-4-5-20250929}
     # Scaling: 1 runner × 1 concurrent = 1 job at a time (stable single-runner mode)
     deploy:
-      replicas: 4
+      replicas: 1
       resources:
         limits:
           memory: 2G

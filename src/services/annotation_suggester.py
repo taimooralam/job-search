@@ -583,21 +583,19 @@ def generate_annotations_for_job(
         # 3. Load priors + rebuild if needed (chunked storage for embeddings)
         priors = load_priors()
 
+        # Skip embedding rebuild — SentenceTransformer disabled to avoid OOM in 2GB containers.
+        # Keyword priors (skill_priors dict) are still updated via capture_feedback().
         if should_rebuild_priors(priors):
-            logger.info("Rebuilding annotation priors (chunked storage)...")
-            priors = rebuild_priors(priors)
-            save_priors(priors)
+            logger.info("Skipping embedding rebuild (SentenceTransformer disabled)")
 
         # 4. Load master CV data
         master_cv = _load_master_cv_data()
 
-        # 5. Load embedding model once (uses thread-safe singleton)
+        # 5. Embedding model disabled — SentenceTransformer loads PyTorch (~1.5GB) which OOMs 2GB containers.
+        # Keyword priors (Layer 2) provide sufficient matching quality.
+        # Re-enable when: (a) containers have 4GB+, or (b) switch to API-based embeddings.
         embedding_model = None
-        if priors.get("sentence_index", {}).get("embeddings"):
-            try:
-                embedding_model = get_embedding_model()
-            except Exception as e:
-                logger.warning(f"Failed to load embedding model: {e}")
+        logger.info("Using keyword-prior matching (sentence embeddings disabled)")
 
         # 6. Get existing annotations to avoid duplicates
         existing_annotations = jd_annotations.get("annotations", [])

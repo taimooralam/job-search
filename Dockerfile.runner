@@ -5,8 +5,8 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Pre-download sentence-transformers model to this location during build
-ENV SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentence_transformers
+# SentenceTransformer disabled: loads PyTorch (~1.5GB) which OOMs 2GB containers.
+# Keyword priors provide sufficient annotation matching. See annotation_suggester.py.
 
 WORKDIR /app
 
@@ -48,22 +48,12 @@ RUN useradd -m -u 1000 runner \
     && mkdir -p /home/runner/.claude \
     && chown -R runner:runner /home/runner
 
-COPY requirements.txt requirements-ml.txt ./
+COPY requirements.txt ./
 
-# Install CPU-only PyTorch FIRST to prevent CUDA version from being pulled
-# This saves ~3GB of unnecessary NVIDIA CUDA libraries since VPS has no GPU
-# CPU PyTorch: ~200MB vs CUDA PyTorch: ~900MB + ~2.6GB CUDA libs
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-
-# Install core requirements + ML requirements (sentence-transformers for annotation embeddings)
+# Install core requirements (no ML/PyTorch — disabled to avoid OOM in 2GB containers)
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir -r requirements-ml.txt \
     && pip install --no-cache-dir playwright \
     && python -m playwright install --with-deps chromium
-
-# Pre-download sentence-transformers model (~80MB) to eliminate first-run latency
-# Model is used by annotation suggestion system for semantic matching
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 COPY . .
 
