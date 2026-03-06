@@ -54,8 +54,9 @@ def get_runner_id() -> str:
     return _RUNNER_ID
 
 # Maximum logs to keep per operation (prevents unbounded memory growth)
-# CV generation produces 200-300 logs, so 1000 provides ample headroom
-MAX_LOG_BUFFER = 1000
+# Full batch pipeline (7 steps) generates 700-1200+ logs total.
+# 5000 accommodates even the heaviest runs with margin.
+MAX_LOG_BUFFER = 5000
 
 # Redis key prefixes for log persistence
 REDIS_LOG_PREFIX = "logs:"

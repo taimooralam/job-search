@@ -412,7 +412,7 @@ class FormScraperService:
 
         # Check if form requires login
         if extraction.requires_login:
-            emit_progress("extract_fields", "failed", "Form requires authentication")
+            emit_progress("extract_fields", "warning", "Form requires authentication")
             return {
                 "success": False,
                 "error": "Could not access the application form. The page may require login or be blocking automated access.",
@@ -421,7 +421,7 @@ class FormScraperService:
 
         # Check if any fields were found
         if not extraction.fields:
-            emit_progress("extract_fields", "failed", "No form fields found")
+            emit_progress("extract_fields", "warning", "No form fields found")
             return {
                 "success": False,
                 "error": "No form fields found on this page. Please verify the URL points to an application form.",

@@ -29,3 +29,8 @@
 - Sanitize all external inputs and validate response schemas
 - Follow FireCrawl rate limiting guidelines for web scraping
 - Redact PII and sensitive data before logging
+
+## Skills
+- Project-local Codex skills are stored under `.codex/skills/`.
+- Available project-local skill: `scout-jobs` — Search LinkedIn roles, score candidates, and inject approved jobs into the pipeline.
+- Skill file: `.codex/skills/scout-jobs/SKILL.md`

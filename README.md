@@ -140,6 +140,19 @@ job-search/
 └── example/              # Example data and configs
 ```
 
+## Codex Skills
+
+- Project-local skills are stored in `.codex/skills/`.
+- Available skill: `scout-jobs`
+- Skill definition: `.codex/skills/scout-jobs/SKILL.md`
+- Example prompt in Codex chat:
+
+```text
+scout-jobs --time day --region remote --profile ai --pages 2
+```
+
+- Common flags: `--time`, `--region`, `--profile`, `--pages`, `--min-score`, `--limit`, `--few-applicants`.
+
 ## Getting Started
 
 ### Prerequisites
