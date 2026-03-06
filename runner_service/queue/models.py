@@ -42,6 +42,10 @@ class QueueItem:
     run_id: Optional[str] = None      # Links to RunState when running
     runner_id: Optional[str] = None   # Which runner is executing this item
     position: int = 0                  # Queue position (1-indexed, 0 = not in queue)
+    retry_count: int = 0
+    last_error_at: Optional[datetime] = None
+    failure_context: Optional[str] = None  # JSON string: traceback snippet, failed layer
+    attempt_history: Optional[str] = None  # JSON array of attempt records
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -60,6 +64,10 @@ class QueueItem:
             "run_id": self.run_id,
             "runner_id": self.runner_id,
             "position": self.position,
+            "retry_count": self.retry_count,
+            "last_error_at": self.last_error_at.isoformat() if self.last_error_at else None,
+            "failure_context": self.failure_context,
+            "attempt_history": self.attempt_history,
         }
 
     @classmethod
@@ -98,6 +106,10 @@ class QueueItem:
             run_id=data.get("run_id") or None,
             runner_id=data.get("runner_id") or None,
             position=int(data.get("position", 0)),
+            retry_count=int(data.get("retry_count", 0)),
+            last_error_at=parse_datetime(data.get("last_error_at", "")),
+            failure_context=data.get("failure_context") or None,
+            attempt_history=data.get("attempt_history") or None,
         )
 
     def to_redis_hash(self) -> Dict[str, str]:
@@ -120,6 +132,10 @@ class QueueItem:
             "run_id": self.run_id or "",
             "runner_id": self.runner_id or "",
             "position": str(self.position),
+            "retry_count": str(self.retry_count),
+            "last_error_at": self.last_error_at.isoformat() if self.last_error_at else "",
+            "failure_context": self.failure_context or "",
+            "attempt_history": self.attempt_history or "",
         }
 
 

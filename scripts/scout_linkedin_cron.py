@@ -39,7 +39,8 @@ from scripts.scout_linkedin_jobs import (
     search_jobs,
     fetch_details_and_score,
 )
-from src.common.dedupe import generate_dedupe_key
+from src.common.dedupe import generate_dedupe_key, consolidate_by_location
+from src.common.telegram import notify_cron_complete
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -522,6 +523,11 @@ def main():
         logger.info("No scored jobs remaining. Exiting.")
         return
 
+    # Step 2b: Cross-location dedup
+    logger.info("Step 2b: Consolidating cross-location duplicates...")
+    scored_jobs = consolidate_by_location(scored_jobs)
+    logger.info(f"After cross-location dedup: {len(scored_jobs)}")
+
     # Step 3: Deduplicate against MongoDB
     logger.info("Step 3: Deduplicating against MongoDB...")
     db = get_db()
@@ -567,6 +573,19 @@ def main():
     if trigger_stats["failed"]:
         logger.info(f"  Failed:     {trigger_stats['failed']} queue failures")
     logger.info("=" * 60)
+
+    # Notify via Telegram (non-blocking, best-effort)
+    try:
+        notify_cron_complete(
+            searched=len(raw_jobs),
+            scored=len(scored_jobs),
+            new_after_dedup=len(new_jobs),
+            inserted=len(inserted_ids),
+            queued=trigger_stats["queued"],
+            failed=trigger_stats["failed"],
+        )
+    except Exception:
+        pass  # Telegram is best-effort, never block cron
 
 
 if __name__ == "__main__":

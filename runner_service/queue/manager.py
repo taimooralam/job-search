@@ -317,6 +317,22 @@ class QueueManager:
         else:
             item.status = QueueItemStatus.FAILED
             item.error = error
+            item.last_error_at = datetime.utcnow()
+            # Build failure context
+            failure_ctx = {"error": error or "Unknown", "failed_at": datetime.utcnow().isoformat()}
+            item.failure_context = json.dumps(failure_ctx)
+            # Append to attempt_history
+            try:
+                history = json.loads(item.attempt_history) if item.attempt_history else []
+            except (json.JSONDecodeError, TypeError):
+                history = []
+            history.append({
+                "attempt": item.retry_count + 1,
+                "started_at": item.started_at.isoformat() if item.started_at else None,
+                "failed_at": datetime.utcnow().isoformat(),
+                "error": (error or "Unknown")[:200],
+            })
+            item.attempt_history = json.dumps(history)
             # Add to failed set (ZADD with timestamp for sorting)
             await self._redis.zadd(
                 self.FAILED_KEY,
@@ -369,6 +385,8 @@ class QueueManager:
 
         # Remove from failed set
         await self._redis.zrem(self.FAILED_KEY, queue_id)
+
+        item.retry_count += 1
 
         # Reset status
         item.status = QueueItemStatus.PENDING

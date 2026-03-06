@@ -1,0 +1,21 @@
+{
+  "verified_skills": [
+    "FastAPI", "Pydantic V2", "LiteLLM", "Redis", "Qdrant",
+    "Docker Compose", "Prometheus", "Grafana", "GitHub Actions",
+    "pytest", "ruff", "mypy", "pre-commit", "httpx", "Traefik", "Langfuse"
+  ],
+  "verified_patterns": [
+    "LLM gateway", "multi-provider routing", "provider fallback chain",
+    "chat completions endpoint", "request validation", "error handling middleware",
+    "request ID propagation", "provider config schema", "model-to-provider mapping",
+    "unit tests", "integration tests", "mock providers",
+    "Docker multi-stage build", "CI/CD pipeline", "VPS deployment",
+    "Prometheus metrics", "Grafana dashboards", "observability stack"
+  ],
+  "not_yet_built": [
+    "semantic caching", "circuit breaker", "retry with backoff",
+    "streaming SSE", "rate limiting", "eval harness", "golden-set evaluation",
+    "fine-tuning pipeline", "cost tracking dashboard",
+    "load balancing", "admin dashboard"
+  ]
+}

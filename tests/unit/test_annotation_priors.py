@@ -55,17 +55,21 @@ class TestLoadPriors:
     def mock_repo(self):
         """Mock priors repository."""
         mock_repository = MagicMock()
-        # Patch at the source module since the import happens inside the function
-        with patch("src.common.repositories.get_priors_repository", return_value=mock_repository):
+        # Patch at both re-export and source config module to ensure the mock
+        # intercepts under parallel test execution (pytest-xdist)
+        with patch("src.common.repositories.get_priors_repository", return_value=mock_repository), \
+             patch("src.common.repositories.config.get_priors_repository", return_value=mock_repository):
             yield mock_repository
 
     def test_loads_existing_priors(self, mock_repo):
         """Should load priors document from MongoDB when it exists."""
         # Arrange
+        # Include "embeddings" key to prevent load_sentence_index_from_chunks()
+        # from being called (which would try to connect to real MongoDB)
         existing_priors = {
             "_id": PRIORS_DOC_ID,
             "version": 2,
-            "sentence_index": {"count": 100},
+            "sentence_index": {"count": 100, "embeddings": [[0.1, 0.2]], "texts": ["test"], "metadata": [{}]},
             "skill_priors": {"python": {}},
             "stats": {"total_annotations_at_build": 100},
         }

@@ -914,6 +914,20 @@ class CVGeneratorV2:
                     self._logger.info("  No tailoring needed")
                     self._emit_log("phase_complete", "No tailoring needed", phase=6.5)
 
+            # AI competency eval (optional, logged but not blocking)
+            if should_include_ai_section(state):
+                try:
+                    from src.layer6_v2.ai_competency_eval import evaluate_ai_competencies
+                    eval_result = evaluate_ai_competencies(cv_text)
+                    self._emit_log("ai_competency_eval", eval_result.summary)
+                    if not eval_result.passed:
+                        self._emit_log(
+                            "ai_competency_eval",
+                            f"WARNING: {eval_result.flagged_count} claims match not-yet-built features",
+                        )
+                except Exception as e:
+                    self._emit_log("ai_competency_eval", f"Eval skipped: {e}")
+
             # Save CV to disk
             cv_path = self._save_cv_to_disk(cv_text, company, title)
 

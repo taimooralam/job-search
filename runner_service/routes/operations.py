@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
 from src.common.repositories import get_job_repository, get_operation_runs_repository
+from src.common.telegram import notify_pipeline_complete, notify_pipeline_failed
 
 # Thread pool for running sync MongoDB operations without blocking the event loop
 # Increased from 4 to 8 workers to handle concurrent streaming operations
@@ -2264,6 +2265,26 @@ async def _execute_queued_operation(
             )
             log_cb(f"Operation complete" if result.success else f"Operation failed: {result.error}")
 
+            # Telegram notification (non-blocking, best-effort)
+            try:
+                _job = _validate_job_exists_sync(job_id)
+                _company = _job.get("company", "Unknown") if _job else "Unknown"
+                _title = _job.get("title", "Unknown") if _job else "Unknown"
+                _duration_s = (result.duration_ms or 0) / 1000.0
+                if result.success:
+                    notify_pipeline_complete(
+                        job_id=job_id, company=_company, role=_title,
+                        duration_s=_duration_s, operation=operation,
+                    )
+                else:
+                    notify_pipeline_failed(
+                        job_id=job_id, company=_company, role=_title,
+                        error=result.error or "Unknown error",
+                        run_id=run_id, operation=operation,
+                    )
+            except Exception:
+                pass  # Telegram is best-effort
+
             # Complete queue item (broadcasts WebSocket event)
             # Use thread-safe wrapper since we're running in executor thread
             if queue_id and queue_manager and queue_manager.is_connected:
@@ -2279,6 +2300,14 @@ async def _execute_queued_operation(
         logger.exception(f"[{run_id[:16]}] Queued {operation} failed: {e}")
         log_cb(f"Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
+        # Telegram notification for unhandled failures
+        try:
+            notify_pipeline_failed(
+                job_id=job_id, company="", role="",
+                error=str(e), run_id=run_id, operation=operation,
+            )
+        except Exception:
+            pass
         # Use thread-safe wrapper since we're running in executor thread
         if queue_id and queue_manager and queue_manager.is_connected:
             try:

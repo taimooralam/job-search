@@ -17,7 +17,7 @@ Usage:
 """
 
 import re
-from typing import Optional
+from typing import Dict, List, Optional
 
 
 def normalize_for_dedupe(text: Optional[str]) -> str:
@@ -148,3 +148,143 @@ def extract_source_id_from_url(url: str, source: str) -> Optional[str]:
             return match.group(1)
 
     return None
+
+
+# Region priority for cross-location dedup (higher = preferred)
+REGION_PRIORITY = {
+    "asia_pacific": 6,
+    "emea": 5,
+    "eea": 4,
+    "eu": 3,
+    "us": 2,
+    "pakistan": 1,
+    "remote": 3,  # Treat remote as neutral priority
+    "unknown": 0,
+}
+
+# Region detection keywords
+_REGION_KEYWORDS = {
+    "asia_pacific": [
+        "singapore", "hong kong", "japan", "tokyo", "australia", "sydney",
+        "melbourne", "india", "bangalore", "mumbai", "delhi", "hyderabad",
+        "seoul", "korea", "taiwan", "thailand", "bangkok", "vietnam",
+        "indonesia", "jakarta", "malaysia", "kuala lumpur", "philippines",
+        "manila", "china", "shanghai", "beijing", "shenzhen",
+    ],
+    "emea": [
+        "dubai", "abu dhabi", "uae", "united arab emirates", "saudi",
+        "riyadh", "jeddah", "qatar", "doha", "bahrain", "kuwait",
+        "oman", "cairo", "egypt", "south africa", "johannesburg",
+        "cape town", "nairobi", "kenya", "nigeria", "lagos",
+        "israel", "tel aviv", "turkey", "istanbul",
+    ],
+    "eea": [
+        "london", "united kingdom", "uk", "germany", "berlin", "munich",
+        "france", "paris", "netherlands", "amsterdam", "ireland", "dublin",
+        "spain", "madrid", "barcelona", "italy", "milan", "rome",
+        "switzerland", "zurich", "geneva", "sweden", "stockholm",
+        "norway", "oslo", "denmark", "copenhagen", "finland", "helsinki",
+        "belgium", "brussels", "austria", "vienna", "portugal", "lisbon",
+        "poland", "warsaw", "czech", "prague", "romania", "bucharest",
+        "greece", "athens",
+    ],
+    "pakistan": [
+        "pakistan", "karachi", "lahore", "islamabad", "rawalpindi",
+    ],
+    "us": [
+        "united states", ", usa", "new york", "san francisco",
+        "los angeles", "chicago", "seattle", "boston", "austin",
+        "denver", "atlanta", "dallas", "houston", "miami",
+        "washington, dc", "washington dc", "portland", "phoenix",
+        "san jose", "san diego", "minneapolis", "detroit",
+        "philadelphia", "pittsburgh", "raleigh", "charlotte",
+    ],
+}
+
+
+def detect_region(location: str) -> str:
+    """Detect region from a job location string.
+
+    Args:
+        location: Job location (e.g., "Singapore", "Dubai, UAE", "San Francisco, CA")
+
+    Returns:
+        Region key from REGION_PRIORITY, or "unknown"
+    """
+    if not location:
+        return "unknown"
+
+    loc_lower = location.lower().strip()
+
+    if "remote" in loc_lower:
+        return "remote"
+
+    for region, keywords in _REGION_KEYWORDS.items():
+        for kw in keywords:
+            if kw in loc_lower:
+                return region
+
+    # Check US state abbreviations (", CA", ", NY", etc.)
+    us_states = (
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
+        "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
+        "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
+        "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+        "WI", "WY", "DC",
+    )
+    for state in us_states:
+        if location.endswith(f", {state}") or location.endswith(f" {state}"):
+            return "us"
+
+    return "unknown"
+
+
+def consolidate_by_location(jobs: List[Dict]) -> List[Dict]:
+    """Consolidate duplicate jobs across locations.
+
+    Groups by normalized(company) + normalized(title), keeps the one from
+    the highest-priority region. Tie-breaks by score.
+
+    Args:
+        jobs: List of scored job dicts with company, title, location, score keys
+
+    Returns:
+        Deduplicated list of jobs
+    """
+    import logging
+    from collections import defaultdict
+
+    groups: Dict[str, List[Dict]] = defaultdict(list)
+
+    for job in jobs:
+        company_norm = normalize_for_dedupe(job.get("company"))
+        title_norm = normalize_for_dedupe(job.get("title"))
+        key = f"{company_norm}|{title_norm}"
+        groups[key].append(job)
+
+    result = []
+    consolidated_count = 0
+
+    for key, group in groups.items():
+        if len(group) == 1:
+            result.append(group[0])
+            continue
+
+        # Sort by region priority (desc), then score (desc)
+        group.sort(
+            key=lambda j: (
+                REGION_PRIORITY.get(detect_region(j.get("location", "")), 0),
+                j.get("score", 0),
+            ),
+            reverse=True,
+        )
+        result.append(group[0])
+        consolidated_count += len(group) - 1
+
+    if consolidated_count > 0:
+        logging.getLogger(__name__).info(
+            f"Cross-location dedup: consolidated {consolidated_count} duplicates "
+            f"({len(jobs)} → {len(result)})"
+        )
+
+    return result

@@ -109,10 +109,12 @@ class TestClaudeCLIInitialization:
         assert cli.model == custom_model
 
     @patch.dict('os.environ', {'CLAUDE_CODE_MODEL': 'claude-test-model'})
-    def test_init_respects_env_override(self):
-        """Should use CLAUDE_CODE_MODEL env var if set."""
+    def test_init_ignores_env_override(self):
+        """CLAUDE_CODE_MODEL env var should NOT override tier routing."""
         cli = ClaudeCLI()
-        assert cli.model == 'claude-test-model'
+        # Env var was intentionally removed from tier routing to prevent
+        # all tiers from using a single model (cost inflation).
+        assert cli.model == CLAUDE_MODEL_TIERS["middle"]
 
     def test_init_with_log_callback(self):
         """Should accept custom log callback."""
