@@ -1464,17 +1464,28 @@ def get_main_loop() -> Optional[asyncio.AbstractEventLoop]:
     return _main_loop
 
 
-def release_semaphore() -> None:
-    """
-    Release the global concurrency semaphore.
-
-    Called by _execute_queued_operation (operations.py) when a queued job
-    finishes, so the poll loop can pick up the next job.
-    """
+def _do_release_semaphore() -> None:
+    """Release semaphore — must run on the main event loop thread."""
     try:
         _semaphore.release()
     except ValueError:
         pass
+
+
+def release_semaphore() -> None:
+    """
+    Release the global concurrency semaphore safely from any thread.
+
+    Uses call_soon_threadsafe to schedule the release on the main event loop,
+    since asyncio.Semaphore is not thread-safe and this is called from
+    worker threads in the executor pool.
+    """
+    main_loop = get_main_loop()
+    if main_loop and not main_loop.is_closed():
+        main_loop.call_soon_threadsafe(_do_release_semaphore)
+    else:
+        # Fallback: no loop available (shutdown), release directly
+        _do_release_semaphore()
 
 
 @app.on_event("startup")
@@ -1503,14 +1514,14 @@ async def startup_queue_manager():
         # Start cross-runner event listener for multi-instance state sync
         await _queue_manager.start_event_listener()
 
-        # Restore runs interrupted by THIS runner's previous instance
-        from runner_service.routes.operation_streaming import get_runner_id
-        this_runner_id = get_runner_id()
-        restored = await _queue_manager.restore_interrupted_runs(runner_id=this_runner_id)
+        # Reclaim any items stuck in RUNNING > 5 min (fast reclaim after crash)
+        restored = await _queue_manager.reclaim_stale_running(
+            stale_threshold_minutes=5, max_retries=3
+        )
         if restored:
-            logger.info(f"Restored {len(restored)} interrupted runs to queue")
+            logger.info(f"Reclaimed {len(restored)} stale running items on startup")
 
-        # Clean up any stale/orphaned queue items
+        # Clean up orphans and status mismatches
         cleanup_stats = await _queue_manager.cleanup_stale_items(max_age_minutes=1440)  # 24 hours
         if cleanup_stats.get("total_cleaned", 0) > 0:
             logger.info(f"Cleaned up stale queue items: {cleanup_stats}")
@@ -1657,7 +1668,7 @@ async def startup_queue_polling_loop():
 
 
 QUEUE_CLEANUP_INTERVAL = int(os.getenv("QUEUE_CLEANUP_INTERVAL", "1800"))  # 30 minutes
-QUEUE_CLEANUP_MAX_AGE = int(os.getenv("QUEUE_CLEANUP_MAX_AGE", "120"))  # 2 hours
+QUEUE_CLEANUP_MAX_AGE = int(os.getenv("QUEUE_CLEANUP_MAX_AGE", "30"))  # 30 minutes
 
 
 @app.on_event("startup")
@@ -1684,8 +1695,16 @@ async def startup_queue_cleanup_loop():
         while True:
             try:
                 if _queue_manager and _queue_manager.is_connected:
+                    # Reclaim ghost running items (timestamp-based staleness)
+                    reclaimed = await _queue_manager.reclaim_stale_running(
+                        stale_threshold_minutes=QUEUE_CLEANUP_MAX_AGE, max_retries=3
+                    )
+                    if reclaimed:
+                        logger.info(f"Periodic reclaim: {len(reclaimed)} stale running items")
+
+                    # Clean up orphans and status mismatches only
                     stats = await _queue_manager.cleanup_stale_items(
-                        max_age_minutes=QUEUE_CLEANUP_MAX_AGE
+                        max_age_minutes=1440  # 24 hours for orphan cleanup
                     )
                     if stats.get("total_cleaned", 0) > 0:
                         logger.info(f"Periodic queue cleanup: {stats}")

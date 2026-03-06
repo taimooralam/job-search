@@ -72,6 +72,12 @@ class FakeRedis:
             self.lists[key] = []
         self.lists[key].extend(values)
 
+    async def lpop(self, key: str):
+        """Pop value from left of list."""
+        if key not in self.lists or not self.lists[key]:
+            return None
+        return self.lists[key].pop(0)
+
     async def rpop(self, key: str):
         """Pop value from right of list."""
         if key not in self.lists or not self.lists[key]:
@@ -403,18 +409,18 @@ class TestQueueManagerDequeue:
         return mgr
 
     @pytest.mark.asyncio
-    async def test_dequeue_returns_oldest_item_fifo(self, manager):
-        """Should return oldest item (FIFO order)."""
+    async def test_dequeue_returns_newest_item_lifo(self, manager):
+        """Should return newest item (LIFO order — process newest jobs first)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item1 = await manager.enqueue("job1", "First", "Company")
             item2 = await manager.enqueue("job2", "Second", "Company")
             item3 = await manager.enqueue("job3", "Third", "Company")
 
-            # Dequeue should return item1 (oldest)
+            # Dequeue should return item3 (newest — LIFO)
             dequeued = await manager.dequeue()
 
-            assert dequeued.queue_id == item1.queue_id
-            assert dequeued.job_id == "job1"
+            assert dequeued.queue_id == item3.queue_id
+            assert dequeued.job_id == "job3"
 
     @pytest.mark.asyncio
     async def test_dequeue_moves_to_running(self, manager):
@@ -1053,14 +1059,14 @@ class TestQueueManagerGetState:
             item1 = await manager.enqueue("job1", "Pending 1", "Company")
             item2 = await manager.enqueue("job2", "Pending 2", "Company")
             item3 = await manager.enqueue("job3", "Pending 3", "Company")
-            dequeued = await manager.dequeue()  # item1 is now running (FIFO)
+            dequeued = await manager.dequeue()  # item3 is now running (LIFO)
 
             state = await manager.get_state()
 
             assert isinstance(state, QueueState)
             assert len(state.pending) >= 1
             assert len(state.running) == 1
-            assert state.running[0].job_id == "job1"
+            assert state.running[0].job_id == "job3"
 
     @pytest.mark.asyncio
     async def test_get_state_limits_pending_items(self, manager):
@@ -1175,10 +1181,14 @@ class TestQueueManagerRestoreInterruptedRuns:
 
     @pytest.mark.asyncio
     async def test_restore_interrupted_runs_moves_running_to_pending(self, manager):
-        """Should move interrupted runs back to pending."""
+        """Should move stale interrupted runs back to pending."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item = await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
+
+            # Backdate started_at to 10 min ago (> 5 min threshold)
+            dequeued.started_at = datetime.utcnow() - timedelta(minutes=10)
+            await manager._update_item(dequeued)
 
             # Simulate service restart
             restored = await manager.restore_interrupted_runs()
@@ -1191,10 +1201,14 @@ class TestQueueManagerRestoreInterruptedRuns:
 
     @pytest.mark.asyncio
     async def test_restore_interrupted_runs_removes_from_running_set(self, manager):
-        """Should remove items from running set."""
+        """Should remove stale items from running set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item = await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
+
+            # Backdate started_at to 10 min ago (> 5 min threshold)
+            dequeued.started_at = datetime.utcnow() - timedelta(minutes=10)
+            await manager._update_item(dequeued)
 
             await manager.restore_interrupted_runs()
 
@@ -1204,10 +1218,14 @@ class TestQueueManagerRestoreInterruptedRuns:
 
     @pytest.mark.asyncio
     async def test_restore_interrupted_runs_adds_to_pending_queue(self, manager):
-        """Should add items back to pending queue."""
+        """Should add stale items back to pending queue."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item = await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
+
+            # Backdate started_at to 10 min ago (> 5 min threshold)
+            dequeued.started_at = datetime.utcnow() - timedelta(minutes=10)
+            await manager._update_item(dequeued)
 
             await manager.restore_interrupted_runs()
 
@@ -1361,8 +1379,8 @@ class TestQueueManagerEdgeCases:
             assert result is not None
 
     @pytest.mark.asyncio
-    async def test_fifo_ordering_maintained(self, manager):
-        """Should maintain FIFO ordering."""
+    async def test_lifo_ordering_maintained(self, manager):
+        """Should maintain LIFO ordering (newest jobs first)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item1 = await manager.enqueue("job1", "First", "Company")
             item2 = await manager.enqueue("job2", "Second", "Company")
@@ -1372,9 +1390,9 @@ class TestQueueManagerEdgeCases:
             dequeued2 = await manager.dequeue()
             dequeued3 = await manager.dequeue()
 
-            assert dequeued1.job_id == "job1"
+            assert dequeued1.job_id == "job3"
             assert dequeued2.job_id == "job2"
-            assert dequeued3.job_id == "job3"
+            assert dequeued3.job_id == "job1"
 
     @pytest.mark.asyncio
     async def test_special_characters_in_job_data(self, manager):
@@ -1435,8 +1453,8 @@ class TestQueueManagerEdgeCases:
             assert item.company == ""
 
 
-class TestQueueManagerCleanupStaleRunning:
-    """Tests for stale running item cleanup in cleanup_stale_items()."""
+class TestQueueManagerReclaimStaleRunning:
+    """Tests for reclaim_stale_running() method."""
 
     @pytest.fixture
     def manager(self):
@@ -1447,8 +1465,8 @@ class TestQueueManagerCleanupStaleRunning:
         return mgr
 
     @pytest.mark.asyncio
-    async def test_cleanup_removes_stale_running_items(self, manager):
-        """Should mark items stuck in running state as failed."""
+    async def test_reclaim_re_enqueues_stale_item(self, manager):
+        """Should re-enqueue items stuck in running state (under max retries)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item = await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
@@ -1457,41 +1475,138 @@ class TestQueueManagerCleanupStaleRunning:
             dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
             await manager._update_item(dequeued)
 
-            stats = await manager.cleanup_stale_items(max_age_minutes=120)
+            reclaimed = await manager.reclaim_stale_running(
+                stale_threshold_minutes=120, max_retries=3
+            )
 
-            assert stats["stale_running_removed"] == 1
-            assert stats["total_cleaned"] == 1
+            assert len(reclaimed) == 1
 
             # Item should be removed from running set
             running = await manager._redis.smembers(manager.RUNNING_KEY)
             assert dequeued.queue_id not in running
 
-            # Item should be in failed set
-            failed = await manager._redis.zrange(manager.FAILED_KEY, 0, -1)
-            assert dequeued.queue_id in failed
+            # Item should be back in pending
+            pending = await manager._redis.lrange(manager.PENDING_KEY, 0, -1)
+            assert dequeued.queue_id in pending
 
-            # Item status should be FAILED with error message
+            # Item should have retry_count incremented
             updated = await manager.get_item(dequeued.queue_id)
-            assert updated.status == QueueItemStatus.FAILED
-            assert "running for over 120 minutes" in updated.error
-            assert updated.completed_at is not None
+            assert updated.status == QueueItemStatus.PENDING
+            assert updated.retry_count == 1
+            assert updated.started_at is None
 
     @pytest.mark.asyncio
-    async def test_cleanup_preserves_recent_running_items(self, manager):
-        """Should NOT remove recently started running items."""
+    async def test_reclaim_fails_item_at_max_retries(self, manager):
+        """Should move item to FAILED when max retries exceeded."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item = await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
-            # started_at is set by dequeue() to now — should not be cleaned up
-            stats = await manager.cleanup_stale_items(max_age_minutes=120)
+            # Set retry_count to max and backdate
+            dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
+            dequeued.retry_count = 3  # Already at max
+            await manager._update_item(dequeued)
 
-            assert stats["stale_running_removed"] == 0
-            assert stats["total_cleaned"] == 0
+            reclaimed = await manager.reclaim_stale_running(
+                stale_threshold_minutes=120, max_retries=3
+            )
+
+            assert len(reclaimed) == 1
+
+            # Item should be in failed set
+            failed = await manager._redis.zrange(manager.FAILED_KEY, 0, -1)
+            assert dequeued.queue_id in failed
+
+            # Item status should be FAILED
+            updated = await manager.get_item(dequeued.queue_id)
+            assert updated.status == QueueItemStatus.FAILED
+            assert "Failed after 3 attempts" in updated.error
+            assert updated.completed_at is not None
+
+    @pytest.mark.asyncio
+    async def test_reclaim_preserves_recent_running_items(self, manager):
+        """Should NOT reclaim recently started running items."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+
+            # started_at is set by dequeue() to now — should not be reclaimed
+            reclaimed = await manager.reclaim_stale_running(
+                stale_threshold_minutes=120, max_retries=3
+            )
+
+            assert len(reclaimed) == 0
 
             # Item should still be in running set
             running = await manager._redis.smembers(manager.RUNNING_KEY)
             assert dequeued.queue_id in running
+
+    @pytest.mark.asyncio
+    async def test_reclaim_handles_orphans(self, manager):
+        """Should remove orphans from running set."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            # Orphan (no item data)
+            await manager._redis.sadd(manager.RUNNING_KEY, "q_orphan_abc")
+
+            reclaimed = await manager.reclaim_stale_running(
+                stale_threshold_minutes=120, max_retries=3
+            )
+
+            # Orphan removed from running set but not in reclaimed list
+            assert len(reclaimed) == 0
+            running = await manager._redis.smembers(manager.RUNNING_KEY)
+            assert "q_orphan_abc" not in running
+
+    @pytest.mark.asyncio
+    async def test_reclaim_handles_status_mismatch(self, manager):
+        """Should remove items with non-RUNNING status from running set."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+
+            # Simulate status mismatch
+            dequeued.status = QueueItemStatus.COMPLETED
+            await manager._update_item(dequeued)
+
+            reclaimed = await manager.reclaim_stale_running(
+                stale_threshold_minutes=120, max_retries=3
+            )
+
+            assert len(reclaimed) == 0
+            running = await manager._redis.smembers(manager.RUNNING_KEY)
+            assert dequeued.queue_id not in running
+
+    @pytest.mark.asyncio
+    async def test_reclaim_publishes_events(self, manager):
+        """Should publish events for reclaimed items."""
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
+            item = await manager.enqueue("job_12345", "Test", "Company")
+            dequeued = await manager.dequeue()
+            dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
+            await manager._update_item(dequeued)
+            mock_publish.reset_mock()
+
+            await manager.reclaim_stale_running(
+                stale_threshold_minutes=120, max_retries=3
+            )
+
+            # Should have published a 'requeued' event (retry_count < max)
+            assert any(
+                call_args[0][0] == "requeued"
+                for call_args in mock_publish.call_args_list
+            )
+
+
+class TestQueueManagerCleanupOrphans:
+    """Tests for cleanup_stale_items() — orphan/mismatch cleanup only."""
+
+    @pytest.fixture
+    def manager(self):
+        """Create manager with fake Redis."""
+        mgr = QueueManager(redis_url="redis://localhost:6379/0")
+        mgr._redis = FakeRedis()
+        mgr._connected = True
+        return mgr
 
     @pytest.mark.asyncio
     async def test_cleanup_removes_status_mismatch_from_running(self, manager):
@@ -1504,66 +1619,20 @@ class TestQueueManagerCleanupStaleRunning:
             dequeued.status = QueueItemStatus.COMPLETED
             dequeued.completed_at = datetime.utcnow()
             await manager._update_item(dequeued)
-            # Don't remove from running set (simulating the bug)
 
             stats = await manager.cleanup_stale_items(max_age_minutes=120)
 
             assert stats["orphan_running_removed"] == 1
 
-            # Should be removed from running set
             running = await manager._redis.smembers(manager.RUNNING_KEY)
             assert dequeued.queue_id not in running
 
     @pytest.mark.asyncio
-    async def test_cleanup_handles_mixed_running_items(self, manager):
-        """Should handle mix of healthy, stale, and orphan running items."""
-        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            # Healthy running item (recent)
-            item1 = await manager.enqueue("job1", "Recent", "Company")
-            dequeued1 = await manager.dequeue()
-
-            # Stale running item (old)
-            item2 = await manager.enqueue("job2", "Stale", "Company")
-            dequeued2 = await manager.dequeue()
-            dequeued2.started_at = datetime.utcnow() - timedelta(hours=5)
-            await manager._update_item(dequeued2)
-
-            # Orphan (no item data)
-            await manager._redis.sadd(manager.RUNNING_KEY, "q_orphan_abc")
-
-            stats = await manager.cleanup_stale_items(max_age_minutes=120)
-
-            assert stats["stale_running_removed"] == 1
-            assert stats["orphan_running_removed"] == 1
-            assert stats["total_cleaned"] == 2
-
-            # Healthy item should still be running
-            running = await manager._redis.smembers(manager.RUNNING_KEY)
-            assert dequeued1.queue_id in running
-
-    @pytest.mark.asyncio
-    async def test_cleanup_stale_running_publishes_failed_event(self, manager):
-        """Should publish 'failed' event for stale running items."""
-        with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
-            item = await manager.enqueue("job_12345", "Test", "Company")
-            dequeued = await manager.dequeue()
-            dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
-            await manager._update_item(dequeued)
-            mock_publish.reset_mock()
-
-            await manager.cleanup_stale_items(max_age_minutes=120)
-
-            # Should have published a 'failed' event
-            assert any(
-                call_args[0][0] == "failed"
-                for call_args in mock_publish.call_args_list
-            )
-
-    @pytest.mark.asyncio
-    async def test_cleanup_stats_include_stale_running(self, manager):
-        """Should include stale_running_removed in returned stats."""
+    async def test_cleanup_stats_keys(self, manager):
+        """Should include expected keys in returned stats."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             stats = await manager.cleanup_stale_items(max_age_minutes=60)
 
-            assert "stale_running_removed" in stats
-            assert stats["stale_running_removed"] == 0
+            assert "orphan_pending_removed" in stats
+            assert "orphan_running_removed" in stats
+            assert "total_cleaned" in stats

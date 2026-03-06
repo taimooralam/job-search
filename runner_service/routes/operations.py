@@ -89,7 +89,7 @@ def run_on_main_loop(coro):
 
     # Schedule coroutine on main loop and wait for result
     future = asyncio.run_coroutine_threadsafe(coro, main_loop)
-    return future.result(timeout=30)  # 30 second timeout for queue ops
+    return future.result(timeout=60)  # 60 second timeout for queue ops
 
 
 async def run_service_in_executor(coro) -> None:
@@ -196,36 +196,73 @@ def _queue_complete_threadsafe(queue_manager, queue_id: str, success: bool = Tru
     """
     Thread-safe wrapper to complete a queue item from a worker thread.
 
+    Retries up to 3 times with increasing delays. OK to block the worker
+    thread here — it's done processing. If all retries fail, the cleanup
+    loop will catch the ghost item via timestamp-based staleness.
+
     Args:
         queue_manager: The QueueManager instance
         queue_id: Queue item ID to complete
         success: Whether the operation succeeded
     """
+    import time
+
     async def _complete():
         await queue_manager.complete(queue_id, success=success)
 
-    try:
-        run_on_main_loop(_complete())
-    except Exception as e:
-        logger.warning(f"Failed to complete queue item {queue_id}: {e}")
+    delays = [2, 5, 10]
+    for attempt, delay in enumerate(delays, 1):
+        try:
+            run_on_main_loop(_complete())
+            return  # Success
+        except Exception as e:
+            logger.error(
+                f"Failed to complete queue item {queue_id} "
+                f"(attempt {attempt}/{len(delays)}): {e}"
+            )
+            if attempt < len(delays):
+                time.sleep(delay)
+
+    logger.critical(
+        f"All {len(delays)} attempts to complete queue item {queue_id} failed. "
+        f"Cleanup loop will reclaim this ghost item."
+    )
 
 
 def _queue_fail_threadsafe(queue_manager, queue_id: str, error: str) -> None:
     """
     Thread-safe wrapper to fail a queue item from a worker thread.
 
+    Retries up to 3 times with increasing delays. If all retries fail,
+    the cleanup loop will catch the ghost item via timestamp-based staleness.
+
     Args:
         queue_manager: The QueueManager instance
         queue_id: Queue item ID to fail
         error: Error message describing the failure
     """
+    import time
+
     async def _fail():
         await queue_manager.fail(queue_id, error)
 
-    try:
-        run_on_main_loop(_fail())
-    except Exception as e:
-        logger.warning(f"Failed to fail queue item {queue_id}: {e}")
+    delays = [2, 5, 10]
+    for attempt, delay in enumerate(delays, 1):
+        try:
+            run_on_main_loop(_fail())
+            return  # Success
+        except Exception as e:
+            logger.error(
+                f"Failed to fail queue item {queue_id} "
+                f"(attempt {attempt}/{len(delays)}): {e}"
+            )
+            if attempt < len(delays):
+                time.sleep(delay)
+
+    logger.critical(
+        f"All {len(delays)} attempts to fail queue item {queue_id} failed. "
+        f"Cleanup loop will reclaim this ghost item."
+    )
 
 
 # =============================================================================
@@ -2286,15 +2323,14 @@ async def _execute_queued_operation(
                 pass  # Telegram is best-effort
 
             # Complete queue item (broadcasts WebSocket event)
-            # Use thread-safe wrapper since we're running in executor thread
+            # Use thread-safe wrapper since we're running in executor thread.
+            # Retry logic inside the wrapper handles transient failures;
+            # the cleanup loop handles permanent failures (defense in depth).
             if queue_id and queue_manager and queue_manager.is_connected:
-                try:
-                    if result.success:
-                        _queue_complete_threadsafe(queue_manager, queue_id, success=True)
-                    else:
-                        _queue_fail_threadsafe(queue_manager, queue_id, result.error or "Operation failed")
-                except Exception as e:
-                    logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+                if result.success:
+                    _queue_complete_threadsafe(queue_manager, queue_id, success=True)
+                else:
+                    _queue_fail_threadsafe(queue_manager, queue_id, result.error or "Operation failed")
 
     except Exception as e:
         logger.exception(f"[{run_id[:16]}] Queued {operation} failed: {e}")
@@ -2308,12 +2344,10 @@ async def _execute_queued_operation(
             )
         except Exception:
             pass
-        # Use thread-safe wrapper since we're running in executor thread
+        # Use thread-safe wrapper since we're running in executor thread.
+        # Retry logic inside the wrapper handles transient failures.
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                _queue_fail_threadsafe(queue_manager, queue_id, str(e))
-            except Exception:
-                pass
+            _queue_fail_threadsafe(queue_manager, queue_id, str(e))
     finally:
         # Always release the semaphore acquired by the poll loop,
         # so the next pending job can be dequeued.

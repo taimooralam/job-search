@@ -880,86 +880,138 @@ class QueueManager:
 
         return count
 
-    async def restore_interrupted_runs(self, runner_id: Optional[str] = None) -> List[QueueItem]:
+    async def reclaim_stale_running(
+        self, stale_threshold_minutes: int = 20, max_retries: int = 3
+    ) -> List[QueueItem]:
         """
-        Restore runs interrupted by dead runners.
+        Reclaim items stuck in RUNNING state based on timestamp staleness.
 
-        Uses Redis heartbeats to detect live vs dead runners:
-        - If a running item's runner_id has an active heartbeat key, that runner
-          is still alive and processing the item — leave it alone.
-        - If the heartbeat key is missing (TTL expired), the runner is dead —
-          restore the item to the front of the pending queue (LIFO priority).
-        - Items with no runner_id (legacy) are always restored.
+        Pure timestamp-based detection: any item in queue:running whose
+        started_at is older than stale_threshold_minutes is considered a ghost.
+        No heartbeat or runner_id checks — this handles all ghost scenarios
+        (dead runner, silent queue update failure, deployment rollover).
+
+        Items under max_retries are re-enqueued to PENDING (retry_count incremented).
+        Items at or over max_retries are moved to FAILED.
+
+        Atomicity: SREM is atomic — if two runners race to reclaim the same item,
+        only one succeeds. LPUSH on re-enqueue is also atomic.
 
         Args:
-            runner_id: This runner's own ID. Items owned by this runner are
-                       always restored (previous process instance). Items owned
-                       by other runners use heartbeat detection.
+            stale_threshold_minutes: Minutes after which a running item is stale
+            max_retries: Maximum retry attempts before moving to FAILED
 
         Returns:
-            List of restored items
+            List of reclaimed items (both re-enqueued and failed)
         """
         if not self._redis:
             return []
 
-        HEARTBEAT_PREFIX = "runners:heartbeat:"
+        from datetime import timedelta
+        cutoff = datetime.utcnow() - timedelta(minutes=stale_threshold_minutes)
 
-        restored = []
-        skipped = 0
+        reclaimed = []
         running_ids = await self._redis.smembers(self.RUNNING_KEY)
 
         for queue_id in running_ids:
             item = await self.get_item(queue_id)
+
             if not item:
+                # Orphan: queue_id in set but no item data — just remove
+                await self._redis.srem(self.RUNNING_KEY, queue_id)
+                logger.info(f"Removed orphan from running set: {queue_id}")
                 continue
 
-            if item.runner_id:
-                # Always restore items owned by THIS runner — they're from our
-                # previous process instance (heartbeat key may still be alive
-                # from the old TTL if container restarted within 30 seconds).
-                if item.runner_id == runner_id:
-                    pass  # fall through to restore
-                else:
-                    # Other runner: check heartbeat to see if it's still alive
-                    heartbeat_key = f"{HEARTBEAT_PREFIX}{item.runner_id}"
-                    is_alive = await self._redis.exists(heartbeat_key)
-                    if is_alive:
-                        skipped += 1
-                        continue  # Other runner is live — leave item alone
+            if item.status != QueueItemStatus.RUNNING:
+                # Status mismatch: in running set but not RUNNING status
+                await self._redis.srem(self.RUNNING_KEY, queue_id)
+                logger.info(f"Removed mismatched item from running set: {queue_id} (status: {item.status})")
+                continue
 
-            # Dead runner, own runner, or no runner_id — restore it
-            await self._redis.srem(self.RUNNING_KEY, queue_id)
-            item.status = QueueItemStatus.PENDING
-            item.started_at = None
-            item.run_id = None
-            item.runner_id = None
-            await self._update_item(item)
-            # LPUSH = front of queue (LIFO) so interrupted jobs get picked up first
-            await self._redis.lpush(self.PENDING_KEY, queue_id)
-            restored.append(item)
-            logger.info(f"Restored interrupted run {queue_id} for job {item.job_id} (dead runner)")
+            # Check staleness by timestamp
+            if not item.started_at or item.started_at >= cutoff:
+                continue  # Not stale yet — leave it alone
 
-        if skipped:
-            logger.info(f"Skipped {skipped} running items owned by live runners")
+            # Item is stale — reclaim it
+            # Atomic SREM: only one runner can succeed if racing
+            removed = await self._redis.srem(self.RUNNING_KEY, queue_id)
+            if not removed:
+                continue  # Another runner already reclaimed it
 
-        return restored
+            if item.retry_count < max_retries:
+                # Re-enqueue for retry
+                item.status = QueueItemStatus.PENDING
+                item.retry_count += 1
+                item.last_error_at = datetime.utcnow()
+                item.failure_context = (
+                    f"Stale after {stale_threshold_minutes}min "
+                    f"(attempt {item.retry_count}/{max_retries})"
+                )
+                item.started_at = None
+                item.run_id = None
+                item.runner_id = None
+                await self._update_item(item)
+                # LPUSH = front of queue so retried jobs get picked up first
+                await self._redis.lpush(self.PENDING_KEY, queue_id)
+                await self._publish_event("requeued", item)
+                logger.info(
+                    f"Re-enqueued stale item {queue_id} for job {item.job_id} "
+                    f"(retry {item.retry_count}/{max_retries})"
+                )
+            else:
+                # Max retries exceeded — move to FAILED
+                item.status = QueueItemStatus.FAILED
+                item.error = (
+                    f"Failed after {max_retries} attempts: stale in RUNNING "
+                    f"for over {stale_threshold_minutes} minutes each time"
+                )
+                item.completed_at = datetime.utcnow()
+                item.last_error_at = datetime.utcnow()
+                await self._update_item(item)
+                await self._redis.zadd(
+                    self.FAILED_KEY,
+                    {queue_id: item.completed_at.timestamp()}
+                )
+                await self._publish_event("failed", item)
+                logger.info(
+                    f"Failed stale item {queue_id} for job {item.job_id} "
+                    f"(exhausted {max_retries} retries)"
+                )
+
+            reclaimed.append(item)
+
+        return reclaimed
+
+    async def restore_interrupted_runs(self, runner_id: Optional[str] = None) -> List[QueueItem]:
+        """
+        Restore runs interrupted by dead runners.
+
+        Thin wrapper around reclaim_stale_running with a short threshold
+        for fast reclaim after a crash/restart.
+
+        Args:
+            runner_id: Kept for API compatibility (ignored — staleness-based now)
+
+        Returns:
+            List of restored items
+        """
+        return await self.reclaim_stale_running(stale_threshold_minutes=5, max_retries=3)
 
     async def cleanup_stale_items(self, max_age_minutes: int = 60) -> Dict[str, int]:
         """
-        Clean up stale/orphaned queue items.
+        Clean up orphaned/mismatched queue items (data integrity only).
 
-        Removes:
-        1. Queue IDs in pending list that have no corresponding item data (orphans)
+        Stale running items are now handled by reclaim_stale_running().
+        This method only handles:
+        1. Queue IDs in pending list with no corresponding item data (orphans)
         2. Items in pending list whose status is no longer PENDING (status mismatch)
-        3. Queue IDs in running set that have no corresponding item data
-        4. Running items stuck for longer than max_age_minutes (started but never completed)
-        5. Items in running set whose status is not RUNNING (status mismatch)
+        3. Queue IDs in running set with no corresponding item data (orphans)
+        4. Items in running set whose status is not RUNNING (status mismatch)
 
-        NOTE: Pending items are intentionally NOT timed out by age. A job waiting in a
-        large backlog is valid — only running items can go stale (dead runner scenario).
+        NOTE: Pending items are intentionally NOT timed out by age.
 
         Args:
-            max_age_minutes: Maximum age for RUNNING items before they are considered stale
+            max_age_minutes: Unused (kept for API compat)
 
         Returns:
             Dict with cleanup statistics
@@ -968,66 +1020,41 @@ class QueueManager:
             return {"error": "Not connected to Redis"}
 
         stats = {
-            "stale_pending_removed": 0,
             "orphan_pending_removed": 0,
             "orphan_running_removed": 0,
-            "stale_running_removed": 0,
             "total_cleaned": 0,
         }
 
-        from datetime import timedelta
-        cutoff_time = datetime.utcnow() - timedelta(minutes=max_age_minutes)
-
-        # Clean up pending queue — orphans and status mismatches only, never timeout by age
+        # Clean up pending queue — orphans and status mismatches only
         pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
         for queue_id in pending_ids:
             item = await self.get_item(queue_id)
 
             if not item:
-                # Orphan: queue_id in list but no item data
                 await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
                 stats["orphan_pending_removed"] += 1
                 logger.info(f"Removed orphan pending queue_id: {queue_id}")
             elif item.status != QueueItemStatus.PENDING:
-                # Item in pending list but status is not pending (completed/failed/etc)
                 await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
                 stats["orphan_pending_removed"] += 1
                 logger.info(f"Removed completed item from pending list: {queue_id} (status: {item.status})")
 
-        # Clean up running set
+        # Clean up running set — orphans and status mismatches only
         running_ids = await self._redis.smembers(self.RUNNING_KEY)
         for queue_id in running_ids:
             item = await self.get_item(queue_id)
             if not item:
-                # Orphan: queue_id in set but no item data
                 await self._redis.srem(self.RUNNING_KEY, queue_id)
                 stats["orphan_running_removed"] += 1
                 logger.info(f"Removed orphan running queue_id: {queue_id}")
-            elif item.status == QueueItemStatus.RUNNING and item.started_at and item.started_at < cutoff_time:
-                # Stale running: started but never completed (e.g., runner restart, Redis timeout)
-                await self._redis.srem(self.RUNNING_KEY, queue_id)
-                item.status = QueueItemStatus.FAILED
-                item.error = f"Stale: running for over {max_age_minutes} minutes without completion"
-                item.completed_at = datetime.utcnow()
-                await self._update_item(item)
-                await self._redis.zadd(
-                    self.FAILED_KEY,
-                    {queue_id: item.completed_at.timestamp()}
-                )
-                await self._publish_event("failed", item)
-                stats["stale_running_removed"] += 1
-                logger.info(f"Removed stale running {queue_id} for job {item.job_id} (started: {item.started_at})")
             elif item.status != QueueItemStatus.RUNNING:
-                # Status mismatch: in running set but status is not RUNNING
                 await self._redis.srem(self.RUNNING_KEY, queue_id)
                 stats["orphan_running_removed"] += 1
                 logger.info(f"Removed mismatched item from running set: {queue_id} (status: {item.status})")
 
         stats["total_cleaned"] = (
-            stats["stale_pending_removed"] +
             stats["orphan_pending_removed"] +
-            stats["orphan_running_removed"] +
-            stats["stale_running_removed"]
+            stats["orphan_running_removed"]
         )
 
         if stats["total_cleaned"] > 0:
