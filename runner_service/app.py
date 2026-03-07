@@ -151,13 +151,28 @@ def _log_stream_url(run_id: str) -> str:
 
 
 def _append_log(run_id: str, message: str) -> None:
-    """Append a log line to the run buffer, trimming to the configured limit."""
+    """Append a log line.
+
+    For batch queue runs that also have an operation streaming state (the common
+    case), delegates to append_operation_log which writes to the live queue and
+    Redis — no in-memory accumulation. For legacy direct /jobs endpoint runs
+    (no operation streaming state), falls back to the in-memory RunState buffer.
+    """
+    # Avoid circular import — operation_streaming imports from app
+    from runner_service.routes.operation_streaming import (
+        append_operation_log as _os_append_log,
+        _operation_runs,
+    )
+    if run_id in _operation_runs:
+        _os_append_log(run_id, message)
+        return
+
+    # Legacy path: direct /jobs endpoint (no operation streaming state)
     state = _runs.get(run_id)
     if not state:
         return
     state.logs.append(message)
     if len(state.logs) > LOG_BUFFER_LIMIT:
-        # Keep the most recent portion to avoid unbounded growth.
         state.logs = state.logs[-LOG_BUFFER_LIMIT:]
 
 

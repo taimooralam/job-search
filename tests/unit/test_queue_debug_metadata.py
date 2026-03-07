@@ -81,6 +81,11 @@ class FakeRedis:
             self.lists[key] = []
         self.lists[key].extend(values)
 
+    async def lpop(self, key: str):
+        if key not in self.lists or not self.lists[key]:
+            return None
+        return self.lists[key].pop(0)
+
     async def rpop(self, key: str):
         if key not in self.lists or not self.lists[key]:
             return None

@@ -6,10 +6,16 @@ Provides Server-Sent Events streaming for smaller pipeline operations
 pipeline streams logs.
 
 Key Components:
-- OperationState: In-memory state tracking for operation logs
+- OperationState: In-memory state tracking (no log buffer — Redis is the store)
 - _operation_runs: Global dict for operation state
 - Redis persistence for logs with 6-hour TTL
-- Helper functions for log appending and SSE streaming
+- asyncio.Queue live channel: consumed as delivered, zero memory accumulation
+
+Log Architecture (Redis-primary):
+- append_operation_log() enqueues to _live_logs (live delivery) AND writes to Redis (durable)
+- SSE generator consumes _live_logs queue — items freed as delivered (no accumulation)
+- None sentinel in queue signals completion to SSE generator
+- On reconnect / Redis-restore: SSE serves from Redis lrange cursor (historical path)
 
 Multi-Runner Support:
 - Each runner has a unique ID (hostname + PID)
@@ -65,20 +71,26 @@ REDIS_LOG_TTL = 21600  # 6 hours in seconds
 
 @dataclass
 class OperationState:
-    """In-memory state for a single operation run."""
+    """In-memory state for a single operation run.
+
+    Log storage is Redis-primary (see module docstring). This dataclass holds
+    only metadata and the live delivery channel — no log list is kept.
+    """
 
     job_id: str
     operation: str
     status: str  # queued, running, completed, failed
     started_at: datetime
     updated_at: datetime
-    logs: List[str] = field(default_factory=list)
     layer_status: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     current_layer: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-    # Event for reactive SSE streaming - set when new logs are appended
-    log_event: Optional[asyncio.Event] = None
+    # Live log channel: consumed as delivered by SSE generator (zero accumulation).
+    # None sentinel signals run completion. None for Redis-restored historical states.
+    _live_logs: Optional[asyncio.Queue] = None
+    # Total log count for expected_log_count Redis metadata (incremented synchronously).
+    _log_count: int = 0
     # LangSmith trace URL for debugging
     langsmith_url: Optional[str] = None
 
@@ -107,7 +119,7 @@ def create_operation_run(job_id: str, operation: str) -> str:
         status="queued",
         started_at=now,
         updated_at=now,
-        log_event=asyncio.Event(),  # Initialize event for reactive SSE streaming
+        _live_logs=asyncio.Queue(),  # Live delivery channel for SSE
     )
     _operation_runs[run_id] = state
 
@@ -137,7 +149,7 @@ def create_operation_run_with_id(run_id: str, job_id: str, operation: str) -> st
         status="running",
         started_at=now,
         updated_at=now,
-        log_event=asyncio.Event(),
+        _live_logs=asyncio.Queue(),  # Live delivery channel for SSE
     )
     _operation_runs[run_id] = state
 
@@ -190,22 +202,31 @@ def _schedule_async_task(coro) -> None:
             asyncio.run_coroutine_threadsafe(coro, main_loop)
 
 
-def _signal_log_event(state: OperationState) -> None:
+def _enqueue_live_log(state: OperationState, item: Optional[str]) -> None:
     """
-    Signal the log_event in a thread-safe manner.
+    Thread-safe put_nowait into the live log queue.
 
+    item=None is the completion sentinel that closes the SSE generator loop.
     Works from both the main event loop thread and worker threads.
+
+    Strategy:
+    - If ANY asyncio loop is running in this thread (main loop or test loop),
+      call put_nowait directly — asyncio.Queue is safe from its owning loop.
+    - If no loop is running (worker thread), use call_soon_threadsafe.
     """
-    if not state.log_event:
+    if not state._live_logs:
         return
 
-    if _is_main_thread_loop():
-        state.log_event.set()
-    else:
+    try:
+        asyncio.get_running_loop()
+        # A loop is running in this thread — put_nowait is safe
+        state._live_logs.put_nowait(item)
+    except RuntimeError:
+        # No running loop — we're in a worker thread, dispatch to main loop
         from runner_service.app import get_main_loop
         main_loop = get_main_loop()
         if main_loop and not main_loop.is_closed():
-            main_loop.call_soon_threadsafe(state.log_event.set)
+            main_loop.call_soon_threadsafe(state._live_logs.put_nowait, item)
 
 
 def append_operation_log(run_id: str, message: str) -> None:
@@ -216,6 +237,10 @@ def append_operation_log(run_id: str, message: str) -> None:
     - The main event loop thread (FastAPI handlers, background tasks)
     - Worker threads (ThreadPoolExecutor running blocking operations)
 
+    Writes to two destinations:
+    1. _live_logs queue — consumed immediately by SSE generator (zero accumulation)
+    2. Redis — durable store for historical replay and cross-runner access
+
     Args:
         run_id: Operation run ID
         message: Log message to append
@@ -224,18 +249,16 @@ def append_operation_log(run_id: str, message: str) -> None:
     if not state:
         return
 
-    state.logs.append(message)
     state.updated_at = datetime.utcnow()
+    state._log_count += 1
 
-    # Trim logs if exceeding buffer limit
-    if len(state.logs) > MAX_LOG_BUFFER:
-        state.logs = state.logs[-MAX_LOG_BUFFER:]
-
-    # Signal SSE generator that new logs are available (reactive streaming)
-    _signal_log_event(state)
-
-    # Persist to Redis (fire-and-forget, non-blocking)
+    # Persist to Redis first (fire-and-forget). Scheduling before the queue
+    # enqueue ensures the Redis write task is ahead in the event loop's ready
+    # queue, so lrange reads in the SSE generator see the data.
     _schedule_async_task(_persist_log_to_redis(run_id, message))
+
+    # Enqueue to live channel — SSE generator consumes and frees immediately
+    _enqueue_live_log(state, message)
 
 
 async def _update_operation_status_async(
@@ -247,8 +270,9 @@ async def _update_operation_status_async(
     """
     Async implementation of operation status update.
 
-    When status is "completed" or "failed", flushes all in-memory logs to Redis
-    BEFORE updating status. This ensures cross-runner log fetching works correctly.
+    On completion/failure, sends a None sentinel to the live queue so the SSE
+    generator closes cleanly. Redis already has all logs from fire-and-forget
+    writes — no explicit flush needed.
     """
     state = _operation_runs.get(run_id)
     if not state:
@@ -262,20 +286,16 @@ async def _update_operation_status_async(
     if error is not None:
         state.error = error
 
-    # Signal SSE generator that status changed (for immediate completion notification)
-    _signal_log_event(state)
-
-    # On completion/failure: flush ALL logs to Redis before updating status
-    # This fixes the race condition where fire-and-forget writes haven't completed
+    # On completion/failure: send None sentinel to close the SSE generator loop
     if status in {"completed", "failed"}:
-        # Flush logs synchronously (await) to ensure they're in Redis
-        await _flush_all_logs_to_redis(run_id, state.logs.copy())
+        _enqueue_live_log(state, None)
 
-    # Persist status update to Redis
-    expected_log_count = len(state.logs) if status in {"completed", "failed"} else None
+    # Persist status update to Redis.
+    # expected_log_count uses _log_count (incremented synchronously — always accurate).
+    expected_log_count = state._log_count if status in {"completed", "failed"} else None
     await _persist_operation_meta_to_redis(run_id, state, expected_log_count)
 
-    # Set TTL on completion/failure (logs expire after 24 hours)
+    # Set TTL on completion/failure (logs expire after 6 hours)
     if status in {"completed", "failed"}:
         await _set_redis_log_ttl(run_id)
 
@@ -291,10 +311,9 @@ def update_operation_status(
 
     Thread-safe: Works from both the main event loop and worker threads.
 
-    When status is "completed" or "failed", this function ensures ALL in-memory
-    logs are flushed to Redis BEFORE the status is updated. This eliminates the
-    race condition where a different runner might see status="completed" but
-    logs haven't been persisted yet.
+    On completion/failure the async impl sends a None sentinel to the live queue,
+    closing the SSE generator. No blocking wait needed — Redis already has all
+    logs from fire-and-forget writes.
 
     Args:
         run_id: Operation run ID
@@ -302,7 +321,6 @@ def update_operation_status(
         result: Optional result data on completion
         error: Optional error message on failure
     """
-    # Schedule the async implementation
     coro = _update_operation_status_async(run_id, status, result, error)
 
     if _is_main_thread_loop():
@@ -311,17 +329,7 @@ def update_operation_status(
         from runner_service.app import get_main_loop
         main_loop = get_main_loop()
         if main_loop and not main_loop.is_closed():
-            # For completion status, we want to wait for the flush to complete
-            # Use run_coroutine_threadsafe and wait for the result
-            if status in {"completed", "failed"}:
-                future = asyncio.run_coroutine_threadsafe(coro, main_loop)
-                try:
-                    # Wait up to 10 seconds for flush to complete
-                    future.result(timeout=10.0)
-                except Exception as e:
-                    logger.warning(f"[{run_id[:16]}] Status update failed to await: {e}")
-            else:
-                asyncio.run_coroutine_threadsafe(coro, main_loop)
+            asyncio.run_coroutine_threadsafe(coro, main_loop)
 
 
 def update_layer_status(
@@ -420,12 +428,12 @@ async def stream_operation_logs(run_id: str) -> StreamingResponse:
     """
     Stream logs for an operation via SSE.
 
-    This mimics the full pipeline's /jobs/{run_id}/logs endpoint
-    but for smaller operations.
-
-    Fallback order:
-    1. In-memory state (for active/recent operations)
-    2. Redis persisted state (for operations after restart, up to 24h TTL)
+    Two paths:
+    1. LIVE path  — run has _live_logs queue (active or recently completed).
+       The SSE generator consumes items from the queue with a 0.5s timeout.
+       A None sentinel signals completion. Memory is freed as logs are delivered.
+    2. HISTORICAL path — run was restored from Redis (no live queue).
+       The SSE generator polls Redis with lrange cursor until status is terminal.
 
     Args:
         run_id: Operation run ID
@@ -433,56 +441,90 @@ async def stream_operation_logs(run_id: str) -> StreamingResponse:
     Returns:
         StreamingResponse with SSE events
     """
-    # First try in-memory state
+    # Try in-memory state first, then Redis fallback (e.g., after runner restart)
     state = _operation_runs.get(run_id)
-
-    # Fallback to Redis if not in memory (e.g., after runner restart)
     if not state:
         state = await get_operation_state_from_redis(run_id)
-
     if not state:
         raise HTTPException(status_code=404, detail="Operation run not found")
 
     async def event_generator() -> AsyncIterator[str]:
-        last_index = 0
+        current_state = _operation_runs.get(run_id)
+        if not current_state:
+            yield f"event: error\ndata: Run not found\n\n"
+            return
 
-        while True:
-            # Check memory first, then Redis fallback (state cached in memory after first Redis fetch)
-            state = _operation_runs.get(run_id)
-            if not state:
-                yield f"event: error\ndata: Run not found\n\n"
-                break
+        if current_state._live_logs is not None:
+            # ── LIVE PATH ──────────────────────────────────────────────────
+            # Consume from queue; entries freed after get(). None = done.
+            while True:
+                current_state = _operation_runs.get(run_id)
+                if not current_state:
+                    break
 
-            # Yield any new logs
-            logs = state.logs
-            while last_index < len(logs):
-                line = logs[last_index]
-                last_index += 1
-                yield f"data: {line}\n\n"
+                if current_state.layer_status:
+                    yield f"event: layer_status\ndata: {json.dumps(current_state.layer_status)}\n\n"
 
-            # Yield layer status updates as special events
-            if state.layer_status:
-                yield f"event: layer_status\ndata: {json.dumps(state.layer_status)}\n\n"
-
-            # Check if operation completed
-            if state.status in {"completed", "failed"}:
-                # Send final result
-                if state.result:
-                    yield f"event: result\ndata: {json.dumps(state.result)}\n\n"
-
-                yield f"event: end\ndata: {state.status}\n\n"
-                break
-
-            # Reactive wait: block until new logs arrive OR timeout for status checks
-            # This eliminates the 100ms polling delay - logs appear instantly
-            if state.log_event:
                 try:
-                    await asyncio.wait_for(state.log_event.wait(), timeout=0.5)
-                    state.log_event.clear()  # Reset for next batch of logs
+                    item = await asyncio.wait_for(
+                        current_state._live_logs.get(), timeout=0.5
+                    )
+                    if item is None:
+                        # Completion sentinel — drain any remaining items (timing edge case)
+                        while not current_state._live_logs.empty():
+                            extra = current_state._live_logs.get_nowait()
+                            if extra is not None:
+                                yield f"data: {extra}\n\n"
+                        if current_state.result:
+                            yield f"event: result\ndata: {json.dumps(current_state.result)}\n\n"
+                        yield f"event: end\ndata: {current_state.status}\n\n"
+                        break
+                    yield f"data: {item}\n\n"
+
                 except asyncio.TimeoutError:
-                    pass  # Timeout is normal - check status and continue
-            else:
-                # Fallback to polling if no event (e.g., Redis-restored state)
+                    # Fallback: if status was set completed/failed without sentinel
+                    # (e.g. tests that set state directly, or unexpected termination)
+                    if current_state.status in {"completed", "failed"}:
+                        while not current_state._live_logs.empty():
+                            extra = current_state._live_logs.get_nowait()
+                            if extra is not None:
+                                yield f"data: {extra}\n\n"
+                        if current_state.result:
+                            yield f"event: result\ndata: {json.dumps(current_state.result)}\n\n"
+                        yield f"event: end\ndata: {current_state.status}\n\n"
+                        break
+
+        else:
+            # ── HISTORICAL PATH ────────────────────────────────────────────
+            # Redis-restored state (after runner restart). Poll with lrange cursor.
+            redis_client = _get_redis_client()
+            logs_key = f"{REDIS_LOG_PREFIX}{run_id}:buffer"
+            last_index = 0
+
+            while True:
+                current_state = _operation_runs.get(run_id)
+                if not current_state:
+                    break
+
+                if redis_client:
+                    try:
+                        new_logs = await redis_client.lrange(logs_key, last_index, -1)
+                        for raw in new_logs:
+                            line = raw if isinstance(raw, str) else raw.decode()
+                            last_index += 1
+                            yield f"data: {line}\n\n"
+                    except Exception as e:
+                        logger.debug(f"[{run_id[:16]}] Redis lrange failed: {e}")
+
+                if current_state.layer_status:
+                    yield f"event: layer_status\ndata: {json.dumps(current_state.layer_status)}\n\n"
+
+                if current_state.status in {"completed", "failed"}:
+                    if current_state.result:
+                        yield f"event: result\ndata: {json.dumps(current_state.result)}\n\n"
+                    yield f"event: end\ndata: {current_state.status}\n\n"
+                    break
+
                 await asyncio.sleep(0.1)
 
     return StreamingResponse(
@@ -731,10 +773,6 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
             for k, v in raw_meta.items()
         }
 
-        # Get logs
-        logs_key = f"{REDIS_LOG_PREFIX}{run_id}:buffer"
-        logs = await redis.lrange(logs_key, 0, -1)
-
         # Get layer status
         layers_key = f"{REDIS_LOG_PREFIX}{run_id}:layers"
         layers_json = await redis.get(layers_key)
@@ -743,7 +781,7 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
             layers_json = layers_json.decode()
         layer_status = json.loads(layers_json) if layers_json else {}
 
-        # Reconstruct state
+        # Reconstruct state — _live_logs is None (historical; SSE uses Redis lrange path)
         def parse_datetime(value: str) -> datetime:
             try:
                 return datetime.fromisoformat(value)
@@ -756,10 +794,10 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
             status=meta.get("status", "completed"),
             started_at=parse_datetime(meta.get("started_at", "")),
             updated_at=parse_datetime(meta.get("updated_at", "")),
-            logs=[log if isinstance(log, str) else log.decode() for log in logs],
             layer_status=layer_status,
             error=meta.get("error") or None,
             langsmith_url=meta.get("langsmith_url") or None,
+            # _live_logs intentionally None: SSE generator uses historical Redis path
         )
 
         # Cache in memory for faster subsequent access

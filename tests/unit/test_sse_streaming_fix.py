@@ -303,18 +303,19 @@ class TestSSEGeneratorPollInterval:
         # Create a test operation run
         run_id = create_operation_run("test_job_123", "test-operation")
 
-        # Add initial logs
+        # Add initial logs (enqueued to _live_logs queue)
         append_operation_log(run_id, "Starting operation")
         append_operation_log(run_id, "Processing layer 1")
 
-        # Directly update state to "completed" — update_operation_status()
-        # uses _schedule_async_task which requires a running FastAPI app.
-        # In tests we set state directly to avoid that dependency.
+        # Directly update state and send completion sentinel.
+        # update_operation_status() uses _schedule_async_task which requires a
+        # running FastAPI app. In tests we set state directly to avoid that dependency.
         state = _operation_runs[run_id]
         state.status = "completed"
         state.result = {"status": "ok"}
-        if state.log_event:
-            state.log_event.set()
+        # Put None sentinel so the SSE generator's queue.get() returns None → closes loop
+        if state._live_logs is not None:
+            state._live_logs.put_nowait(None)
 
         # Stream logs
         response = await stream_operation_logs(run_id)
