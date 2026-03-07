@@ -25,9 +25,9 @@ services:
       replicas: 1
       resources:
         limits:
-          memory: 2G
+          memory: 4G
         reservations:
-          memory: 256M
+          memory: 512M
     # Traefik handles load balancing across replicas via HTTPS
     # No direct port - use https://runner.uqab.digital
     labels:
