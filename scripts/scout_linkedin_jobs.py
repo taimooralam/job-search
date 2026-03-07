@@ -8,7 +8,7 @@ rule_scorer.py, and outputs JSON to stdout for the scout-jobs skill.
 Usage:
     python scripts/scout_linkedin_jobs.py --time hour --region remote --pages 2
     python scripts/scout_linkedin_jobs.py --time day --region us,remote --pages 3 --limit 15
-    python scripts/scout_linkedin_jobs.py --time week --region mena --min-score 40
+    python scripts/scout_linkedin_jobs.py --time week --region emea --min-score 40
     python scripts/scout_linkedin_jobs.py --time day --region us --few-applicants
 """
 
@@ -96,13 +96,6 @@ TIME_FILTERS = {
 # Region mapping
 REGION_CONFIGS = {
     "remote": {"f_WT": "2"},  # Remote filter, no location
-    "us": {"location": "United States"},
-    "mena": {
-        "locations": [
-            "United Arab Emirates", "Saudi Arabia", "Qatar",
-            "Bahrain", "Kuwait", "Oman", "Egypt", "Jordan",
-        ]
-    },
     "emea": {
         "locations": [
             "United Kingdom", "Germany", "Netherlands", "Ireland",
@@ -355,7 +348,7 @@ def main():
     parser.add_argument(
         "--region",
         default="remote",
-        help="Comma-separated regions: remote,us,mena,emea,pakistan,asia_pacific (default: remote)",
+        help="Comma-separated regions: remote,emea,pakistan,asia_pacific (default: remote)",
     )
     parser.add_argument(
         "--pages",
