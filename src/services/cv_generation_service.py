@@ -407,8 +407,16 @@ class CVGenerationService(OperationService):
         }
 
         # Include AI classification for conditional CV sections
-        if job.get("is_ai_job"):
-            state["is_ai_job"] = job["is_ai_job"]
+        # Fallback to regex classifier if is_ai_job was never set (e.g. older jobs)
+        is_ai = job.get("is_ai_job")
+        if is_ai is None:
+            from src.common.ai_classifier import classify_job_document
+            ai_result = classify_job_document(job)
+            is_ai = ai_result.is_ai_job
+            if is_ai:
+                logger.info("AI classification fallback: regex classifier detected AI job")
+        if is_ai:
+            state["is_ai_job"] = True
             state["ai_categories"] = job.get("ai_categories", [])
 
         # Include annotations if requested and available
