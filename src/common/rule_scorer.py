@@ -19,6 +19,7 @@ Supported Roles:
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional
 
 # =============================================================================
@@ -492,13 +493,18 @@ def detect_role(title: str) -> Optional[str]:
         "ai_engineer",
     ]
 
+    def _has_excluded_word(text: str, excludes: List[str]) -> bool:
+        """Check excludes using word boundaries to avoid false hits
+        like 'sales' matching inside 'salesforce'."""
+        return any(re.search(rf"\b{re.escape(ex.lower())}\b", text) for ex in excludes)
+
     # Check exact titles first
     for role_key in role_order:
         role = ROLE_DEFINITIONS[role_key]
         for exact_title in role["exactTitles"]:
             if t == exact_title or exact_title in t:
                 excludes = role.get("excludeIfContains", [])
-                if excludes and any(ex.lower() in t for ex in excludes):
+                if excludes and _has_excluded_word(t, excludes):
                     continue
                 return role_key
 
@@ -508,7 +514,7 @@ def detect_role(title: str) -> Optional[str]:
         for partial in role["partialTitles"]:
             if partial.lower() in t:
                 excludes = role.get("excludeIfContains", [])
-                if excludes and any(ex.lower() in t for ex in excludes):
+                if excludes and _has_excluded_word(t, excludes):
                     continue
                 return role_key
 
@@ -608,8 +614,15 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
 
     # --- 1) TITLE SCORE (0-50) ---
     title_score = _get_title_score(title, detected_role)
-    unwanted_count = _count_unwanted_title_keywords(title)
-    unwanted_penalty = min(unwanted_count * 30, 50)
+    # Only penalize unwanted keywords when no target role was detected.
+    # If detect_role() already matched (e.g. "AI Engineer"), substring
+    # hits like "sales" in "salesforce" shouldn't reduce the score.
+    if detected_role:
+        unwanted_count = 0
+        unwanted_penalty = 0
+    else:
+        unwanted_count = _count_unwanted_title_keywords(title)
+        unwanted_penalty = min(unwanted_count * 30, 50)
 
     # --- 2) SENIORITY SCORE (-25 to +15) ---
     seniority_result = _get_seniority_score(f"{title_lower} {crit_lower}")
