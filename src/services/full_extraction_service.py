@@ -469,6 +469,12 @@ class FullExtractionService(OperationService):
                             f"Normalized LinkedIn URL: {current_url} -> {normalized_url}"
                         )
 
+            # AI classification (semantic, not regex) — needed for Lantern project insertion
+            from src.services.ai_classifier_llm import classify_job_document_llm
+            enriched_doc = dict(job) if job else {}
+            enriched_doc["extracted_jd"] = extracted_jd
+            ai_result = classify_job_document_llm(enriched_doc)
+
             # Build update document
             update_doc = {
                 "jd_annotations": existing_annotations,
@@ -481,6 +487,12 @@ class FullExtractionService(OperationService):
                 "strategic_needs": pain_points_data.get("strategic_needs", []),
                 "risks_if_unfilled": pain_points_data.get("risks_if_unfilled", []),
                 "success_metrics": pain_points_data.get("success_metrics", []),
+                # AI classification
+                "is_ai_job": ai_result.is_ai_job,
+                "ai_categories": ai_result.ai_categories,
+                "ai_category_count": ai_result.ai_category_count,
+                "ai_rationale": getattr(ai_result, "ai_rationale", None),
+                "ai_classified_at": getattr(ai_result, "ai_classified_at", None),
                 # Metadata
                 "full_extraction_completed_at": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),
