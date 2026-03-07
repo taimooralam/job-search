@@ -100,6 +100,8 @@ def notify_pipeline_complete(
     role: str,
     duration_s: float,
     operation: str = "batch-pipeline",
+    location: str = "",
+    job_url: str = "",
 ) -> bool:
     """Notify about pipeline completion.
 
@@ -109,6 +111,8 @@ def notify_pipeline_complete(
         role: Job title
         duration_s: Duration in seconds
         operation: Operation type
+        location: Job location
+        job_url: LinkedIn job URL
 
     Returns:
         True if sent
@@ -120,8 +124,12 @@ def notify_pipeline_complete(
     lines = [
         "&#9989; <b>Pipeline Complete</b>",
         f"<b>{company}</b> — {role}",
-        f"Duration: {duration_str} | Op: {operation}",
     ]
+    if location:
+        lines.append(location)
+    lines.append(f"Duration: {duration_str} | Op: {operation}")
+    if job_url:
+        lines.append(job_url)
     return send_telegram("\n".join(lines))
 
 

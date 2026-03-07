@@ -2307,11 +2307,14 @@ async def _execute_queued_operation(
                 _job = _validate_job_exists_sync(job_id)
                 _company = _job.get("company", "Unknown") if _job else "Unknown"
                 _title = _job.get("title", "Unknown") if _job else "Unknown"
+                _location = _job.get("location", "") if _job else ""
+                _job_url = _job.get("jobUrl", "") if _job else ""
                 _duration_s = (result.duration_ms or 0) / 1000.0
                 if result.success:
                     notify_pipeline_complete(
                         job_id=job_id, company=_company, role=_title,
                         duration_s=_duration_s, operation=operation,
+                        location=_location, job_url=_job_url,
                     )
                 else:
                     notify_pipeline_failed(
