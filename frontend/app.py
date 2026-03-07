@@ -3205,11 +3205,30 @@ def batch_job_rows_partial():
             }
         }
 
+        # _pipelinePriority: active pipeline jobs float above everything else
+        # 0 = currently running (highest priority), 1 = failed, 2 = idle/done
+        add_fields["_pipelinePriority"] = {
+            "$switch": {
+                "branches": [
+                    {
+                        "case": {"$eq": ["$pipeline_status", "running"]},
+                        "then": 0,
+                    },
+                    {
+                        "case": {"$in": ["$pipeline_status", ["failed", "pipeline_failed"]]},
+                        "then": 1,
+                    },
+                ],
+                "default": 2,
+            }
+        }
+
         pipeline.append({"$addFields": add_fields})
 
         # Stage 3: Sort by multi-criteria
-        # Jobs with CV on top (latest first), then remaining by priority
+        # Active pipeline jobs first (running → failed), then CV, then standard order
         sort_spec = {
+            "_pipelinePriority": 1,  # Running(0) → Failed(1) → Idle(2)
             "_hasCv": 1,             # Jobs with CV first (0 before 1)
             "_hasResolvedUrl": 1,    # Resolved URLs first (0 before 1)
             "_isAiJob": 1,           # AI jobs first (0 before 1)
