@@ -46,13 +46,11 @@ from src.common.telegram import notify_cron_complete
 # Configuration
 # ---------------------------------------------------------------------------
 
-HOURLY_QUOTA = 5
+HOURLY_QUOTA = 3
 
 CATEGORY_WEIGHTS = {
-    "ai": 0.50,
-    "leadership": 0.20,
-    "engineering": 0.10,
-    "architect": 0.20,
+    "ai": 0.70,
+    "engineering": 0.30,
 }
 
 
@@ -64,25 +62,11 @@ ROLE_TO_CATEGORY = {
     "llm_engineer": "ai",
     "agentic_ai_engineer": "ai",
     "applied_ai_engineer": "ai",
-    "ai_leadership": "leadership",
     # Unmapped roles fall back to "engineering"
 }
 
 TIME_FILTER = "r3600"  # last hour
 MAX_PAGES = 2
-
-# Search strategy:
-#
-# Combo 1 — Global remote (few applicants): Best signal, low competition roles
-# Combo 2 — Global remote (all): Wider net for remote roles anywhere
-# Combo 3 — Priority regions on-site/hybrid (few applicants): EMEA, MENA, Pakistan, APAC
-# Combo 4 — Priority regions on-site/hybrid (all): Same regions, no applicant filter
-# Combo 5 — US remote only (few applicants): Small taste of US market
-#
-# Why "remote" is its own combo and not bundled with regions:
-#   LinkedIn's f_WT=2 (remote filter) is global — adding region locations alongside
-#   it was redundant and biased results toward those specific countries. Separating
-#   them gives clean coverage: remote=global, regions=on-site/hybrid.
 
 SEARCH_COMBOS = [
     # Global remote — catches remote roles worldwide without location bias

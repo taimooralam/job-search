@@ -53,33 +53,12 @@ SEARCH_PROFILES = {
         "Agentic AI Engineer",
         "Applied AI Engineer",
         "Head of AI",
+        "AI Tech Lead",
     ],
     "engineering": [
         "Staff Software Engineer",
         "Principal Engineer",
         "Software Architect",
-        "Engineering Manager",
-        "Head of Engineering",
-        "Director of Engineering",
-        "CTO",
-    ],
-    "leadership": [
-        "Head of AI",
-        "Director of AI",
-        "VP of AI",
-        "Head of Engineering",
-        "Director of Engineering",
-        "VP of Engineering",
-        "CTO",
-    ],
-    "architect": [
-        "AI Architect",
-        "AI Solutions Architect",
-        "GenAI Architect",
-        "LLM Architect",
-        "Software Architect",
-        "Solutions Architect",
-        "Cloud Architect",
     ],
 }
 
@@ -377,7 +356,7 @@ def main():
     parser.add_argument(
         "--profile",
         default="ai",
-        help="Comma-separated search profiles: ai,engineering,leadership,architect (default: ai)",
+        help="Comma-separated search profiles: ai,engineering (default: ai)",
     )
 
     args = parser.parse_args()
