@@ -29,7 +29,7 @@ Your mission: Create a HYBRID EXECUTIVE SUMMARY that passes both ATS algorithms 
 You will generate FOUR components:
 
 1. **HEADLINE** (1 line)
-   Format: "[EXACT JOB TITLE FROM JD] | [X]+ Years Technology Leadership"
+   Format: "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership"
    Example: "Platform Engineering Leader | 12+ Years Technology Leadership"
 
 2. **TAGLINE** (15-25 words, max 200 characters)
@@ -180,7 +180,7 @@ Gulf Version (when regional_variant="gulf"):
 
 Return ONLY valid JSON:
 {
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word persona-driven hook (third-person absent voice, max 200 chars)",
   "key_achievements": [
     "Achievement 1 with quantified metric",
@@ -469,7 +469,7 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY maximizing measurable im
 
 === METRIC-FIRST HYBRID STRUCTURE ===
 
-1. **HEADLINE**: "[EXACT JD TITLE] | [X]+ Years Technology Leadership"
+1. **HEADLINE**: "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership"
 
 2. **TAGLINE** (15-25 words, max 200 chars):
    - Third-person absent voice (NO pronouns)
@@ -502,7 +502,7 @@ CRITICAL - You may ONLY use metrics that appear EXACTLY in the source bullets.
 
 Return ONLY valid JSON:
 {
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word metric-driven hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Achievement 1 with metric", "Achievement 2 with metric", "...5-6 total"],
   "core_competencies": ["Competency 1", "Competency 2", "...6-8 total"],
@@ -525,7 +525,7 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY with compelling transfor
 
 === NARRATIVE-FIRST HYBRID STRUCTURE ===
 
-1. **HEADLINE**: "[EXACT JD TITLE] | [X]+ Years Technology Leadership"
+1. **HEADLINE**: "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership"
 
 2. **TAGLINE** (15-25 words, max 200 chars):
    - Third-person absent voice (NO pronouns)
@@ -564,7 +564,7 @@ CRITICAL - All achievements must come from the source bullets.
 
 Return ONLY valid JSON:
 {
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word story-driven hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Transformation 1 with impact", "Transformation 2 with impact", "...5-6 total"],
   "core_competencies": ["Competency 1", "Competency 2", "...6-8 total"],
@@ -587,7 +587,7 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY maximizing keyword densi
 
 === KEYWORD-FIRST HYBRID STRUCTURE ===
 
-1. **HEADLINE**: "[EXACT JD TITLE] | [X]+ Years Technology Leadership"
+1. **HEADLINE**: "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership"
    - Use EXACT JD title
 
 2. **TAGLINE** (15-25 words, max 200 chars):
@@ -628,7 +628,7 @@ CRITICAL - Only use keywords from the GROUNDED list provided.
 
 Return ONLY valid JSON:
 {
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word keyword-dense hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Achievement 1 with JD keyword", "Achievement 2 with JD keyword", "...5-6 total"],
   "core_competencies": ["JD Keyword 1", "JD Keyword 2", "...6-8 total"],
@@ -688,7 +688,7 @@ Before finalizing, verify:
 
 Return ONLY valid JSON:
 {
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word synthesized hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Best achievement 1", "Best achievement 2", "...5-6 total"],
   "core_competencies": ["Best competencies from all drafts", "...6-8 total"],
@@ -994,6 +994,15 @@ VALUE_PROPOSITION_TEMPLATES = {
             "Technology strategist driving digital transformation resulting in 3x revenue growth through platform innovation.",
         ],
         "emphasis": ["business transformation", "technology vision", "board-level impact"],
+    },
+    "ai_architect": {
+        "formula": "[Infrastructure-to-AI bridge] with [X years] distributed systems applying [production rigor] to [LLM reliability/AI systems].",
+        "examples": [
+            "Production infrastructure leader with 11+ years applying distributed systems rigor to LLM gateway design and AI reliability at scale.",
+            "AI systems architect bridging 11+ years of cloud-native operations to multi-provider LLM routing with eval-driven quality gates.",
+            "Engineering leader combining deep infrastructure expertise with hands-on LLM gateway development, delivering production-grade AI systems.",
+        ],
+        "emphasis": ["infrastructure-to-AI bridge", "LLM reliability", "production operations", "eval-driven quality"],
     },
 }
 

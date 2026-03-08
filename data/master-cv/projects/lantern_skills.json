@@ -8,12 +8,24 @@
     "LLM gateway", "multi-provider routing", "provider fallback chain",
     "chat completions endpoint", "request validation", "error handling middleware",
     "request ID propagation", "provider config schema", "model-to-provider mapping",
+    "circuit breaker", "retry with backoff",
     "unit tests", "integration tests", "mock providers",
     "Docker multi-stage build", "CI/CD pipeline", "VPS deployment",
     "Prometheus metrics", "Grafana dashboards", "observability stack"
   ],
+  "verified_competencies": [
+    "LLM Gateway Design",
+    "Provider Fallback Chain",
+    "Circuit Breaker Pattern",
+    "Multi-Provider Routing",
+    "LLM-as-Judge Evaluation",
+    "Langfuse Tracing",
+    "RAG Pipeline",
+    "Vector Search",
+    "Semantic Caching",
+    "Model Routing"
+  ],
   "not_yet_built": [
-    "semantic caching", "circuit breaker", "retry with backoff",
     "streaming SSE", "rate limiting", "eval harness", "golden-set evaluation",
     "fine-tuning pipeline", "cost tracking dashboard",
     "load balancing", "admin dashboard"

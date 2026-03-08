@@ -729,7 +729,7 @@ class HeaderGenerator:
 
         # Extract role category
         role_category = extracted_jd.get("role_category", "engineering_manager")
-        job_title = extracted_jd.get("title", "Engineering Leader")
+        job_title = extracted_jd.get("clean_title") or extracted_jd.get("title", "Engineering Leader")
         years_experience = self._calculate_years_experience(stitched_cv)
 
         # Collect all bullets for context
@@ -790,6 +790,17 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             annotations=annotations if annotations else None,
         )
 
+        # AI enrichment: append Lantern context to value proposition prompt
+        lantern_context = extracted_jd.get("lantern_context")
+        if lantern_context and lantern_context.get("bullets"):
+            lantern_section = "\n\n=== AI PROJECT CONTEXT (Lantern — LLM Quality Gateway) ===\n"
+            lantern_section += "The candidate has built a production LLM gateway project. "
+            lantern_section += "Use these VERIFIED achievements to strengthen the value proposition:\n"
+            for bullet in lantern_context["bullets"]:
+                lantern_section += f"- {bullet}\n"
+            lantern_section += "\nIMPORTANT: Do NOT invent claims beyond these verified bullets."
+            user_prompt += lantern_section
+
         # Phase 0: Log LLM call start with prompt previews
         self._emit_struct_log("llm_call_start", {
             "message": f"Generating value proposition for {role_category}",
@@ -848,6 +859,14 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                 master_cv_bullets.append({
                     "text": bullet,
                     "role_id": role.company,
+                })
+
+        # AI enrichment: add Lantern bullets to candidate pool
+        if lantern_context and lantern_context.get("bullets"):
+            for bullet in lantern_context["bullets"]:
+                master_cv_bullets.append({
+                    "text": bullet,
+                    "role_id": "lantern_project",
                 })
 
         bullets_prompt = build_key_achievement_bullets_prompt_v2(
@@ -1192,6 +1211,10 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             "senior_engineer": (
                 "Senior engineer who builds scalable systems and delivers high-quality code "
                 "through deep technical expertise and collaborative approach."
+            ),
+            "ai_architect": (
+                "Production infrastructure leader applying 11+ years of distributed systems rigor "
+                "to LLM gateway design, evaluation pipelines, and AI reliability at scale."
             ),
         }
 

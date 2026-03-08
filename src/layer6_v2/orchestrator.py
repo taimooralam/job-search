@@ -130,6 +130,18 @@ def should_include_ai_section(state: Dict[str, Any]) -> bool:
     return bool(state.get("is_ai_job", False))
 
 
+def _load_lantern_skills() -> List[str]:
+    """Load verified skills and competencies from lantern_skills.json for whitelist expansion."""
+    path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern_skills.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        skills = list(data.get("verified_skills", []))
+        skills.extend(data.get("verified_competencies", []))
+        return skills
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
 def _load_lantern_project() -> Optional[Dict[str, Any]]:
     """
     Load Lantern project section from data/master-cv/projects/lantern.md.
@@ -588,6 +600,14 @@ class CVGeneratorV2:
                 extracted_jd["role_category"] = "ai_architect"
                 self._logger.info("  AI job detected — using ai_architect role category")
 
+                # Expand skill whitelist with Lantern project skills for AI jobs
+                lantern_skills = _load_lantern_skills()
+                if lantern_skills:
+                    existing_hard = set(skill_whitelist.get("hard_skills", []))
+                    new_skills = [s for s in lantern_skills if s not in existing_hard]
+                    skill_whitelist.setdefault("hard_skills", []).extend(new_skills)
+                    self._logger.info(f"  Expanded whitelist with {len(new_skills)} Lantern skills")
+
             # Log persona sources available for synthesis
             self._emit_struct_log("persona_sources", {
                 "has_synthesized_persona": bool(jd_annotations and jd_annotations.get("synthesized_persona")),
@@ -599,6 +619,29 @@ class CVGeneratorV2:
                     bool(_load_role_persona(extracted_jd.get("role_category", ""))),
                 ]),
             })
+
+            # Title sanitizer: clean JD title before header generation
+            from src.layer6_v2.title_sanitizer import sanitize_job_title, sanitize_job_title_llm
+            raw_title = extracted_jd.get("title", "")
+            regex_clean = sanitize_job_title(raw_title)
+            clean_title = asyncio.run(sanitize_job_title_llm(raw_title, regex_clean, job_id=self._job_id))
+            extracted_jd["clean_title"] = clean_title
+            if clean_title != raw_title:
+                self._logger.info(f"  Title sanitized: '{raw_title}' → '{clean_title}'")
+
+            # AI enrichment: load Lantern context for header generation
+            lantern_context = None
+            if is_ai:
+                lantern_data = _load_lantern_project()
+                if lantern_data:
+                    lantern_context = {
+                        "project_name": lantern_data.get("title", ""),
+                        "description": lantern_data.get("description", ""),
+                        "bullets": lantern_data.get("bullets", []),
+                        "stack": lantern_data.get("stack", ""),
+                    }
+                    extracted_jd["lantern_context"] = lantern_context
+                    self._logger.info(f"  Loaded Lantern context: {len(lantern_context['bullets'])} bullets")
 
             # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")

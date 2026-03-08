@@ -1897,14 +1897,17 @@
         {
           "name": "LLM Reliability & Evaluation",
           "priority": 1,
-          "description": "LLM gateway design, evaluation pipelines, quality gates",
+          "description": "LLM gateway design, evaluation pipelines, quality gates, tracing",
           "skills": [
             "LLM Gateway Design",
             "Quality Gates",
             "Request Validation",
             "Evaluation Pipelines",
             "Prompt Engineering",
-            "Model Routing"
+            "Model Routing",
+            "LLM-as-Judge Evaluation",
+            "Golden-Set Testing",
+            "Langfuse Tracing"
           ],
           "jd_signals": [
             "llm",
@@ -1917,20 +1920,32 @@
             "quality",
             "prompt",
             "rag",
-            "retrieval"
+            "retrieval",
+            "tracing",
+            "langfuse",
+            "golden set",
+            "judge"
           ]
         },
         {
           "name": "Agentic AI & Orchestration",
           "priority": 2,
-          "description": "Event-driven AI systems, multi-provider routing, agent frameworks",
+          "description": "Event-driven AI systems, multi-provider routing, agent frameworks, RAG pipelines",
           "skills": [
             "Event-Driven Architecture",
             "Multi-Provider Routing",
             "Agent Frameworks",
             "CQRS Patterns",
             "API Gateway Design",
-            "Microservices"
+            "Microservices",
+            "LLM Gateway Design",
+            "Provider Fallback Chain",
+            "Circuit Breaker Pattern",
+            "Semantic Caching",
+            "RAG Pipeline",
+            "Vector Search",
+            "LangGraph",
+            "LangChain"
           ],
           "jd_signals": [
             "agent",
@@ -1942,7 +1957,13 @@
             "routing",
             "langchain",
             "langgraph",
-            "workflow"
+            "workflow",
+            "rag",
+            "vector",
+            "semantic cache",
+            "circuit breaker",
+            "fallback",
+            "provider"
           ]
         },
         {
@@ -2526,6 +2547,93 @@
       "Security Design",
       "Secure Coding",
       "InfoSec"
+    ],
+    "// AI & LLM SYSTEMS": "----------------------------------------",
+    "llm gateway design": [
+      "LLM Gateway Design",
+      "LLM Gateway",
+      "AI Gateway",
+      "Model Gateway",
+      "LLM Proxy"
+    ],
+    "provider fallback chain": [
+      "Provider Fallback Chain",
+      "Provider Fallback",
+      "Model Fallback",
+      "LLM Fallback",
+      "Fallback Routing"
+    ],
+    "circuit breaker pattern": [
+      "Circuit Breaker Pattern",
+      "Circuit Breaker",
+      "Resilience Pattern",
+      "Fault Isolation"
+    ],
+    "semantic caching": [
+      "Semantic Caching",
+      "Semantic Cache",
+      "Vector Cache",
+      "LLM Caching",
+      "Embedding Cache"
+    ],
+    "rag pipeline": [
+      "RAG Pipeline",
+      "RAG",
+      "Retrieval-Augmented Generation",
+      "Retrieval Augmented Generation"
+    ],
+    "vector search": [
+      "Vector Search",
+      "Vector Database",
+      "Vector DB",
+      "Qdrant",
+      "Pinecone",
+      "Weaviate",
+      "ChromaDB",
+      "Embedding Search"
+    ],
+    "langgraph": [
+      "LangGraph",
+      "Lang Graph",
+      "LangChain Graph"
+    ],
+    "langchain": [
+      "LangChain",
+      "Lang Chain",
+      "LangChain Framework"
+    ],
+    "llm-as-judge evaluation": [
+      "LLM-as-Judge Evaluation",
+      "LLM-as-Judge",
+      "LLM Judge",
+      "AI Evaluation",
+      "Automated Evaluation"
+    ],
+    "golden-set testing": [
+      "Golden-Set Testing",
+      "Golden Set",
+      "Reference Testing",
+      "Benchmark Testing",
+      "Eval Suite"
+    ],
+    "langfuse tracing": [
+      "Langfuse Tracing",
+      "Langfuse",
+      "LLM Tracing",
+      "AI Observability",
+      "LLM Observability"
+    ],
+    "prompt engineering": [
+      "Prompt Engineering",
+      "Prompt Design",
+      "Prompt Optimization",
+      "Prompt Tuning"
+    ],
+    "model routing": [
+      "Model Routing",
+      "Model Selection",
+      "LLM Routing",
+      "Provider Routing"
     ]
   },
   "default_fallback_role": "engineering_manager"

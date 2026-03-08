@@ -359,14 +359,21 @@ class EnsembleHeaderGenerator:
 
         # Extract inputs from stitched CV
         all_bullets = [b for role in stitched_cv.roles for b in role.bullets]
+
+        # AI enrichment: append Lantern bullets to experience pool
+        lantern_context = extracted_jd.get("lantern_context")
+        if lantern_context and lantern_context.get("bullets"):
+            all_bullets.extend(lantern_context["bullets"])
+
         metrics = self._extract_metrics_from_bullets(all_bullets)
         years_experience = self._calculate_years_experience(extracted_jd)
 
-        # Build user prompt
+        # Build user prompt — use clean_title if available
+        job_title = extracted_jd.get("clean_title") or extracted_jd.get("title", "Engineering Leader")
         user_prompt = build_persona_user_prompt(
             persona=persona.value,
             candidate_name=candidate_name,
-            job_title=extracted_jd.get("title", "Engineering Leader"),
+            job_title=job_title,
             role_category=extracted_jd.get("role_category", "engineering_manager"),
             top_keywords=extracted_jd.get("top_keywords", []),
             experience_bullets=all_bullets[:20],
@@ -378,21 +385,30 @@ class EnsembleHeaderGenerator:
         )
 
         # Add schema guidance for JSON response
-        schema_guidance = """
+        schema_guidance = f"""
 Return JSON matching this ProfileResponse schema:
-{
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+{{
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word persona-driven hook (max 200 chars)",
   "key_achievements": ["5-6 quantified achievements"],
   "core_competencies": ["6-8 ATS-friendly keywords"],
   "highlights_used": ["exact metrics used"],
   "keywords_integrated": ["JD keywords included"],
-  "exact_title_used": "the exact title from JD",
+  "exact_title_used": "{job_title}",
   "answers_who": true,
   "answers_what_problems": true,
   "answers_proof": true,
   "answers_why_you": true
-}"""
+}}"""
+
+        # AI enrichment: add Lantern context constraint
+        if lantern_context and lantern_context.get("bullets"):
+            schema_guidance += "\n\nAI PROJECT CONTEXT (Lantern — LLM Quality Gateway):\n"
+            schema_guidance += "The candidate built a production LLM gateway. Include relevant achievements:\n"
+            for bullet in lantern_context["bullets"]:
+                schema_guidance += f"- {bullet}\n"
+            schema_guidance += "IMPORTANT: Do NOT invent claims beyond these verified bullets."
+
         full_system_prompt = system_prompt + "\n\n" + schema_guidance
 
         # Use UnifiedLLM with JSON validation
@@ -458,29 +474,30 @@ Return JSON matching this ProfileResponse schema:
 
         # Build synthesis prompt (now uses hybrid format)
         persona_outputs = [r.to_dict() for r in persona_results]
+        synthesis_title = extracted_jd.get("clean_title") or extracted_jd.get("title", "Engineering Leader")
         user_prompt = build_synthesis_user_prompt(
             persona_outputs=persona_outputs,
-            job_title=extracted_jd.get("title", "Engineering Leader"),
+            job_title=synthesis_title,
             top_keywords=extracted_jd.get("top_keywords", []),
             years_experience=years_experience,
         )
 
         # Add schema guidance for JSON response
-        schema_guidance = """
+        schema_guidance = f"""
 Return JSON matching this ProfileResponse schema:
-{
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+{{
+  "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word synthesized hook (max 200 chars)",
   "key_achievements": ["5-6 best quantified achievements from all personas"],
   "core_competencies": ["6-8 ATS-friendly keywords"],
   "highlights_used": ["exact metrics used"],
   "keywords_integrated": ["JD keywords included"],
-  "exact_title_used": "the exact title from JD",
+  "exact_title_used": "{synthesis_title}",
   "answers_who": true,
   "answers_what_problems": true,
   "answers_proof": true,
   "answers_why_you": true
-}"""
+}}"""
         full_system_prompt = SYNTHESIS_SYSTEM_PROMPT + "\n\n" + schema_guidance
 
         # Use UnifiedLLM with JSON validation for synthesis
