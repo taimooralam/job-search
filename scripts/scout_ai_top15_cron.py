@@ -44,7 +44,7 @@ from src.common.telegram import send_telegram
 # Configuration
 # ---------------------------------------------------------------------------
 
-QUOTA = 15
+QUOTA = 9
 TIME_FILTER = "r86400"  # 24 hours
 MAX_PAGES = 3
 
