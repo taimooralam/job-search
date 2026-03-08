@@ -154,6 +154,9 @@ UNWANTED_TITLE_KEYWORDS = [
     "network engineer", "systems administrator",
     "frontend engineer", "frontend developer", "ui engineer", "ux engineer",
     "ios developer", "android developer", "mobile developer",
+    "data scientist", "senior data scientist", "lead data scientist",
+    "ml engineer", "machine learning engineer", "senior ml engineer",
+    "lead ml engineer", "staff ml engineer",
 ]
 
 # =============================================================================
