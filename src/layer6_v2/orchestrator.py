@@ -131,12 +131,14 @@ def should_include_ai_section(state: Dict[str, Any]) -> bool:
 
 
 def _load_lantern_skills() -> List[str]:
-    """Load verified skills and competencies from lantern_skills.json for whitelist expansion."""
+    """Load all Lantern skills (verified + post-checklist) for whitelist expansion."""
     path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern_skills.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         skills = list(data.get("verified_skills", []))
         skills.extend(data.get("verified_competencies", []))
+        skills.extend(data.get("post_checklist_skills", []))
+        skills.extend(data.get("post_checklist_competencies", []))
         return skills
     except (FileNotFoundError, json.JSONDecodeError):
         return []

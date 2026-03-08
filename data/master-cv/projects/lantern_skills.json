@@ -23,11 +23,30 @@
     "RAG Pipeline",
     "Vector Search",
     "Semantic Caching",
-    "Model Routing"
+    "Model Routing",
+    "LangGraph",
+    "LangChain",
+    "Agent Frameworks",
+    "API Gateway Design"
+  ],
+  "post_checklist_skills": [
+    "React", "Vite", "Tailwind CSS", "Vercel"
+  ],
+  "post_checklist_competencies": [
+    "Golden-Set Testing",
+    "Eval Harness Design",
+    "Faithfulness Evaluation",
+    "Regression Detection",
+    "Streaming SSE",
+    "Rate Limiting",
+    "SLO/SLI Design",
+    "Incident Runbooks",
+    "Cost Optimization",
+    "Prompt Engineering",
+    "Document Ingestion Pipeline",
+    "Hybrid Search"
   ],
   "not_yet_built": [
-    "streaming SSE", "rate limiting", "eval harness", "golden-set evaluation",
-    "fine-tuning pipeline", "cost tracking dashboard",
-    "load balancing", "admin dashboard"
+    "fine-tuning pipeline", "load balancing", "admin dashboard"
   ]
 }

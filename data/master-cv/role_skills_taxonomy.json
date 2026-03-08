@@ -1907,7 +1907,10 @@
             "Model Routing",
             "LLM-as-Judge Evaluation",
             "Golden-Set Testing",
-            "Langfuse Tracing"
+            "Langfuse Tracing",
+            "Eval Harness Design",
+            "Faithfulness Evaluation",
+            "Regression Detection"
           ],
           "jd_signals": [
             "llm",
@@ -1945,7 +1948,11 @@
             "RAG Pipeline",
             "Vector Search",
             "LangGraph",
-            "LangChain"
+            "LangChain",
+            "Streaming SSE",
+            "Rate Limiting",
+            "Document Ingestion Pipeline",
+            "Hybrid Search"
           ],
           "jd_signals": [
             "agent",
@@ -1976,7 +1983,10 @@
             "Docker",
             "Kubernetes",
             "CI/CD",
-            "AWS"
+            "AWS",
+            "SLO/SLI Design",
+            "Incident Runbooks",
+            "Cost Optimization"
           ],
           "jd_signals": [
             "monitoring",
@@ -1989,7 +1999,12 @@
             "cloud",
             "devops",
             "infrastructure",
-            "production"
+            "production",
+            "slo",
+            "sli",
+            "incident",
+            "runbook",
+            "cost"
           ]
         },
         {
@@ -2634,6 +2649,77 @@
       "Model Selection",
       "LLM Routing",
       "Provider Routing"
+    ],
+    "eval harness design": [
+      "Eval Harness Design",
+      "Eval Harness",
+      "Evaluation Framework",
+      "Eval Pipeline",
+      "Testing Framework"
+    ],
+    "faithfulness evaluation": [
+      "Faithfulness Evaluation",
+      "Faithfulness",
+      "Groundedness Check",
+      "RAG Evaluation",
+      "Answer Grounding"
+    ],
+    "regression detection": [
+      "Regression Detection",
+      "Quality Regression",
+      "Eval Regression",
+      "Performance Regression",
+      "Baseline Comparison"
+    ],
+    "streaming sse": [
+      "Streaming SSE",
+      "Server-Sent Events",
+      "SSE",
+      "Event Stream",
+      "LLM Streaming"
+    ],
+    "rate limiting": [
+      "Rate Limiting",
+      "Rate Limiter",
+      "Throttling",
+      "Request Limiting",
+      "API Rate Limit"
+    ],
+    "slo/sli design": [
+      "SLO/SLI Design",
+      "SLO",
+      "SLI",
+      "Service Level Objectives",
+      "Service Level Indicators",
+      "Error Budget"
+    ],
+    "incident runbooks": [
+      "Incident Runbooks",
+      "Runbooks",
+      "Incident Response",
+      "Playbooks",
+      "Operational Runbooks"
+    ],
+    "cost optimization": [
+      "Cost Optimization",
+      "Cost Reduction",
+      "Cost Management",
+      "FinOps",
+      "LLM Cost Optimization"
+    ],
+    "document ingestion pipeline": [
+      "Document Ingestion Pipeline",
+      "Document Processing",
+      "Document Ingestion",
+      "Data Ingestion",
+      "ETL Pipeline"
+    ],
+    "hybrid search": [
+      "Hybrid Search",
+      "BM25",
+      "Semantic Search",
+      "Full-Text Search",
+      "Reranking"
     ]
   },
   "default_fallback_role": "engineering_manager"
