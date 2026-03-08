@@ -65,7 +65,7 @@ ROLE_TO_CATEGORY = {
     # Unmapped roles fall back to "engineering"
 }
 
-TIME_FILTER = "r3600"  # last hour
+TIME_FILTER = "r43200"  # last 12 hours
 MAX_PAGES = 2
 
 SEARCH_COMBOS = [
