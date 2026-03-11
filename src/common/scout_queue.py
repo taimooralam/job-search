@@ -133,9 +133,20 @@ def enqueue_jobs(
     queue_file = queue_dir / "queue.jsonl"
     now = datetime.now(timezone.utc).isoformat()
 
+    scored_file = queue_dir / "scored.jsonl"
+    dead_file = queue_dir / "queue_dead.jsonl"
+
     with _file_lock(queue_file, exclusive=True):
         existing = _read_jsonl(queue_file)
         existing_ids = {e["job_id"] for e in existing}
+
+        # Also check scored.jsonl (already scraped, awaiting selection)
+        scored_entries = _read_jsonl(scored_file)
+        existing_ids.update(e["job_id"] for e in scored_entries if "job_id" in e)
+
+        # Also check dead letter (permanently failed — no point re-enqueuing)
+        dead_entries = _read_jsonl(dead_file)
+        existing_ids.update(e["job_id"] for e in dead_entries if "job_id" in e)
 
         new_entries = []
         for job in jobs:

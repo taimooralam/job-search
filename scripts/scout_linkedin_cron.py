@@ -125,26 +125,26 @@ def run_all_searches() -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-def dedupe_against_db(jobs: List[Dict[str, Any]], collection) -> List[Dict[str, Any]]:
-    """Remove jobs that already exist in MongoDB level-2."""
+def dedupe_against_db(jobs: List[Dict[str, Any]], db) -> List[Dict[str, Any]]:
+    """Remove jobs that already exist in MongoDB (checks both level-1 and level-2)."""
     if not jobs:
         return []
 
     # Build all possible dedupe keys for each job
     dedupe_keys = []
     for job in jobs:
-        # Check both source variants (scout vs import)
         dedupe_keys.append(generate_dedupe_key("linkedin_scout", source_id=job["job_id"]))
         dedupe_keys.append(generate_dedupe_key("linkedin_import", source_id=job["job_id"]))
 
-    # Batch query
+    # Batch query both collections
     existing = set()
-    cursor = collection.find(
-        {"dedupeKey": {"$in": dedupe_keys}},
-        {"dedupeKey": 1},
-    )
-    for doc in cursor:
-        existing.add(doc["dedupeKey"])
+    for coll_name in ("level-2", "level-1"):
+        cursor = db[coll_name].find(
+            {"dedupeKey": {"$in": dedupe_keys}},
+            {"dedupeKey": 1},
+        )
+        for doc in cursor:
+            existing.add(doc["dedupeKey"])
 
     # Filter
     new_jobs = []
@@ -222,8 +222,7 @@ def main():
     # Step 2: Pre-filter against MongoDB (avoid enqueueing known jobs)
     logger.info("Step 2: Deduplicating against MongoDB...")
     db = get_db()
-    collection = db["level-2"]
-    new_jobs = dedupe_against_db(raw_jobs, collection)
+    new_jobs = dedupe_against_db(raw_jobs, db)
     already_in_db = len(raw_jobs) - len(new_jobs)
     logger.info(f"After dedup: {len(new_jobs)} new jobs ({already_in_db} already in DB)")
 
