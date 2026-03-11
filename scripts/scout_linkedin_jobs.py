@@ -6,10 +6,10 @@ Searches LinkedIn's guest API for AI/GenAI/LLM roles, scores them using
 rule_scorer.py, and outputs JSON to stdout for the scout-jobs skill.
 
 Usage:
-    python scripts/scout_linkedin_jobs.py --time hour --region remote --pages 2
-    python scripts/scout_linkedin_jobs.py --time day --region us,remote --pages 3 --limit 15
+    python scripts/scout_linkedin_jobs.py --time hour --region eea --pages 2
+    python scripts/scout_linkedin_jobs.py --time day --region eea,mena --pages 3 --limit 15 --remote
     python scripts/scout_linkedin_jobs.py --time week --region emea --min-score 40
-    python scripts/scout_linkedin_jobs.py --time day --region us --few-applicants
+    python scripts/scout_linkedin_jobs.py --time day --region pakistan --few-applicants
 """
 
 import argparse
@@ -74,18 +74,56 @@ TIME_FILTERS = {
 
 # Region mapping
 REGION_CONFIGS = {
-    "remote": {"f_WT": "2"},  # Remote filter, no location
-    "emea": {
+    "eea": {
         "locations": [
-            "United Kingdom", "Germany", "Netherlands", "Ireland",
-            "France", "Switzerland", "Sweden", "Denmark", "Norway",
-            "Finland", "Belgium", "Spain", "Portugal", "Italy", "Poland",
+            # Western Europe
+            "Germany", "Netherlands", "France", "Belgium", "Austria",
+            # Nordics / Scandinavia
+            "Sweden", "Denmark", "Norway", "Finland", "Iceland",
+            # Southern Europe + Iberian peninsula
+            "Italy", "Spain", "Portugal", "Greece",
+            # Baltic states
+            "Estonia", "Latvia", "Lithuania",
+            # Central Europe
+            "Poland", "Czech Republic", "Romania", "Hungary",
+            # Other EEA
+            "Ireland",
+            # EEA-adjacent (Schengen)
+            "Switzerland",
+        ]
+    },
+    "mena": {
+        "locations": [
+            "United Arab Emirates", "Saudi Arabia", "Qatar",
+            "Kuwait", "Bahrain", "Oman",
+            "Egypt", "Jordan", "Morocco",
+        ]
+    },
+    "emea": {
+        # Superset: EEA + UK + MENA + Turkey + South Africa
+        "locations": [
+            # All EEA locations
+            "Germany", "Netherlands", "France", "Belgium", "Austria",
+            "Sweden", "Denmark", "Norway", "Finland", "Iceland",
+            "Italy", "Spain", "Portugal", "Greece",
+            "Estonia", "Latvia", "Lithuania",
+            "Poland", "Czech Republic", "Romania", "Hungary",
+            "Ireland", "Switzerland",
+            # Non-EEA Europe
+            "United Kingdom", "Turkey",
+            # MENA
+            "United Arab Emirates", "Saudi Arabia", "Qatar",
+            "Kuwait", "Bahrain", "Oman",
+            "Egypt", "Jordan", "Morocco",
+            # Africa
+            "South Africa",
         ]
     },
     "pakistan": {"location": "Pakistan"},
     "asia_pacific": {
         "locations": [
             "Singapore", "Australia", "China", "Japan", "South Korea",
+            "India",
         ]
     },
 }
@@ -188,6 +226,7 @@ def search_jobs(
     max_pages: int,
     limit: int = 0,
     few_applicants: bool = False,
+    remote_only: bool = False,
 ) -> List[Dict[str, str]]:
     """Search LinkedIn for jobs across keywords and regions, deduped."""
     seen_ids: Set[str] = set()
@@ -203,13 +242,11 @@ def search_jobs(
         search_params: List[Dict[str, Any]] = []
         if "locations" in config:
             for loc in config["locations"]:
-                search_params.append({"location": loc, "remote_only": False})
-        elif "f_WT" in config:
-            search_params.append({"location": None, "remote_only": True})
+                search_params.append({"location": loc, "remote_only": remote_only})
         elif "location" in config:
-            search_params.append({"location": config["location"], "remote_only": False})
+            search_params.append({"location": config["location"], "remote_only": remote_only})
         else:
-            search_params.append({"location": None, "remote_only": False})
+            search_params.append({"location": None, "remote_only": remote_only})
 
         for sp in search_params:
             if _should_stop():
@@ -219,7 +256,8 @@ def search_jobs(
                 if _should_stop():
                     break
 
-                loc_label = sp.get("location") or ("Remote" if sp.get("remote_only") else "Global")
+                loc_name = sp.get("location") or "Global"
+                loc_label = f"{loc_name} [remote]" if sp.get("remote_only") else loc_name
                 logger.info(f"Searching: '{kw}' in {loc_label} ({region_key})")
 
                 for page in range(max_pages):
@@ -326,8 +364,13 @@ def main():
     )
     parser.add_argument(
         "--region",
-        default="remote",
-        help="Comma-separated regions: remote,emea,pakistan,asia_pacific (default: remote)",
+        default="eea",
+        help="Comma-separated regions: eea,mena,emea,pakistan,asia_pacific (default: eea)",
+    )
+    parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Add remote filter (f_WT=2) to all searches",
     )
     parser.add_argument(
         "--pages",
@@ -386,9 +429,9 @@ def main():
                 keywords.append(kw)
 
     # Step 1: Search
-    logger.info(f"Scout config: time={args.time}, regions={regions}, profiles={profiles}, pages={args.pages}, min_score={args.min_score}, limit={args.limit}, few_applicants={args.few_applicants}")
+    logger.info(f"Scout config: time={args.time}, regions={regions}, profiles={profiles}, pages={args.pages}, min_score={args.min_score}, limit={args.limit}, few_applicants={args.few_applicants}, remote={args.remote}")
     logger.info(f"Search keywords ({len(keywords)}): {keywords}")
-    jobs = search_jobs(keywords, time_filter, regions, args.pages, args.limit, args.few_applicants)
+    jobs = search_jobs(keywords, time_filter, regions, args.pages, args.limit, args.few_applicants, remote_only=args.remote)
     logger.info(f"Found {len(jobs)} unique jobs across all searches")
 
     if not jobs:

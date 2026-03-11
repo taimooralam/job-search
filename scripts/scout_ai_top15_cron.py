@@ -46,15 +46,19 @@ from src.common.telegram import send_telegram
 
 QUOTA = 5
 TIME_FILTER = "r86400"  # 24 hours
-MAX_PAGES = 3
+MAX_PAGES = 1
 
 SEARCH_COMBOS = [
-    # Global remote — catches remote roles worldwide without location bias
-    (["remote"], True, True),
-    (["remote"], True, False),
-    # Priority regions — on-site/hybrid roles in target geographies
-    (["emea", "pakistan", "asia_pacific"], False, True),
-    (["emea", "pakistan", "asia_pacific"], False, False),
+    # (region, remote_only, few_applicants)
+    # Each region searched with and without remote filter
+    ("asia_pacific", False, True),
+    ("asia_pacific", True,  True),
+    ("mena",         False, True),
+    ("mena",         True,  True),
+    ("pakistan",      False, True),
+    ("pakistan",      True,  True),
+    ("eea",          False, True),
+    ("eea",          True,  True),
 ]
 
 # Runner API
@@ -93,9 +97,9 @@ def run_all_searches() -> List[Dict[str, Any]]:
     all_jobs: List[Dict[str, Any]] = []
     ai_keywords = SEARCH_PROFILES["ai"]
 
-    for regions, remote_only, few_applicants in SEARCH_COMBOS:
+    for region, remote_only, few_applicants in SEARCH_COMBOS:
         label = (
-            f"regions={regions} remote={remote_only} "
+            f"region={region} remote={remote_only} "
             f"few_applicants={few_applicants}"
         )
         logger.info(f"Search pass: {label}")
@@ -103,9 +107,10 @@ def run_all_searches() -> List[Dict[str, Any]]:
         jobs = search_jobs(
             keywords_list=ai_keywords,
             time_filter=TIME_FILTER,
-            regions=regions,
+            regions=[region],
             max_pages=MAX_PAGES,
             few_applicants=few_applicants,
+            remote_only=remote_only,
         )
 
         new_count = 0

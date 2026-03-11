@@ -66,15 +66,19 @@ ROLE_TO_CATEGORY = {
 }
 
 TIME_FILTER = "r43200"  # last 12 hours
-MAX_PAGES = 2
+MAX_PAGES = 1
 
 SEARCH_COMBOS = [
-    # Global remote — catches remote roles worldwide without location bias
-    (["remote"], True, True),
-    (["remote"], True, False),
-    # Priority regions — on-site/hybrid roles in target geographies
-    (["emea", "pakistan", "asia_pacific"], False, True),
-    (["emea", "pakistan", "asia_pacific"], False, False),
+    # (region, remote_only, few_applicants)
+    # Each region searched with and without remote filter
+    ("asia_pacific", False, True),
+    ("asia_pacific", True,  True),
+    ("mena",         False, True),
+    ("mena",         True,  True),
+    ("pakistan",      False, True),
+    ("pakistan",      True,  True),
+    ("eea",          False, True),
+    ("eea",          True,  True),
 ]
 
 # Runner API
@@ -112,36 +116,21 @@ def run_all_searches() -> List[Dict[str, Any]]:
     seen_ids: Set[str] = set()
     all_jobs: List[Dict[str, Any]] = []
 
-    for regions, remote_only, few_applicants in SEARCH_COMBOS:
+    for region, remote_only, few_applicants in SEARCH_COMBOS:
         for profile_name, keywords in SEARCH_PROFILES.items():
             label = (
-                f"profile={profile_name} regions={regions} "
+                f"profile={profile_name} region={region} "
                 f"remote={remote_only} few_applicants={few_applicants}"
             )
             logger.info(f"Search pass: {label}")
 
-            # search_jobs handles per-region × per-keyword iteration internally.
-            # For non-remote combos we pass regions directly; for remote combos
-            # the regions list already contains "remote" which sets f_WT=2.
-            #
-            # When remote_only=True but the region isn't "remote", we still want
-            # to search with f_WT=2 + a location filter. search_jobs doesn't
-            # support that natively, so we handle it by passing just the region
-            # key and relying on the remote filter being embedded in the params.
-            # For the remote combo, the "remote" region already sets f_WT=2.
-            #
-            # Actually, looking at fetch_search_page, remote_only is a separate
-            # bool passed alongside location. But search_jobs doesn't expose
-            # remote_only as a parameter — it derives it from the region config.
-            # So for the remote combos, "remote" is already in the region list.
-            # For non-remote combos (MENA/APAC), we just use the region directly.
-
             jobs = search_jobs(
                 keywords_list=keywords,
                 time_filter=TIME_FILTER,
-                regions=regions,
+                regions=[region],
                 max_pages=MAX_PAGES,
                 few_applicants=few_applicants,
+                remote_only=remote_only,
             )
 
             new_count = 0
