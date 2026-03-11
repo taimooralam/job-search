@@ -84,8 +84,6 @@ REGION_CONFIGS = {
             "Italy", "Spain", "Portugal", "Greece",
             # Baltic states
             "Estonia", "Latvia", "Lithuania",
-            # Central Europe
-            "Poland", "Czech Republic", "Romania", "Hungary",
             # Other EEA
             "Ireland",
             # EEA-adjacent (Schengen)
@@ -96,7 +94,7 @@ REGION_CONFIGS = {
         "locations": [
             "United Arab Emirates", "Saudi Arabia", "Qatar",
             "Kuwait", "Bahrain", "Oman",
-            "Egypt", "Jordan", "Morocco",
+            "Morocco",
         ]
     },
     "emea": {
@@ -107,14 +105,13 @@ REGION_CONFIGS = {
             "Sweden", "Denmark", "Norway", "Finland", "Iceland",
             "Italy", "Spain", "Portugal", "Greece",
             "Estonia", "Latvia", "Lithuania",
-            "Poland", "Czech Republic", "Romania", "Hungary",
             "Ireland", "Switzerland",
             # Non-EEA Europe
             "United Kingdom", "Turkey",
             # MENA
             "United Arab Emirates", "Saudi Arabia", "Qatar",
             "Kuwait", "Bahrain", "Oman",
-            "Egypt", "Jordan", "Morocco",
+            "Morocco",
             # Africa
             "South Africa",
         ]
@@ -123,7 +120,6 @@ REGION_CONFIGS = {
     "asia_pacific": {
         "locations": [
             "Singapore", "Australia", "China", "Japan", "South Korea",
-            "India",
         ]
     },
 }
