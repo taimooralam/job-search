@@ -182,6 +182,7 @@ def fetch_search_page(
     location: str = None,
     remote_only: bool = False,
     few_applicants: bool = False,
+    proxies: dict = None,
 ) -> str:
     """Fetch a single page of LinkedIn search results."""
     params: Dict[str, Any] = {
@@ -207,6 +208,7 @@ def fetch_search_page(
             params=params,
             headers=HEADERS,
             timeout=REQUEST_TIMEOUT,
+            proxies=proxies,
         )
         response.raise_for_status()
         return response.text

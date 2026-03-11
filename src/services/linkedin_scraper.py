@@ -155,7 +155,7 @@ def normalize_linkedin_url(url: str) -> Optional[str]:
         return None
 
 
-def scrape_linkedin_job(job_id_or_url: str) -> LinkedInJobData:
+def scrape_linkedin_job(job_id_or_url: str, proxies: dict = None) -> LinkedInJobData:
     """
     Scrape job details from LinkedIn's public guest API.
 
@@ -184,7 +184,8 @@ def scrape_linkedin_job(job_id_or_url: str) -> LinkedInJobData:
             url,
             headers=HEADERS,
             timeout=REQUEST_TIMEOUT,
-            allow_redirects=True
+            allow_redirects=True,
+            proxies=proxies,
         )
 
         # Check for rate limiting

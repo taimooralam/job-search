@@ -119,3 +119,6 @@ star-curator/
 
 # Raw thoughts
 plans/raw_thoughts.md
+
+# Scout queue runtime data (JSONL staging files, proxy cache, analytics)
+data/scout/
