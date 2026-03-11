@@ -86,8 +86,8 @@ REGION_CONFIGS = {
             "Estonia", "Latvia", "Lithuania",
             # Other EEA
             "Ireland",
-            # EEA-adjacent (Schengen)
-            "Switzerland",
+            # EEA-adjacent / Schengen
+            "Switzerland", "United Kingdom",
         ]
     },
     "mena": {
