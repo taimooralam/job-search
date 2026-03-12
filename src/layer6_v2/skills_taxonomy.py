@@ -763,6 +763,21 @@ class TaxonomyBasedSkillsGenerator:
         "security": [r"\b(security|secure|authentication|authorization|oauth|jwt|encryption)\b"],
 
         # ═══════════════════════════════════════════════════════════════════════════
+        # AI & LLM SYSTEMS
+        # ═══════════════════════════════════════════════════════════════════════════
+        "rag pipeline": [r"\b(rag|retrieval.?augmented|raptor|knowledge.*retriev|retrieval.*pipeline)\b"],
+        "hybrid search": [r"\b(bm25|hybrid.*search|reciprocal.*rank.*fusion|rrf|full.?text.*search|semantic.*search|lexical.*search)\b"],
+        "vector search": [r"\b(vector.*search|vector.*db|vector.*database|embedding.*search|s3.*vector|cosine.*similar|ann.*search|hnsw|approximate.*nearest|similarity.*search)\b"],
+        "semantic caching": [r"\b(semantic.*cach|embedding.*cach|vector.*cach|similarity.*threshold|llm.*cach)\b"],
+        "llm gateway design": [r"\b(llm.*gateway|ai.*gateway|model.*gateway|litellm|llm.*proxy|llm.*router)\b"],
+        "llm-as-judge evaluation": [r"\b(llm.?as.?judge|llm.*rerank|ai.*evaluat|relevance.*scor|llm.*evaluat|llm.*judge)\b"],
+        "prompt engineering": [r"\b(prompt.*engineer|system.*prompt|few.?shot|chain.?of.?thought|prompt.*design|prompt.*optim|prompt.*template)\b"],
+        "model routing": [r"\b(model.*rout|provider.*rout|multi.?provider|fallback.*chain|provider.*fallback|model.*select)\b"],
+        "langfuse tracing": [r"\b(langfuse|llm.*trac|ai.*observ|llm.*observ|llm.*monitor)\b"],
+        "embeddings": [r"\b(embedding|text.?embedding|vector.*represent|sentence.*transform|embed.*model)\b"],
+        "agent frameworks": [r"\b(agent.*framework|agentic.*ai|ai.*agent|autonomous.*agent|agent.*orchestrat)\b"],
+
+        # ═══════════════════════════════════════════════════════════════════════════
         # PROCESS & METHODOLOGY
         # ═══════════════════════════════════════════════════════════════════════════
         "event storming": [r"\b(event.*storm|domain.*discover|collaborative.*model|ddd.*workshop)\b"],

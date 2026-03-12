@@ -277,6 +277,31 @@ Per the CV generation critique recommendations:
 
 ---
 
+### Achievement 15: AI Platform Engineering (Commander-4/Joyia)
+
+**Core Fact**: As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered three search quality improvements in TypeScript: (1) BM25 + RRF hybrid search — implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching architecture using S3 Vectors (cosine >= 0.95) + Redis TTL, including a custom S3VectorSemanticCache class for LiteLLM in Python.
+
+**Variants**:
+- **Architecture**: Led enterprise AI platform (Commander-4/Joyia, 2,000 users, 42 plugins) and designed two-tier semantic caching architecture combining S3 Vectors (cosine ≥ 0.95) with Redis TTL, reducing LLM API costs while maintaining response quality
+- **Technical**: Implemented BM25 scoring from scratch for S3 Vectors (no inverted index available) with RRF fusion (k=60), LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.all, and custom S3VectorSemanticCache class in Python
+- **Leadership**: Platform lead for enterprise AI workflow platform serving 2,000 users across ProSiebenSat.1, driving search quality strategy and personally contributing three core search improvements
+- **Impact**: Improved search relevance through hybrid BM25+semantic retrieval, reduced latency via semantic caching, and lowered LLM costs through intelligent cache hits on the enterprise AI platform
+- **Innovation**: Built BM25 scoring from scratch on S3 Vectors — a non-traditional approach since S3 Vectors lacks inverted indices — computing corpus statistics in-memory and fusing with semantic results via RRF
+- **Short**: AI platform lead — BM25+RRF hybrid search, LLM-as-judge reranking, semantic caching for 2,000-user enterprise platform
+
+**Keywords**: AI platform, LLM, RAG, retrieval-augmented generation, hybrid search, BM25, reciprocal rank fusion, RRF, vector search, S3 Vectors, semantic caching, LLM-as-judge, LLM reranking, LiteLLM, AI gateway, model routing, prompt engineering, Claude, enterprise AI, Commander-4, Joyia, TypeScript, Python, Redis, cosine similarity
+
+**Interview Defensibility**: ✅ Can explain:
+- BM25 scoring math (TF-IDF variant with length normalization, k1 and b parameters)
+- Why RRF over linear combination (rank-based fusion is score-distribution-agnostic, k=60 is standard literature value)
+- LLM-as-judge architecture (Claude Sonnet via LiteLLM, parallel Promise.all for latency, structured relevance scoring)
+- Semantic caching design (S3 Vectors cosine ≥ 0.95 threshold, Redis TTL for expiry, custom S3VectorSemanticCache Python class)
+- Platform lead vs personal contribution distinction (led platform strategy, personally built these 3 features)
+
+**Differentiators**: Hands-on AI/LLM engineering at enterprise scale — not just strategy or integration, but implementing search algorithms and caching from scratch
+
+---
+
 ## Skills
 
 **Hard Skills**:
@@ -290,6 +315,7 @@ Per the CV generation critique recommendations:
 - **Frontend**: Angular, Frontend Development, Frontend Frameworks
 - **Media**: HbbTV, Media Encoding, Service Delivery Platforms
 - **Domains**: AdTech, Addressable TV, GDPR, TCF, Consent Management, Third-Party System Integration
+- **AI & LLM**: LLM Integration, RAG Pipeline, Hybrid Search (BM25 + RRF), Vector Search (S3 Vectors), Semantic Caching, LLM-as-Judge Evaluation, LiteLLM, Prompt Engineering, Model Routing, Enterprise AI Platform
 
 **Soft Skills**: Technical Leadership, Mentoring, Strategic Planning, Stakeholder Management, Risk Analysis, Hiring & Interviewing, Cross-Functional Collaboration, Change Management, Innovation Culture, Blameless Postmortems, Accountability, Adaptability, Analytical Thinking, Autonomy, Clear Communication, Coaching, Collaboration, Communication, Conflict Resolution, Continuous Improvement Mindset, Continuous Learning, Creativity, Cross-Functional Team Leadership, Culture Building, Curiosity, Customer Focus, Decision Making, Documentation, Empathy, Entrepreneurial Mindset, Executive Presence, Executive Stakeholder Management, Feedback Delivery, Flexibility, Growth Mindset, Influence, Initiative, Innovation, Interpersonal Skills, Leadership, Ownership, People Management, Performance Management, Presentation Skills, Prioritization, Problem Solving, Product Mindset, Project Management, Relationship Building, Requirements Analysis, Resourcefulness, Self-Motivation, Stakeholder Communication, Stakeholder Engagement, Strategic Alignment, Strategic Leadership, Strategic Thinking, Team Building, Team Collaboration, Team Development, Team Leadership, Team Management, Technical Advisory, Technical Communication, Thought Leadership, Written Communication
 
@@ -309,6 +335,7 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 | Data | OpenSearch, Redis |
 | Infrastructure | Terraform, Serverless Framework |
 | Compliance | GDPR, TCF, CMP |
+| AI/LLM | S3 Vectors, LiteLLM, Claude Sonnet, BM25, RRF, Semantic Cache, Redis |
 
 ### Business Context
 - **Company**: Seven.One Entertainment Group (ProSiebenSat.1 Media)
@@ -334,6 +361,8 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 - [x] DDD and microservices
 - [x] Team leadership numbers
 - [x] GDPR/compliance work
+- [x] AI platform lead role (Commander-4/Joyia)
+- [x] Enterprise AI at ProSiebenSat.1 scale
 
 ---
 
@@ -353,6 +382,7 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 | Culture/Mentoring | 9, 10 (team development, Lean Friday) |
 | Scaling/Performance | 7 (auto-scaling, bursty traffic) |
 | Process/Agile | 4, 8, 12 (DDD, postmortems, atomic deploys) |
+| AI/LLM/RAG | 15 (AI platform, hybrid search, semantic caching) |
 
 ---
 
@@ -378,6 +408,13 @@ Technical Lead driving platform modernization, architectural excellence, and tea
    - Onboarding time measurement
    - Velocity improvement calculation
 
+4. **AI Platform Engineering** (Achievement 15)
+   - BM25 implementation on S3 Vectors (no inverted index)
+   - RRF fusion math and k=60 choice
+   - LLM-as-judge reranking architecture
+   - Semantic caching two-tier design
+   - Platform lead vs personal contribution distinction
+
 ### Metrics to Defend
 
 | Metric | Source/Calculation |
@@ -390,3 +427,7 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 | €30M revenue protection | Annual advertising revenue exposure |
 | 60% MTTR reduction | Incident resolution time tracking |
 | 15% YoY impression growth | Business metrics dashboards |
+| 2,000 platform users | Commander-4/Joyia usage metrics |
+| 42 plugins | Platform plugin catalog |
+| Cosine >= 0.95 cache threshold | Semantic caching config |
+| k=60 RRF parameter | Standard RRF literature value |
