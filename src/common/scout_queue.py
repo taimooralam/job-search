@@ -175,16 +175,16 @@ def enqueue_jobs(
 
 
 def dequeue_batch(batch_size: int = 5) -> List[Dict]:
-    """Pop the first N entries from queue.jsonl.
+    """Pop the newest N entries from queue.jsonl (LIFO).
 
-    Atomically reads all entries, takes the first batch_size, and rewrites
-    the file with the remainder.
+    Newest jobs are scraped first so fresh postings reach the selector
+    before the quota fills up with stale entries.
 
     Args:
         batch_size: Number of jobs to dequeue
 
     Returns:
-        List of dequeued job entries
+        List of dequeued job entries (newest first)
     """
     queue_dir = get_queue_dir()
     queue_file = queue_dir / "queue.jsonl"
@@ -194,11 +194,12 @@ def dequeue_batch(batch_size: int = 5) -> List[Dict]:
         if not entries:
             return []
 
-        batch = entries[:batch_size]
-        remaining = entries[batch_size:]
+        # LIFO: take from the end (newest enqueued first)
+        batch = entries[-batch_size:]
+        remaining = entries[:-batch_size] if len(entries) > batch_size else []
         _write_jsonl(queue_file, remaining)
 
-    logger.info(f"Dequeued {len(batch)} jobs ({len(remaining)} remaining)")
+    logger.info(f"Dequeued {len(batch)} jobs, newest first ({len(remaining)} remaining)")
     return batch
 
 
