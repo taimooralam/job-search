@@ -167,7 +167,7 @@ SENIORITY_LEVELS = {
     "executive": {"keywords": ["executive", "c-level", "c-suite", "chief", "caio"], "score": 15},
     "director": {"keywords": ["director", "vp", "vice president", "head of", "head"], "score": 12},
     "senior_ic": {"keywords": ["staff", "principal", "distinguished", "fellow"], "score": 10},
-    "lead": {"keywords": ["lead", "tech lead", "team lead"], "score": 8},
+    "lead": {"keywords": ["lead", "tech lead", "team lead", "lead software engineer"], "score": 10},
     "senior": {"keywords": ["senior", "sr.", "sr "], "score": 6},
     "mid": {"keywords": ["mid", "intermediate"], "score": 0},
     "junior": {"keywords": ["junior", "jr.", "jr ", "entry", "associate", "intern", "trainee", "graduate"], "score": -25},
@@ -300,6 +300,7 @@ ACHIEVEMENT_KEYWORDS = [
 REMOTE_POSITIVE = [
     "remote", "remote-first", "distributed", "work from anywhere", "wfh",
     "hybrid", "flexible location", "global", "work from home", "worldwide",
+    "remote anywhere", "anywhere in the world", "location flexible",
 ]
 
 REMOTE_NEGATIVE = [
@@ -654,10 +655,14 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         w = weights[key]
         kw_scores[key] = _count_keywords_weighted(full_text, kw_list, w["weight"], w["max"])
 
-    # --- 4) REMOTE PREFERENCE (-10 to +10) ---
+    # --- 4) REMOTE PREFERENCE (-10 to +15) ---
     remote_score = 0
     if _contains_any(loc_and_desc, REMOTE_POSITIVE):
         remote_score += 10
+    # Extra boost for strong "anywhere" signals in title or description
+    anywhere_keywords = ["remote anywhere", "work from anywhere", "anywhere in the world"]
+    if _contains_any(f"{title_lower} {desc_lower}", anywhere_keywords):
+        remote_score += 5
     if _contains_any(loc_and_desc, REMOTE_NEGATIVE):
         remote_score -= 10
 

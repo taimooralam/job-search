@@ -2,11 +2,12 @@
 """
 Scout Scraper Cron — Phase 2: Dequeue jobs, fetch details via proxy, score, write to scored.jsonl.
 
-Runs every 5 minutes. Processes a small batch (default 5) per run.
+Runs every 2.5 minutes. Processes a small batch (default 5) per run.
 Does NOT insert into MongoDB — that's the selector's job (Phase 3).
 
-Cron:
-    */5 * * * *  cd /root/scout-cron && .venv/bin/python scripts/scout_scraper_cron.py >> /var/log/scout-scraper.log 2>&1
+Cron (every 2.5 min via two entries):
+    */5 * * * *    cd /root/scout-cron && .venv/bin/python scripts/scout_scraper_cron.py >> /var/log/scout-scraper.log 2>&1
+    2-57/5 * * * * cd /root/scout-cron && .venv/bin/python scripts/scout_scraper_cron.py >> /var/log/scout-scraper.log 2>&1
 
 Manual:
     python scripts/scout_scraper_cron.py --dry-run -v

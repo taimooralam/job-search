@@ -59,6 +59,8 @@ SEARCH_PROFILES = {
         "Staff Software Engineer",
         "Principal Engineer",
         "Software Architect",
+        "Lead Software Engineer",
+        "Tech Lead",
     ],
 }
 
