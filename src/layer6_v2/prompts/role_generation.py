@@ -265,13 +265,16 @@ Seniority: {extracted_jd.get('seniority_level', 'senior')}
 === COMPETENCY WEIGHTS (emphasize accordingly) ===
 {competency_text}
 
-=== JD PAIN POINTS (address if you have matching achievements) ===
+=== JD PAIN POINTS (ALIGNMENT ONLY — DO NOT use as source for claims) ===
+Use these to decide WHICH of your achievements to highlight and how to frame the SITUATION ending.
+Do NOT copy technologies, platforms, or tools from these pain points into your bullets.
 {pain_points_text}
 
-=== TARGET ATS KEYWORDS (integrate naturally) ===
+=== TARGET ATS KEYWORDS (integrate naturally — but ONLY if candidate has matching experience) ===
 {keywords_text}
 
-=== TECHNICAL SKILLS FROM JD ===
+=== TECHNICAL SKILLS FROM JD (ALIGNMENT ONLY — DO NOT add to bullets unless in candidate's role achievements) ===
+These are what the JD asks for. Only mention technologies the candidate ACTUALLY used (from ROLE ACHIEVEMENTS below).
 {tech_skills_text}
 
 === ROLE TO PROCESS ===
@@ -288,9 +291,10 @@ Career Stage: {career_context.career_stage}
 EMPHASIS GUIDANCE:
 {career_context.emphasis_guidance}
 
+=== SOURCE OF TRUTH: CANDIDATE'S ACHIEVEMENTS (generate bullets ONLY from these) ===
 {achievement_mapping_text}
 
-=== HARD SKILLS FROM THIS ROLE ===
+=== HARD SKILLS FROM THIS ROLE (candidate's actual skills — safe to use in bullets) ===
 {', '.join(role.hard_skills) if role.hard_skills else 'None listed'}
 
 === SOFT SKILLS FROM THIS ROLE ===

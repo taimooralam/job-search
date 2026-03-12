@@ -460,18 +460,100 @@ class CVGrader:
             strengths=["Strong executive positioning"] if score >= 8 else [],
         )
 
+    # Common technology names for cross-reference checking
+    TECH_PATTERNS = re.compile(
+        r'\b(?:'
+        r'AWS Bedrock|Azure ML Studio|Google Gemini|AWS SageMaker|'
+        r'AWS Lambda|Amazon S3|Amazon ECS|Amazon EKS|'
+        r'OpenAI|Anthropic|Claude|GPT-\d|Gemini|Llama|Mistral|'
+        r'LiteLLM|LangChain|LangGraph|LangSmith|Langfuse|'
+        r'Kubernetes|Docker|Terraform|Helm|ArgoCD|'
+        r'Redis|PostgreSQL|MongoDB|Qdrant|Pinecone|Weaviate|ChromaDB|'
+        r'FastAPI|Flask|Django|Express|Next\.js|React|'
+        r'PyTorch|TensorFlow|Hugging Face|sentence-transformers|'
+        r'Prometheus|Grafana|Datadog|New Relic|'
+        r'GitHub Actions|CircleCI|Jenkins|GitLab CI|'
+        r'Kafka|RabbitMQ|Celery|Airflow|'
+        r'Python|TypeScript|JavaScript|Go|Rust|Java|'
+        r'GCP|Azure|AWS'
+        r')\b',
+        re.IGNORECASE,
+    )
+
+    def _extract_technologies(self, text: str) -> Set[str]:
+        """Extract technology names from text using pattern matching."""
+        matches = self.TECH_PATTERNS.findall(text)
+        # Normalize to lowercase for comparison
+        return {m.lower() for m in matches}
+
+    def _check_tech_cross_reference(
+        self,
+        cv_text: str,
+        master_cv_text: str,
+        extracted_jd: Optional[Dict] = None,
+    ) -> Tuple[float, List[str]]:
+        """
+        Cross-reference technologies in CV against master CV.
+
+        Flags technologies that appear in CV but NOT in master CV,
+        especially if they appear in the JD (likely hallucination source).
+
+        Returns:
+            Tuple of (penalty score 0-3, list of flagged technologies)
+        """
+        cv_techs = self._extract_technologies(cv_text)
+        master_techs = self._extract_technologies(master_cv_text)
+
+        # Technologies in CV but not in master CV
+        ungrounded_techs = cv_techs - master_techs
+        if not ungrounded_techs:
+            return 0.0, []
+
+        # Check which ungrounded techs come from the JD (strongest hallucination signal)
+        jd_techs: Set[str] = set()
+        if extracted_jd:
+            jd_text_parts = []
+            for field in ("technical_skills", "top_keywords", "implied_pain_points", "responsibilities"):
+                val = extracted_jd.get(field, [])
+                if isinstance(val, list):
+                    jd_text_parts.extend(str(v) for v in val)
+                elif isinstance(val, str):
+                    jd_text_parts.append(val)
+            jd_techs = self._extract_technologies(" ".join(jd_text_parts))
+
+        # Techs in CV that are NOT in master but ARE in JD = likely hallucinated from JD
+        jd_sourced = ungrounded_techs & jd_techs
+        other_ungrounded = ungrounded_techs - jd_techs
+
+        flagged = []
+        penalty = 0.0
+
+        # Heavy penalty for JD-sourced technologies (the exact hallucination pattern we saw)
+        for tech in sorted(jd_sourced):
+            flagged.append(f"'{tech}' appears in JD but NOT in master CV — likely hallucinated from JD")
+            penalty += 1.0
+
+        # Lighter penalty for other ungrounded techs (could be abbreviations or related terms)
+        for tech in sorted(other_ungrounded):
+            flagged.append(f"'{tech}' not found in master CV")
+            penalty += 0.3
+
+        return min(3.0, penalty), flagged
+
     def _grade_anti_hallucination(
         self,
         cv_text: str,
         master_cv_text: str,
+        extracted_jd: Optional[Dict] = None,
     ) -> DimensionScore:
         """
         Grade anti-hallucination (factual accuracy, grounding).
 
         Scoring based on:
-        - Metric preservation (5 points)
-        - Company/role preservation (3 points)
-        - No fabrication detected (2 points)
+        - Metric preservation (4 points)
+        - Technology cross-reference (3 points)
+        - Company/role preservation (1.5 points)
+        - No fabrication detected (1.5 points)
         """
         # Extract metrics from both texts
         cv_metrics = set(re.findall(r'\d+(?:\.\d+)?%', cv_text))
@@ -480,17 +562,22 @@ class CVGrader:
         # Check metric preservation
         if cv_metrics:
             preserved_metrics = cv_metrics & master_metrics
-            metric_score = (len(preserved_metrics) / len(cv_metrics)) * 5
+            metric_score = (len(preserved_metrics) / len(cv_metrics)) * 4
         else:
-            metric_score = 5  # No metrics to verify
+            metric_score = 4  # No metrics to verify
+
+        # Technology cross-reference check (NEW — addresses JD tech bleeding)
+        tech_penalty, tech_flags = self._check_tech_cross_reference(
+            cv_text, master_cv_text, extracted_jd
+        )
+        tech_score = max(0, 3.0 - tech_penalty)
 
         # Extract company names (simplified check)
         cv_lower = cv_text.lower()
         master_lower = master_cv_text.lower()
 
         # Check for suspicious additions (companies not in master)
-        # This is a simplified heuristic
-        fabrication_score = 2  # Start with full score
+        fabrication_score = 1.5  # Start with full score
         suspicious_patterns = [
             r'founded\s+\w+',
             r'co-founder',
@@ -501,19 +588,21 @@ class CVGrader:
                 fabrication_score -= 0.5
 
         # Company preservation (simplified)
-        company_score = 3  # Default full score
+        company_score = 1.5  # Default full score
 
-        score = metric_score + company_score + max(0, fabrication_score)
+        score = metric_score + tech_score + company_score + max(0, fabrication_score)
 
         issues = []
-        if metric_score < 4:
+        if metric_score < 3:
             issues.append("Some metrics may not be from source")
+        if tech_flags:
+            issues.extend(tech_flags[:3])  # Show top 3 technology flags
 
         return DimensionScore(
             dimension="anti_hallucination",
             score=min(10, score),
             weight=self.DIMENSION_WEIGHTS["anti_hallucination"],
-            feedback=f"Metric preservation: {metric_score:.1f}/5, Accuracy: {fabrication_score:.1f}/2",
+            feedback=f"Metrics: {metric_score:.1f}/4, Tech grounding: {tech_score:.1f}/3, Accuracy: {fabrication_score:.1f}/1.5",
             issues=issues,
             strengths=["Well-grounded in source material"] if score >= 9 else [],
         )
@@ -594,6 +683,7 @@ DIMENSION 4: EXECUTIVE PRESENCE (weight: 15%)
 DIMENSION 5: ANTI-HALLUCINATION (weight: 15%)
 - Factual accuracy: All claims verifiable from master CV?
 - Metric preservation: Numbers exact, not inflated?
+- Technology grounding: Are ALL technologies mentioned in CV bullets actually from the master CV? Flag any technology that appears in the JD but NOT in the master CV.
 - No fabrication: No invented achievements?
 
 Return JSON matching the GradingResponse schema exactly with these fields:
@@ -615,8 +705,8 @@ Return JSON matching the GradingResponse schema exactly with these fields:
 === ROLE CATEGORY ===
 {extracted_jd.get('role_category', 'engineering_manager')}
 
-=== MASTER CV (for anti-hallucination check) ===
-{master_cv_text[:2000]}
+=== MASTER CV (SOURCE OF TRUTH for anti-hallucination check — CV bullets must ONLY contain technologies and claims from here) ===
+{master_cv_text[:4000]}
 
 Grade each dimension 1-10 with specific feedback."""
 
@@ -859,7 +949,7 @@ Grade each dimension 1-10 with specific feedback."""
             self._grade_impact_clarity(cv_text),
             self._grade_jd_alignment(cv_text, extracted_jd),
             self._grade_executive_presence(cv_text, role_category),
-            self._grade_anti_hallucination(cv_text, master_cv_text),
+            self._grade_anti_hallucination(cv_text, master_cv_text, extracted_jd),
         ]
 
         exemplary = []
