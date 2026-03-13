@@ -159,6 +159,12 @@ UNWANTED_TITLE_KEYWORDS = [
     "lead ml engineer", "staff ml engineer",
 ]
 
+# Hard negatives: always penalize these in title, even if a target role was detected.
+# Prevents "AI Sales Engineer" or "Java AI Developer" from scoring well.
+TITLE_HARD_NEGATIVES = [
+    "java", "sales", "account", "account manager", "account executive",
+]
+
 # =============================================================================
 # SENIORITY LEVELS
 # =============================================================================
@@ -627,6 +633,15 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     else:
         unwanted_count = _count_unwanted_title_keywords(title)
         unwanted_penalty = min(unwanted_count * 30, 50)
+
+    # Hard negatives: always penalize java/sales/account in title, even with detected role.
+    # Uses word boundaries to avoid false hits (e.g. "salesforce" won't match "sales").
+    hard_neg_count = sum(
+        1 for kw in TITLE_HARD_NEGATIVES
+        if re.search(rf"\b{re.escape(kw.lower())}\b", title_lower)
+    )
+    if hard_neg_count:
+        unwanted_penalty += hard_neg_count * 25
 
     # --- 2) SENIORITY SCORE (-25 to +15) ---
     seniority_result = _get_seniority_score(f"{title_lower} {crit_lower}")

@@ -48,12 +48,15 @@ SEARCH_PROFILES = {
     "ai": [
         "AI Engineer",
         "AI Architect",
+        "AI Lead",
         "GenAI Engineer",
         "LLM Engineer",
         "Agentic AI Engineer",
         "Applied AI Engineer",
         "Head of AI",
         "AI Tech Lead",
+        "Tech Lead AI",
+        "Engineering Lead AI",
     ],
 }
 
