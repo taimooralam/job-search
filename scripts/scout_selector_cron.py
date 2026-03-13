@@ -52,8 +52,7 @@ HOURLY_QUOTA = 8   # jobs per 3h cycle from hourly cron
 AI_TOP15_QUOTA = 5  # jobs per 6h cycle from ai_top15 cron
 
 CATEGORY_WEIGHTS = {
-    "ai": 0.70,
-    "engineering": 0.30,
+    "ai": 1.0,
 }
 
 ROLE_TO_CATEGORY = {

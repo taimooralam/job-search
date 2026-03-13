@@ -55,13 +55,6 @@ SEARCH_PROFILES = {
         "Head of AI",
         "AI Tech Lead",
     ],
-    "engineering": [
-        "Staff Software Engineer",
-        "Principal Engineer",
-        "Software Architect",
-        "Lead Software Engineer",
-        "Tech Lead",
-    ],
 }
 
 # Time filter mapping (f_TPR param)
