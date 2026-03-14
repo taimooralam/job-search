@@ -1720,18 +1720,29 @@ class CVGeneratorV2:
     def _get_master_cv_text(self) -> str:
         """Load master CV text for anti-hallucination checking.
 
+        Includes role history AND projects (Lantern, etc.) so the grader
+        recognises portfolio bullets as grounded — not hallucinated.
         Uses the already-initialized CVLoader which supports MongoDB.
         Falls back to file if needed.
         """
+        texts: list[str] = []
+
         try:
             candidate = self.cv_loader.load()
             if candidate:
-                # Concatenate all role content
                 role_texts = [role.raw_content for role in candidate.roles if role.raw_content]
-                if role_texts:
-                    return "\n\n".join(role_texts)
+                texts.extend(role_texts)
         except Exception as e:
             self._logger.warning(f"Failed to load master CV from CVLoader: {e}")
+
+        # Always include projects directory (Lantern and any future projects)
+        projects_dir = Path("data/master-cv/projects")
+        if projects_dir.exists():
+            for proj_file in sorted(projects_dir.glob("*.md")):
+                texts.append(proj_file.read_text(encoding="utf-8"))
+
+        if texts:
+            return "\n\n".join(texts)
 
         # File fallback (keep for safety)
         master_cv_path = Path("data/master-cv/master-cv.md")
