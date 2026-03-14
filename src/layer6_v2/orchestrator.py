@@ -478,6 +478,29 @@ class CVGeneratorV2:
                 },
             })
 
+            # AI Gate: Override role_category for AI/GenAI/LLM jobs (before Phase 2 so variant selection sees ai_architect)
+            is_ai = should_include_ai_section(state)
+            self._emit_log("ai_classification",
+                f"AI job: {'Yes' if is_ai else 'No'}" +
+                (f" ({', '.join(state.get('ai_categories', []))})" if is_ai else ""))
+            self._emit_struct_log("ai_classification", {
+                "is_ai_job": is_ai,
+                "ai_categories": state.get("ai_categories", []),
+                "role_category": extracted_jd.get("role_category"),
+                "role_category_override": "ai_architect" if is_ai else None,
+            })
+            if is_ai:
+                extracted_jd["role_category"] = "ai_architect"
+                self._logger.info("  AI job detected — using ai_architect role category")
+
+                # Expand skill whitelist with Lantern project skills for AI jobs
+                lantern_skills = _load_lantern_skills()
+                if lantern_skills:
+                    existing_hard = set(skill_whitelist.get("hard_skills", []))
+                    new_skills = [s for s in lantern_skills if s not in existing_hard]
+                    skill_whitelist.setdefault("hard_skills", []).extend(new_skills)
+                    self._logger.info(f"  Expanded whitelist with {len(new_skills)} Lantern skills")
+
             # Phase 2: Generate tailored bullets for each role
             # Phase 4: Pass JD annotations for boost calculation
             jd_annotations = state.get("jd_annotations")
@@ -587,28 +610,7 @@ class CVGeneratorV2:
                 "within_budget": self.word_budget is None or stitched_cv.total_word_count <= self.word_budget,
             })
 
-            # AI Gate: Override role_category for AI/GenAI/LLM jobs
-            is_ai = should_include_ai_section(state)
-            self._emit_log("ai_classification",
-                f"AI job: {'Yes' if is_ai else 'No'}" +
-                (f" ({', '.join(state.get('ai_categories', []))})" if is_ai else ""))
-            self._emit_struct_log("ai_classification", {
-                "is_ai_job": is_ai,
-                "ai_categories": state.get("ai_categories", []),
-                "role_category": extracted_jd.get("role_category"),
-                "role_category_override": "ai_architect" if is_ai else None,
-            })
-            if is_ai:
-                extracted_jd["role_category"] = "ai_architect"
-                self._logger.info("  AI job detected — using ai_architect role category")
-
-                # Expand skill whitelist with Lantern project skills for AI jobs
-                lantern_skills = _load_lantern_skills()
-                if lantern_skills:
-                    existing_hard = set(skill_whitelist.get("hard_skills", []))
-                    new_skills = [s for s in lantern_skills if s not in existing_hard]
-                    skill_whitelist.setdefault("hard_skills", []).extend(new_skills)
-                    self._logger.info(f"  Expanded whitelist with {len(new_skills)} Lantern skills")
+            # Note: AI gate (is_ai, role_category override, Lantern whitelist) ran before Phase 2
 
             # Log persona sources available for synthesis
             self._emit_struct_log("persona_sources", {
@@ -1632,9 +1634,14 @@ class CVGeneratorV2:
         lines.append(f"**{header.profile.effective_summary_title}**")
         lines.append("")
 
-        # Value proposition (replaces tagline in V2)
-        if header.profile.value_proposition:
-            lines.append(sanitize_markdown(header.profile.value_proposition))
+        # Value proposition with fallback chain (ensemble path populates tagline/narrative, not always value_proposition)
+        tagline_text = (
+            header.profile.value_proposition
+            or header.profile.tagline
+            or header.profile.narrative
+        )
+        if tagline_text:
+            lines.append(sanitize_markdown(tagline_text))
             lines.append("")
 
         # Key achievements as bullet list

@@ -440,6 +440,7 @@ Return JSON matching this ProfileResponse schema:
             answers_what_problems=response.answers_what_problems,
             answers_proof=response.answers_proof,
             answers_why_you=response.answers_why_you,
+            value_proposition=response.tagline,          # Ensure Gold/Silver tier populates this
             # Keep narrative for backward compatibility (use tagline)
             narrative=response.tagline,
         )
@@ -535,6 +536,7 @@ Return JSON matching this ProfileResponse schema:
             answers_what_problems=response.answers_what_problems,
             answers_proof=response.answers_proof,
             answers_why_you=response.answers_why_you,
+            value_proposition=response.tagline,          # Ensure Gold/Silver tier populates this
             # Keep narrative for backward compatibility (use tagline)
             narrative=response.tagline,
         )

@@ -61,6 +61,9 @@ VARIANT_PREFERENCES: Dict[str, List[str]] = {
     "tech_lead": ["Technical", "Leadership", "Architecture", "Impact"],
     "principal_engineer": ["Architecture", "Technical", "Leadership", "Impact"],
 
+    # AI roles - emphasize technical depth and innovation
+    "ai_architect": ["Technical", "Architecture", "Innovation", "Impact"],
+
     # Default fallback
     "default": ["Technical", "Impact", "Architecture", "Short"],
 }
@@ -398,6 +401,46 @@ class VariantSelector:
             if len(selected) >= target_count:
                 break
 
+        # Hard constraint: force Achievement 15 for AI jobs on Seven.One role
+        if role_category == "ai_architect" and role.id == "01_seven_one_entertainment":
+            ach15_id = "achievement_15"
+            if ach15_id not in selected_achievement_ids:
+                # Find Achievement 15 and pick best variant (prefer Technical)
+                ach15_variant = None
+                for achievement in role.achievements:
+                    if achievement.id == ach15_id:
+                        preferred = ["Technical", "Architecture", "Innovation", "Impact"]
+                        for pref in preferred:
+                            if pref in achievement.variants:
+                                ach15_variant = (achievement, achievement.variants[pref])
+                                break
+                        if not ach15_variant and achievement.variants:
+                            first_type = next(iter(achievement.variants))
+                            ach15_variant = (achievement, achievement.variants[first_type])
+                        break
+
+                if ach15_variant:
+                    ach, var = ach15_variant
+                    score = self._score_variant(
+                        achievement=ach, variant=var,
+                        jd_keywords=jd_keywords, pain_points=pain_points,
+                        role_category=role_category, annotation_calculator=annotation_calculator,
+                    )
+                    forced = SelectedVariant(
+                        achievement_id=ach.id, achievement_title=ach.title,
+                        variant_type=var.variant_type, text=var.text, score=score,
+                        core_fact=ach.core_fact, keywords=ach.keywords,
+                        annotation_influenced=False, annotation_ids=[],
+                        annotation_keywords_used=[], reframe_applied=None,
+                    )
+                    if len(selected) >= target_count:
+                        selected[-1] = forced  # Replace lowest-scoring entry
+                    else:
+                        selected.append(forced)
+                    selected.insert(0, selected.pop())  # Move to position 0
+                    selected_achievement_ids.add(ach15_id)
+                    self._logger.info(f"🤖 Forced Achievement 15 (AI Platform Engineering) at position 0")
+
         # Calculate keyword coverage
         covered, missing = self._calculate_keyword_coverage(selected, jd_keywords)
 
@@ -513,15 +556,19 @@ class VariantSelector:
         """Extract and normalize all keywords from JD."""
         keywords = set()
 
-        # Top keywords
+        # Top keywords (keep full phrase + individual tokens for multi-word matching)
         for kw in extracted_jd.get("top_keywords", []):
-            keywords.add(kw.lower())
+            kw_lower = kw.lower()
+            keywords.add(kw_lower)
+            keywords.update(t for t in kw_lower.split() if len(t) > 1)
 
-        # Technical skills
+        # Technical skills (same tokenization)
         for skill in extracted_jd.get("technical_skills", []):
-            keywords.add(skill.lower())
+            skill_lower = skill.lower()
+            keywords.add(skill_lower)
+            keywords.update(t for t in skill_lower.split() if len(t) > 1)
 
-        # Soft skills
+        # Soft skills (no tokenization — typically single-concept)
         for skill in extracted_jd.get("soft_skills", []):
             keywords.add(skill.lower())
 
