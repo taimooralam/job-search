@@ -220,7 +220,7 @@ def insert_jobs(
                 f"seniority={job.get('seniority_level')}"
             ),
             "tier": job.get("tier"),
-            "score": None,
+            "score": job.get("score"),  # Seed with rule score; full LLM score overwrites later
             "starred": job.get("tier") == "A",
             "starredAt": datetime.utcnow() if job.get("tier") == "A" else None,
             "salary": None,
