@@ -625,8 +625,10 @@ class CVGeneratorV2:
             })
 
             # Title sanitizer: clean JD title before header generation
+            # Prefer original posting title from state (e.g. "AI Engineer – Tenerife") over
+            # the LLM-inferred title from extracted_jd["title"] which can drift based on JD body text
             from src.layer6_v2.title_sanitizer import sanitize_job_title, sanitize_job_title_llm
-            raw_title = extracted_jd.get("title", "")
+            raw_title = state.get("title", "") or extracted_jd.get("title", "")
             regex_clean = sanitize_job_title(raw_title)
             clean_title = asyncio.run(sanitize_job_title_llm(raw_title, regex_clean, job_id=self._job_id))
             extracted_jd["clean_title"] = clean_title
@@ -1264,7 +1266,7 @@ class CVGeneratorV2:
         lines.append(f"# {candidate.name.upper()}")
 
         # Role tagline
-        job_title = extracted_jd.get("title", "Engineering Professional")
+        job_title = extracted_jd.get("clean_title") or extracted_jd.get("title", "Engineering Professional")
         role_category = extracted_jd.get("role_category", "engineering_manager")
         generic_title = self._get_generic_title(role_category)
         lines.append(f"### {job_title} · {generic_title}")
@@ -1591,7 +1593,7 @@ class CVGeneratorV2:
         lines.append(f"# {candidate.name.upper()}")
 
         # Links line: website, linkedin, and conditional github
-        job_title = extracted_jd.get("title", "Engineering Professional")
+        job_title = extracted_jd.get("clean_title") or extracted_jd.get("title", "Engineering Professional")
         job_description = extracted_jd.get("job_description", "")
         link_parts = []
         if candidate.website:
@@ -1802,7 +1804,7 @@ class CVGeneratorV2:
         if improvement_result and improvement_result.improved:
             lines.append(f"Improvement Applied: {improvement_result.target_dimension}")
             lines.append(f"Changes Made: {len(improvement_result.changes_made)}")
-            for change in improvement_result.changes_made[:3]:
+            for change in improvement_result.changes_made:
                 lines.append(f"  • {change}")
             lines.append("")
 
