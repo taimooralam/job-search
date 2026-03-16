@@ -873,6 +873,7 @@ class CVGeneratorV2:
                 self._emit_struct_log("subphase_start", {"phase": 6, "subphase": "improvement"})
                 improvement_result = asyncio.run(improve_cv(
                     cv_text, grade_result, extracted_jd,
+                    master_cv_text=master_cv_text,
                     job_id=job_id,
                     progress_callback=llm_callback,
                     log_callback=self._log_callback,  # Phase 0 Extension: In-process logging

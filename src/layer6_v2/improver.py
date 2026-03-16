@@ -181,6 +181,7 @@ class CVImprover:
         grade_result: GradeResult,
         extracted_jd: Dict,
         target_dimension: str,
+        master_cv_text: Optional[str] = None,
     ) -> str:
         """Build targeted improvement prompt for the lowest dimension."""
 
@@ -222,6 +223,7 @@ ROLE CATEGORY: {role_category}
 === CURRENT CV ===
 {cv_text}
 
+{self._build_master_cv_section(master_cv_text)}
 === CRITICAL ANTI-HALLUCINATION RULES ===
 1. Make MINIMAL changes - only fix the specific dimension issues
 2. Preserve all accurate information and metrics
@@ -233,6 +235,19 @@ ROLE CATEGORY: {role_category}
 8. Natural language only - no keyword stuffing
 
 Return the improved CV with changes highlighted in your summary."""
+
+    @staticmethod
+    def _build_master_cv_section(master_cv_text: Optional[str]) -> str:
+        """Build the master CV verification section for the improvement prompt."""
+        if not master_cv_text:
+            return ""
+        return f"""=== MASTER CV (SOURCE OF TRUTH — these are VERIFIED skills and projects) ===
+{master_cv_text[:6000]}
+
+IMPORTANT: Any technology, project, or achievement that appears in the MASTER CV above is REAL and VERIFIED.
+Do NOT remove content that is grounded in the master CV. Project sections and their technologies are verified work.
+
+"""
 
     def _preview_text(self, text: str, max_chars: int = 100) -> str:
         """Generate a preview of text for logging."""
@@ -263,6 +278,7 @@ Return the improved CV with changes highlighted in your summary."""
         grade_result: GradeResult,
         extracted_jd: Dict,
         target_dimension: str,
+        master_cv_text: Optional[str] = None,
     ) -> ImprovementResponse:
         """Call LLM for CV improvement with comprehensive logging."""
 
@@ -298,7 +314,7 @@ Return JSON matching this ImprovementResponse schema:
 }"""
 
         user_prompt = self._build_improvement_prompt(
-            cv_text, grade_result, extracted_jd, target_dimension
+            cv_text, grade_result, extracted_jd, target_dimension, master_cv_text
         )
 
         # Get the strategy being applied
@@ -377,6 +393,7 @@ Return JSON matching this ImprovementResponse schema:
         cv_text: str,
         grade_result: GradeResult,
         extracted_jd: Dict,
+        master_cv_text: Optional[str] = None,
     ) -> ImprovementResult:
         """
         Improve CV based on grading feedback (single pass).
@@ -470,7 +487,7 @@ Return JSON matching this ImprovementResponse schema:
 
         try:
             response = await self._call_improvement_llm(
-                cv_text, grade_result, extracted_jd, target_dimension
+                cv_text, grade_result, extracted_jd, target_dimension, master_cv_text
             )
 
             result = ImprovementResult(
@@ -575,6 +592,7 @@ async def improve_cv(
     cv_text: str,
     grade_result: GradeResult,
     extracted_jd: Dict,
+    master_cv_text: Optional[str] = None,
     job_id: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
@@ -601,4 +619,4 @@ async def improve_cv(
         struct_logger=struct_logger,  # Phase 0 Extension
         log_callback=log_callback,  # Phase 0 Extension: In-process logging
     )
-    return await improver.improve(cv_text, grade_result, extracted_jd)
+    return await improver.improve(cv_text, grade_result, extracted_jd, master_cv_text=master_cv_text)
