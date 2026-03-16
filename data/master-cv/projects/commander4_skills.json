@@ -1,0 +1,27 @@
+{
+  "verified_skills": [
+    "TypeScript", "Python", "S3 Vectors", "LiteLLM", "Redis", "DynamoDB", "SQS",
+    "Vercel AI SDK", "Zod", "MCP", "Vitest", "text-embedding-3-small", "RAPTOR",
+    "Claude Sonnet", "AWS"
+  ],
+  "verified_patterns": [
+    "BM25 from scratch", "RRF fusion", "LLM-as-judge reranking",
+    "two-tier semantic caching", "SHA-256 change detection",
+    "sentence-boundary chunking", "Confluence XML parsing", "Jira ADF parsing",
+    "RAPTOR hierarchical tree", "Zod schema validation", "MCP server tools",
+    "guardrail profiles", "per-silo access control", "parallel Promise.all",
+    "hybrid retrieval pipeline", "document ingestion pipeline",
+    "structured output validation", "LiteLLM proxy injection"
+  ],
+  "verified_competencies": [
+    "Hybrid Search", "RAG Pipeline", "Document Ingestion Pipeline",
+    "Retrieval Evaluation (MRR, NDCG)", "Semantic Caching",
+    "LLM-as-Judge Evaluation", "Structured Outputs", "MCP Tool Design",
+    "Guardrail Engineering", "Enterprise AI Platform",
+    "Search Quality Optimization", "Vector Search", "RAPTOR Indexing",
+    "Knowledge Base Retrieval"
+  ],
+  "not_yet_built": [
+    "fine-tuning pipeline", "custom embedding training", "RLHF"
+  ]
+}

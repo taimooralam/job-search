@@ -126,13 +126,13 @@ def should_include_github(job_title: str, job_description: str = "") -> bool:
 
 
 def should_include_ai_section(state: Dict[str, Any]) -> bool:
-    """Determine if AI-specific CV sections (Lantern project, AI header) should be included."""
+    """Determine if AI-specific CV sections (AI project, AI header) should be included."""
     return bool(state.get("is_ai_job", False))
 
 
-def _load_lantern_skills() -> List[str]:
-    """Load all Lantern skills (verified + post-checklist) for whitelist expansion."""
-    path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern_skills.json"
+def _load_ai_project_skills() -> List[str]:
+    """Load all Commander-4 skills (verified + post-checklist) for whitelist expansion."""
+    path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "commander4_skills.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         skills = list(data.get("verified_skills", []))
@@ -144,24 +144,24 @@ def _load_lantern_skills() -> List[str]:
         return []
 
 
-def _load_lantern_project() -> Optional[Dict[str, Any]]:
+def _load_ai_project() -> Optional[Dict[str, Any]]:
     """
-    Load Lantern project section from data/master-cv/projects/lantern.md.
+    Load AI project section from data/master-cv/projects/commander4.md.
 
     Parses the markdown format:
     - Line 1: # Title — Subtitle
-    - Line 2: github: url
+    - Line 2: github: url (optional)
     - Line 3: stack: technologies
     - After ## Bullets: bullet list items
 
     Returns:
         Dict with title, github, stack, bullets keys, or None if file not found.
     """
-    lantern_path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern.md"
-    if not lantern_path.exists():
+    ai_project_path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "commander4.md"
+    if not ai_project_path.exists():
         return None
 
-    text = lantern_path.read_text(encoding="utf-8")
+    text = ai_project_path.read_text(encoding="utf-8")
     lines = text.strip().split("\n")
 
     result = {"title": "", "description": "", "github": "", "stack": "", "bullets": []}
@@ -493,13 +493,13 @@ class CVGeneratorV2:
                 extracted_jd["role_category"] = "ai_architect"
                 self._logger.info("  AI job detected — using ai_architect role category")
 
-                # Expand skill whitelist with Lantern project skills for AI jobs
-                lantern_skills = _load_lantern_skills()
-                if lantern_skills:
+                # Expand skill whitelist with Commander-4 project skills for AI jobs
+                ai_project_skills = _load_ai_project_skills()
+                if ai_project_skills:
                     existing_hard = set(skill_whitelist.get("hard_skills", []))
-                    new_skills = [s for s in lantern_skills if s not in existing_hard]
+                    new_skills = [s for s in ai_project_skills if s not in existing_hard]
                     skill_whitelist.setdefault("hard_skills", []).extend(new_skills)
-                    self._logger.info(f"  Expanded whitelist with {len(new_skills)} Lantern skills")
+                    self._logger.info(f"  Expanded whitelist with {len(new_skills)} Commander-4 skills")
 
             # Phase 2: Generate tailored bullets for each role
             # Phase 4: Pass JD annotations for boost calculation
@@ -635,19 +635,19 @@ class CVGeneratorV2:
             if clean_title != raw_title:
                 self._logger.info(f"  Title sanitized: '{raw_title}' → '{clean_title}'")
 
-            # AI enrichment: load Lantern context for header generation
-            lantern_context = None
+            # AI enrichment: load AI project context for header generation
+            ai_project_context = None
             if is_ai:
-                lantern_data = _load_lantern_project()
-                if lantern_data:
-                    lantern_context = {
-                        "project_name": lantern_data.get("title", ""),
-                        "description": lantern_data.get("description", ""),
-                        "bullets": lantern_data.get("bullets", []),
-                        "stack": lantern_data.get("stack", ""),
+                ai_project_data = _load_ai_project()
+                if ai_project_data:
+                    ai_project_context = {
+                        "project_name": ai_project_data.get("title", ""),
+                        "description": ai_project_data.get("description", ""),
+                        "bullets": ai_project_data.get("bullets", []),
+                        "stack": ai_project_data.get("stack", ""),
                     }
-                    extracted_jd["lantern_context"] = lantern_context
-                    self._logger.info(f"  Loaded Lantern context: {len(lantern_context['bullets'])} bullets")
+                    extracted_jd["ai_project_context"] = ai_project_context
+                    self._logger.info(f"  Loaded AI project context: {len(ai_project_context['bullets'])} bullets")
 
             # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")
@@ -1666,20 +1666,23 @@ class CVGeneratorV2:
                 lines.append(f"**{section.category}:** {skill_names}")
         lines.append("")
 
-        # AI-specific: Insert Lantern project section ABOVE Professional Experience
+        # AI-specific: Insert AI project section ABOVE Professional Experience
         if state and should_include_ai_section(state):
-            lantern = _load_lantern_project()
-            if lantern:
-                lines.append(f"**{lantern['title']} (Portfolio — GitHub: {lantern['github']})**")
-                if lantern.get("description"):
-                    lines.append(lantern["description"])
-                for bullet in lantern["bullets"]:
+            ai_project = _load_ai_project()
+            if ai_project:
+                if ai_project.get("github"):
+                    lines.append(f"**{ai_project['title']} (Portfolio — GitHub: {ai_project['github']})**")
+                else:
+                    lines.append(f"**{ai_project['title']} (Internal — ProSiebenSat.1)**")
+                if ai_project.get("description"):
+                    lines.append(ai_project["description"])
+                for bullet in ai_project["bullets"]:
                     lines.append(f"• {bullet}")
-                lines.append(f"**Stack:** {lantern['stack']}")
+                lines.append(f"**Stack:** {ai_project['stack']}")
                 lines.append("")
-                self._logger.info("  Inserted Lantern project section (AI job)")
+                self._logger.info("  Inserted AI project section (AI job)")
             else:
-                self._logger.warning("  AI job but Lantern project file not found")
+                self._logger.warning("  AI job but AI project file not found")
 
         # Professional Experience - bold section header
         lines.append("**PROFESSIONAL EXPERIENCE**")

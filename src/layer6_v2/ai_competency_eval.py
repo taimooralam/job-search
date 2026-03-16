@@ -1,7 +1,7 @@
 """
 AI Competency Hallucination Evaluator
 
-Checks AI skill claims in generated CV text against the Lantern build checklist.
+Checks AI skill claims in generated CV text against the Commander-4 build checklist.
 Read-only flagging -- never removes skills from the CV, only reports status.
 
 Called from orchestrator grading phase for AI jobs only.
@@ -40,18 +40,18 @@ class EvalResult:
 
 
 def _load_ground_truth() -> Dict[str, List[str]]:
-    """Load Lantern skills ground truth from JSON."""
+    """Load Commander-4 skills ground truth from JSON."""
     path = (
         Path(__file__).parent.parent.parent
         / "data"
         / "master-cv"
         / "projects"
-        / "lantern_skills.json"
+        / "commander4_skills.json"
     )
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.warning("Failed to load lantern_skills.json: %s", e)
+        logger.warning("Failed to load commander4_skills.json: %s", e)
         return {"verified_skills": [], "verified_patterns": [], "not_yet_built": []}
 
 
@@ -72,10 +72,10 @@ def _fuzzy_match(claim: str, reference_list: List[str]) -> Optional[str]:
 
 
 def extract_ai_claims(cv_text: str) -> List[str]:
-    """Extract AI/Lantern-related skill claims from CV text.
+    """Extract AI/Commander-4-related skill claims from CV text.
 
     Looks for claims in:
-    - Lantern project section bullets
+    - Commander-4/Joyia project section bullets
     - Header/core competencies mentioning AI/LLM terms
     - Technical skills section
 
@@ -83,19 +83,19 @@ def extract_ai_claims(cv_text: str) -> List[str]:
     """
     claims: List[str] = []
 
-    # Extract Lantern section bullets (lines starting with - or * after "Lantern")
-    lantern_section = False
+    # Extract AI project section bullets (lines starting with - or * after project header)
+    ai_project_section = False
     for line in cv_text.split("\n"):
         line_stripped = line.strip()
-        if "lantern" in line_stripped.lower():
-            lantern_section = True
+        if any(term in line_stripped.lower() for term in ("commander", "joyia", "knowledgeflow")):
+            ai_project_section = True
             continue
-        if lantern_section:
+        if ai_project_section:
             if line_stripped.startswith(("- ", "- ", "* ")):
                 claims.append(line_stripped.lstrip("-* ").strip())
             elif line_stripped and not line_stripped.startswith((" ", "\t")):
                 # New section started
-                lantern_section = False
+                ai_project_section = False
 
     # Extract AI-related terms from header/competencies that correspond to
     # not-yet-built features -- these are the hallucination candidates
@@ -104,7 +104,9 @@ def extract_ai_claims(cv_text: str) -> List[str]:
         r"circuit breaker|rate limit(?:ing)?|streaming|eval harness|"
         r"golden.set|fine.tun(?:ing)?|cost track(?:ing)?|load balanc(?:ing)?|"
         r"multi.provider|LLM gateway|provider (?:fallback|routing)|"
-        r"quality gate|model registry)\b",
+        r"quality gate|model registry|raptor|mcp|zod|guardrail|"
+        r"knowledgeflow|confluence|jira.adf|document.ingestion|"
+        r"structured.output|tool.calling)\b",
         re.IGNORECASE,
     )
     seen: set = set()

@@ -775,6 +775,16 @@ class TaxonomyBasedSkillsGenerator:
         "model routing": [r"\b(model.*rout|provider.*rout|multi.?provider|fallback.*chain|provider.*fallback|model.*select)\b"],
         "langfuse tracing": [r"\b(langfuse|llm.*trac|ai.*observ|llm.*observ|llm.*monitor)\b"],
         "embeddings": [r"\b(embedding|text.?embedding|vector.*represent|sentence.*transform|embed.*model)\b"],
+        "raptor indexing": [r"\b(raptor|hierarchical.*index|multi.?granularity.*retriev|tree.*summar)\b"],
+        "mcp server": [r"\b(mcp|model.*context.*protocol|tool.*calling|tool.*server)\b"],
+        "zod schema validation": [r"\b(zod|schema.*valid|structured.*output|type.?safe.*output)\b"],
+        "confluence ingestion": [r"\b(confluence|wiki.*ingest|knowledge.*base.*ingest|xml.*pars)\b"],
+        "jira adf parsing": [r"\b(jira|adf|abstract.*document.*format|issue.*track.*ingest)\b"],
+        "guardrail profiles": [r"\b(guardrail|content.*policy|safety.*filter|output.*filter|llm.*safety)\b"],
+        "mrr@k evaluation": [r"\b(mrr|mean.*reciprocal.*rank|retrieval.*metric|search.*quality.*metric)\b"],
+        "ndcg@k evaluation": [r"\b(ndcg|normalized.*discounted|cumulative.*gain|ranking.*metric)\b"],
+        "semantic cache threshold tuning": [r"\b(cache.*threshold|similarity.*threshold|cache.*tun|cosine.*threshold)\b"],
+        "knowledge base retrieval": [r"\b(knowledge.*base|knowledge.*retriev|enterprise.*search|corporate.*search)\b"],
         "agent frameworks": [r"\b(agent.*framework|agentic.*ai|ai.*agent|autonomous.*agent|agent.*orchestrat)\b"],
 
         # ═══════════════════════════════════════════════════════════════════════════

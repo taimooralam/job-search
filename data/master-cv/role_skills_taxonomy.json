@@ -1910,7 +1910,11 @@
             "Langfuse Tracing",
             "Eval Harness Design",
             "Faithfulness Evaluation",
-            "Regression Detection"
+            "Regression Detection",
+            "MRR@k Evaluation",
+            "NDCG@k Evaluation",
+            "Guardrail Profiles",
+            "Semantic Cache Threshold Tuning"
           ],
           "jd_signals": [
             "llm",
@@ -1927,7 +1931,11 @@
             "tracing",
             "langfuse",
             "golden set",
-            "judge"
+            "judge",
+            "mrr",
+            "ndcg",
+            "guardrail",
+            "evaluation harness"
           ]
         },
         {
@@ -1952,7 +1960,13 @@
             "Streaming SSE",
             "Rate Limiting",
             "Document Ingestion Pipeline",
-            "Hybrid Search"
+            "Hybrid Search",
+            "RAPTOR Indexing",
+            "Confluence Ingestion",
+            "Jira ADF Parsing",
+            "MCP Server",
+            "Zod Schema Validation",
+            "Knowledge Base Retrieval"
           ],
           "jd_signals": [
             "agent",
@@ -1970,7 +1984,16 @@
             "semantic cache",
             "circuit breaker",
             "fallback",
-            "provider"
+            "provider",
+            "mcp",
+            "zod",
+            "confluence",
+            "jira",
+            "knowledge base",
+            "document ingestion",
+            "chunking",
+            "structured output",
+            "tool calling"
           ]
         },
         {

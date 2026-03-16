@@ -441,6 +441,50 @@ class VariantSelector:
                     selected_achievement_ids.add(ach15_id)
                     self._logger.info(f"🤖 Forced Achievement 15 (AI Platform Engineering) at position 0")
 
+            # Ensure at least one of achievements 16-18 is also selected
+            ai_extra_ids = {"achievement_16", "achievement_17", "achievement_18"}
+            if not ai_extra_ids.intersection(selected_achievement_ids):
+                # Pick the one with highest JD keyword match
+                best_extra = None
+                best_extra_score = None
+                for ach_id in ai_extra_ids:
+                    for achievement in role.achievements:
+                        if achievement.id == ach_id:
+                            preferred = ["Technical", "Architecture", "Impact"]
+                            chosen_var = None
+                            for pref in preferred:
+                                if pref in achievement.variants:
+                                    chosen_var = achievement.variants[pref]
+                                    break
+                            if not chosen_var and achievement.variants:
+                                chosen_var = achievement.variants[next(iter(achievement.variants))]
+                            if chosen_var:
+                                score = self._score_variant(
+                                    achievement=achievement, variant=chosen_var,
+                                    jd_keywords=jd_keywords, pain_points=pain_points,
+                                    role_category=role_category, annotation_calculator=annotation_calculator,
+                                )
+                                if best_extra_score is None or score.total > best_extra_score.total:
+                                    best_extra = (achievement, chosen_var, score)
+                                    best_extra_score = score
+                            break
+
+                if best_extra:
+                    ach, var, score = best_extra
+                    forced_extra = SelectedVariant(
+                        achievement_id=ach.id, achievement_title=ach.title,
+                        variant_type=var.variant_type, text=var.text, score=score,
+                        core_fact=ach.core_fact, keywords=ach.keywords,
+                        annotation_influenced=False, annotation_ids=[],
+                        annotation_keywords_used=[], reframe_applied=None,
+                    )
+                    if len(selected) >= target_count:
+                        selected[-1] = forced_extra  # Replace lowest-scoring entry
+                    else:
+                        selected.append(forced_extra)
+                    selected_achievement_ids.add(ach.id)
+                    self._logger.info(f"🤖 Forced {ach.id} ({ach.title}) for AI job coverage")
+
         # Calculate keyword coverage
         covered, missing = self._calculate_keyword_coverage(selected, jd_keywords)
 

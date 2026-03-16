@@ -304,6 +304,72 @@ Per the CV generation critique recommendations:
 
 ---
 
+### Achievement 16: Document Ingestion Pipeline (Knowledgeflow)
+
+**Core Fact**: Engineered Knowledgeflow, the document ingestion pipeline for Commander-4 (Joyia), processing Confluence XML (macro stripping, metadata extraction) and Jira ADF→markdown conversion. Implemented sentence-boundary chunking (500-token windows, 50-token overlap), SHA-256 change detection for incremental updates eliminating redundant re-indexing, RAPTOR hierarchical indexing for multi-granularity retrieval, and thin content filtering to maintain knowledge base quality.
+
+**Variants**:
+- **Architecture**: Designed document ingestion pipeline supporting Confluence XML and Jira ADF sources with RAPTOR hierarchical indexing, enabling multi-granularity retrieval across the enterprise knowledge base
+- **Technical**: Implemented Confluence XML macro stripping, Jira ADF→markdown conversion, sentence-boundary chunking (500-token/50-overlap), SHA-256 change detection for incremental updates, and RAPTOR hierarchical tree construction
+- **Leadership**: Led knowledge base ingestion strategy for Commander-4, defining source priorities and quality thresholds for the enterprise AI platform serving 2,000 users
+- **Impact**: Eliminated redundant re-indexing through SHA-256 change detection, maintained knowledge base quality via thin content filtering, and enabled multi-granularity retrieval through RAPTOR hierarchical indexing
+- **Short**: Document ingestion pipeline—Confluence XML, Jira ADF, RAPTOR indexing, SHA-256 change detection, sentence-boundary chunking
+
+**Keywords**: document ingestion, Confluence, Jira, ADF, XML parsing, RAPTOR, hierarchical indexing, chunking, sentence boundary, SHA-256, change detection, knowledge base, incremental updates, text processing, NLP pipeline, Knowledgeflow
+
+**Interview Defensibility**: ✅ Can explain:
+- Confluence XML macro stripping (why macros break chunking, metadata extraction for provenance)
+- Jira ADF→markdown conversion (Abstract Document Format tree traversal, content type handling)
+- Sentence-boundary chunking rationale (500-token windows preserve semantic coherence, 50-token overlap prevents context loss at boundaries)
+- SHA-256 change detection (content hashing for incremental updates, avoiding redundant embedding computation)
+- RAPTOR hierarchical tree (bottom-up clustering, multi-level summaries for different query granularities)
+- Thin content filtering (minimum token thresholds, boilerplate detection)
+
+---
+
+### Achievement 17: Structured Outputs & Tool-Calling Architecture
+
+**Core Fact**: Designed the structured output and tool-calling architecture for Commander-4 (Joyia), implementing Zod schema validation for all LLM responses ensuring type-safe outputs, 5 MCP server tools for external system integrations, 42 workflow plugins with composable guardrail profiles, and per-silo guardrail injection via LiteLLM proxy enabling content policy enforcement across organizational units.
+
+**Variants**:
+- **Architecture**: Designed composable structured output architecture with Zod schema validation, MCP server tools, and per-silo guardrail injection via LiteLLM proxy across 42 workflow plugins
+- **Technical**: Implemented Zod schema validation for all LLM outputs, 5 MCP server tools for external integrations, per-silo guardrail profiles with LiteLLM proxy injection, and type-safe structured output pipelines
+- **Leadership**: Defined structured output standards and guardrail policies for Commander-4, enabling safe LLM deployment across organizational silos serving 2,000 users
+- **Impact**: Enabled safe, type-validated LLM outputs across 42 workflow plugins through composable guardrail profiles and per-silo access control, eliminating unstructured response failures
+- **Short**: Structured outputs—Zod validation, 5 MCP tools, 42 plugins, per-silo guardrails via LiteLLM
+
+**Keywords**: structured outputs, Zod, schema validation, MCP, Model Context Protocol, tool calling, guardrails, guardrail profiles, LiteLLM, per-silo, access control, workflow plugins, type safety, content policy, LLM safety
+
+**Interview Defensibility**: ✅ Can explain:
+- Zod schema validation (runtime type checking for LLM outputs, error recovery on schema mismatch)
+- MCP server tools (Model Context Protocol for external system integration, tool registration, parameter validation)
+- Guardrail profiles (per-silo content policies, injection via LiteLLM proxy, composable rule sets)
+- Per-silo access control (organizational unit isolation, data boundary enforcement)
+- Plugin architecture (42 workflow plugins, composable configuration, guardrail inheritance)
+
+---
+
+### Achievement 18: Semantic Caching Architecture
+
+**Core Fact**: Architected two-tier semantic caching system for Commander-4 (Joyia): L1 exact-match cache using SHA-256 content hashing (~2ms lookup), L2 semantic similarity cache using S3 Vectors cosine similarity (≥0.95 threshold, ~200ms lookup), both backed by Redis TTL for expiration management. Built custom S3VectorSemanticCache Python class for LiteLLM integration, enabling transparent caching across the enterprise AI platform.
+
+**Variants**:
+- **Architecture**: Designed two-tier caching architecture (L1 exact-match SHA-256 ~2ms, L2 semantic S3 Vectors cosine ≥0.95 ~200ms) with Redis TTL, providing transparent LLM response caching across the platform
+- **Technical**: Built custom S3VectorSemanticCache Python class for LiteLLM, implementing SHA-256 exact-match (L1, ~2ms) and S3 Vectors cosine similarity (L2, ≥0.95, ~200ms) with Redis TTL expiration
+- **Impact**: Reduced LLM API costs through intelligent cache hits while maintaining response quality via 0.95 cosine similarity threshold, with L1 exact-match catching ~60-70% of repeated queries at ~2ms latency
+- **Short**: Two-tier semantic cache—L1 SHA-256 ~2ms, L2 S3 Vectors cosine ≥0.95 ~200ms, Redis TTL, custom LiteLLM class
+
+**Keywords**: semantic caching, two-tier cache, SHA-256, cosine similarity, S3 Vectors, Redis, TTL, LiteLLM, cache threshold, exact-match cache, embedding cache, LLM cost optimization, response caching
+
+**Interview Defensibility**: ✅ Can explain:
+- Two-tier rationale (L1 exact-match catches 60-70% of hits at ~100x faster; L2 catches semantic paraphrases)
+- S3 Vectors cosine ≥0.95 threshold (balancing cache hit rate vs response quality degradation)
+- SHA-256 for L1 (deterministic, collision-resistant, fast computation)
+- Redis TTL strategy (time-based expiration for cache freshness, different TTLs for different content types)
+- Custom S3VectorSemanticCache class (LiteLLM integration, transparent caching without changing caller code)
+
+---
+
 ## Skills
 
 **Hard Skills**:
@@ -317,7 +383,7 @@ Per the CV generation critique recommendations:
 - **Frontend**: Angular, Frontend Development, Frontend Frameworks
 - **Media**: HbbTV, Media Encoding, Service Delivery Platforms
 - **Domains**: AdTech, Addressable TV, GDPR, TCF, Consent Management, Third-Party System Integration
-- **AI & LLM**: LLM Integration, RAG Pipeline, Hybrid Search (BM25 + RRF), Vector Search (S3 Vectors), Semantic Caching, LLM-as-Judge Evaluation, LiteLLM, Prompt Engineering, Model Routing, Enterprise AI Platform, Retrieval Evaluation (MRR, NDCG)
+- **AI & LLM**: LLM Integration, RAG Pipeline, Hybrid Search (BM25 + RRF), Vector Search (S3 Vectors), Semantic Caching, LLM-as-Judge Evaluation, LiteLLM, Prompt Engineering, Model Routing, Enterprise AI Platform, Retrieval Evaluation (MRR, NDCG), RAPTOR Indexing, MCP Server, Zod, Vercel AI SDK, DynamoDB, Guardrail Profiles, Confluence Ingestion, Jira ADF Parsing, text-embedding-3-small
 
 **Soft Skills**: Technical Leadership, Mentoring, Strategic Planning, Stakeholder Management, Risk Analysis, Hiring & Interviewing, Cross-Functional Collaboration, Change Management, Innovation Culture, Blameless Postmortems, Accountability, Adaptability, Analytical Thinking, Autonomy, Clear Communication, Coaching, Collaboration, Communication, Conflict Resolution, Continuous Improvement Mindset, Continuous Learning, Creativity, Cross-Functional Team Leadership, Culture Building, Curiosity, Customer Focus, Decision Making, Documentation, Empathy, Entrepreneurial Mindset, Executive Presence, Executive Stakeholder Management, Feedback Delivery, Flexibility, Growth Mindset, Influence, Initiative, Innovation, Interpersonal Skills, Leadership, Ownership, People Management, Performance Management, Presentation Skills, Prioritization, Problem Solving, Product Mindset, Project Management, Relationship Building, Requirements Analysis, Resourcefulness, Self-Motivation, Stakeholder Communication, Stakeholder Engagement, Strategic Alignment, Strategic Leadership, Strategic Thinking, Team Building, Team Collaboration, Team Development, Team Leadership, Team Management, Technical Advisory, Technical Communication, Thought Leadership, Written Communication
 
@@ -337,7 +403,7 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 | Data | OpenSearch, Redis |
 | Infrastructure | Terraform, Serverless Framework |
 | Compliance | GDPR, TCF, CMP |
-| AI/LLM | S3 Vectors, LiteLLM, Claude Sonnet, BM25, RRF, Semantic Cache, Redis, MRR/NDCG Eval |
+| AI/LLM | S3 Vectors, LiteLLM, Claude Sonnet, BM25, RRF, Semantic Cache, Redis, MRR/NDCG Eval, RAPTOR, MCP, Zod, Vercel AI SDK, DynamoDB, Guardrail Profiles |
 
 ### Business Context
 - **Company**: Seven.One Entertainment Group (ProSiebenSat.1 Media)
@@ -384,7 +450,7 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 | Culture/Mentoring | 9, 10 (team development, Lean Friday) |
 | Scaling/Performance | 7 (auto-scaling, bursty traffic) |
 | Process/Agile | 4, 8, 12 (DDD, postmortems, atomic deploys) |
-| AI/LLM/RAG | 15 (AI platform, hybrid search, semantic caching) |
+| AI/LLM/RAG | 15 (AI platform, hybrid search, semantic caching), 16 (document ingestion, RAPTOR), 17 (structured outputs, MCP, guardrails), 18 (semantic caching architecture) |
 
 ---
 
@@ -418,6 +484,25 @@ Technical Lead driving platform modernization, architectural excellence, and tea
    - L1 exact-match + L2 semantic cache tiers
    - MRR and NDCG eval functions with 14 tests
    - Platform lead vs personal contribution distinction
+
+5. **Document Ingestion Pipeline** (Achievement 16)
+   - Confluence XML macro stripping and metadata extraction
+   - Jira ADF→markdown tree traversal
+   - Sentence-boundary chunking (500-token/50-overlap)
+   - SHA-256 change detection for incremental updates
+   - RAPTOR hierarchical indexing for multi-granularity retrieval
+
+6. **Structured Outputs & Tool-Calling** (Achievement 17)
+   - Zod schema validation for LLM outputs
+   - MCP server tools for external integrations
+   - Per-silo guardrail profiles via LiteLLM
+   - 42 workflow plugins with composable configuration
+
+7. **Semantic Caching Architecture** (Achievement 18)
+   - L1 SHA-256 exact-match (~2ms) vs L2 S3 Vectors cosine ≥0.95 (~200ms)
+   - Redis TTL strategy for cache freshness
+   - Custom S3VectorSemanticCache class for LiteLLM
+   - Cache hit rate optimization (L1 catches 60-70%)
 
 ### Metrics to Defend
 

@@ -360,10 +360,10 @@ class EnsembleHeaderGenerator:
         # Extract inputs from stitched CV
         all_bullets = [b for role in stitched_cv.roles for b in role.bullets]
 
-        # AI enrichment: append Lantern bullets to experience pool
-        lantern_context = extracted_jd.get("lantern_context")
-        if lantern_context and lantern_context.get("bullets"):
-            all_bullets.extend(lantern_context["bullets"])
+        # AI enrichment: append AI project bullets to experience pool
+        ai_project_context = extracted_jd.get("ai_project_context")
+        if ai_project_context and ai_project_context.get("bullets"):
+            all_bullets.extend(ai_project_context["bullets"])
 
         metrics = self._extract_metrics_from_bullets(all_bullets)
         years_experience = self._calculate_years_experience(extracted_jd)
@@ -401,11 +401,11 @@ Return JSON matching this ProfileResponse schema:
   "answers_why_you": true
 }}"""
 
-        # AI enrichment: add Lantern context constraint
-        if lantern_context and lantern_context.get("bullets"):
-            schema_guidance += "\n\nAI PROJECT CONTEXT (Lantern — LLM Quality Gateway):\n"
-            schema_guidance += "The candidate built a production LLM gateway. Include relevant achievements:\n"
-            for bullet in lantern_context["bullets"]:
+        # AI enrichment: add AI project context constraint
+        if ai_project_context and ai_project_context.get("bullets"):
+            schema_guidance += "\n\nAI PROJECT CONTEXT (Commander-4/Joyia — Enterprise AI Workflow Platform):\n"
+            schema_guidance += "The candidate leads an enterprise AI platform (2,000 users, 42 plugins). Include relevant achievements:\n"
+            for bullet in ai_project_context["bullets"]:
                 schema_guidance += f"- {bullet}\n"
             schema_guidance += "IMPORTANT: Do NOT invent claims beyond these verified bullets."
 

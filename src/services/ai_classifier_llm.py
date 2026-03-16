@@ -2,7 +2,7 @@
 LLM-Based AI Job Classifier
 
 Replaces regex-based classification with Haiku LLM for semantic understanding
-of AI job relevance. Uses the candidate's Lantern project as context to assess
+of AI job relevance. Uses the candidate's Commander-4 project as context to assess
 whether a role is relevant to their AI/LLM infrastructure experience.
 
 Called at extraction time (per-job), NOT at ingest time (regex is kept for bulk).
@@ -27,26 +27,27 @@ VALID_CATEGORIES = {
     "data_science",
 }
 
-# ── Lantern project context (loaded once) ────────────────────
-_lantern_context: Optional[str] = None
+# ── AI project context (loaded once) ────────────────────
+_ai_project_context: Optional[str] = None
 
 
-def _load_lantern_context() -> str:
-    """Load Lantern project summary for candidate AI profile."""
-    global _lantern_context
-    if _lantern_context is not None:
-        return _lantern_context
+def _load_ai_project_context() -> str:
+    """Load AI project summary for candidate AI profile."""
+    global _ai_project_context
+    if _ai_project_context is not None:
+        return _ai_project_context
 
-    lantern_path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern.md"
+    project_path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "commander4.md"
     try:
-        _lantern_context = lantern_path.read_text(encoding="utf-8")
+        _ai_project_context = project_path.read_text(encoding="utf-8")
     except FileNotFoundError:
-        logger.warning(f"Lantern project file not found at {lantern_path}")
-        _lantern_context = (
-            "Candidate built Lantern, an LLM Quality Gateway using FastAPI, LiteLLM, "
-            "Redis, and Qdrant for multi-provider routing, semantic caching, and quality gates."
+        logger.warning(f"AI project file not found at {project_path}")
+        _ai_project_context = (
+            "Candidate leads Commander-4 (Joyia), an enterprise AI workflow platform at "
+            "ProSiebenSat.1 serving 2,000 users with 42 plugins — hybrid retrieval, "
+            "document ingestion, structured outputs, and semantic caching."
         )
-    return _lantern_context
+    return _ai_project_context
 
 
 # ── Prompts ──────────────────────────────────────────────────
@@ -161,7 +162,7 @@ def classify_job_llm(
     Returns:
         AIClassificationLLM with is_ai_job, categories, rationale
     """
-    lantern_context = _load_lantern_context()
+    lantern_context = _load_ai_project_context()
     extracted_jd_section = _build_extracted_jd_section(extracted_jd)
 
     user_prompt = USER_PROMPT_TEMPLATE.format(

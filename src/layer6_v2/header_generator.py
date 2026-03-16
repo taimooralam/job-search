@@ -790,16 +790,16 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             annotations=annotations if annotations else None,
         )
 
-        # AI enrichment: append Lantern context to value proposition prompt
-        lantern_context = extracted_jd.get("lantern_context")
-        if lantern_context and lantern_context.get("bullets"):
-            lantern_section = "\n\n=== AI PROJECT CONTEXT (Lantern — LLM Quality Gateway) ===\n"
-            lantern_section += "The candidate has built a production LLM gateway project. "
-            lantern_section += "Use these VERIFIED achievements to strengthen the value proposition:\n"
-            for bullet in lantern_context["bullets"]:
-                lantern_section += f"- {bullet}\n"
-            lantern_section += "\nIMPORTANT: Do NOT invent claims beyond these verified bullets."
-            user_prompt += lantern_section
+        # AI enrichment: append AI project context to value proposition prompt
+        ai_project_context = extracted_jd.get("ai_project_context")
+        if ai_project_context and ai_project_context.get("bullets"):
+            ai_section = "\n\n=== AI PROJECT CONTEXT (Commander-4/Joyia — Enterprise AI Workflow Platform) ===\n"
+            ai_section += "The candidate leads an enterprise AI platform (2,000 users, 42 plugins). "
+            ai_section += "Use these VERIFIED achievements to strengthen the value proposition:\n"
+            for bullet in ai_project_context["bullets"]:
+                ai_section += f"- {bullet}\n"
+            ai_section += "\nIMPORTANT: Do NOT invent claims beyond these verified bullets."
+            user_prompt += ai_section
 
         # Phase 0: Log LLM call start with prompt previews
         self._emit_struct_log("llm_call_start", {
@@ -861,12 +861,12 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                     "role_id": role.company,
                 })
 
-        # AI enrichment: add Lantern bullets to candidate pool
-        if lantern_context and lantern_context.get("bullets"):
-            for bullet in lantern_context["bullets"]:
+        # AI enrichment: add AI project bullets to candidate pool
+        if ai_project_context and ai_project_context.get("bullets"):
+            for bullet in ai_project_context["bullets"]:
                 master_cv_bullets.append({
                     "text": bullet,
-                    "role_id": "lantern_project",
+                    "role_id": "commander4_project",
                 })
 
         bullets_prompt = build_key_achievement_bullets_prompt_v2(
