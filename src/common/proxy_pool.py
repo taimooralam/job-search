@@ -34,7 +34,7 @@ PROXY_SOURCES = [
 
 # Validation target — fast, lightweight, returns JSON with "origin" key
 VALIDATION_URL = "http://httpbin.org/ip"
-VALIDATION_TIMEOUT = 5  # seconds
+VALIDATION_TIMEOUT = 3  # seconds — slow proxies are useless
 FETCH_TIMEOUT = 15  # seconds for fetching the proxy list
 
 CACHE_MAX_AGE_SECONDS = 1800  # 30 minutes
@@ -96,7 +96,7 @@ class ProxyPool:
         self,
         cache_path: Optional[str] = None,
         min_proxies: int = 10,
-        validate_count: int = 200,
+        validate_count: int = 0,  # 0 = test all candidates
     ) -> None:
         self._cache_path = Path(cache_path) if cache_path else _default_cache_path()
         self._min_proxies = min_proxies
@@ -126,13 +126,14 @@ class ProxyPool:
             self._pool = []
             return 0
 
+        test_count = len(candidates) if self._validate_count == 0 else min(self._validate_count, len(candidates))
         logger.info(
-            f"ProxyPool: validating {min(self._validate_count, len(candidates))} "
-            f"of {len(candidates)} candidates (up to 20 workers)…"
+            f"ProxyPool: validating {test_count} "
+            f"of {len(candidates)} candidates (up to 50 workers)…"
         )
-        working = self._validate_parallel(candidates[: self._validate_count])
+        working = self._validate_parallel(candidates[:test_count])
         logger.info(
-            f"ProxyPool: {len(candidates)} fetched → {min(self._validate_count, len(candidates))} "
+            f"ProxyPool: {len(candidates)} fetched → {test_count} "
             f"tested → {len(working)} working"
         )
 
@@ -236,7 +237,7 @@ class ProxyPool:
         """Validate proxy candidates in parallel. Returns working proxies."""
         working: List[str] = []
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=50) as executor:
             future_to_proxy = {
                 executor.submit(_validate_proxy, p): p for p in candidates
             }
