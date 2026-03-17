@@ -48,17 +48,20 @@ def _default_cache_path() -> Path:
 
 
 def _parse_proxy_lines(text: str) -> List[str]:
-    """Parse 'ip:port' lines from a plain-text proxy list."""
+    """Parse proxy lines — handles both 'ip:port' and 'http://ip:port' formats."""
     proxies = []
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
+        # Already a full URL (proxifly format)
+        if line.startswith("http://") or line.startswith("https://"):
+            proxies.append(line)
+            continue
+        # Plain ip:port format (TheSpeedX format)
         parts = line.split(":")
         if len(parts) == 2:
-            ip, port = parts
-            ip = ip.strip()
-            port = port.strip()
+            ip, port = parts[0].strip(), parts[1].strip()
             if ip and port.isdigit():
                 proxies.append(f"http://{ip}:{port}")
     return proxies
@@ -93,7 +96,7 @@ class ProxyPool:
         self,
         cache_path: Optional[str] = None,
         min_proxies: int = 10,
-        validate_count: int = 50,
+        validate_count: int = 200,
     ) -> None:
         self._cache_path = Path(cache_path) if cache_path else _default_cache_path()
         self._min_proxies = min_proxies
@@ -220,8 +223,6 @@ class ProxyPool:
                 proxies = _parse_proxy_lines(resp.text)
                 logger.info(f"ProxyPool: fetched {len(proxies)} candidates from {url}")
                 all_proxies.extend(proxies)
-                if all_proxies:
-                    break  # Primary source succeeded — no need for fallback
             except Exception as e:
                 logger.warning(f"ProxyPool: failed to fetch from {url}: {e}")
                 continue
