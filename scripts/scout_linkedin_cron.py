@@ -20,7 +20,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -35,6 +35,7 @@ from scripts.scout_linkedin_jobs import (
     SEARCH_PROFILES,
     search_jobs,
 )
+from src.common.proxy_pool import ProxyPool
 from src.common.dedupe import generate_dedupe_key
 from src.common.scout_queue import enqueue_jobs
 from src.common.telegram import send_telegram
@@ -90,6 +91,19 @@ def run_all_searches() -> List[Dict[str, Any]]:
     seen_ids: Set[str] = set()
     all_jobs: List[Dict[str, Any]] = []
 
+    # Initialize proxy pool — optional, falls back to direct if unavailable
+    proxy_pool: Optional[ProxyPool] = None
+    try:
+        pool = ProxyPool()
+        working = pool.initialize()
+        if working >= 1:
+            proxy_pool = pool
+            logger.info(f"Proxy pool ready: {working} working proxies")
+        else:
+            logger.warning("Proxy pool returned 0 working proxies — using direct requests")
+    except Exception as e:
+        logger.warning(f"Proxy pool initialization failed: {e} — using direct requests")
+
     for region, remote_only, few_applicants in SEARCH_COMBOS:
         for profile_name, keywords in SEARCH_PROFILES.items():
             label = (
@@ -105,6 +119,7 @@ def run_all_searches() -> List[Dict[str, Any]]:
                 max_pages=MAX_PAGES,
                 few_applicants=few_applicants,
                 remote_only=remote_only,
+                proxy_pool=proxy_pool,
             )
 
             new_count = 0

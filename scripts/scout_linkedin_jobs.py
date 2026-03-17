@@ -15,10 +15,11 @@ Usage:
 import argparse
 import json
 import logging
+import random
 import re
 import sys
 import time
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 import requests
 from bs4 import BeautifulSoup
@@ -32,6 +33,7 @@ from src.services.linkedin_scraper import (
     LinkedInScraperError,
 )
 from src.common.rule_scorer import compute_rule_score
+from src.common.proxy_pool import ProxyPool
 
 logging.basicConfig(
     level=logging.INFO,
@@ -180,9 +182,14 @@ def fetch_search_page(
     location: str = None,
     remote_only: bool = False,
     few_applicants: bool = False,
-    proxies: dict = None,
+    proxy_pool: Optional[ProxyPool] = None,
 ) -> str:
-    """Fetch a single page of LinkedIn search results."""
+    """Fetch a single page of LinkedIn search results.
+
+    If proxy_pool is provided, each request uses the next round-robin proxy.
+    On 429, the proxy is marked failed and one retry is attempted with a fresh
+    proxy. On other errors, returns empty string (existing behaviour).
+    """
     params: Dict[str, Any] = {
         "keywords": keywords,
         "start": start,
@@ -200,16 +207,37 @@ def fetch_search_page(
     if few_applicants:
         params["f_JIYN"] = "true"
 
-    try:
-        response = requests.get(
+    def _do_request(proxies: Optional[Dict[str, str]]) -> requests.Response:
+        return requests.get(
             LINKEDIN_SEARCH_URL,
             params=params,
             headers=HEADERS,
             timeout=REQUEST_TIMEOUT,
             proxies=proxies,
         )
+
+    proxy_dict: Optional[Dict[str, str]] = None
+    if proxy_pool is not None:
+        proxy_dict = proxy_pool.get_proxy()
+
+    try:
+        response = _do_request(proxy_dict)
+
+        # On 429 with a proxy, mark that proxy failed and retry once with a new one
+        if response.status_code == 429 and proxy_pool is not None and proxy_dict is not None:
+            proxy_url = proxy_dict.get("http", "")
+            logger.debug(f"429 on proxy {proxy_url} — marking failed, retrying")
+            proxy_pool.mark_failed(proxy_url)
+            retry_proxy = proxy_pool.get_proxy()
+            response = _do_request(retry_proxy)
+
         response.raise_for_status()
         return response.text
+
+    except requests.exceptions.HTTPError as e:
+        status = e.response.status_code if e.response is not None else "?"
+        logger.warning(f"HTTP {status} fetching search page (kw={keywords!r}, loc={location!r}): {e}")
+        return ""
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching search page: {e}")
         return ""
@@ -223,8 +251,14 @@ def search_jobs(
     limit: int = 0,
     few_applicants: bool = False,
     remote_only: bool = False,
+    proxy_pool: Optional[ProxyPool] = None,
 ) -> List[Dict[str, str]]:
-    """Search LinkedIn for jobs across keywords and regions, deduped."""
+    """Search LinkedIn for jobs across keywords and regions, deduped.
+
+    Locations within each multi-location region are shuffled on every call so
+    that rate-limiting (429s) is spread randomly rather than always hitting the
+    same tail countries.
+    """
     seen_ids: Set[str] = set()
     all_jobs: List[Dict[str, str]] = []
 
@@ -234,10 +268,13 @@ def search_jobs(
     for region_key in regions:
         config = REGION_CONFIGS.get(region_key, {})
 
-        # Build list of (location, remote_only) tuples to search
+        # Build list of location dicts to search
         search_params: List[Dict[str, Any]] = []
         if "locations" in config:
-            for loc in config["locations"]:
+            # Shuffle a copy so different countries get 429'd each run
+            locations = list(config["locations"])
+            random.shuffle(locations)
+            for loc in locations:
                 search_params.append({"location": loc, "remote_only": remote_only})
         elif "location" in config:
             search_params.append({"location": config["location"], "remote_only": remote_only})
@@ -268,6 +305,7 @@ def search_jobs(
                         location=sp.get("location"),
                         remote_only=sp.get("remote_only", False),
                         few_applicants=few_applicants,
+                        proxy_pool=proxy_pool,
                     )
 
                     if len(html) < 30:

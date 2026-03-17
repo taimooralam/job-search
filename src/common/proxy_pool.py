@@ -1,238 +1,247 @@
 """
-Proxy Pool Module — Rotating free proxies for LinkedIn scraping.
+Proxy Pool Module — Rotating validated free proxies for LinkedIn scraping.
 
-Source: proxifly/free-proxy-list on GitHub (HTTPS-capable proxies).
+Sources:
+  - Primary:  https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt
+  - Fallback: https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt
 
-Strategy per request:
-  1. Try proxy #1 (random from pool)
-  2. If fails → try proxy #2 (different random)
-  3. If fails → fall back to direct request (no proxy)
-  4. Log all failures to proxy_analytics.jsonl
-
-Cache: proxy list is cached locally for 1 hour to avoid hammering the API.
+Strategy:
+  - Fetch ~50 candidate proxies from CDN text sources (no scraping, plain GET)
+  - Validate in parallel (up to 20 workers) by testing against httpbin.org/ip
+  - Cache validated pool to data/scout/proxies.json for 30 minutes
+  - Provide round-robin get_proxy() and mark_failed() for removal of bad proxies
+  - Fall back to direct (no proxy) if pool is exhausted
 """
 
 import json
 import logging
-import os
 import random
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
 
-PROXIFLY_URL = (
-    "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/"
-    "proxies/protocols/http/data.json"
-)
+# CDN sources — raw text, one "ip:port" per line
+PROXY_SOURCES = [
+    "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
+    "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+]
 
-CACHE_MAX_AGE = 3600  # 1 hour in seconds
-PROXY_TIMEOUT = 10  # seconds per proxy attempt
+# Validation target — fast, lightweight, returns JSON with "origin" key
+VALIDATION_URL = "http://httpbin.org/ip"
+VALIDATION_TIMEOUT = 5  # seconds
+FETCH_TIMEOUT = 15  # seconds for fetching the proxy list
 
+CACHE_MAX_AGE_SECONDS = 1800  # 30 minutes
 
-def _get_cache_path() -> Path:
-    """Get path for the local proxy cache file."""
-    from src.common.scout_queue import get_queue_dir
-    return get_queue_dir() / "proxies.json"
-
-
-def _get_analytics_path() -> Path:
-    """Get path for the proxy analytics file."""
-    from src.common.scout_queue import get_queue_dir
-    return get_queue_dir() / "proxy_analytics.jsonl"
+# Default path — resolved relative to project root
+_DEFAULT_CACHE_PATH = Path(__file__).parent.parent.parent / "data" / "scout" / "proxies.json"
 
 
-def load_proxy_pool() -> List[str]:
-    """Fetch HTTPS-capable proxies from proxifly, with 1h local cache.
+def _default_cache_path() -> Path:
+    return _DEFAULT_CACHE_PATH
 
-    Returns:
-        List of proxy URLs (e.g., ["http://1.2.3.4:8080", ...]),
-        sorted by score descending. Returns empty list on failure.
-    """
-    cache_path = _get_cache_path()
 
-    # Check cache freshness
-    if cache_path.exists():
-        age = time.time() - cache_path.stat().st_mtime
-        if age < CACHE_MAX_AGE:
-            try:
-                with open(cache_path, "r") as f:
-                    cached = json.load(f)
-                if cached:
-                    logger.debug(f"Using cached proxy pool ({len(cached)} proxies, {int(age)}s old)")
-                    return cached
-            except (json.JSONDecodeError, IOError):
-                pass
-
-    # Fetch fresh list
-    try:
-        resp = requests.get(PROXIFLY_URL, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception as e:
-        logger.warning(f"Failed to fetch proxy list: {e}")
-        # Try stale cache
-        if cache_path.exists():
-            try:
-                with open(cache_path, "r") as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return []
-
-    # Filter for HTTPS-capable, extract URLs, sort by score
+def _parse_proxy_lines(text: str) -> List[str]:
+    """Parse 'ip:port' lines from a plain-text proxy list."""
     proxies = []
-    for entry in data:
-        if not isinstance(entry, dict):
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
             continue
-        if not entry.get("protocols", {}).get("https"):
-            continue
-        ip = entry.get("ip")
-        port = entry.get("port")
-        if ip and port:
-            score = entry.get("score", 0)
-            proxies.append((score, f"http://{ip}:{port}"))
+        parts = line.split(":")
+        if len(parts) == 2:
+            ip, port = parts
+            ip = ip.strip()
+            port = port.strip()
+            if ip and port.isdigit():
+                proxies.append(f"http://{ip}:{port}")
+    return proxies
 
-    proxies.sort(reverse=True)  # highest score first
-    proxy_urls = [url for _, url in proxies]
 
-    # Cache
+def _validate_proxy(proxy_url: str) -> Optional[str]:
+    """Test a single proxy against httpbin. Returns the proxy URL if working, else None."""
     try:
-        with open(cache_path, "w") as f:
-            json.dump(proxy_urls, f)
-    except IOError as e:
-        logger.warning(f"Failed to cache proxy list: {e}")
+        resp = requests.get(
+            VALIDATION_URL,
+            proxies={"http": proxy_url, "https": proxy_url},
+            timeout=VALIDATION_TIMEOUT,
+        )
+        if resp.status_code == 200:
+            return proxy_url
+    except Exception:
+        pass
+    return None
 
-    logger.info(f"Loaded {len(proxy_urls)} HTTPS proxies from proxifly")
-    return proxy_urls
 
+class ProxyPool:
+    """Round-robin rotating proxy pool with validation and caching.
 
-def get_random_proxy(pool: List[str]) -> Optional[str]:
-    """Pick a random proxy from the pool.
-
-    Args:
-        pool: List of proxy URLs
-
-    Returns:
-        Random proxy URL, or None if pool is empty
+    Usage:
+        pool = ProxyPool()
+        count = pool.initialize()          # fetches, validates, caches
+        proxy = pool.get_proxy()           # {"http": "...", "https": "..."}
+        pool.mark_failed("http://ip:port") # removes from pool
     """
-    if not pool:
-        return None
-    return random.choice(pool)
 
+    def __init__(
+        self,
+        cache_path: Optional[str] = None,
+        min_proxies: int = 10,
+        validate_count: int = 50,
+    ) -> None:
+        self._cache_path = Path(cache_path) if cache_path else _default_cache_path()
+        self._min_proxies = min_proxies
+        self._validate_count = validate_count
+        self._pool: List[str] = []
+        self._index: int = 0
 
-def _make_proxy_dict(proxy_url: str) -> Dict[str, str]:
-    """Build requests-compatible proxy dict."""
-    return {"http": proxy_url, "https": proxy_url}
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
+    def initialize(self) -> int:
+        """Fetch and validate proxies. Returns count of working proxies.
 
-def log_proxy_failure(proxy_url: str, error: str, target_url: str, fell_back_to: str = ""):
-    """Log a proxy failure to the analytics file.
+        Checks cache first; re-validates if cache is older than 30 minutes.
+        Falls back to stale cache if fetching fails.
+        """
+        cached = self._load_cache()
+        if cached is not None:
+            self._pool = cached
+            logger.info(f"ProxyPool: loaded {len(self._pool)} proxies from cache")
+            return len(self._pool)
 
-    Args:
-        proxy_url: The proxy that failed
-        error: Error type/message
-        target_url: The URL we were trying to fetch
-        fell_back_to: What we fell back to ("proxy_2" or "direct")
-    """
-    analytics_path = _get_analytics_path()
-    entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "proxy": proxy_url,
-        "error": str(error)[:200],
-        "target_url": target_url[:200],
-        "fell_back_to": fell_back_to,
-    }
-    try:
-        with open(analytics_path, "a") as f:
-            f.write(json.dumps(entry) + "\n")
-    except IOError:
-        pass  # Best-effort analytics
+        candidates = self._fetch_candidates()
+        if not candidates:
+            logger.warning("ProxyPool: no candidate proxies fetched — will use direct requests")
+            self._pool = []
+            return 0
 
+        logger.info(
+            f"ProxyPool: validating {min(self._validate_count, len(candidates))} "
+            f"of {len(candidates)} candidates (up to 20 workers)…"
+        )
+        working = self._validate_parallel(candidates[: self._validate_count])
+        logger.info(
+            f"ProxyPool: {len(candidates)} fetched → {min(self._validate_count, len(candidates))} "
+            f"tested → {len(working)} working"
+        )
 
-def fetch_with_proxy(
-    url: str,
-    headers: Optional[Dict[str, str]] = None,
-    timeout: int = PROXY_TIMEOUT,
-    pool: Optional[List[str]] = None,
-    **kwargs: Any,
-) -> requests.Response:
-    """Fetch URL with proxy rotation and direct fallback.
+        self._pool = working
+        self._save_cache(working)
+        return len(working)
 
-    Strategy:
-    1. Try random proxy #1
-    2. On failure → try random proxy #2
-    3. On failure → fall back to direct (no proxy)
-    4. Raises if direct also fails
+    def get_proxy(self) -> Optional[Dict[str, str]]:
+        """Return the next proxy in round-robin order.
 
-    Args:
-        url: Target URL
-        headers: Request headers
-        timeout: Per-request timeout in seconds
-        pool: Proxy pool (if None, loads fresh)
-        **kwargs: Additional args passed to requests.get()
+        Returns a requests-compatible dict:
+            {"http": "http://ip:port", "https": "http://ip:port"}
 
-    Returns:
-        Response object
+        Returns None (fall back to direct) if pool is exhausted.
+        """
+        if not self._pool:
+            logger.debug("ProxyPool: pool empty, using direct connection")
+            return None
 
-    Raises:
-        requests.RequestException: If all attempts fail (including direct)
-    """
-    if pool is None:
-        pool = load_proxy_pool()
+        # Wrap index around pool size
+        self._index = self._index % len(self._pool)
+        url = self._pool[self._index]
+        self._index += 1
+        return {"http": url, "https": url}
 
-    proxy_errors = (
-        requests.exceptions.ProxyError,
-        requests.exceptions.ConnectTimeout,
-        requests.exceptions.ConnectionError,
-    )
+    def mark_failed(self, proxy_url: str) -> None:
+        """Remove a proxy that returned 429 or failed from the pool."""
+        before = len(self._pool)
+        self._pool = [p for p in self._pool if p != proxy_url]
+        after = len(self._pool)
+        if before != after:
+            logger.debug(f"ProxyPool: removed failed proxy {proxy_url} ({after} remaining)")
+            # Reset index so it doesn't go out of bounds
+            if self._index >= len(self._pool):
+                self._index = 0
 
-    used_proxies = set()
+    @property
+    def size(self) -> int:
+        """Number of proxies currently in the pool."""
+        return len(self._pool)
 
-    # Attempt 1: proxy #1
-    if pool:
-        proxy1 = get_random_proxy(pool)
-        if proxy1:
-            used_proxies.add(proxy1)
-            try:
-                resp = requests.get(
-                    url,
-                    headers=headers,
-                    timeout=timeout,
-                    proxies=_make_proxy_dict(proxy1),
-                    **kwargs,
-                )
-                return resp
-            except proxy_errors as e:
-                log_proxy_failure(proxy1, type(e).__name__, url, fell_back_to="proxy_2")
-                logger.debug(f"Proxy #1 failed ({proxy1}): {e}")
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
 
-    # Attempt 2: proxy #2 (different from #1)
-    remaining = [p for p in pool if p not in used_proxies]
-    if remaining:
-        proxy2 = random.choice(remaining)
+    def _load_cache(self) -> Optional[List[str]]:
+        """Load validated proxies from cache if fresh (< 30 min).
+
+        Returns list of proxy URLs, or None if cache is missing/stale/corrupt.
+        """
+        if not self._cache_path.exists():
+            return None
+
+        age = time.time() - self._cache_path.stat().st_mtime
+        if age >= CACHE_MAX_AGE_SECONDS:
+            logger.debug(f"ProxyPool: cache is {int(age)}s old — will re-validate")
+            return None
+
         try:
-            resp = requests.get(
-                url,
-                headers=headers,
-                timeout=timeout,
-                proxies=_make_proxy_dict(proxy2),
-                **kwargs,
-            )
-            return resp
-        except proxy_errors as e:
-            log_proxy_failure(proxy2, type(e).__name__, url, fell_back_to="direct")
-            logger.debug(f"Proxy #2 failed ({proxy2}): {e}")
+            with open(self._cache_path, "r") as f:
+                data = json.load(f)
+            if isinstance(data, list) and data:
+                logger.debug(f"ProxyPool: cache is {int(age)}s old — reusing {len(data)} proxies")
+                return data
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"ProxyPool: cache read error ({e}) — will re-fetch")
 
-    # Attempt 3: direct (no proxy)
-    logger.debug(f"Falling back to direct request for {url}")
-    return requests.get(
-        url,
-        headers=headers,
-        timeout=timeout,
-        **kwargs,
-    )
+        return None
+
+    def _save_cache(self, proxies: List[str]) -> None:
+        """Persist validated proxy list to cache file."""
+        try:
+            self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._cache_path, "w") as f:
+                json.dump(proxies, f)
+            logger.debug(f"ProxyPool: saved {len(proxies)} proxies to {self._cache_path}")
+        except IOError as e:
+            logger.warning(f"ProxyPool: failed to save cache: {e}")
+
+    def _fetch_candidates(self) -> List[str]:
+        """Fetch proxy candidates from CDN sources, shuffled."""
+        all_proxies: List[str] = []
+
+        for url in PROXY_SOURCES:
+            try:
+                resp = requests.get(url, timeout=FETCH_TIMEOUT)
+                resp.raise_for_status()
+                proxies = _parse_proxy_lines(resp.text)
+                logger.info(f"ProxyPool: fetched {len(proxies)} candidates from {url}")
+                all_proxies.extend(proxies)
+                if all_proxies:
+                    break  # Primary source succeeded — no need for fallback
+            except Exception as e:
+                logger.warning(f"ProxyPool: failed to fetch from {url}: {e}")
+                continue
+
+        # Deduplicate and shuffle to avoid geographic clustering
+        unique = list(dict.fromkeys(all_proxies))
+        random.shuffle(unique)
+        return unique
+
+    def _validate_parallel(self, candidates: List[str]) -> List[str]:
+        """Validate proxy candidates in parallel. Returns working proxies."""
+        working: List[str] = []
+
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            future_to_proxy = {
+                executor.submit(_validate_proxy, p): p for p in candidates
+            }
+            for future in as_completed(future_to_proxy):
+                result = future.result()
+                if result is not None:
+                    working.append(result)
+
+        return working
