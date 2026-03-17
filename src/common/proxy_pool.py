@@ -32,8 +32,8 @@ PROXY_SOURCES = [
     "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
 ]
 
-# Validation target — fast, lightweight, returns JSON with "origin" key
-VALIDATION_URL = "http://httpbin.org/ip"
+# Validation target — test against LinkedIn directly so only HTTPS-capable proxies pass
+VALIDATION_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=test&start=0"
 VALIDATION_TIMEOUT = 3  # seconds — slow proxies are useless
 FETCH_TIMEOUT = 15  # seconds for fetching the proxy list
 
@@ -68,15 +68,19 @@ def _parse_proxy_lines(text: str) -> List[str]:
 
 
 def _validate_proxy(proxy_url: str) -> Optional[str]:
-    """Test a single proxy against httpbin. Returns the proxy URL if working, else None."""
+    """Test a single proxy against LinkedIn HTTPS. Returns the proxy URL if working, else None.
+
+    Any HTTP response (even 429) means the proxy can tunnel HTTPS to LinkedIn.
+    Only connection/SSL failures are rejected.
+    """
     try:
         resp = requests.get(
             VALIDATION_URL,
             proxies={"http": proxy_url, "https": proxy_url},
             timeout=VALIDATION_TIMEOUT,
         )
-        if resp.status_code == 200:
-            return proxy_url
+        # Any response means the proxy tunnels HTTPS successfully
+        return proxy_url
     except Exception:
         pass
     return None
