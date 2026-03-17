@@ -60,7 +60,7 @@
 - Use `.venv` virtual environment
 - Before committing: always run unit tests
 - Atomic commits without Claude signature
-- Fetch jobs with `_id` from MongoDB collection `level-2`
+- Fetch jobs with `_id` from MongoDB collection `level-2`, use .env for the connection string
 - Skip integration and bulk tests when testing
 
 ## Quality Principles

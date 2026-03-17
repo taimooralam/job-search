@@ -509,9 +509,9 @@ class TestCVImprover:
         ]
         failing_grade = GradeResult(dimension_scores=dims, passing_threshold=8.5)
 
-        # Mock improvement response
+        # Mock improvement response — must return full CV to pass structural validation
         mock_response = Mock()
-        mock_response.improved_cv = "Improved CV text"
+        mock_response.improved_cv = sample_cv_text  # Return original with "minimal changes"
         mock_response.changes_made = ["Added pain point coverage"]
         mock_response.improvement_summary = "Improved JD alignment"
         mock_llm.return_value = mock_response

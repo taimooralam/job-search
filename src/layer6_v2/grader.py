@@ -697,7 +697,7 @@ Return JSON matching the GradingResponse schema exactly with these fields:
         user_prompt = f"""Grade this CV:
 
 === CV TEXT ===
-{cv_text[:6000]}
+{cv_text}
 
 === JD KEYWORDS ===
 {', '.join(extracted_jd.get('top_keywords', [])[:15])}
@@ -706,7 +706,7 @@ Return JSON matching the GradingResponse schema exactly with these fields:
 {extracted_jd.get('role_category', 'engineering_manager')}
 
 === MASTER CV (SOURCE OF TRUTH for anti-hallucination check — CV bullets must ONLY contain technologies and claims from here) ===
-{master_cv_text[:8000]}
+{master_cv_text}
 
 Grade each dimension 1-10 with specific feedback."""
 

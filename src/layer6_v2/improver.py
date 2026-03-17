@@ -91,12 +91,12 @@ class CVImprover:
             ],
         },
         "anti_hallucination": {
-            "focus": "Accuracy and grounding",
+            "focus": "Accuracy verification and grounding",
             "tactics": [
-                "Remove or rephrase any unverifiable claims",
-                "Ensure all metrics match source exactly",
-                "Remove any fabricated achievements",
-                "Clarify ambiguous statements with source-grounded details",
+                "Verify claims against the MASTER CV source of truth before making changes",
+                "Rephrase unverifiable metrics to be more conservative rather than removing them",
+                "Ensure all metrics and achievements are grounded in master CV content",
+                "Do NOT remove entire role sections, project sections, or skill categories",
             ],
         },
     }
@@ -233,6 +233,9 @@ ROLE CATEGORY: {role_category}
 6. Do NOT add new skills to the Skills sections that aren't already mentioned
 7. Maintain the overall structure and flow
 8. Natural language only - no keyword stuffing
+9. NEVER remove entire role/company sections from Professional Experience
+10. NEVER remove project sections (e.g., Commander-4/Joyia)
+11. NEVER change the candidate's job title in the header — it is set by the system, not by you
 
 Return the improved CV with changes highlighted in your summary."""
 
@@ -242,12 +245,52 @@ Return the improved CV with changes highlighted in your summary."""
         if not master_cv_text:
             return ""
         return f"""=== MASTER CV (SOURCE OF TRUTH — these are VERIFIED skills and projects) ===
-{master_cv_text[:6000]}
+{master_cv_text}
 
 IMPORTANT: Any technology, project, or achievement that appears in the MASTER CV above is REAL and VERIFIED.
 Do NOT remove content that is grounded in the master CV. Project sections and their technologies are verified work.
 
 """
+
+    def _validate_structure(self, original_cv: str, improved_cv: str) -> bool:
+        """Validate that improved CV preserves the structural sections of the original."""
+        # Count role headers (pattern: "**Company Name • Title**" or "Company Name • Title |")
+        def count_roles(text):
+            return len(re.findall(r'(?:^|\n)\*?\*?[A-Z][\w\s,.]+ [•·] ', text))
+
+        # Count major section headers
+        def count_sections(text):
+            return len(re.findall(
+                r'(?:^|\n)(?:\*\*)?(?:PROFESSIONAL EXPERIENCE|EDUCATION|CORE COMPETENCIES|LANGUAGES)',
+                text, re.IGNORECASE,
+            ))
+
+        original_roles = count_roles(original_cv)
+        improved_roles = count_roles(improved_cv)
+
+        original_sections = count_sections(original_cv)
+        improved_sections = count_sections(improved_cv)
+
+        if improved_roles < original_roles:
+            self._logger.warning(
+                f"Structural validation FAILED: improved CV has {improved_roles} roles vs {original_roles} original"
+            )
+            return False
+
+        if improved_sections < original_sections:
+            self._logger.warning(
+                f"Structural validation FAILED: improved CV has {improved_sections} sections vs {original_sections} original"
+            )
+            return False
+
+        # Reject if CV shrank by more than 20%
+        if len(improved_cv) < len(original_cv) * 0.8:
+            self._logger.warning(
+                f"Structural validation FAILED: improved CV is {len(improved_cv)} chars vs {len(original_cv)} original ({len(improved_cv)/len(original_cv):.0%})"
+            )
+            return False
+
+        return True
 
     def _preview_text(self, text: str, max_chars: int = 100) -> str:
         """Generate a preview of text for logging."""
@@ -292,6 +335,7 @@ PRINCIPLES:
 3. NATURAL INTEGRATION: Keywords should flow naturally, not be stuffed
 4. MAINTAIN STRUCTURE: Keep the CV's overall organization
 5. RESPECT METRICS: All numbers must match the source exactly
+6. NEVER REMOVE SECTIONS: You must NEVER delete entire role entries, project sections, or skill categories. You may only rephrase content within existing sections.
 
 CRITICAL ANTI-HALLUCINATION RULE:
 - NEVER add skills, technologies, or languages that aren't already in the CV
@@ -489,6 +533,24 @@ Return JSON matching this ImprovementResponse schema:
             response = await self._call_improvement_llm(
                 cv_text, grade_result, extracted_jd, target_dimension, master_cv_text
             )
+
+            # Structural validation — reject if roles/sections were lost
+            if not self._validate_structure(cv_text, response.improved_cv):
+                self._logger.warning("Improvement rejected — structural validation failed. Keeping original CV.")
+                self._emit_struct_log("improvement_rejected", {
+                    "message": "⚠️ Improvement rejected: structural validation failed",
+                    "reason": "roles_or_sections_lost",
+                    "original_length": len(cv_text),
+                    "improved_length": len(response.improved_cv),
+                })
+                return ImprovementResult(
+                    improved=False,
+                    target_dimension=target_dimension,
+                    changes_made=["REJECTED: Improvement would have removed roles/sections"],
+                    original_score=original_score,
+                    cv_text=cv_text,
+                    improvement_summary="Improvement rejected — would have destroyed CV structure.",
+                )
 
             result = ImprovementResult(
                 improved=True,
