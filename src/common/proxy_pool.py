@@ -34,7 +34,7 @@ PROXY_SOURCES = [
 
 # Validation target — test against LinkedIn directly so only HTTPS-capable proxies pass
 VALIDATION_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=test&start=0"
-VALIDATION_TIMEOUT = 3  # seconds — slow proxies are useless
+VALIDATION_TIMEOUT = 8  # seconds — must be enough for LinkedIn HTTPS round-trip
 FETCH_TIMEOUT = 15  # seconds for fetching the proxy list
 
 CACHE_MAX_AGE_SECONDS = 1800  # 30 minutes
@@ -70,8 +70,8 @@ def _parse_proxy_lines(text: str) -> List[str]:
 def _validate_proxy(proxy_url: str) -> Optional[str]:
     """Test a single proxy against LinkedIn HTTPS. Returns the proxy URL if working, else None.
 
-    Any HTTP response (even 429) means the proxy can tunnel HTTPS to LinkedIn.
-    Only connection/SSL failures are rejected.
+    Only proxies that return 200 from LinkedIn are accepted — this filters out
+    Chinese proxies (451 redirect), blocked proxies (403), and flaky ones.
     """
     try:
         resp = requests.get(
@@ -79,8 +79,8 @@ def _validate_proxy(proxy_url: str) -> Optional[str]:
             proxies={"http": proxy_url, "https": proxy_url},
             timeout=VALIDATION_TIMEOUT,
         )
-        # Any response means the proxy tunnels HTTPS successfully
-        return proxy_url
+        if resp.status_code == 200:
+            return proxy_url
     except Exception:
         pass
     return None
