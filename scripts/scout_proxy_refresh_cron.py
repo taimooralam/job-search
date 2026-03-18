@@ -23,6 +23,8 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from src.common.proxy_pool import fetch_candidates, validate_parallel, save_cache
 
 logging.basicConfig(
