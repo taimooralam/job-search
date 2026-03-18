@@ -231,3 +231,59 @@ class ProxyPool:
             logger.warning(f"ProxyPool: cache read error ({e})")
 
         return None
+
+
+# ------------------------------------------------------------------
+# Legacy API — used by scout_scraper_cron.py
+# ------------------------------------------------------------------
+
+def load_proxy_pool() -> List[str]:
+    """Load pre-validated proxies from cache. Returns list of proxy URLs."""
+    pool = ProxyPool()
+    pool.initialize()
+    return pool._pool
+
+
+def fetch_with_proxy(
+    url: str,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: int = 15,
+    pool: Optional[List[str]] = None,
+    **kwargs,
+) -> requests.Response:
+    """Fetch URL with proxy rotation and direct fallback.
+
+    Tries up to 2 random proxies, then falls back to direct.
+    """
+    if pool is None:
+        pool = load_proxy_pool()
+
+    proxy_errors = (
+        requests.exceptions.ProxyError,
+        requests.exceptions.ConnectTimeout,
+        requests.exceptions.ConnectionError,
+    )
+
+    used = set()
+
+    # Try 2 proxies
+    for attempt in range(min(2, len(pool))):
+        remaining = [p for p in pool if p not in used]
+        if not remaining:
+            break
+        proxy = random.choice(remaining)
+        used.add(proxy)
+        try:
+            return requests.get(
+                url,
+                headers=headers,
+                timeout=timeout,
+                proxies={"http": proxy, "https": proxy},
+                **kwargs,
+            )
+        except proxy_errors as e:
+            logger.debug(f"Proxy attempt {attempt + 1} failed ({proxy}): {e}")
+
+    # Direct fallback
+    logger.debug(f"Falling back to direct request for {url}")
+    return requests.get(url, headers=headers, timeout=timeout, **kwargs)
