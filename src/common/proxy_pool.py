@@ -1,16 +1,19 @@
 """
 Proxy Pool Module — Rotating validated free proxies for LinkedIn scraping.
 
-Sources:
-  - Primary:  https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt
-  - Fallback: https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt
+Architecture:
+  - Validation is decoupled from usage via a separate cron job
+  - scout_proxy_refresh_cron.py runs every 20 min: fetches, validates, saves cache
+  - Scout cron just loads the pre-validated cache file — instant startup
+  - ProxyPool provides round-robin get_proxy() and mark_failed() for removal
 
-Strategy:
-  - Fetch ~50 candidate proxies from CDN text sources (no scraping, plain GET)
-  - Validate in parallel (up to 20 workers) by testing against httpbin.org/ip
-  - Cache validated pool to data/scout/proxies.json for 30 minutes
-  - Provide round-robin get_proxy() and mark_failed() for removal of bad proxies
-  - Fall back to direct (no proxy) if pool is exhausted
+Sources (fetched by refresh cron):
+  - proxifly/free-proxy-list (every ~5 min)
+  - TheSpeedX/PROXY-List
+  - jetkai/proxy-list (hourly)
+  - vakhov/fresh-proxy-list (every 5-20 min)
+  - komutan234/Proxy-List-Free (every 1-2 min)
+  - iplocate/free-proxy-list (every 30 min)
 """
 
 import json
@@ -18,7 +21,6 @@ import logging
 import random
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -40,8 +42,6 @@ PROXY_SOURCES = [
 VALIDATION_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=test&start=0"
 VALIDATION_TIMEOUT = 8  # seconds — must be enough for LinkedIn HTTPS round-trip
 FETCH_TIMEOUT = 15  # seconds for fetching the proxy list
-
-CACHE_MAX_AGE_SECONDS = 1800  # 30 minutes
 
 # Default path — resolved relative to project root
 _DEFAULT_CACHE_PATH = Path(__file__).parent.parent.parent / "data" / "scout" / "proxies.json"
@@ -91,25 +91,67 @@ def _validate_proxy(proxy_url: str) -> Optional[str]:
     return None
 
 
+def fetch_candidates() -> List[str]:
+    """Fetch proxy candidates from all CDN sources, deduplicated and shuffled."""
+    all_proxies: List[str] = []
+
+    for url in PROXY_SOURCES:
+        try:
+            resp = requests.get(url, timeout=FETCH_TIMEOUT)
+            resp.raise_for_status()
+            proxies = _parse_proxy_lines(resp.text)
+            logger.info(f"ProxyPool: fetched {len(proxies)} candidates from {url}")
+            all_proxies.extend(proxies)
+        except Exception as e:
+            logger.warning(f"ProxyPool: failed to fetch from {url}: {e}")
+            continue
+
+    # Deduplicate and shuffle to avoid geographic clustering
+    unique = list(dict.fromkeys(all_proxies))
+    random.shuffle(unique)
+    return unique
+
+
+def validate_parallel(candidates: List[str], max_workers: int = 50) -> List[str]:
+    """Validate proxy candidates in parallel. Returns working proxies."""
+    working: List[str] = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_proxy = {
+            executor.submit(_validate_proxy, p): p for p in candidates
+        }
+        for future in as_completed(future_to_proxy):
+            result = future.result()
+            if result is not None:
+                working.append(result)
+
+    return working
+
+
+def save_cache(proxies: List[str], cache_path: Optional[Path] = None) -> None:
+    """Persist validated proxy list to cache file."""
+    path = cache_path or _default_cache_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(proxies, f)
+        logger.info(f"ProxyPool: saved {len(proxies)} proxies to {path}")
+    except IOError as e:
+        logger.warning(f"ProxyPool: failed to save cache: {e}")
+
+
 class ProxyPool:
-    """Round-robin rotating proxy pool with validation and caching.
+    """Round-robin rotating proxy pool — loads pre-validated proxies from cache.
 
     Usage:
         pool = ProxyPool()
-        count = pool.initialize()          # fetches, validates, caches
+        count = pool.initialize()          # loads from cache (written by refresh cron)
         proxy = pool.get_proxy()           # {"http": "...", "https": "..."}
         pool.mark_failed("http://ip:port") # removes from pool
     """
 
-    def __init__(
-        self,
-        cache_path: Optional[str] = None,
-        min_proxies: int = 10,
-        validate_count: int = 0,  # 0 = test all candidates
-    ) -> None:
+    def __init__(self, cache_path: Optional[str] = None) -> None:
         self._cache_path = Path(cache_path) if cache_path else _default_cache_path()
-        self._min_proxies = min_proxies
-        self._validate_count = validate_count
         self._pool: List[str] = []
         self._index: int = 0
 
@@ -118,37 +160,21 @@ class ProxyPool:
     # ------------------------------------------------------------------
 
     def initialize(self) -> int:
-        """Fetch and validate proxies. Returns count of working proxies.
+        """Load pre-validated proxies from cache. Returns count of proxies.
 
-        Checks cache first; re-validates if cache is older than 30 minutes.
-        Falls back to stale cache if fetching fails.
+        The cache is maintained by a separate refresh cron job. This method
+        loads whatever is in the cache regardless of age — the refresh cron
+        is responsible for keeping it fresh.
         """
         cached = self._load_cache()
-        if cached is not None:
+        if cached:
             self._pool = cached
             logger.info(f"ProxyPool: loaded {len(self._pool)} proxies from cache")
             return len(self._pool)
 
-        candidates = self._fetch_candidates()
-        if not candidates:
-            logger.warning("ProxyPool: no candidate proxies fetched — will use direct requests")
-            self._pool = []
-            return 0
-
-        test_count = len(candidates) if self._validate_count == 0 else min(self._validate_count, len(candidates))
-        logger.info(
-            f"ProxyPool: validating {test_count} "
-            f"of {len(candidates)} candidates (up to 50 workers)…"
-        )
-        working = self._validate_parallel(candidates[:test_count])
-        logger.info(
-            f"ProxyPool: {len(candidates)} fetched → {test_count} "
-            f"tested → {len(working)} working"
-        )
-
-        self._pool = working
-        self._save_cache(working)
-        return len(working)
+        logger.warning("ProxyPool: no cached proxies found — will use direct requests")
+        self._pool = []
+        return 0
 
     def get_proxy(self) -> Optional[Dict[str, str]]:
         """Return the next proxy in round-robin order.
@@ -189,70 +215,19 @@ class ProxyPool:
     # ------------------------------------------------------------------
 
     def _load_cache(self) -> Optional[List[str]]:
-        """Load validated proxies from cache if fresh (< 30 min).
+        """Load validated proxies from cache file.
 
-        Returns list of proxy URLs, or None if cache is missing/stale/corrupt.
+        Returns list of proxy URLs, or None if cache is missing/corrupt.
         """
         if not self._cache_path.exists():
-            return None
-
-        age = time.time() - self._cache_path.stat().st_mtime
-        if age >= CACHE_MAX_AGE_SECONDS:
-            logger.debug(f"ProxyPool: cache is {int(age)}s old — will re-validate")
             return None
 
         try:
             with open(self._cache_path, "r") as f:
                 data = json.load(f)
             if isinstance(data, list) and data:
-                logger.debug(f"ProxyPool: cache is {int(age)}s old — reusing {len(data)} proxies")
                 return data
         except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"ProxyPool: cache read error ({e}) — will re-fetch")
+            logger.warning(f"ProxyPool: cache read error ({e})")
 
         return None
-
-    def _save_cache(self, proxies: List[str]) -> None:
-        """Persist validated proxy list to cache file."""
-        try:
-            self._cache_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self._cache_path, "w") as f:
-                json.dump(proxies, f)
-            logger.debug(f"ProxyPool: saved {len(proxies)} proxies to {self._cache_path}")
-        except IOError as e:
-            logger.warning(f"ProxyPool: failed to save cache: {e}")
-
-    def _fetch_candidates(self) -> List[str]:
-        """Fetch proxy candidates from CDN sources, shuffled."""
-        all_proxies: List[str] = []
-
-        for url in PROXY_SOURCES:
-            try:
-                resp = requests.get(url, timeout=FETCH_TIMEOUT)
-                resp.raise_for_status()
-                proxies = _parse_proxy_lines(resp.text)
-                logger.info(f"ProxyPool: fetched {len(proxies)} candidates from {url}")
-                all_proxies.extend(proxies)
-            except Exception as e:
-                logger.warning(f"ProxyPool: failed to fetch from {url}: {e}")
-                continue
-
-        # Deduplicate and shuffle to avoid geographic clustering
-        unique = list(dict.fromkeys(all_proxies))
-        random.shuffle(unique)
-        return unique
-
-    def _validate_parallel(self, candidates: List[str]) -> List[str]:
-        """Validate proxy candidates in parallel. Returns working proxies."""
-        working: List[str] = []
-
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            future_to_proxy = {
-                executor.submit(_validate_proxy, p): p for p in candidates
-            }
-            for future in as_completed(future_to_proxy):
-                result = future.result()
-                if result is not None:
-                    working.append(result)
-
-        return working
