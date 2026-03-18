@@ -30,6 +30,10 @@ logger = logging.getLogger(__name__)
 PROXY_SOURCES = [
     "https://cdn.jsdelivr.net/gh/proxifly/free-proxy-list@main/proxies/protocols/http/data.txt",
     "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+    "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
+    "https://vakhov.github.io/fresh-proxy-list/http.txt",
+    "https://raw.githubusercontent.com/komutan234/Proxy-List-Free/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/iplocate/free-proxy-list/main/protocols/http.txt",
 ]
 
 # Validation target — test against LinkedIn directly so only HTTPS-capable proxies pass
