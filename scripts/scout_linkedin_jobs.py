@@ -216,31 +216,39 @@ def fetch_search_page(
             proxies=proxies,
         )
 
-    proxy_dict: Optional[Dict[str, str]] = None
-    if proxy_pool is not None:
-        proxy_dict = proxy_pool.get_proxy()
+    max_attempts = 3 if proxy_pool is not None else 1
 
-    try:
-        response = _do_request(proxy_dict)
+    for attempt in range(max_attempts):
+        proxy_dict = proxy_pool.get_proxy() if proxy_pool is not None else None
 
-        # On 429 with a proxy, mark that proxy failed and retry once with a new one
-        if response.status_code == 429 and proxy_pool is not None and proxy_dict is not None:
-            proxy_url = proxy_dict.get("http", "")
-            logger.debug(f"429 on proxy {proxy_url} — marking failed, retrying")
-            proxy_pool.mark_failed(proxy_url)
-            retry_proxy = proxy_pool.get_proxy()
-            response = _do_request(retry_proxy)
+        try:
+            response = _do_request(proxy_dict)
 
-        response.raise_for_status()
-        return response.text
+            # On 429 with a proxy, mark failed and try next attempt
+            if response.status_code == 429 and proxy_pool is not None and proxy_dict is not None:
+                proxy_url = proxy_dict.get("http", "")
+                logger.debug(f"429 on proxy {proxy_url} — marking failed (attempt {attempt + 1}/{max_attempts})")
+                proxy_pool.mark_failed(proxy_url)
+                continue
 
-    except requests.exceptions.HTTPError as e:
-        status = e.response.status_code if e.response is not None else "?"
-        logger.warning(f"HTTP {status} fetching search page (kw={keywords!r}, loc={location!r}): {e}")
-        return ""
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching search page: {e}")
-        return ""
+            response.raise_for_status()
+            return response.text
+
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else "?"
+            logger.warning(f"HTTP {status} fetching search page (kw={keywords!r}, loc={location!r}): {e}")
+            return ""
+        except requests.exceptions.RequestException as e:
+            if proxy_pool is not None and proxy_dict is not None:
+                proxy_url = proxy_dict.get("http", "")
+                proxy_pool.mark_failed(proxy_url)
+                logger.debug(f"Proxy {proxy_url} failed (attempt {attempt + 1}/{max_attempts}): {e}")
+                continue
+            logger.error(f"Error fetching search page: {e}")
+            return ""
+
+    logger.error(f"All {max_attempts} proxy attempts failed for kw={keywords!r}, loc={location!r}")
+    return ""
 
 
 def search_jobs(

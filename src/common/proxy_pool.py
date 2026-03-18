@@ -78,6 +78,7 @@ def _validate_proxy(proxy_url: str) -> Optional[str]:
             VALIDATION_URL,
             proxies={"http": proxy_url, "https": proxy_url},
             timeout=VALIDATION_TIMEOUT,
+            allow_redirects=True,
         )
         if resp.status_code == 200:
             return proxy_url
