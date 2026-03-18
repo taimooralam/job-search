@@ -15,10 +15,12 @@ Manual:
 """
 
 import argparse
+import json
 import logging
 import math
 import os
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +45,47 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger("scout_selector")
+
+# ---------------------------------------------------------------------------
+# Discarded jobs log — keeps jobs not selected by quota for debugging
+# ---------------------------------------------------------------------------
+
+DISCARDED_PATH = Path(__file__).parent.parent / "data" / "scout" / "discarded.jsonl"
+DISCARDED_MAX_AGE_SECONDS = 3 * 86400  # 3 days
+
+
+def _append_discarded(jobs: List[Dict]) -> None:
+    """Append discarded jobs to discarded.jsonl with a timestamp."""
+    now = datetime.now(timezone.utc).isoformat()
+    with open(DISCARDED_PATH, "a") as f:
+        for job in jobs:
+            job["discarded_at"] = now
+            f.write(json.dumps(job) + "\n")
+
+
+def _purge_old_discarded() -> int:
+    """Remove entries older than 3 days from discarded.jsonl. Returns count purged."""
+    if not DISCARDED_PATH.exists():
+        return 0
+    cutoff = time.time() - DISCARDED_MAX_AGE_SECONDS
+    kept = []
+    purged = 0
+    for line in DISCARDED_PATH.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+            ts = datetime.fromisoformat(entry.get("discarded_at", "2000-01-01"))
+            if ts.timestamp() >= cutoff:
+                kept.append(line)
+            else:
+                purged += 1
+        except (json.JSONDecodeError, ValueError):
+            purged += 1
+    if purged:
+        DISCARDED_PATH.write_text("\n".join(kept) + "\n" if kept else "")
+    return purged
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -361,6 +404,11 @@ def main():
     logger.info(f"Scout Selector started at {datetime.now(timezone.utc).isoformat()}")
     logger.info("=" * 60)
 
+    # Step 0: Purge old discarded entries (>3 days)
+    purged = _purge_old_discarded()
+    if purged:
+        logger.info(f"Purged {purged} old entries from discarded.jsonl")
+
     # Step 1: Read and clear scored.jsonl (atomic)
     scored_jobs = read_and_clear_scored()
     if not scored_jobs:
@@ -421,6 +469,13 @@ def main():
         logger.info(f"Other selected: {len(selected_other)}")
 
     all_selected = selected_hourly + selected_ai + selected_other
+
+    # Write discarded jobs (score>0 but not selected) to discarded.jsonl for debugging
+    selected_ids = {j.get("job_id") for j in all_selected}
+    discarded = [j for j in new_jobs if j.get("job_id") not in selected_ids]
+    if discarded:
+        _append_discarded(discarded)
+        logger.info(f"Discarded: {len(discarded)} jobs written to discarded.jsonl")
 
     if not all_selected:
         logger.info("No jobs selected after quotas. Exiting.")
