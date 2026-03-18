@@ -38,8 +38,9 @@ DATA_DIR = Path(__file__).parent.parent / "data" / "scout"
 WORKING_PATH = DATA_DIR / "proxies.json"
 BLOCKLIST_PATH = DATA_DIR / "proxies_blocklist.json"
 
-# Blocked proxies expire after 2 hours (get retried)
-BLOCKLIST_TTL_SECONDS = 7200
+# Blocked proxies expire after 30 minutes (get retried)
+# Free proxy lists recycle the same ~6000 IPs, so a long TTL starves the pool
+BLOCKLIST_TTL_SECONDS = 1800
 
 
 def load_json_list(path: Path) -> list:
