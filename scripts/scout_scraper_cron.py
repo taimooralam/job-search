@@ -56,6 +56,47 @@ logger = logging.getLogger("scout_scraper")
 MAX_RETRIES = 3
 DETAIL_FETCH_DELAY = 1.5  # seconds between fetches
 
+# Title must contain at least one of these (case-insensitive) to be worth scraping.
+# Broad enough to catch all AI/ML/engineering roles, narrow enough to skip
+# building architects, naval architects, SAP consultants, etc.
+TITLE_REQUIRE_ANY = [
+    "ai ", " ai", "artificial intelligence",
+    "ml ", " ml", "machine learning",
+    "llm", "genai", "gen ai", "generative",
+    "nlp", "natural language",
+    "deep learning", "neural",
+    "data engineer", "data scientist", "data science",
+    "software engineer", "backend engineer", "full stack",
+    "platform engineer", "cloud engineer", "devops",
+    "engineer", "developer", "architect",
+    "head of", "lead", "director", "manager",
+    "scientist", "researcher",
+]
+
+# If title contains ANY of these, skip immediately (obviously wrong domain)
+TITLE_REJECT_ANY = [
+    "naval architect", "building architect", "architectural associate",
+    "3d render", "interior design", "landscape",
+    "mechanical engineer", "civil engineer", "structural engineer",
+    "electrical engineer", "chemical engineer",
+    "sap ", "salesforce", "dynamics 365",
+    "nurse", "doctor", "clinical", "dentist", "pharmacist",
+    "teacher", "professor", "lecturer",
+    "accountant", "bookkeeper", "auditor",
+    "recruiter", "talent acquisition",
+    "real estate", "property",
+    "truck driver", "warehouse", "forklift",
+]
+
+
+def _title_passes_filter(title: str) -> bool:
+    """Quick title check — reject obviously irrelevant jobs before scraping."""
+    t = title.lower()
+    for reject in TITLE_REJECT_ANY:
+        if reject in t:
+            return False
+    return True
+
 
 # ---------------------------------------------------------------------------
 # PID file overlap protection
@@ -188,8 +229,8 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=5,
-        help="Number of jobs to process per run (default: 5)",
+        default=15,
+        help="Number of jobs to process per run (default: 15)",
     )
     parser.add_argument(
         "--no-proxy",
@@ -244,9 +285,17 @@ def _run(args):
     retry_jobs = []
     dead_jobs = []
 
+    skipped = 0
     for i, job in enumerate(batch):
         job_id = job.get("job_id", "unknown")
         retry_count = job.get("retry_count", 0)
+        title = job.get("title", "")
+
+        # Skip obviously irrelevant titles before wasting a proxy request
+        if title and not _title_passes_filter(title):
+            skipped += 1
+            logger.info(f"  [{i + 1}/{len(batch)}] Skipped (title filter) — {title}")
+            continue
 
         try:
             scored = scrape_and_score(job, pool, use_proxy=not args.no_proxy)
@@ -291,7 +340,7 @@ def _run(args):
     # Summary
     logger.info(
         f"Scraper done: {len(scored_jobs)}/{len(batch)} scored, "
-        f"{len(retry_jobs)} retried, {len(dead_jobs)} dead-lettered"
+        f"{skipped} skipped, {len(retry_jobs)} retried, {len(dead_jobs)} dead-lettered"
     )
 
 
