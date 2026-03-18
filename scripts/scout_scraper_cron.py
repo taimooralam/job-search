@@ -17,6 +17,7 @@ Manual:
 import argparse
 import logging
 import os
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -56,46 +57,40 @@ logger = logging.getLogger("scout_scraper")
 MAX_RETRIES = 3
 DETAIL_FETCH_DELAY = 1.5  # seconds between fetches
 
-# Title must contain at least one of these (case-insensitive) to be worth scraping.
-# Broad enough to catch all AI/ML/engineering roles, narrow enough to skip
-# building architects, naval architects, SAP consultants, etc.
-TITLE_REQUIRE_ANY = [
-    "ai ", " ai", "artificial intelligence",
-    "ml ", " ml", "machine learning",
-    "llm", "genai", "gen ai", "generative",
-    "nlp", "natural language",
-    "deep learning", "neural",
-    "data engineer", "data scientist", "data science",
-    "software engineer", "backend engineer", "full stack",
-    "platform engineer", "cloud engineer", "devops",
-    "engineer", "developer", "architect",
-    "head of", "lead", "director", "manager",
-    "scientist", "researcher",
-]
-
-# If title contains ANY of these, skip immediately (obviously wrong domain)
-TITLE_REJECT_ANY = [
-    "naval architect", "building architect", "architectural associate",
-    "3d render", "interior design", "landscape",
-    "mechanical engineer", "civil engineer", "structural engineer",
-    "electrical engineer", "chemical engineer",
-    "sap ", "salesforce", "dynamics 365",
-    "nurse", "doctor", "clinical", "dentist", "pharmacist",
-    "teacher", "professor", "lecturer",
-    "accountant", "bookkeeper", "auditor",
-    "recruiter", "talent acquisition",
-    "real estate", "property",
-    "truck driver", "warehouse", "forklift",
-]
+# Title must contain at least one AI/tech signal to be worth scraping.
+# This is a allowlist approach — if the title has zero tech relevance, skip it.
+# Title must match at least one pattern to be worth scraping.
+# Uses word-boundary regex to avoid substring false positives (e.g. "chain" matching "ai").
+_TITLE_PATTERNS = re.compile(
+    r"\b("
+    # AI/ML core
+    r"ai|artificial.intelligence|machine.learning|ml|"
+    r"llm|genai|gen.ai|generative|gpt|"
+    r"nlp|natural.language|deep.learning|neural|"
+    r"computer.vision|agentic|rag|"
+    # Engineering roles
+    r"software.engineer|backend.engineer|full.stack|fullstack|"
+    r"platform.engineer|cloud.engineer|devops|sre|"
+    r"data.engineer|data.scientist|data.science|"
+    r"developer|programmer|"
+    # Architecture (tech)
+    r"solution.architect|cloud.architect|system.architect|"
+    r"enterprise.architect|technical.architect|it.architect|"
+    r"data.architect|infrastructure.architect|"
+    # Leadership with tech signal
+    r"head.of.ai|head.of.data|head.of.engineering|"
+    r"cto|vp.engineer|"
+    r"tech.lead|engineering.lead|engineering.manager|"
+    # Researcher
+    r"research.scientist|researcher|applied.scientist"
+    r")\b",
+    re.IGNORECASE,
+)
 
 
 def _title_passes_filter(title: str) -> bool:
-    """Quick title check — reject obviously irrelevant jobs before scraping."""
-    t = title.lower()
-    for reject in TITLE_REJECT_ANY:
-        if reject in t:
-            return False
-    return True
+    """Quick title check — require at least one tech/AI signal in the title."""
+    return bool(_TITLE_PATTERNS.search(title))
 
 
 # ---------------------------------------------------------------------------
