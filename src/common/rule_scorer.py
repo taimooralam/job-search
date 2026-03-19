@@ -324,6 +324,16 @@ LANGUAGE_NEGATIVE = [
     "fluent korean", "korean speaker", "native korean",
 ]
 
+# Common stop words per language — if 5+ unique matches found, JD is likely not in English
+NON_ENGLISH_STOPWORDS = {
+    "french": ["nous", "vous", "pour", "dans", "avec", "votre", "notre", "sont", "cette", "être", "faire", "aussi", "même", "lors", "chez"],
+    "german": [" und ", " oder ", " für ", " mit ", " auf ", " ihre ", " wir ", " über ", " sich ", " nach ", " eine ", " sein ", " werden ", " haben "],
+    "spanish": [" para ", " con ", " por ", " una ", " los ", " las ", " del ", " como ", " ser ", " sus ", " esta ", " nuestro ", " sobre ", " entre "],
+    "italian": [" per ", " con ", " una ", " dei ", " del ", " alla ", " nella ", " sono ", " questa ", " nostro ", " come ", " anche ", " essere ", " tra "],
+    "portuguese": [" para ", " com ", " uma ", " dos ", " das ", " pela ", " como ", " ser ", " sua ", " nosso ", " sobre ", " entre ", " este ", " essa "],
+}
+NON_ENGLISH_THRESHOLD = 5  # minimum unique stop words to flag as non-English
+
 # =============================================================================
 # ROLE-SPECIFIC WEIGHT CONFIGURATIONS
 # =============================================================================
@@ -687,7 +697,7 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     if _contains_any(loc_and_desc, REMOTE_NEGATIVE):
         remote_score -= 10
 
-    # --- 5) LANGUAGE REQUIREMENTS (-10 to 0) ---
+    # --- 5) LANGUAGE REQUIREMENTS (-30 to 0) ---
     language_score = 0
     if _contains_any(desc_lower, LANGUAGE_NEGATIVE):
         language_score -= 10
@@ -696,6 +706,13 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     total_chars = len(chars) or 1
     if non_ascii / total_chars > 0.3:
         language_score -= 10
+    # Detect JDs written in non-English languages (French, German, Spanish, Italian, Portuguese)
+    text_to_check = f" {title_lower} {desc_lower} "
+    for lang, stopwords in NON_ENGLISH_STOPWORDS.items():
+        matches = sum(1 for sw in stopwords if sw in text_to_check)
+        if matches >= NON_ENGLISH_THRESHOLD:
+            language_score -= 20
+            break
 
     # --- CALCULATE TOTAL ---
     keyword_total = sum(kw_scores.values())
