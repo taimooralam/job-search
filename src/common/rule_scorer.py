@@ -51,8 +51,12 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
             "senior ai engineer", "lead ai engineer", "staff ai engineer",
             "principal ai engineer", "ai software engineer", "ai developer",
             "senior artificial intelligence engineer",
+            "forward deployed ai engineer", "forward-deployed ai engineer",
+            "senior forward deployed ai engineer", "field ai engineer",
+            "senior field ai engineer",
         ],
-        "partialTitles": ["ai engineer", "artificial intelligence engineer"],
+        "partialTitles": ["ai engineer", "artificial intelligence engineer",
+                          "forward deployed ai", "forward-deployed ai"],
         "excludeIfContains": [
             "sales", "pre-sales", "presales", "marketing",
             "recruiter", "data analyst", "business analyst",
@@ -653,9 +657,15 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     if hard_neg_count:
         unwanted_penalty += hard_neg_count * 25
 
-    # --- 2) SENIORITY SCORE (-25 to +15) ---
+    # --- 2) SENIORITY SCORE (-25 to +20) ---
     seniority_result = _get_seniority_score(f"{title_lower} {crit_lower}")
     seniority_score = seniority_result["score"]
+
+    # --- 2b) PROVEN FIT BONUS — roles with interview success get +15 ---
+    proven_fit_bonus = 0
+    proven_fit_patterns = ["forward deployed", "forward-deployed", "field ai engineer"]
+    if any(p in title_lower for p in proven_fit_patterns):
+        proven_fit_bonus = 15
 
     # --- 3) AI KEYWORD SCORES ---
     kw_scores = {}
@@ -717,10 +727,10 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     # --- CALCULATE TOTAL ---
     keyword_total = sum(kw_scores.values())
 
-    raw_score = title_score + seniority_score + keyword_total + remote_score + language_score - unwanted_penalty
+    raw_score = title_score + seniority_score + proven_fit_bonus + keyword_total + remote_score + language_score - unwanted_penalty
 
     max_keyword_score = sum(w["max"] for w in weights.values())
-    max_possible = 50 + 20 + max_keyword_score + 20  # title + seniority + keywords + remote
+    max_possible = 50 + 20 + 15 + max_keyword_score + 20  # title + seniority + provenFit + keywords + remote
 
     normalized_score = max(0, min(100, round((raw_score / max_possible) * 100)))
 
@@ -737,6 +747,7 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     breakdown = {
         "title": title_score,
         "seniority": seniority_score,
+        "provenFit": proven_fit_bonus,
         "remote": remote_score,
         "language": language_score,
         "unwantedPenalty": -unwanted_penalty,
