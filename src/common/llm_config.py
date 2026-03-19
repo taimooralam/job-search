@@ -77,7 +77,7 @@ class StepConfig:
     tier: TierType = "middle"
     claude_model: Optional[str] = None
     fallback_model: Optional[str] = None
-    timeout_seconds: int = 120
+    timeout_seconds: int = 180
     max_retries: int = 2
     use_fallback: bool = True
 
