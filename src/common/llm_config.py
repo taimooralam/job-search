@@ -131,12 +131,12 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     # Layer 6 V2: CV Generation
     # IMPORTANT: use_fallback=False ensures Claude CLI is mandatory for CV quality
     # If Claude CLI fails, the generation will fail loudly rather than silently using gpt-4o
-    "header_generator": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
-    "role_generator": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
+    "header_generator": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
+    "role_generator": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
     "grader": StepConfig(tier="low", use_fallback=False),
-    "ensemble_header": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
-    "improver": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
-    "cv_tailorer": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
+    "ensemble_header": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
+    "improver": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
+    "cv_tailorer": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
 
     # Layer 2: Pain Point Miner
     "pain_point_extraction": StepConfig(tier="middle"),
@@ -170,7 +170,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "jd_extraction": StepConfig(tier="low", use_fallback=False),
 
     # Cover Letter - Sonnet tier, single attempt, no retries
-    "cover_letter_generation": StepConfig(tier="middle", use_fallback=False, timeout_seconds=180),
+    "cover_letter_generation": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
 
     # LinkedIn
     "linkedin_optimization": StepConfig(tier="middle"),
