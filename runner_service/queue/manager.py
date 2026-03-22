@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 import redis.asyncio as aioredis
@@ -1002,11 +1002,13 @@ class QueueManager:
         Clean up orphaned/mismatched queue items (data integrity only).
 
         Stale running items are now handled by reclaim_stale_running().
-        This method only handles:
+        This method handles:
         1. Queue IDs in pending list with no corresponding item data (orphans)
         2. Items in pending list whose status is no longer PENDING (status mismatch)
         3. Queue IDs in running set with no corresponding item data (orphans)
         4. Items in running set whose status is not RUNNING (status mismatch)
+        5. Queue IDs in failed ZSET with no corresponding item data (orphans)
+        6. Failed items older than 24 hours (auto-dismiss)
 
         NOTE: Pending items are intentionally NOT timed out by age.
 
@@ -1022,6 +1024,8 @@ class QueueManager:
         stats = {
             "orphan_pending_removed": 0,
             "orphan_running_removed": 0,
+            "orphan_failed_removed": 0,
+            "stale_failed_dismissed": 0,
             "total_cleaned": 0,
         }
 
@@ -1052,9 +1056,30 @@ class QueueManager:
                 stats["orphan_running_removed"] += 1
                 logger.info(f"Removed mismatched item from running set: {queue_id} (status: {item.status})")
 
+        # Clean up failed ZSET — orphans and old items
+        failed_ids = await self._redis.zrange(self.FAILED_KEY, 0, -1)
+        failed_max_age_hours = 24
+        cutoff = datetime.utcnow() - timedelta(hours=failed_max_age_hours)
+        for queue_id in failed_ids:
+            item = await self.get_item(queue_id)
+            if not item:
+                # Item data expired (7-day TTL) but ZSET entry remains
+                await self._redis.zrem(self.FAILED_KEY, queue_id)
+                stats["orphan_failed_removed"] += 1
+                logger.info(f"Removed orphan failed queue_id: {queue_id}")
+            elif item.completed_at and item.completed_at < cutoff:
+                # Failed item older than 24h — auto-dismiss
+                await self._redis.zrem(self.FAILED_KEY, queue_id)
+                item_key = f"{self.ITEM_PREFIX}{queue_id}"
+                await self._redis.delete(item_key)
+                stats["stale_failed_dismissed"] += 1
+                logger.info(f"Auto-dismissed old failed item: {queue_id} (failed at {item.completed_at})")
+
         stats["total_cleaned"] = (
             stats["orphan_pending_removed"] +
-            stats["orphan_running_removed"]
+            stats["orphan_running_removed"] +
+            stats["orphan_failed_removed"] +
+            stats["stale_failed_dismissed"]
         )
 
         if stats["total_cleaned"] > 0:

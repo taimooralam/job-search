@@ -25,7 +25,7 @@ class TestStepConfigDataclass:
 
         assert config.tier == "middle"
         assert config.use_fallback is True
-        assert config.timeout_seconds == 120
+        assert config.timeout_seconds == 180
         assert config.max_retries == 2
 
     def test_step_config_accepts_all_tiers(self):

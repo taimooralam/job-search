@@ -435,9 +435,13 @@ class BatchPipelineService(OperationService):
         duration_ms = int((end_time - start_time).total_seconds() * 1000)
 
         # Count successes and failures
+        # GDrive uploads are non-critical — their failure should not mark the
+        # overall pipeline as failed since all generation work already succeeded.
+        non_critical_steps = {"cv_upload", "dossier_upload"}
+        critical_results = {k: v for k, v in step_results.items() if k not in non_critical_steps}
         steps_completed = sum(1 for r in step_results.values() if r.get("success", False))
         steps_failed = sum(1 for r in step_results.values() if not r.get("success", True))
-        all_success = all(r.get("success", False) for r in step_results.values())
+        all_success = all(r.get("success", False) for r in critical_results.values())
 
         _emit_log({
             "level": "info" if all_success else "warning",
