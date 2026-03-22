@@ -1,0 +1,189 @@
+<!-- Favorites table rows - HTMX partial -->
+<table class="w-full table-fixed theme-table">
+    <thead class="sticky-header">
+        <tr>
+            {% set sort_fields = [
+                ('company', 'Company', 'w-[16%]'),
+                ('title', 'Role', 'w-[22%]'),
+                ('location', 'Location', 'w-[16%]'),
+                ('score', 'Score', 'w-16'),
+                ('starredAt', 'Starred', 'w-24'),
+            ] %}
+
+            {% for field, label, width_class in sort_fields %}
+            {% set is_active = current_sort == field %}
+            {% set new_direction = 'asc' if (is_active and current_direction == 'desc') else 'desc' %}
+            <th scope="col"
+                class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ width_class }} {{ 'sort-active' if is_active }}"
+                hx-get="/partials/favorites-rows?sort={{ field }}&direction={{ new_direction }}"
+                hx-target="#favorites-table-container"
+                hx-indicator=".htmx-indicator">
+                <div class="flex items-center gap-1">
+                    {{ label }}
+                    <span class="sort-icon">
+                        {% if is_active %}
+                            {% if current_direction == 'desc' %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            {% else %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                            </svg>
+                            {% endif %}
+                        {% else %}
+                            <svg class="h-4 w-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                            </svg>
+                        {% endif %}
+                    </span>
+                </div>
+            </th>
+            {% endfor %}
+
+            <!-- Status column -->
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-32">
+                Status
+            </th>
+
+            <!-- Actions column -->
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-20">
+                Actions
+            </th>
+        </tr>
+    </thead>
+    {% if jobs %}
+    <tbody class="theme-bg-card divide-y theme-border">
+        {% for job in jobs %}
+        {% set job_url = job.url or job.jobUrl %}
+        <tr class="hover:theme-bg-hover transition-colors"
+            data-job-id="{{ job._id }}">
+            <!-- Company -->
+            <td class="px-2 sm:px-4 py-3 whitespace-nowrap overflow-hidden cursor-pointer"
+                onclick="window.location.href='/job/{{ job._id }}'">
+                <div class="text-sm font-medium theme-text-primary truncate" title="{{ job.company or '-' }}">
+                    {{ job.company or '-' }}
+                </div>
+            </td>
+
+            <!-- Role/Title -->
+            <td class="px-2 sm:px-4 py-3 overflow-hidden cursor-pointer"
+                onclick="window.location.href='/job/{{ job._id }}'">
+                <div class="text-sm theme-text-primary truncate" title="{{ job.title or '-' }}">
+                    {% if job_url %}
+                    <a href="{{ job_url }}" target="_blank"
+                       class="text-accent-500 hover:text-accent-400 hover:underline"
+                       onclick="event.stopPropagation()">
+                        {{ job.title or '-' }}
+                    </a>
+                    {% else %}
+                    {{ job.title or '-' }}
+                    {% endif %}
+                </div>
+            </td>
+
+            <!-- Location -->
+            <td class="px-2 sm:px-4 py-3 whitespace-nowrap overflow-hidden">
+                <div class="text-sm theme-text-secondary truncate" title="{{ job.location or '-' }}">
+                    {{ job.location or '-' }}
+                </div>
+            </td>
+
+            <!-- Score -->
+            <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
+                {% if job.score %}
+                <span class="text-xs font-mono px-1.5 py-0.5 rounded
+                    {% if job.score >= 80 %}bg-green-500/20 text-green-400
+                    {% elif job.score >= 60 %}bg-yellow-500/20 text-yellow-400
+                    {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                    {{ job.score }}
+                </span>
+                {% else %}
+                <span class="text-xs theme-text-tertiary">-</span>
+                {% endif %}
+            </td>
+
+            <!-- Starred At -->
+            <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
+                {% if job.starredAt %}
+                <span class="text-xs theme-text-secondary" title="{{ job.starredAt }}">
+                    {{ job.starredAt.strftime('%b %d') if job.starredAt.strftime is defined else job.starredAt }}
+                </span>
+                {% else %}
+                <span class="text-xs theme-text-tertiary">-</span>
+                {% endif %}
+            </td>
+
+            <!-- Status -->
+            <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
+                {% set status = job.status or 'not processed' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                    {% if status == 'under processing' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                    {% elif status == 'processed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                    {% elif status == 'applied' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
+                    {% elif status == 'rejected' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                    {% elif status == 'interviewing' %}bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200
+                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{% endif %}">
+                    {{ status }}
+                </span>
+            </td>
+
+            <!-- Actions -->
+            <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center gap-1">
+                    <!-- Unstar button -->
+                    <button onclick="toggleFavorite('{{ job._id }}', false); this.closest('tr').classList.add('opacity-50')"
+                            class="p-1 text-yellow-500 hover:text-yellow-600 transition-colors"
+                            title="Remove from starred">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                    </button>
+                    <!-- Open job link -->
+                    {% if job_url %}
+                    <a href="{{ job_url }}" target="_blank"
+                       class="p-1 theme-text-secondary hover:theme-text-primary transition-colors"
+                       title="Open job posting">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    {% else %}
+    <tbody class="theme-bg-card">
+        <tr>
+            <td colspan="7" class="px-4 py-12 text-center">
+                <svg class="mx-auto h-12 w-12 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium theme-text-primary">No starred jobs</h3>
+                <p class="mt-1 text-sm theme-text-secondary">
+                    Press <kbd class="px-1.5 py-0.5 bg-[--bg-secondary] rounded text-xs font-mono">F</kbd> or click the star icon on any job to save it here.
+                </p>
+                <a href="/" class="mt-4 inline-flex items-center btn btn-primary btn-md">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Browse Jobs
+                </a>
+            </td>
+        </tr>
+    </tbody>
+    {% endif %}
+</table>
+
+<!-- Update count in header -->
+<script>
+(function() {
+    const countEl = document.getElementById('favorites-job-count');
+    if (countEl) {
+        const count = {{ total_count }};
+        countEl.innerHTML = '<span class="font-semibold">' + count + '</span> starred';
+    }
+})();
+</script>

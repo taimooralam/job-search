@@ -3069,6 +3069,50 @@ def queue_page():
     return render_template("queue.html")
 
 
+@app.route("/favorites")
+@login_required
+def favorites_page():
+    """Favorites page with tabular view of all starred jobs."""
+    return render_template("favorites.html")
+
+
+@app.route("/partials/favorites-rows", methods=["GET"])
+@login_required
+def favorites_rows_partial():
+    """HTMX partial: Return table rows for favorites page."""
+    repo = _get_repo()
+
+    sort_field = request.args.get("sort", "starredAt")
+    sort_direction = request.args.get("direction", "desc")
+
+    field_mapping = {
+        "starredAt": "starredAt",
+        "company": "company",
+        "title": "title",
+        "score": "score",
+        "location": "location",
+    }
+
+    mongo_sort_field = field_mapping.get(sort_field, "starredAt")
+    mongo_sort_direction = -1 if sort_direction == "desc" else 1
+
+    total_count = repo.count_documents({"starred": True})
+
+    jobs = list(repo.find(
+        {"starred": True},
+        sort=[(mongo_sort_field, mongo_sort_direction)],
+        limit=200,
+    ))
+
+    return render_template(
+        "partials/favorites_rows.html",
+        jobs=jobs,
+        current_sort=sort_field,
+        current_direction=sort_direction,
+        total_count=total_count,
+    )
+
+
 @app.route("/batch-processing")
 @login_required
 def batch_processing():

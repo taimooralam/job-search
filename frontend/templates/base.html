@@ -2090,6 +2090,26 @@
                             </svg>
                         </a>
 
+                        <!-- Favorites Page Button -->
+                        <a
+                            href="/favorites"
+                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105 relative"
+                            style="background-color: rgba(234, 179, 8, 0.12); color: #eab308;"
+                            title="Starred Jobs"
+                            aria-label="Starred Jobs"
+                        >
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                            <!-- Favorites count badge -->
+                            <span id="favorites-count-badge"
+                                  class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center
+                                         text-[10px] font-bold text-white bg-yellow-500 rounded-full px-1
+                                         opacity-0 scale-0 transition-all duration-200"
+                                  style="display: none;">
+                            </span>
+                        </a>
+
                         <!-- Batch Processing Button with Count Badge -->
                         <a
                             href="/batch-processing"
@@ -3646,6 +3666,9 @@
             // Load batch count
             loadBatchCount();
 
+            // Load favorites count
+            loadFavoritesCount();
+
             // Refresh health status every 30 seconds
             setInterval(updateHealthStatus, 30000);
 
@@ -3705,6 +3728,37 @@
             batchCountCache = { count: null, timestamp: 0 };
             loadBatchCount();
         });
+
+        // ============================================================================
+        // Favorites Count Badge
+        // ============================================================================
+
+        async function loadFavoritesCount() {
+            try {
+                const response = await fetch('/api/jobs/favorites/count');
+                if (response.ok) {
+                    const data = await response.json();
+                    const count = data.count || 0;
+                    const badge = document.getElementById('favorites-count-badge');
+                    if (!badge) return;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.style.display = 'flex';
+                        badge.classList.remove('opacity-0', 'scale-0');
+                        badge.classList.add('opacity-100', 'scale-100');
+                    } else {
+                        badge.classList.remove('opacity-100', 'scale-100');
+                        badge.classList.add('opacity-0', 'scale-0');
+                        setTimeout(() => { badge.style.display = 'none'; }, 200);
+                    }
+                }
+            } catch (err) {
+                // silent
+            }
+        }
+
+        // Refresh favorites count when star is toggled
+        document.body.addEventListener('starredChanged', loadFavoritesCount);
 
         // ============================================================================
         // Starred Jobs Dropdown Component
