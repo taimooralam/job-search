@@ -18,6 +18,26 @@ from src.common.state import ExtractedJD
 from src.layer6_v2.prompts.shared import ANTI_HALLUCINATION_RULES
 
 
+def _filter_skills_by_evidence(skills: List[str], achievements: List[str]) -> List[str]:
+    """
+    Filter skills to only those mentioned in at least one achievement.
+
+    Prevents telling the LLM that unevidenced skills (e.g., Java) are
+    "safe to use in bullets" when the candidate never used them in that role.
+
+    Args:
+        skills: Skill names from role metadata
+        achievements: Achievement bullet strings from the role
+
+    Returns:
+        Skills that appear in at least one achievement (case-insensitive)
+    """
+    if not skills or not achievements:
+        return skills or []
+    combined = " ".join(achievements).lower()
+    return [s for s in skills if s.lower() in combined]
+
+
 ROLE_GENERATION_SYSTEM_PROMPT = """You are an expert CV bullet writer specializing in senior technical and leadership roles.
 
 Your mission: Transform raw achievements into ATS-optimized, JD-aligned CV bullets while STRICTLY preserving all factual claims from the source.
@@ -295,7 +315,7 @@ EMPHASIS GUIDANCE:
 {achievement_mapping_text}
 
 === HARD SKILLS FROM THIS ROLE (candidate's actual skills — safe to use in bullets) ===
-{', '.join(role.hard_skills) if role.hard_skills else 'None listed'}
+{', '.join(_filter_skills_by_evidence(role.hard_skills, role.achievements)) if role.hard_skills else 'None listed'}
 
 === SOFT SKILLS FROM THIS ROLE ===
 {', '.join(role.soft_skills) if role.soft_skills else 'None listed'}

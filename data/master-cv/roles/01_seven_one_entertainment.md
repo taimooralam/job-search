@@ -373,7 +373,7 @@ Per the CV generation critique recommendations:
 ## Skills
 
 **Hard Skills**:
-- **Languages**: TypeScript, JavaScript, Python, Java, Bash
+- **Languages**: TypeScript, JavaScript, Python, Bash
 - **Cloud**: AWS (Lambda, ECS, EventBridge, S3, CloudFront, SNS, SQS, Fargate), Terraform, Serverless, Cloud Architecture, Cloud Infrastructure
 - **Architecture**: Domain-Driven Design, Event-Driven Architecture, Microservices, CQRS, Distributed Systems, Software Architecture, System Architecture, System Design, Scalable Systems, High-Availability Systems
 - **Data**: OpenSearch, Elasticsearch, Redis, Event Streaming, Data Pipeline, Data Pipelines, Big Data, Batch Processing, Analytics Dashboards

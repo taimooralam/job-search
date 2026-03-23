@@ -62,19 +62,19 @@ def grounded_bullets():
         period="2020–2023",
         bullets=[
             GeneratedBullet(
-                text="Led 12-person engineering team through cloud migration to AWS",
+                text="Led 12-person engineering team through cloud migration",
                 source_text="Led team of 12 engineers to deliver cloud migration",
                 source_metric="12",
-                jd_keyword_used="AWS",
+                jd_keyword_used="cloud migration",
             ),
             GeneratedBullet(
-                text="Reduced production incidents by 75% via SRE implementation",
+                text="Reduced production incidents by 75% via SRE practices",
                 source_text="Reduced incident rate by 75% through SRE practices",
                 source_metric="75%",
                 jd_keyword_used="SRE",
             ),
             GeneratedBullet(
-                text="Scaled platform to handle 10M daily requests with 99.9% uptime",
+                text="Scaled infrastructure to handle 10M daily requests",
                 source_text="Scaled infrastructure to handle 10M requests per day",
                 source_metric="10M",
                 jd_keyword_used="scalability",

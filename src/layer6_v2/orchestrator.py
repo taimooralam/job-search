@@ -458,7 +458,7 @@ class CVGeneratorV2:
             self._emit_struct_log("phase_start", {"phase": 1, "phase_name": "load_candidate_data"})
             candidate_data = self.cv_loader.load()
             roles = candidate_data.roles
-            skill_whitelist = self.cv_loader.get_skill_whitelist()
+            skill_whitelist = self.cv_loader.get_achievement_grounded_whitelist()
             self._logger.info(f"  Loaded {len(roles)} roles from master CV")
             self._emit_log("phase_complete", f"Loaded {len(roles)} roles", phase=1, roles_count=len(roles))
             # Phase 0 Extension: Rich metadata for debugging
@@ -781,6 +781,23 @@ class CVGeneratorV2:
                 header_output, stitched_cv, candidate_data, job_location, extracted_jd,
                 state=state,
             )
+
+            # Phase 5.4: Post-generation skill grounding validation (log-only safety net)
+            self._logger.info("Phase 5.4: Skill grounding validation...")
+            grounding_result = self._validate_cv_skill_grounding(cv_text, skill_whitelist)
+            if not grounding_result["passed"]:
+                self._logger.warning(
+                    f"  Skill grounding: {grounding_result['flag_count']} ungrounded "
+                    f"technologies: {grounding_result['flagged_skills'][:5]}"
+                )
+            else:
+                self._logger.info("  Skill grounding: PASSED (all technologies grounded)")
+            self._emit_struct_log("validation_result", {
+                "validation": "skill_grounding",
+                "passed": grounding_result["passed"],
+                "flagged_skills": grounding_result["flagged_skills"][:10],
+                "flag_count": grounding_result["flag_count"],
+            })
 
             # Phase 5.5 (GAP-089): ATS keyword validation
             self._logger.info("Phase 5.5: ATS keyword validation...")
@@ -2016,6 +2033,41 @@ class CVGeneratorV2:
             "not_applied": not_applied,
             "total": total,
             "success_rate": success_rate,
+        }
+
+    def _validate_cv_skill_grounding(
+        self,
+        cv_text: str,
+        skill_whitelist: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Post-generation safety net: scan CV for technologies not in grounded whitelist.
+
+        Log-only — does not modify CV text. Provides visibility for monitoring.
+
+        Args:
+            cv_text: Assembled CV text
+            skill_whitelist: Achievement-grounded whitelist from CVLoader
+
+        Returns:
+            Dict with 'passed', 'flagged_skills', 'flag_count'
+        """
+        from src.layer6_v2.grader import CVGrader
+
+        cv_techs = CVGrader.TECH_PATTERNS.findall(cv_text)
+        cv_techs_lower = {t.lower() for t in cv_techs}
+
+        # Build whitelist lookup set
+        whitelist_lower = {s.lower() for s in skill_whitelist.get("hard_skills", [])}
+        whitelist_lower.update(s.lower() for s in skill_whitelist.get("soft_skills", []))
+
+        # Technologies in CV but not in grounded whitelist
+        ungrounded = sorted(cv_techs_lower - whitelist_lower)
+
+        return {
+            "passed": len(ungrounded) == 0,
+            "flagged_skills": ungrounded,
+            "flag_count": len(ungrounded),
         }
 
     def _validate_ats_coverage(

@@ -38,7 +38,27 @@ class RoleQA:
     - Metric extraction with regex patterns
     - Fuzzy string matching for source verification
     - Case-insensitive keyword coverage analysis
+    - Technology cross-reference (prevents JD keyword injection into bullets)
     """
+
+    # Technology names for per-bullet grounding check.
+    # Catches JD keyword swaps (e.g., source says "NestJS" but bullet says "Java").
+    TECH_PATTERN = re.compile(
+        r'\b(?:'
+        r'Python|TypeScript|JavaScript|Java|Go|Rust|Kotlin|Scala|C\+\+|C#|'
+        r'Ruby|PHP|Swift|Bash|SQL|Node\.js|NestJS|Express|React|Angular|Vue|'
+        r'AWS|GCP|Azure|Lambda|ECS|EKS|S3|CloudFront|EventBridge|SNS|SQS|Fargate|'
+        r'Kubernetes|Docker|Terraform|Helm|Jenkins|'
+        r'Redis|MongoDB|PostgreSQL|MySQL|Elasticsearch|OpenSearch|Kafka|RabbitMQ|'
+        r'FastAPI|Flask|Django|Spring|'
+        r'GraphQL|REST|gRPC|WebSocket|'
+        r'CI/CD|GitHub Actions|GitLab CI|CircleCI|'
+        r'PyTorch|TensorFlow|LangChain|LangGraph|LiteLLM|'
+        r'Datadog|Grafana|Prometheus|'
+        r'DDD|CQRS|Microservices|Serverless|'
+        r'OpenAI|Anthropic|Claude|Bedrock|SageMaker|Gemini'
+        r')\b', re.IGNORECASE
+    )
 
     # Regex patterns for extracting metrics
     METRIC_PATTERNS = [
@@ -194,6 +214,19 @@ class RoleQA:
                     if not has_support:
                         return False, f"Leadership claim '{claim}' not supported in source"
 
+        # Check technology cross-reference (catches JD keyword injection)
+        # Technologies in the bullet must exist in the source achievement.
+        # This prevents the LLM from swapping e.g. "NestJS/TypeScript" → "Java".
+        bullet_techs = {t.lower() for t in self.TECH_PATTERN.findall(bullet_text)}
+        source_techs = {t.lower() for t in self.TECH_PATTERN.findall(source_text)}
+        if bullet_techs:
+            injected_techs = bullet_techs - source_techs
+            if injected_techs:
+                return False, (
+                    f"Technology {injected_techs} in bullet but not in source achievement "
+                    f"(likely injected from JD)"
+                )
+
         return True, None
 
     def _has_situation(self, bullet_text: str) -> bool:
@@ -318,9 +351,11 @@ class RoleQA:
         Verify all facts in generated bullets appear in source.
 
         Checks:
+        - Source text authenticity (declared source must match a real achievement)
         - Metric accuracy (exact or fuzzy match)
         - Achievement presence (key claims supported)
         - Leadership claims have basis
+        - Technology cross-reference (no JD keyword injection)
 
         Args:
             role_bullets: Generated bullets to verify
@@ -340,6 +375,23 @@ class RoleQA:
         source_metrics = self._extract_metrics(source_corpus)
 
         for bullet in role_bullets.bullets:
+            # Check 0: Verify source_text is a real achievement (not LLM-fabricated)
+            # The LLM declares its own source_text — verify it actually matches
+            # a real achievement before trusting it for grounding checks.
+            if bullet.source_text and source_role.achievements:
+                best_match = max(
+                    (self._similarity(bullet.source_text, ach)
+                     for ach in source_role.achievements),
+                    default=0.0,
+                )
+                if best_match < 0.5:
+                    flagged_bullets.append(bullet.text[:100])
+                    issues.append(
+                        f"[{source_role.company}] Declared source_text doesn't match any "
+                        f"real achievement (best similarity: {best_match:.2f})"
+                    )
+                    continue
+
             # Check 1: Verify against declared source_text
             if bullet.source_text:
                 is_grounded, issue = self._is_grounded_in_source(

@@ -676,6 +676,49 @@ class CVLoader:
             "soft_skills": self.get_all_soft_skills(),
         }
 
+    def get_achievement_grounded_whitelist(self) -> Dict[str, List[str]]:
+        """
+        Get skills whitelist filtered to only skills evidenced in achievements.
+
+        This is the strict version of get_skill_whitelist(). It prevents
+        skills listed in role metadata but never mentioned in any achievement
+        from entering the CV generation pipeline. For example, if "Java" is
+        listed as a hard skill but no achievement mentions Java, it is excluded.
+
+        Returns:
+            Dict with 'hard_skills' and 'soft_skills' lists, filtered
+            to only those appearing in at least one achievement bullet.
+        """
+        if self._candidate is None:
+            self.load()
+
+        # Build combined achievement text across all roles
+        all_achievements = []
+        for role in self._candidate.roles:
+            all_achievements.extend(role.achievements)
+        combined_lower = " ".join(all_achievements).lower()
+
+        def skill_has_evidence(skill: str) -> bool:
+            return skill.lower() in combined_lower
+
+        all_hard = self.get_all_hard_skills()
+        all_soft = self.get_all_soft_skills()
+        grounded_hard = [s for s in all_hard if skill_has_evidence(s)]
+        grounded_soft = [s for s in all_soft if skill_has_evidence(s)]
+
+        # Log what was filtered out
+        filtered_hard = set(all_hard) - set(grounded_hard)
+        if filtered_hard:
+            self._logger.warning(
+                f"Achievement grounding filtered {len(filtered_hard)} hard skills: "
+                f"{sorted(filtered_hard)}"
+            )
+
+        return {
+            "hard_skills": grounded_hard,
+            "soft_skills": grounded_soft,
+        }
+
     def skill_exists(self, skill: str) -> bool:
         """
         Check if a skill exists in the master-cv.
