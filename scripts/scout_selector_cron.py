@@ -131,35 +131,85 @@ def get_db():
 
 
 def dedupe_against_db(jobs: List[Dict[str, Any]], db) -> List[Dict[str, Any]]:
-    """Remove jobs that already exist in MongoDB (checks both level-1 and level-2)."""
+    """Remove jobs that already exist in MongoDB (checks both level-1 and level-2).
+
+    Two-pass deduplication:
+    1. Primary: exact dedupeKey match (linkedin_scout|<job_id> or linkedin_import|<job_id>)
+    2. Secondary: normalized company+title match against level-2, catching the same job
+       posted with a different LinkedIn job_id (e.g. different location variants).
+    """
+    from src.common.dedupe import normalize_for_dedupe
+
     if not jobs:
         return []
 
+    # --- Primary dedup: exact dedupeKey match ---
     dedupe_keys = []
     for job in jobs:
         dedupe_keys.append(generate_dedupe_key("linkedin_scout", source_id=job["job_id"]))
         dedupe_keys.append(generate_dedupe_key("linkedin_import", source_id=job["job_id"]))
 
     # Batch query both collections
-    existing = set()
+    existing_keys = set()
     for coll_name in ("level-2", "level-1"):
         cursor = db[coll_name].find(
             {"dedupeKey": {"$in": dedupe_keys}},
             {"dedupeKey": 1},
         )
         for doc in cursor:
-            existing.add(doc["dedupeKey"])
+            existing_keys.add(doc["dedupeKey"])
 
-    new_jobs = []
+    after_primary = []
     for job in jobs:
         key_scout = generate_dedupe_key("linkedin_scout", source_id=job["job_id"])
         key_import = generate_dedupe_key("linkedin_import", source_id=job["job_id"])
-        if key_scout not in existing and key_import not in existing:
+        if key_scout not in existing_keys and key_import not in existing_keys:
+            after_primary.append(job)
+
+    primary_skipped = len(jobs) - len(after_primary)
+    if primary_skipped:
+        logger.info(f"Dedup (primary): {primary_skipped} already in DB by dedupeKey")
+
+    if not after_primary:
+        return []
+
+    # --- Secondary dedup: normalized company+title match in level-2 ---
+    # Builds a set of "company_norm|title_norm" strings already in level-2 so
+    # that the same job posted under a fresh LinkedIn job_id is still caught.
+    existing_ct: set = set()
+    cursor = db["level-2"].find(
+        {"company": {"$exists": True}, "title": {"$exists": True}},
+        {"company": 1, "title": 1},
+    )
+    for doc in cursor:
+        company_norm = normalize_for_dedupe(doc.get("company"))
+        title_norm = normalize_for_dedupe(doc.get("title"))
+        if company_norm and title_norm:
+            existing_ct.add(f"{company_norm}|{title_norm}")
+
+    new_jobs = []
+    secondary_skipped = 0
+    for job in after_primary:
+        company_norm = normalize_for_dedupe(job.get("company"))
+        title_norm = normalize_for_dedupe(job.get("title"))
+        ct_key = f"{company_norm}|{title_norm}"
+        if ct_key in existing_ct:
+            secondary_skipped += 1
+            logger.debug(
+                f"Dedup (secondary): skipping '{job.get('title')} @ {job.get('company')}' "
+                f"— same company+title already in level-2"
+            )
+        else:
             new_jobs.append(job)
 
-    skipped = len(jobs) - len(new_jobs)
-    if skipped:
-        logger.info(f"Dedup: {skipped} already in DB, {len(new_jobs)} new")
+    if secondary_skipped:
+        logger.info(
+            f"Dedup (secondary): {secondary_skipped} already in DB by company+title"
+        )
+
+    total_skipped = primary_skipped + secondary_skipped
+    if total_skipped:
+        logger.info(f"Dedup total: {total_skipped} skipped, {len(new_jobs)} new")
 
     return new_jobs
 
@@ -284,11 +334,20 @@ def insert_jobs(
                 f"(score={job.get('score')}, tier={job.get('tier')})"
             )
         else:
-            result = collection.insert_one(doc)
-            inserted_ids.append(str(result.inserted_id))
-            logger.info(
-                f"Inserted: {job.get('title')} @ {job.get('company')} -> {result.inserted_id}"
+            result = collection.update_one(
+                {"dedupeKey": doc["dedupeKey"]},
+                {"$setOnInsert": doc},
+                upsert=True,
             )
+            if result.upserted_id is not None:
+                inserted_ids.append(str(result.upserted_id))
+                logger.info(
+                    f"Inserted: {job.get('title')} @ {job.get('company')} -> {result.upserted_id}"
+                )
+            else:
+                logger.info(
+                    f"Skipped (already exists): {job.get('title')} @ {job.get('company')}"
+                )
 
     return inserted_ids
 

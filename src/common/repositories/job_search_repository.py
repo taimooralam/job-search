@@ -314,6 +314,21 @@ class AtlasJobSearchRepository(JobSearchRepositoryInterface):
         except Exception as e:
             logger.warning(f"Error creating index indexes: {e}")
 
+    def level2_ensure_indexes(self, database: str = "jobs") -> None:
+        """Ensure required indexes exist on the level-2 collection.
+
+        Creates a unique index on dedupeKey to prevent duplicate jobs at the
+        database level. This is the final safety net — the scout cron already
+        performs soft dedup, but this index makes the guarantee hard.
+        """
+        client = self._get_client()
+        level2 = client[database]["level-2"]
+        try:
+            level2.create_index("dedupeKey", unique=True, background=True)
+            logger.info("level-2 dedupeKey unique index ensured")
+        except Exception as e:
+            logger.warning(f"Error creating level-2 dedupeKey index: {e}")
+
 
 # Singleton instance
 _job_search_repository_instance: Optional[JobSearchRepositoryInterface] = None
