@@ -433,6 +433,11 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
     if not result.get("country_code"):
         result["country_code"] = get_country_code_sync(result.get("location", ""))
 
+    # Ensure score is always present so templates can safely compare job.score >= N
+    # without hitting Jinja2 UndefinedError when the field is absent in older documents.
+    if "score" not in result:
+        result["score"] = None
+
     return result
 
 
@@ -712,6 +717,13 @@ def list_jobs():
     # MongoDB $toDate normalizes both ISO strings AND Date objects to Date objects
     # This allows hour-level granularity regardless of how createdAt was stored
     has_date_filter = date_filter_from is not None or date_filter_to is not None
+
+    # Performance: when applied_only is active, skip expensive computed sort fields
+    # (location priority, seniority rank). Applied view just needs recency sort.
+    # This avoids 50+ regex evaluations per doc that can timeout on Vercel (10s limit).
+    if applied_only:
+        use_default_sort = False
+
     # Use aggregation for date filtering OR for default multi-criteria sorting OR for leadership/AI filter
     use_aggregation = has_date_filter or use_default_sort or leadership_only or ai_only
 
