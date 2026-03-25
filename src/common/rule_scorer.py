@@ -36,7 +36,7 @@ TARGET_ROLE_FILTER = [
     "applied_ai_engineer",
 ]
 
-PROMOTION_THRESHOLD = 60
+PROMOTION_THRESHOLD = 40
 
 # =============================================================================
 # ROLE DEFINITIONS
@@ -54,6 +54,9 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
             "forward deployed ai engineer", "forward-deployed ai engineer",
             "senior forward deployed ai engineer", "field ai engineer",
             "senior field ai engineer",
+            "tech lead ai engineer", "technical lead ai engineer",
+            "founding ai engineer", "founding engineer ai",
+            "staff software engineer ai", "principal software engineer ai",
         ],
         "partialTitles": ["ai engineer", "artificial intelligence engineer",
                           "forward deployed ai", "forward-deployed ai"],
@@ -110,8 +113,11 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         "exactTitles": [
             "agentic ai engineer", "ai agent engineer", "ai agent architect",
             "ai agent developer", "agentic engineer", "multi-agent engineer",
+            "principal agentic engineer", "staff agentic engineer",
+            "lead agentic engineer", "senior agentic engineer",
+            "agentic ai architect", "principal agentic ai engineer",
         ],
-        "partialTitles": ["agentic ai", "ai agent", "multi-agent"],
+        "partialTitles": ["agentic ai", "ai agent", "multi-agent", "agentic engineer"],
         "excludeIfContains": ["sales", "pre-sales", "presales", "customer"],
     },
     "applied_ai_engineer": {
@@ -140,11 +146,25 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
             "ai engineering lead", "ai engineering manager",
             "senior ai engineering manager", "ai team lead",
             "chief ai officer", "caio",
+            # Manager / Delivery Lead variants
+            "ai engineering manager", "ai delivery lead", "ai engineering delivery lead",
+            "engineering manager ai", "engineering manager genai",
+            "engineering manager llm", "ai product engineering manager",
+            "director of research and applied ai", "director research applied ai",
+            "director research & applied ai",
+            # Head of variants
+            "head of enterprise ai", "head of enterprise llm",
+            "head of llm platform", "head of ai platform",
+            "head of applied ai", "head of ai engineering",
+            "head of agentic ai",
         ],
         "partialTitles": [
             "head of ai", "head of genai", "head of machine learning",
             "director of ai", "director ai", "ai director",
             "vp of ai", "vp ai", "chief ai",
+            "head of enterprise ai", "head of llm", "head of applied ai",
+            "head of ai engineering", "head of agentic",
+            "ai engineering manager", "engineering manager ai",
         ],
         "excludeIfContains": [],
     },
@@ -180,14 +200,33 @@ TITLE_HARD_NEGATIVES = [
 # =============================================================================
 
 SENIORITY_LEVELS = {
-    "executive": {"keywords": ["executive", "c-level", "c-suite", "chief", "caio"], "score": 20},
-    "director": {"keywords": ["director", "vp", "vice president", "head of", "head"], "score": 18},
-    "senior_ic": {"keywords": ["staff", "principal", "distinguished", "fellow"], "score": 15},
-    "lead": {"keywords": ["lead", "tech lead", "team lead", "lead software engineer"], "score": 15},
-    "senior": {"keywords": ["senior", "sr.", "sr "], "score": 12},
+    "executive": {"keywords": ["executive", "c-level", "c-suite", "chief", "caio"], "score": 35},
+    "director": {"keywords": ["director", "vp", "vice president", "head of", "head"], "score": 30},
+    "senior_ic": {"keywords": ["staff", "principal", "distinguished", "fellow"], "score": 28},
+    "lead": {"keywords": ["lead", "tech lead", "team lead", "lead software engineer"], "score": 25},
+    "senior": {"keywords": ["senior", "sr.", "sr "], "score": 15},
     "mid": {"keywords": ["mid", "intermediate"], "score": 0},
     "junior": {"keywords": ["junior", "jr.", "jr ", "entry", "associate", "intern", "trainee", "graduate"], "score": -25},
 }
+
+# Bonus awarded when title contains BOTH a senior leadership signal AND an AI/tech signal.
+# Examples: "Lead AI Engineer" (+20), "Head of AI Platform" (+20), "Staff LLM Engineer" (+20).
+# This compensates for the normalization penalty when keyword counts are low
+# (i.e. JDs that are heavy on leadership language and lighter on tech keyword density).
+SENIOR_AI_TITLE_COMBO_BONUS = 20
+
+# Senior title signals that qualify for the combo bonus
+SENIOR_TITLE_SIGNALS = [
+    "lead", "tech lead", "technical lead", "staff", "principal", "distinguished",
+    "head of", "director", "vp", "vice president", "chief", "founding", "founding engineer",
+    "senior", "sr ",
+]
+
+# AI/tech signals in the title that qualify for the combo bonus
+AI_TITLE_SIGNALS = [
+    "ai", "artificial intelligence", "llm", "genai", "gen ai", "generative",
+    "agentic", "rag", "ml", "machine learning", "nlp", "deep learning",
+]
 
 # =============================================================================
 # KEYWORD CATEGORIES
@@ -672,11 +711,21 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     if hard_neg_count:
         unwanted_penalty += hard_neg_count * 25
 
-    # --- 2) SENIORITY SCORE (-25 to +20) ---
+    # --- 2) SENIORITY SCORE (-25 to +35) ---
     seniority_result = _get_seniority_score(f"{title_lower} {crit_lower}")
     seniority_score = seniority_result["score"]
 
-    # --- 2b) PROVEN FIT BONUS — roles with interview success get +15 ---
+    # --- 2b) SENIOR + AI TITLE COMBO BONUS ---
+    # When the title combines a senior leadership signal WITH an AI/tech signal, award a bonus.
+    # This prevents "Head of AI Platform" or "Staff LLM Engineer" from scoring low purely
+    # because their JD keyword density is lower (e.g. more strategic language than tech terms).
+    senior_ai_combo_bonus = 0
+    has_senior_signal = any(sig in title_lower for sig in SENIOR_TITLE_SIGNALS)
+    has_ai_signal = any(sig in title_lower for sig in AI_TITLE_SIGNALS)
+    if has_senior_signal and has_ai_signal:
+        senior_ai_combo_bonus = SENIOR_AI_TITLE_COMBO_BONUS
+
+    # --- 2c) PROVEN FIT BONUS — roles with interview success get +15 ---
     proven_fit_bonus = 0
     proven_fit_patterns = ["forward deployed", "forward-deployed", "field ai engineer"]
     if any(p in title_lower for p in proven_fit_patterns):
@@ -747,10 +796,21 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     # --- CALCULATE TOTAL ---
     keyword_total = sum(kw_scores.values())
 
-    raw_score = title_score + seniority_score + proven_fit_bonus + keyword_total + remote_score + language_score + gcc_bonus - unwanted_penalty
+    raw_score = (
+        title_score
+        + seniority_score
+        + senior_ai_combo_bonus
+        + proven_fit_bonus
+        + keyword_total
+        + remote_score
+        + language_score
+        + gcc_bonus
+        - unwanted_penalty
+    )
 
     max_keyword_score = sum(w["max"] for w in weights.values())
-    max_possible = 50 + 20 + 15 + max_keyword_score + 20 + GCC_LOCATION_BONUS  # title + seniority + provenFit + keywords + remote + gcc
+    # title(50) + seniority(35) + combo(20) + provenFit(15) + keywords + remote(20) + gcc(12)
+    max_possible = 50 + 35 + SENIOR_AI_TITLE_COMBO_BONUS + 15 + max_keyword_score + 20 + GCC_LOCATION_BONUS
 
     normalized_score = max(0, min(100, round((raw_score / max_possible) * 100)))
 
@@ -759,7 +819,7 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         tier = "A"
     elif normalized_score >= 50:
         tier = "B"
-    elif normalized_score >= 30:
+    elif normalized_score >= 25:
         tier = "C"
     else:
         tier = "D"
@@ -767,6 +827,7 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
     breakdown = {
         "title": title_score,
         "seniority": seniority_score,
+        "seniorAiCombo": senior_ai_combo_bonus,
         "provenFit": proven_fit_bonus,
         "remote": remote_score,
         "language": language_score,

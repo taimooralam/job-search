@@ -79,8 +79,15 @@ _TITLE_PATTERNS = re.compile(
     r"data.architect|infrastructure.architect|"
     # Leadership with tech signal
     r"head.of.ai|head.of.data|head.of.engineering|"
+    r"head.of.genai|head.of.llm|head.of.ml|"
     r"cto|vp.engineer|"
     r"tech.lead|engineering.lead|engineering.manager|"
+    # Senior IC signals — keep principal/staff/founding titles in scope
+    r"principal.engineer|staff.engineer|founding.engineer|"
+    r"principal.architect|staff.architect|"
+    # Director-level AI/tech leadership
+    r"director.of.ai|director.ai|ai.director|"
+    r"director.of.engineering|director.engineering|"
     # Researcher
     r"research.scientist|researcher|applied.scientist"
     r")\b",
