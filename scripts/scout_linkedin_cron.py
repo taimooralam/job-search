@@ -48,16 +48,21 @@ TIME_FILTER = "r43200"  # last 12 hours
 MAX_PAGES = 1
 
 SEARCH_COMBOS = [
-    # (region, remote_only, few_applicants)
+    # (region, remote_only, few_applicants, profile_override)
     # Each region searched with and without remote filter
-    ("asia_pacific", False, True),
-    ("asia_pacific", True,  True),
-    ("mena",         False, True),
-    ("mena",         True,  True),
-    ("pakistan",      False, True),
-    ("pakistan",      True,  True),
-    ("eea",          False, True),
-    ("eea",          True,  True),
+    ("asia_pacific", False, True,  None),
+    ("asia_pacific", True,  True,  None),
+    ("mena",         False, True,  None),
+    ("mena",         True,  True,  None),
+    ("pakistan",      False, True,  None),
+    ("pakistan",      True,  True,  None),
+    ("eea",          False, True,  None),
+    ("eea",          True,  True,  None),
+    # GCC priority — wider net (no few_applicants filter), both profiles
+    ("gcc_priority", False, False, None),
+    ("gcc_priority", True,  False, None),
+    ("gcc_priority", False, False, "ai_leadership"),
+    ("gcc_priority", True,  False, "ai_leadership"),
 ]
 
 logging.basicConfig(
@@ -104,8 +109,21 @@ def run_all_searches() -> List[Dict[str, Any]]:
     except Exception as e:
         logger.warning(f"Proxy pool initialization failed: {e} — using direct requests")
 
-    for region, remote_only, few_applicants in SEARCH_COMBOS:
-        for profile_name, keywords in SEARCH_PROFILES.items():
+    for combo in SEARCH_COMBOS:
+        # Support both 3-tuple (legacy) and 4-tuple (with profile_override)
+        if len(combo) == 4:
+            region, remote_only, few_applicants, profile_override = combo
+        else:
+            region, remote_only, few_applicants = combo
+            profile_override = None
+
+        # If profile_override is set, only search that profile; otherwise all
+        if profile_override:
+            profiles_to_search = {profile_override: SEARCH_PROFILES[profile_override]}
+        else:
+            profiles_to_search = SEARCH_PROFILES
+
+        for profile_name, keywords in profiles_to_search.items():
             label = (
                 f"profile={profile_name} region={region} "
                 f"remote={remote_only} few_applicants={few_applicants}"

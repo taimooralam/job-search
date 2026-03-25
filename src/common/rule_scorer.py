@@ -131,14 +131,20 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
         "exactTitles": [
             "head of ai", "head of artificial intelligence",
             "head of genai", "head of generative ai",
+            "head of machine learning", "head of ml",
             "director of ai", "director of artificial intelligence",
-            "director of genai", "director ai",
+            "director of genai", "director ai", "director ai engineering",
+            "ai director", "director of machine learning",
             "vp of ai", "vp ai", "vice president of ai", "vice president ai",
+            "vp engineering ai", "vp of artificial intelligence",
             "ai engineering lead", "ai engineering manager",
-            "ai team lead", "chief ai officer", "caio",
+            "senior ai engineering manager", "ai team lead",
+            "chief ai officer", "caio",
         ],
         "partialTitles": [
-            "head of ai", "director of ai", "vp of ai", "vp ai", "chief ai",
+            "head of ai", "head of genai", "head of machine learning",
+            "director of ai", "director ai", "ai director",
+            "vp of ai", "vp ai", "chief ai",
         ],
         "excludeIfContains": [],
     },
@@ -312,6 +318,15 @@ REMOTE_POSITIVE = [
     "hybrid", "flexible location", "global", "work from home", "worldwide",
     "remote anywhere", "anywhere in the world", "location flexible",
 ]
+
+# GCC high-demand location bonus — war-driven talent exodus + Vision 2030
+# Roles in these countries get a scoring boost due to acute talent shortage (Mar 2026)
+GCC_PRIORITY_LOCATIONS = [
+    "united arab emirates", "uae", "dubai", "abu dhabi", "sharjah",
+    "saudi arabia", "ksa", "riyadh", "jeddah", "jidda", "neom", "dammam",
+    "qatar", "doha",
+]
+GCC_LOCATION_BONUS = 12
 
 REMOTE_NEGATIVE = [
     "onsite only", "on-site only", "office only", "no remote",
@@ -724,13 +739,18 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
             language_score -= 20
             break
 
+    # --- 6) GCC LOCATION BONUS (0 to +12) ---
+    gcc_bonus = 0
+    if _contains_any(loc_lower, GCC_PRIORITY_LOCATIONS):
+        gcc_bonus = GCC_LOCATION_BONUS
+
     # --- CALCULATE TOTAL ---
     keyword_total = sum(kw_scores.values())
 
-    raw_score = title_score + seniority_score + proven_fit_bonus + keyword_total + remote_score + language_score - unwanted_penalty
+    raw_score = title_score + seniority_score + proven_fit_bonus + keyword_total + remote_score + language_score + gcc_bonus - unwanted_penalty
 
     max_keyword_score = sum(w["max"] for w in weights.values())
-    max_possible = 50 + 20 + 15 + max_keyword_score + 20  # title + seniority + provenFit + keywords + remote
+    max_possible = 50 + 20 + 15 + max_keyword_score + 20 + GCC_LOCATION_BONUS  # title + seniority + provenFit + keywords + remote + gcc
 
     normalized_score = max(0, min(100, round((raw_score / max_possible) * 100)))
 
@@ -750,6 +770,7 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         "provenFit": proven_fit_bonus,
         "remote": remote_score,
         "language": language_score,
+        "gccBonus": gcc_bonus,
         "unwantedPenalty": -unwanted_penalty,
     }
     for key, val in kw_scores.items():

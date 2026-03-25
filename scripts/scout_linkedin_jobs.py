@@ -60,6 +60,18 @@ SEARCH_PROFILES = {
         "Tech Lead AI",
         "Engineering Lead AI",
     ],
+    "ai_leadership": [
+        "Head of AI",
+        "Director of AI",
+        "VP of AI",
+        "Chief AI Officer",
+        "AI Engineering Manager",
+        "Head of Artificial Intelligence",
+        "Head of GenAI",
+        "AI Director",
+        "Head of Machine Learning",
+        "Director AI Engineering",
+    ],
 }
 
 # Time filter mapping (f_TPR param)
@@ -114,6 +126,12 @@ REGION_CONFIGS = {
             "Morocco",
             # Africa
             "South Africa",
+        ]
+    },
+    "gcc_priority": {
+        # High-demand Gulf states — war-driven talent exodus, Vision 2030
+        "locations": [
+            "United Arab Emirates", "Saudi Arabia", "Qatar",
         ]
     },
     "pakistan": {"location": "Pakistan"},
