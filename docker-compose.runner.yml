@@ -20,9 +20,9 @@ services:
       # Use `claude setup-token` to generate a long-lived token (valid 1 year)
       - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-sonnet-4-5-20250929}
-    # Scaling: 1 runner × 1 concurrent = 1 job at a time (stable single-runner mode)
+    # Scaling: 3 runners × 1 concurrent each = 3 jobs in parallel
     deploy:
-      replicas: 1
+      replicas: 3
       resources:
         limits:
           memory: 4G
