@@ -33,6 +33,14 @@
 | `pipeline-analyst` | sonnet | Validating pipeline outputs |
 | `session-continuity` | haiku | Context restoration |
 
+## Skill Quick Reference
+
+| Skill | Use |
+|-------|-----|
+| `scout-jobs` | Search LinkedIn for AI/engineering roles, score, and inject into pipeline |
+| `inject-job` | Inject a recruiter job description into MongoDB + run batch pipeline |
+| `ingest-prep` | Ingest job (new or existing by _id), mark favorite, trigger pipeline, deep research + interview prep report in `../ai-engg/reports/` |
+
 ## Commit Checklist (bugs/features)
 
 - Tests: `test-generator` used, tests pass

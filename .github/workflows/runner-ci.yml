@@ -305,12 +305,18 @@ jobs:
         id: deployed
         run: |
           # Get runner service deployed SHA from OCI label (set during build)
-          RUNNER_SHA=$(docker inspect job-runner-runner-1 --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || echo "")
+          # Dynamically find first runner container (names may vary with replicas)
+          RUNNER_CONTAINER=$(docker compose -f /root/job-runner/docker-compose.runner.yml ps --format '{{.Name}}' 2>/dev/null | grep runner | grep -v pdf | head -1 || echo "")
+          if [[ -n "$RUNNER_CONTAINER" ]]; then
+            RUNNER_SHA=$(docker inspect "$RUNNER_CONTAINER" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || echo "")
+          else
+            RUNNER_SHA=""
+          fi
           if [[ -z "$RUNNER_SHA" || "$RUNNER_SHA" == "<no value>" ]]; then
             RUNNER_SHA="unknown"
           fi
           echo "runner_sha=$RUNNER_SHA" >> $GITHUB_OUTPUT
-          echo "📦 Runner deployed: $RUNNER_SHA"
+          echo "📦 Runner deployed: $RUNNER_SHA (from $RUNNER_CONTAINER)"
 
           # Get PDF service deployed SHA from OCI label
           PDF_SHA=$(docker inspect job-runner-pdf-service-1 --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || echo "")
@@ -619,6 +625,16 @@ jobs:
           FIRST_RUNNER=$(echo "$RUNNER_CONTAINERS" | head -1)
           echo "Checking PDF service health..."
           docker exec "$FIRST_RUNNER" curl -f http://pdf-service:8001/health || echo "Warning: PDF service health check failed"
+
+          # Check system resources aren't exhausted
+          echo "Checking system resources..."
+          MEM_AVAIL_MB=$(free -m | awk '/^Mem:/ {print $7}')
+          echo "Available memory: ${MEM_AVAIL_MB}MB"
+          if [[ $MEM_AVAIL_MB -lt 2048 ]]; then
+            echo "⚠️ Warning: Available memory below 2GB (${MEM_AVAIL_MB}MB)"
+          else
+            echo "✅ Memory healthy: ${MEM_AVAIL_MB}MB available"
+          fi
 
           # Show container status
           docker compose -f docker-compose.runner.yml ps

@@ -1,8 +1,25 @@
 {
-  "outputStyle": "Explanatory",
   "permissions": {
     "allow": [
-      "Bash(ssh root@gap-097 \"echo ''=== MEMORY ==='' && free -h && echo && echo ''=== DOCKER PROCESSES ==='' && docker ps --format ''table {{.Names}}\\\\t{{.Status}}\\\\t{{.Image}}'' && echo && echo ''=== DOCKER BUILD PROCESSES ==='' && ps aux | grep -i ''docker build\\\\|buildkit'' | grep -v grep && echo && echo ''=== DISK ==='' && df -h / && echo && echo ''=== DOCKER SYSTEM ==='' && docker system df\")"
+      "Bash(ssh root@gap-097 \"echo ''=== MEMORY ==='' && free -h && echo && echo ''=== DOCKER PROCESSES ==='' && docker ps --format ''table {{.Names}}\\\\t{{.Status}}\\\\t{{.Image}}'' && echo && echo ''=== DOCKER BUILD PROCESSES ==='' && ps aux | grep -i ''docker build\\\\|buildkit'' | grep -v grep && echo && echo ''=== DISK ==='' && df -h / && echo && echo ''=== DOCKER SYSTEM ==='' && docker system df\")",
+      "Bash(ssh root@72.61.92.76 \"cd /root/job-runner && docker compose -f docker-compose.runner.yml up -d pdf-service 2>&1 && sleep 12 && docker exec job-runner-runner-1 curl -sf http://pdf-service:8001/health\")",
+      "Bash(ssh:*)",
+      "Bash(wc -l /Users/ala0001t/code/p7s1/commander-4/packages/knowledgeflow-api/src/lib/*.ts)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(cd:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(git:*)",
+      "Read",
+      "Write",
+      "WebSearch",
+      "WebFetch"
     ]
-  }
+  },
+  "outputStyle": "default"
 }
