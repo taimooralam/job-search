@@ -39,6 +39,7 @@ from src.common.proxy_pool import ProxyPool
 from src.common.dedupe import generate_dedupe_key
 from src.common.scout_queue import enqueue_jobs
 from src.common.telegram import send_telegram
+from src.common.blacklist import filter_blacklisted
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -251,6 +252,10 @@ def main():
     if not raw_jobs:
         logger.info("No jobs found. Exiting.")
         return
+
+    # Step 1b: Apply blacklist filter
+    raw_jobs = filter_blacklisted(raw_jobs)
+    logger.info(f"After blacklist filter: {len(raw_jobs)}")
 
     # Step 2: Pre-filter against MongoDB (avoid enqueueing known jobs)
     logger.info("Step 2: Deduplicating against MongoDB...")

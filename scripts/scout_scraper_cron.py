@@ -47,6 +47,7 @@ from src.services.linkedin_scraper import (
     _parse_job_html,
     extract_job_id,
 )
+from src.common.blacklist import is_blacklisted
 
 logging.basicConfig(
     level=logging.INFO,
@@ -292,6 +293,12 @@ def _run(args):
         job_id = job.get("job_id", "unknown")
         retry_count = job.get("retry_count", 0)
         title = job.get("title", "")
+
+        # Skip blacklisted companies before wasting a proxy request
+        if is_blacklisted(job):
+            skipped += 1
+            logger.info(f"  [{i + 1}/{len(batch)}] Skipped (blacklist) — {title} @ {job.get('company', '?')}")
+            continue
 
         # Skip obviously irrelevant titles before wasting a proxy request
         if title and not _title_passes_filter(title):

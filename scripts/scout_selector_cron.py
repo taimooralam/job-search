@@ -39,6 +39,7 @@ from pymongo import MongoClient
 from src.common.scout_queue import read_and_clear_scored
 from src.common.dedupe import generate_dedupe_key, consolidate_by_location
 from src.common.telegram import send_telegram
+from src.common.blacklist import filter_blacklisted
 
 logging.basicConfig(
     level=logging.INFO,
@@ -475,6 +476,10 @@ def main():
         return
 
     logger.info(f"Read {len(scored_jobs)} scored jobs from scored.jsonl")
+
+    # Step 1b: Apply blacklist filter
+    scored_jobs = filter_blacklisted(scored_jobs)
+    logger.info(f"After blacklist filter: {len(scored_jobs)}")
 
     # Step 2: Filter score > 0
     scored_jobs = [j for j in scored_jobs if j.get("score", 0) > 0]
