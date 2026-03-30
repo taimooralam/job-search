@@ -92,8 +92,8 @@ def _purge_old_discarded() -> int:
 # Configuration
 # ---------------------------------------------------------------------------
 
-HOURLY_QUOTA = 8   # jobs per 3h cycle from hourly cron
-AI_TOP15_QUOTA = 5  # jobs per 6h cycle from ai_top15 cron
+HOURLY_QUOTA = 2   # jobs per 3h cycle from hourly cron
+AI_TOP15_QUOTA = 2  # jobs per 3h cycle from ai_top15 cron
 
 CATEGORY_WEIGHTS = {
     "ai": 1.0,
