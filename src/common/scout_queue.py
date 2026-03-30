@@ -329,3 +329,78 @@ def scored_length() -> int:
         return 0
     with open(scored_file, "r") as f:
         return sum(1 for line in f if line.strip())
+
+
+# ---------------------------------------------------------------------------
+# Scored Pool — persistent pool for dimensional selectors
+# ---------------------------------------------------------------------------
+
+POOL_MAX_AGE_HOURS = 48
+
+
+def append_to_pool(jobs: List[Dict]) -> int:
+    """Append scored jobs to scored_pool.jsonl with a timestamp.
+
+    Returns:
+        Number of jobs appended.
+    """
+    if not jobs:
+        return 0
+    queue_dir = get_queue_dir()
+    pool_file = queue_dir / "scored_pool.jsonl"
+    now = datetime.now(timezone.utc).isoformat()
+
+    with _file_lock(pool_file, exclusive=True):
+        with open(pool_file, "a") as f:
+            for job in jobs:
+                job["pooled_at"] = now
+                f.write(json.dumps(job) + "\n")
+
+    logger.info(f"Appended {len(jobs)} jobs to scored_pool.jsonl")
+    return len(jobs)
+
+
+def read_pool() -> List[Dict]:
+    """Read all entries from scored_pool.jsonl (non-destructive)."""
+    queue_dir = get_queue_dir()
+    pool_file = queue_dir / "scored_pool.jsonl"
+
+    with _file_lock(pool_file, exclusive=False):
+        return _read_jsonl(pool_file)
+
+
+def purge_pool(max_age_hours: int = POOL_MAX_AGE_HOURS) -> int:
+    """Remove pool entries older than max_age_hours. Returns count purged."""
+    queue_dir = get_queue_dir()
+    pool_file = queue_dir / "scored_pool.jsonl"
+
+    if not pool_file.exists():
+        return 0
+
+    cutoff = time.time() - (max_age_hours * 3600)
+
+    with _file_lock(pool_file, exclusive=True):
+        entries = _read_jsonl(pool_file)
+        if not entries:
+            return 0
+
+        kept = []
+        purged = 0
+        for entry in entries:
+            try:
+                ts = datetime.fromisoformat(entry.get("pooled_at", "2000-01-01"))
+                if ts.timestamp() >= cutoff:
+                    kept.append(entry)
+                else:
+                    purged += 1
+            except (ValueError, TypeError):
+                purged += 1
+
+        if purged:
+            with open(pool_file, "w") as f:
+                for entry in kept:
+                    f.write(json.dumps(entry) + "\n")
+
+    if purged:
+        logger.info(f"Purged {purged} stale entries from scored_pool.jsonl ({len(kept)} remaining)")
+    return purged

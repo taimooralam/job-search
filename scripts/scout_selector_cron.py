@@ -36,7 +36,7 @@ load_dotenv()
 import requests
 from pymongo import MongoClient
 
-from src.common.scout_queue import read_and_clear_scored
+from src.common.scout_queue import read_and_clear_scored, append_to_pool, purge_pool
 from src.common.dedupe import generate_dedupe_key, consolidate_by_location
 from src.common.telegram import send_telegram
 from src.common.blacklist import filter_blacklisted
@@ -464,10 +464,11 @@ def main():
     logger.info(f"Scout Selector started at {datetime.now(timezone.utc).isoformat()}")
     logger.info("=" * 60)
 
-    # Step 0: Purge old discarded entries (>3 days)
+    # Step 0: Purge old discarded entries (>3 days) and stale pool entries (>48h)
     purged = _purge_old_discarded()
     if purged:
         logger.info(f"Purged {purged} old entries from discarded.jsonl")
+    purge_pool()
 
     # Step 1: Read and clear scored.jsonl (atomic)
     scored_jobs = read_and_clear_scored()
@@ -500,6 +501,9 @@ def main():
     collection = db["level-2"]  # Inserts still go to level-2
     new_jobs = dedupe_against_db(scored_jobs, db)
     logger.info(f"After DB dedup: {len(new_jobs)} new jobs")
+
+    # Step 4b: Feed scored pool for dimensional selectors
+    append_to_pool(new_jobs if new_jobs else [])
 
     if not new_jobs:
         logger.info("All jobs already in DB. Exiting.")

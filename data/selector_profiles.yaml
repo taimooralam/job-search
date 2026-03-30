@@ -1,0 +1,171 @@
+# Dimensional Selector Profiles
+# Each profile defines a regional/thematic selector with its own quota and ranking.
+# Run: python scripts/scout_dimensional_selector.py --profile <name> [--dry-run]
+
+uae_ksa_leadership:
+  description: "Top AI leadership roles in UAE & KSA"
+  quota: 10
+  cron: "every 6h"
+  source_tag: "scout_dim_uae_ksa"
+  location_patterns:
+    - UAE
+    - Dubai
+    - Abu Dhabi
+    - Sharjah
+    - Ajman
+    - KSA
+    - Saudi
+    - Riyadh
+    - Jeddah
+    - Dammam
+    - NEOM
+  rank_boosts:
+    leadership: 15     # head, lead, director, vp, chief, principal, staff
+    high_score: 0      # natural score weight
+    newest: 5          # posted recently bonus
+
+global_remote:
+  description: "Top remote-everywhere AI roles globally"
+  quota: 5
+  cron: "every 3h"
+  source_tag: "scout_dim_global_remote"
+  location_patterns:
+    - remote
+    - worldwide
+    - anywhere
+    - global
+  location_mode: "require_any"  # job must match at least one pattern
+  rank_boosts:
+    leadership: 10
+    high_score: 0
+    newest: 5
+
+eea_remote:
+  description: "Top AI roles in EEA, prefer remote"
+  quota: 5
+  cron: "every 6h"
+  source_tag: "scout_dim_eea_remote"
+  location_patterns:
+    - Germany
+    - Berlin
+    - Munich
+    - Frankfurt
+    - Hamburg
+    - France
+    - Paris
+    - Netherlands
+    - Amsterdam
+    - Ireland
+    - Dublin
+    - Spain
+    - Madrid
+    - Barcelona
+    - Italy
+    - Milan
+    - Portugal
+    - Lisbon
+    - Sweden
+    - Stockholm
+    - Denmark
+    - Copenhagen
+    - Norway
+    - Oslo
+    - Finland
+    - Helsinki
+    - Austria
+    - Vienna
+    - Belgium
+    - Brussels
+    - Poland
+    - Warsaw
+    - Czech
+    - Prague
+    - Romania
+    - Hungary
+    - Budapest
+    - Greece
+    - Luxembourg
+    - Estonia
+    - Latvia
+    - Lithuania
+    - Slovenia
+    - Slovakia
+    - Croatia
+    - Bulgaria
+    - Cyprus
+    - Malta
+    - Iceland
+    - Liechtenstein
+    - Europe
+    - EU
+    - EEA
+    - EMEA
+  rank_boosts:
+    remote: 10
+    leadership: 8
+    high_score: 0
+    newest: 5
+
+eea_staff_architect:
+  description: "EEA staff/architect/principal-level AI roles"
+  quota: 5
+  cron: "every 6h"
+  source_tag: "scout_dim_eea_architect"
+  location_patterns:
+    # Same EEA list — inherited conceptually, duplicated for simplicity
+    - Germany
+    - Berlin
+    - Munich
+    - Frankfurt
+    - France
+    - Paris
+    - Netherlands
+    - Amsterdam
+    - Ireland
+    - Dublin
+    - Spain
+    - Madrid
+    - Barcelona
+    - Italy
+    - Milan
+    - Portugal
+    - Lisbon
+    - Sweden
+    - Stockholm
+    - Denmark
+    - Copenhagen
+    - Norway
+    - Oslo
+    - Finland
+    - Helsinki
+    - Austria
+    - Vienna
+    - Belgium
+    - Brussels
+    - Poland
+    - Warsaw
+    - Czech
+    - Prague
+    - Romania
+    - Hungary
+    - Luxembourg
+    - Estonia
+    - Latvia
+    - Lithuania
+    - Slovenia
+    - Slovakia
+    - Croatia
+    - Bulgaria
+    - Cyprus
+    - Malta
+    - Iceland
+    - Europe
+    - EU
+    - EEA
+    - EMEA
+  rank_boosts:
+    staff_architect: 15   # staff, architect, principal
+    newest: 8
+    high_score: 0
+    leadership: 5
+    remote: 3
