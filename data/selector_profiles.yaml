@@ -4,7 +4,7 @@
 
 uae_ksa_leadership:
   description: "Top AI leadership roles in UAE & KSA"
-  quota: 3
+  quota: 6
   cron: "every 6h"
   source_tag: "scout_dim_uae_ksa"
   location_patterns:
@@ -26,7 +26,7 @@ uae_ksa_leadership:
 
 global_remote:
   description: "Top remote-everywhere AI roles globally"
-  quota: 1
+  quota: 2
   cron: "every 3h"
   source_tag: "scout_dim_global_remote"
   location_patterns:
@@ -42,7 +42,7 @@ global_remote:
 
 eea_remote:
   description: "Top AI roles in EEA, prefer remote"
-  quota: 1
+  quota: 2
   cron: "every 6h"
   source_tag: "scout_dim_eea_remote"
   location_patterns:
@@ -108,7 +108,7 @@ eea_remote:
 
 eea_staff_architect:
   description: "EEA staff/architect/principal-level AI roles"
-  quota: 1
+  quota: 2
   cron: "every 6h"
   source_tag: "scout_dim_eea_architect"
   location_patterns:
