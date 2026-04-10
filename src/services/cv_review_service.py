@@ -144,7 +144,7 @@ class CVReviewService(OperationService):
             model: OpenAI model override. Defaults to CV_REVIEW_MODEL env var,
                    then falls back to "gpt-4o".
         """
-        self.model = model or os.getenv("CV_REVIEW_MODEL", "gpt-5.3-codex")
+        self.model = model or os.getenv("CV_REVIEW_MODEL", "gpt-5.4-mini")
         self._mongo_uri = os.getenv("MONGODB_URI")
         if not self._mongo_uri:
             raise ValueError("MONGODB_URI environment variable is required")
