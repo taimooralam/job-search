@@ -50,6 +50,7 @@ const PIPELINE_CONFIG = {
         'generate-cover-letter': 'quality',
         'generate-outreach': 'balanced',
         'full-analysis': 'balanced',
+        'cv-review': 'quality',
         // Legacy aliases (for backward compatibility)
         'structure-jd': 'balanced',
         'full-extraction': 'balanced',
@@ -91,6 +92,7 @@ const PIPELINE_CONFIG = {
         'generate-cover-letter': '/api/runner/jobs/{jobId}/operations/generate-cv/queue',   // Maps to generate-cv for now
         'generate-outreach': '/api/runner/jobs/{jobId}/operations/research-company/queue',  // Maps to research-company for now
         'full-analysis': '/api/runner/jobs/{jobId}/all-ops/start',  // Use /start (not /stream)
+        'cv-review': '/api/runner/jobs/{jobId}/operations/cv-review/queue',
         // Legacy aliases
         'structure-jd': '/api/runner/jobs/{jobId}/operations/structure-jd/queue',
         'full-extraction': '/api/runner/jobs/{jobId}/operations/full-extraction/queue',
@@ -190,6 +192,7 @@ const PIPELINE_CONFIG = {
         'generate-cover-letter': 'Generate Cover Letter',
         'generate-outreach': 'Generate Outreach',
         'full-analysis': 'Full Analysis',
+        'cv-review': 'Review CV',
         // Legacy aliases for backward compatibility
         'structure-jd': 'Prepare Annotations',
         'full-extraction': 'Analyze Job',
@@ -224,7 +227,7 @@ const PIPELINE_CONFIG = {
     categories: {
         'ANALYSIS': ['analyze-job', 'prepare-annotations'],
         'RESEARCH': ['research-company', 'discover-contacts'],
-        'GENERATION': ['generate-cv', 'generate-cover-letter', 'generate-outreach']
+        'GENERATION': ['generate-cv', 'generate-cover-letter', 'generate-outreach', 'cv-review']
     },
 
     // Operation icons (emoji)

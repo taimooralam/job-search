@@ -23,7 +23,7 @@
 
 const PIPELINES_PANEL_CONFIG = {
     // Valid operations to track
-    operations: ['structure-jd', 'full-extraction', 'extract', 'research-company', 'generate-cv'],
+    operations: ['structure-jd', 'full-extraction', 'extract', 'research-company', 'generate-cv', 'cv-review'],
 
     // Display labels
     labels: {
@@ -31,7 +31,8 @@ const PIPELINES_PANEL_CONFIG = {
         'full-extraction': 'Full Extraction',
         'extract': 'Extract JD',
         'research-company': 'Research',
-        'generate-cv': 'Generate CV'
+        'generate-cv': 'Generate CV',
+        'cv-review': 'Review CV'
     },
 
     // Status icons
@@ -81,7 +82,8 @@ document.addEventListener('alpine:init', () => {
             'full-extraction': null,
             'extract': null,
             'research-company': null,
-            'generate-cv': null
+            'generate-cv': null,
+            'cv-review': null
         },
 
         // Track if initialized
