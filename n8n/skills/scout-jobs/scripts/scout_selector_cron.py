@@ -541,12 +541,41 @@ def main():
 
     all_selected = selected_hourly + selected_ai + selected_other
 
-    # Write discarded jobs (score>0 but not selected) to discarded.jsonl for debugging
+    # Insert discarded jobs into level-1 (discovered but not promoted to level-2)
     selected_ids = {j.get("job_id") for j in all_selected}
     discarded = [j for j in new_jobs if j.get("job_id") not in selected_ids]
     if discarded:
-        _append_discarded(discarded)
-        logger.info(f"Discarded: {len(discarded)} jobs written to discarded.jsonl")
+        _append_discarded(discarded)  # Keep file log for debugging
+        if not args.dry_run:
+            level1 = db["level-1"]
+            level1_inserted = 0
+            for job in discarded:
+                dedupe_key = generate_dedupe_key("linkedin_scout", source_id=job["job_id"])
+                result = level1.update_one(
+                    {"dedupeKey": dedupe_key},
+                    {"$setOnInsert": {
+                        "company": job.get("company"),
+                        "title": job.get("title"),
+                        "location": job.get("location"),
+                        "jobUrl": job.get("job_url"),
+                        "dedupeKey": dedupe_key,
+                        "createdAt": datetime.utcnow(),
+                        "source": "scout_discarded",
+                        "auto_discovered": True,
+                        "quick_score": job.get("score"),
+                        "tier": job.get("tier"),
+                        "status": "discovered",
+                        "linkedin_metadata": {
+                            "linkedin_job_id": job["job_id"],
+                            "seniority_level": job.get("seniority"),
+                            "employment_type": job.get("employment_type"),
+                        },
+                    }},
+                    upsert=True,
+                )
+                if result.upserted_id:
+                    level1_inserted += 1
+            logger.info(f"Discarded: {len(discarded)} total, {level1_inserted} new inserted to level-1")
 
     if not all_selected:
         logger.info("No jobs selected after quotas. Exiting.")
