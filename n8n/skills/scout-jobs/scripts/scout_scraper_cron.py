@@ -287,7 +287,7 @@ def _run(args):
         logger.info(f"Proxy pool: {len(pool)} proxies")
 
     # Process each job
-    scored_jobs = []
+    scored_count = 0
     retry_jobs = []
     dead_jobs = []
 
@@ -311,11 +311,16 @@ def _run(args):
 
         try:
             scored = scrape_and_score(job, pool, use_proxy=not args.no_proxy)
-            scored_jobs.append(scored)
             logger.info(
                 f"  [{i + 1}/{len(batch)}] Score: {scored['score']} ({scored['tier']}) "
                 f"— {scored['title']} @ {scored['company']}"
             )
+            # Write each scored job immediately — never batch at the end
+            if not args.dry_run:
+                append_scored([scored])
+            else:
+                logger.info(f"  [DRY RUN] Would append scored job: {scored['title']}")
+            scored_count += 1
         except RateLimitError as e:
             logger.warning(f"  [{i + 1}/{len(batch)}] Rate limited: {job_id} — {e}")
             # Always re-enqueue rate limits (don't count as retry)
@@ -331,12 +336,6 @@ def _run(args):
         if i < len(batch) - 1:
             time.sleep(DETAIL_FETCH_DELAY)
 
-    # Write scored jobs
-    if scored_jobs and not args.dry_run:
-        append_scored(scored_jobs)
-    elif scored_jobs and args.dry_run:
-        logger.info(f"[DRY RUN] Would append {len(scored_jobs)} scored jobs")
-
     # Re-enqueue retries
     if retry_jobs:
         from src.common.scout_queue import enqueue_jobs as _raw_enqueue, get_queue_dir, _file_lock, _read_jsonl, _append_jsonl
@@ -351,7 +350,7 @@ def _run(args):
 
     # Summary
     logger.info(
-        f"Scraper done: {len(scored_jobs)}/{len(batch)} scored, "
+        f"Scraper done: {scored_count}/{len(batch)} scored, "
         f"{skipped} skipped, {len(retry_jobs)} retried, {len(dead_jobs)} dead-lettered"
     )
 

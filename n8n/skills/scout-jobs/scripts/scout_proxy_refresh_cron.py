@@ -109,12 +109,24 @@ def main() -> None:
         f"{len(new_candidates)} new to test"
     )
 
-    # Step 4: Validate new candidates
+    # Step 4: Validate new candidates in batches, save incrementally
+    BATCH_SIZE = 500
     newly_passing = []
     if new_candidates:
-        logger.info(f"Proxy refresh: validating {len(new_candidates)} new candidates…")
-        newly_passing = validate_parallel(new_candidates, max_workers=50)
-        logger.info(f"Proxy refresh: {len(newly_passing)} new proxies passed")
+        logger.info(f"Proxy refresh: validating {len(new_candidates)} new candidates in batches of {BATCH_SIZE}…")
+        for i in range(0, len(new_candidates), BATCH_SIZE):
+            batch = new_candidates[i:i + BATCH_SIZE]
+            batch_passed = validate_parallel(batch, max_workers=50)
+            newly_passing.extend(batch_passed)
+            # Save incrementally after each batch — resilient to crashes
+            interim_working = list(dict.fromkeys(working_list + newly_passing))
+            save_cache(interim_working, WORKING_PATH)
+            logger.info(
+                f"Proxy refresh: batch {i // BATCH_SIZE + 1} — "
+                f"{len(batch_passed)}/{len(batch)} passed "
+                f"(total working: {len(interim_working)}, cumulative new: {len(newly_passing)})"
+            )
+        logger.info(f"Proxy refresh: {len(newly_passing)} new proxies passed total")
 
     # Step 5: Re-validate existing working proxies
     still_working = []
@@ -124,7 +136,7 @@ def main() -> None:
         died = len(working_list) - len(still_working)
         logger.info(f"Proxy refresh: {len(still_working)} still working, {died} died")
 
-    # Step 6: Merge results
+    # Step 6: Merge results — final save with re-validated working + new
     all_working = list(dict.fromkeys(still_working + newly_passing))  # dedup, preserve order
     save_cache(all_working, WORKING_PATH)
 

@@ -96,10 +96,29 @@ def get_db():
 # ---------------------------------------------------------------------------
 
 
-def run_all_searches() -> List[Dict[str, Any]]:
-    """Run searches across all profiles and combos, deduped by job_id."""
+def run_all_searches(
+    region_filter: Optional[str] = None,
+    profile_filter: Optional[str] = None,
+    dry_run: bool = False,
+    limit: Optional[int] = None,
+) -> int:
+    """Run searches across all profiles and combos; dedup + enqueue per combo.
+
+    Each combo's results are blacklist-filtered, deduped against MongoDB, and
+    enqueued immediately so that jobs are never lost if the process dies
+    mid-run.
+
+    Args:
+        region_filter: If set, only run combos matching this region.
+        profile_filter: If set, only search this profile (overrides combo's profile_override).
+        dry_run: If True, log what would be enqueued but don't write.
+        limit: If set, stop after enqueueing this many total jobs.
+
+    Returns:
+        Total number of jobs enqueued across all combos.
+    """
     seen_ids: Set[str] = set()
-    all_jobs: List[Dict[str, Any]] = []
+    total_enqueued = 0
 
     # Initialize proxy pool — optional, falls back to direct if unavailable
     proxy_pool: Optional[ProxyPool] = None
@@ -114,13 +133,22 @@ def run_all_searches() -> List[Dict[str, Any]]:
     except Exception as e:
         logger.warning(f"Proxy pool initialization failed: {e} — using direct requests")
 
+    db = get_db()
+
     for combo in SEARCH_COMBOS:
+        if limit and total_enqueued >= limit:
+            logger.info(f"Reached --limit {limit}, stopping early")
+            break
+
         # Support both 3-tuple (legacy) and 4-tuple (with profile_override)
         if len(combo) == 4:
             region, remote_only, few_applicants, profile_override = combo
         else:
             region, remote_only, few_applicants = combo
             profile_override = None
+
+        if region_filter and region != region_filter:
+            continue
 
         # If profile_override is set, only search that profile; otherwise all
         if profile_override:
@@ -129,6 +157,13 @@ def run_all_searches() -> List[Dict[str, Any]]:
             profiles_to_search = SEARCH_PROFILES
 
         for profile_name, keywords in profiles_to_search.items():
+            if profile_filter and profile_name != profile_filter:
+                continue
+
+            if limit and total_enqueued >= limit:
+                logger.info(f"Reached --limit {limit}, stopping early")
+                break
+
             label = (
                 f"profile={profile_name} region={region} "
                 f"remote={remote_only} few_applicants={few_applicants}"
@@ -145,17 +180,51 @@ def run_all_searches() -> List[Dict[str, Any]]:
                 proxy_pool=proxy_pool,
             )
 
-            new_count = 0
+            # In-memory dedup across combos (same run)
+            unique_jobs = []
             for job in jobs:
                 if job["job_id"] not in seen_ids:
                     seen_ids.add(job["job_id"])
                     job["_search_profile"] = profile_name
-                    all_jobs.append(job)
-                    new_count += 1
+                    unique_jobs.append(job)
 
-            logger.info(f"  → {len(jobs)} found, {new_count} new (cumulative: {len(all_jobs)})")
+            logger.info(f"  → {len(jobs)} found, {len(unique_jobs)} unique in-run")
 
-    return all_jobs
+            if not unique_jobs:
+                continue
+
+            # Blacklist filter
+            unique_jobs = filter_blacklisted(unique_jobs)
+            if not unique_jobs:
+                logger.info("  → 0 after blacklist filter, skipping")
+                continue
+
+            # Apply limit cap before dedup to avoid unnecessary DB queries
+            if limit:
+                remaining = limit - total_enqueued
+                unique_jobs = unique_jobs[:remaining]
+
+            # Dedup against MongoDB immediately
+            new_jobs = dedupe_against_db(unique_jobs, db)
+            already_in_db = len(unique_jobs) - len(new_jobs)
+            if already_in_db:
+                logger.info(f"  → {already_in_db} already in DB")
+
+            if not new_jobs:
+                logger.info("  → 0 new after dedup, skipping enqueue")
+                continue
+
+            # Enqueue immediately — don't wait until the end
+            if dry_run:
+                logger.info(f"  [DRY RUN] Would enqueue {len(new_jobs)} jobs")
+                combo_enqueued = len(new_jobs)
+            else:
+                combo_enqueued = enqueue_jobs(new_jobs, source_cron="hourly")
+                logger.info(f"  → Enqueued {combo_enqueued} jobs (running total: {total_enqueued + combo_enqueued})")
+
+            total_enqueued += combo_enqueued
+
+    return total_enqueued
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +308,30 @@ def main():
         action="store_true",
         help="Enable debug logging",
     )
+    parser.add_argument(
+        "--region",
+        type=str,
+        default=None,
+        help="Filter to specific region (eea, mena, asia_pacific, pakistan, gcc_priority, emea). If set, only combos matching this region run.",
+    )
+    parser.add_argument(
+        "--profile",
+        type=str,
+        default=None,
+        help="Filter to specific search profile (ai, ai_leadership, staff_principal, engineering_leadership, architect). If set, only combos matching this profile run.",
+    )
+    parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Add remote filter to search",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Stop after enqueueing N jobs (useful for testing, e.g. --region eea --profile ai --limit 10)",
+    )
     args = parser.parse_args()
 
     if args.verbose:
@@ -246,52 +339,104 @@ def main():
 
     logger.info("=" * 60)
     logger.info(f"Scout cron started at {datetime.utcnow().isoformat()}")
+    if args.region or args.profile:
+        logger.info(
+            f"Direct mode: region={args.region or 'all'} profile={args.profile or 'all'} "
+            f"remote={args.remote} limit={args.limit}"
+        )
     logger.info("=" * 60)
 
-    # Step 1: Search LinkedIn
-    logger.info("Step 1: Searching LinkedIn across all categories and regions...")
-    raw_jobs = run_all_searches()
-    logger.info(f"Total unique jobs from search: {len(raw_jobs)}")
+    if args.region or args.profile:
+        # Direct mode: specific region + profile, search → dedup → enqueue immediately
+        region = args.region or "eea"
+        profile_name = args.profile or "ai"
+        keywords = SEARCH_PROFILES.get(profile_name, SEARCH_PROFILES["ai"])
+        logger.info(
+            f"Step 1: Searching {region} with profile={profile_name} "
+            f"({len(keywords)} keywords) remote={args.remote}..."
+        )
 
-    if not raw_jobs:
-        logger.info("No jobs found. Exiting.")
-        return
+        # Initialize proxy pool
+        proxy_pool = None
+        try:
+            pool = ProxyPool()
+            working = pool.initialize()
+            if working >= 1:
+                proxy_pool = pool
+                logger.info(f"Proxy pool ready: {working} proxies")
+        except Exception as e:
+            logger.warning(f"Proxy pool failed: {e}")
 
-    # Step 1b: Apply blacklist filter
-    raw_jobs = filter_blacklisted(raw_jobs)
-    logger.info(f"After blacklist filter: {len(raw_jobs)}")
+        raw_jobs = search_jobs(
+            keywords_list=keywords,
+            time_filter=TIME_FILTER,
+            regions=[region],
+            max_pages=MAX_PAGES,
+            limit=args.limit if args.limit else 0,
+            few_applicants=not args.remote,  # few_applicants off when remote filter is on
+            remote_only=args.remote,
+            proxy_pool=proxy_pool,
+        )
+        # Tag jobs with search profile
+        for job in raw_jobs:
+            job["_search_profile"] = profile_name
 
-    # Step 2: Pre-filter against MongoDB (avoid enqueueing known jobs)
-    logger.info("Step 2: Deduplicating against MongoDB...")
-    db = get_db()
-    new_jobs = dedupe_against_db(raw_jobs, db)
-    already_in_db = len(raw_jobs) - len(new_jobs)
-    logger.info(f"After dedup: {len(new_jobs)} new jobs ({already_in_db} already in DB)")
+        logger.info(f"Total unique jobs from search: {len(raw_jobs)}")
 
-    if not new_jobs:
-        logger.info("All jobs already in DB. Exiting.")
-        return
+        if not raw_jobs:
+            logger.info("No jobs found. Exiting.")
+            return
 
-    # Step 3: Enqueue for scraper
-    if args.dry_run:
-        logger.info(f"[DRY RUN] Would enqueue {len(new_jobs)} jobs")
-        enqueued = len(new_jobs)
+        # Apply blacklist filter immediately
+        raw_jobs = filter_blacklisted(raw_jobs)
+        logger.info(f"After blacklist filter: {len(raw_jobs)}")
+
+        # Apply --limit before DB query
+        if args.limit:
+            raw_jobs = raw_jobs[: args.limit]
+            logger.info(f"After --limit {args.limit}: {len(raw_jobs)}")
+
+        # Dedup against MongoDB immediately
+        logger.info("Step 2: Deduplicating against MongoDB...")
+        db = get_db()
+        new_jobs = dedupe_against_db(raw_jobs, db)
+        already_in_db = len(raw_jobs) - len(new_jobs)
+        logger.info(f"After dedup: {len(new_jobs)} new jobs ({already_in_db} already in DB)")
+
+        if not new_jobs:
+            logger.info("All jobs already in DB. Exiting.")
+            enqueued = 0
+        elif args.dry_run:
+            logger.info(f"[DRY RUN] Would enqueue {len(new_jobs)} jobs")
+            enqueued = len(new_jobs)
+        else:
+            logger.info("Step 3: Enqueueing jobs for scraper...")
+            enqueued = enqueue_jobs(new_jobs, source_cron="hourly")
+            logger.info(f"Enqueued {enqueued} jobs immediately")
+
+        searched_count = len(raw_jobs)
+
     else:
-        logger.info("Step 3: Enqueueing jobs for scraper...")
-        enqueued = enqueue_jobs(new_jobs, source_cron="hourly")
+        # Full mode: run all SEARCH_COMBOS; each combo dedupes + enqueues incrementally
+        logger.info("Step 1: Searching LinkedIn across all categories and regions (incremental)...")
+        enqueued = run_all_searches(dry_run=args.dry_run, limit=args.limit)
+        # In full mode, run_all_searches handles everything; totals are logged per-combo
+        searched_count = 0  # not tracked in full mode (dedup is per-combo)
+        already_in_db = 0
 
     # Summary
     logger.info("=" * 60)
     logger.info("Scout Cron Summary")
-    logger.info(f"  Searched:     {len(raw_jobs)} unique jobs from LinkedIn")
-    logger.info(f"  Already in DB: {already_in_db}")
-    logger.info(f"  Enqueued:     {enqueued} new jobs for scraping")
+    if args.region or args.profile:
+        logger.info(f"  Searched:      {searched_count} unique jobs from LinkedIn")
+        logger.info(f"  Already in DB: {already_in_db}")
+    logger.info(f"  Enqueued:      {enqueued} new jobs for scraping")
     logger.info("=" * 60)
 
     # Notify via Telegram (non-blocking, best-effort)
     try:
         notify_search_complete(
-            searched=len(raw_jobs),
+            searched=searched_count,
             already_in_db=already_in_db,
             enqueued=enqueued,
         )

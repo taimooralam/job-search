@@ -89,11 +89,23 @@ def get_db():
 # ---------------------------------------------------------------------------
 
 
-def run_all_searches() -> List[Dict[str, Any]]:
-    """Run searches across AI profiles and all combos, deduped by job_id."""
+def run_all_searches(dry_run: bool = False) -> int:
+    """Run searches across AI profiles and all combos; dedup + enqueue per combo.
+
+    Each combo's results are deduped against MongoDB and enqueued immediately
+    so that jobs are never lost if the process dies mid-run.
+
+    Args:
+        dry_run: If True, log what would be enqueued but don't write.
+
+    Returns:
+        Total number of jobs enqueued across all combos.
+    """
     seen_ids: Set[str] = set()
-    all_jobs: List[Dict[str, Any]] = []
+    total_enqueued = 0
     ai_keywords = SEARCH_PROFILES["ai"]
+
+    db = get_db()
 
     for region, remote_only, few_applicants in SEARCH_COMBOS:
         label = (
@@ -111,17 +123,40 @@ def run_all_searches() -> List[Dict[str, Any]]:
             remote_only=remote_only,
         )
 
-        new_count = 0
+        # In-memory dedup across combos (same run)
+        unique_jobs = []
         for job in jobs:
             if job["job_id"] not in seen_ids:
                 seen_ids.add(job["job_id"])
                 job["_search_profile"] = "ai"
-                all_jobs.append(job)
-                new_count += 1
+                unique_jobs.append(job)
 
-        logger.info(f"  -> {len(jobs)} found, {new_count} new (cumulative: {len(all_jobs)})")
+        logger.info(f"  -> {len(jobs)} found, {len(unique_jobs)} unique in-run")
 
-    return all_jobs
+        if not unique_jobs:
+            continue
+
+        # Dedup against MongoDB immediately
+        new_jobs = dedupe_against_db(unique_jobs, db)
+        already_in_db = len(unique_jobs) - len(new_jobs)
+        if already_in_db:
+            logger.info(f"  -> {already_in_db} already in DB")
+
+        if not new_jobs:
+            logger.info("  -> 0 new after dedup, skipping enqueue")
+            continue
+
+        # Enqueue immediately — don't wait until the end
+        if dry_run:
+            logger.info(f"  [DRY RUN] Would enqueue {len(new_jobs)} jobs")
+            combo_enqueued = len(new_jobs)
+        else:
+            combo_enqueued = enqueue_jobs(new_jobs, source_cron="ai_top15", search_profile="ai")
+            logger.info(f"  -> Enqueued {combo_enqueued} jobs (running total: {total_enqueued + combo_enqueued})")
+
+        total_enqueued += combo_enqueued
+
+    return total_enqueued
 
 
 # ---------------------------------------------------------------------------
@@ -213,47 +248,21 @@ def main():
     logger.info(f"Config: time_filter={TIME_FILTER}, max_pages={MAX_PAGES}")
     logger.info("=" * 60)
 
-    # Step 1: Search LinkedIn (AI profiles only)
-    logger.info("Step 1: Searching LinkedIn (AI profiles, 24h window)...")
-    raw_jobs = run_all_searches()
-    logger.info(f"Total unique jobs from search: {len(raw_jobs)}")
-
-    if not raw_jobs:
-        logger.info("No jobs found. Exiting.")
-        return
-
-    # Step 2: Pre-filter against MongoDB
-    logger.info("Step 2: Deduplicating against MongoDB...")
-    db = get_db()
-    new_jobs = dedupe_against_db(raw_jobs, db)
-    already_in_db = len(raw_jobs) - len(new_jobs)
-    logger.info(f"After dedup: {len(new_jobs)} new jobs ({already_in_db} already in DB)")
-
-    if not new_jobs:
-        logger.info("All jobs already in DB. Exiting.")
-        return
-
-    # Step 3: Enqueue for scraper
-    if args.dry_run:
-        logger.info(f"[DRY RUN] Would enqueue {len(new_jobs)} jobs")
-        enqueued = len(new_jobs)
-    else:
-        logger.info("Step 3: Enqueueing jobs for scraper...")
-        enqueued = enqueue_jobs(new_jobs, source_cron="ai_top15", search_profile="ai")
+    # Search LinkedIn (AI profiles only); dedup + enqueue incrementally per combo
+    logger.info("Step 1: Searching LinkedIn (AI profiles, 24h window, incremental)...")
+    enqueued = run_all_searches(dry_run=args.dry_run)
 
     # Summary
     logger.info("=" * 60)
     logger.info("AI Top-15 Scout Summary")
-    logger.info(f"  Searched:      {len(raw_jobs)} unique jobs from LinkedIn")
-    logger.info(f"  Already in DB: {already_in_db}")
-    logger.info(f"  Enqueued:      {enqueued} new jobs for scraping")
+    logger.info(f"  Enqueued: {enqueued} new jobs for scraping")
     logger.info("=" * 60)
 
     # Notify via Telegram (non-blocking, best-effort)
     try:
         notify_search_complete(
-            searched=len(raw_jobs),
-            already_in_db=already_in_db,
+            searched=0,   # not tracked in incremental mode (dedup is per-combo)
+            already_in_db=0,
             enqueued=enqueued,
         )
     except Exception:
