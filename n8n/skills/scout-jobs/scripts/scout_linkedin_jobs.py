@@ -78,6 +78,38 @@ SEARCH_PROFILES = {
         "Head of Machine Learning",
         "Director AI Engineering",
     ],
+    "staff_principal": [
+        "Staff Engineer",
+        "Staff Software Engineer",
+        "Principal Engineer",
+        "Staff ML Engineer",
+        "Staff AI Engineer",
+        "Principal Software Engineer",
+        "Staff Platform Engineer",
+        "Principal ML Engineer",
+    ],
+    "engineering_leadership": [
+        "CTO",
+        "VP Engineering",
+        "Director of Engineering",
+        "Head of Engineering",
+        "Engineering Director",
+        "Tech Lead",
+        "Technical Lead",
+        "Head of Platform",
+        "VP of Technology",
+    ],
+    "architect": [
+        "AI Architect",
+        "Solutions Architect AI",
+        "Enterprise Architect",
+        "Cloud Architect",
+        "Data Architect",
+        "ML Architect",
+        "Platform Architect",
+        "Software Architect",
+        "Technical Architect",
+    ],
 }
 
 # Time filter mapping (f_TPR param)
