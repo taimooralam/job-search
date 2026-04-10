@@ -2014,119 +2014,6 @@
         </div>
         {% endif %}
 
-        <!-- Generated CV Section (Prominent in Main) -->
-        {% if job.has_cv %}
-        <div class="job-detail-card">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="job-detail-card-title mb-0">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    Generated CV
-                </h2>
-                <div class="flex gap-2">
-                    <button onclick="openCVEditorPanel('{{ job._id }}')"
-                            class="btn btn-secondary btn-sm">
-                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                        </svg>
-                        Edit CV
-                    </button>
-                    <button onclick="exportCVFromDetailPage()"
-                            class="btn btn-primary btn-sm">
-                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
-                        </svg>
-                        Export PDF
-                    </button>
-                    <button id="gdrive-upload-btn-detail"
-                            onclick="uploadCVToGDrive('{{ job._id }}')"
-                            class="btn btn-secondary btn-sm gdrive-btn {{ 'gdrive-uploaded' if job.gdrive_uploaded_at else '' }}">
-                        <svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
-                        </svg>
-                        <span class="gdrive-btn-text">{{ 'Uploaded' if job.gdrive_uploaded_at else 'Upload to Drive' }}</span>
-                    </button>
-                </div>
-            </div>
-            <!-- CV Preview - Full Width -->
-            <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white" style="max-height: 600px;">
-                <div id="cv-display-area" class="cv-preview-content" style="padding: 0.75in; max-width: 8.5in; margin: 0 auto;">
-                    <!-- Rendered by TipTap from editor state -->
-                </div>
-                <script>
-                    /**
-                     * GAP-101: CV Preview Sync
-                     * Renders the CV preview from the saved editor state in MongoDB.
-                     * Called on page load and when cvContentUpdated event is dispatched.
-                     */
-                    async function renderCVPreview() {
-                        try {
-                            const response = await fetch('/api/jobs/{{ job._id }}/cv-editor');
-                            if (!response.ok) return;
-                            const data = await response.json();
-                            const editorState = data.editor_state;
-                            if (!editorState || !editorState.content) return;
-                            const htmlContent = tiptapJsonToHtml(editorState.content);
-                            const displayArea = document.getElementById('cv-display-area');
-                            displayArea.innerHTML = htmlContent;
-                            if (editorState.documentStyles) {
-                                const styles = editorState.documentStyles;
-                                displayArea.style.fontFamily = styles.fontFamily || 'Inter, sans-serif';
-                                displayArea.style.lineHeight = styles.lineHeight || 1.5;
-                                displayArea.style.color = styles.colorText || '#1f2a38';
-                            }
-                            console.log('CV preview updated from saved state');
-                        } catch (error) {
-                            console.error('Error rendering CV preview:', error);
-                        }
-                    }
-
-                    // GAP-101: Expose renderCVPreview globally for cv-editor.js fallback
-                    window.renderCVPreview = renderCVPreview;
-
-                    function tiptapJsonToHtml(content) {
-                        if (!content || content.type !== 'doc') return '';
-                        function processNode(node) {
-                            const type = node.type;
-                            const children = node.content || [];
-                            const attrs = node.attrs || {};
-                            const marks = node.marks || [];
-                            if (type === 'text') {
-                                let text = node.text || '';
-                                marks.forEach(mark => {
-                                    if (mark.type === 'bold') text = `<strong>${text}</strong>`;
-                                    if (mark.type === 'italic') text = `<em>${text}</em>`;
-                                    if (mark.type === 'underline') text = `<u>${text}</u>`;
-                                });
-                                return text;
-                            }
-                            const innerHtml = children.map(processNode).join('');
-                            if (type === 'paragraph') return `<p>${innerHtml}</p>`;
-                            if (type === 'heading') return `<h${attrs.level || 1}>${innerHtml}</h${attrs.level || 1}>`;
-                            if (type === 'bulletList') return `<ul>${innerHtml}</ul>`;
-                            if (type === 'orderedList') return `<ol>${innerHtml}</ol>`;
-                            if (type === 'listItem') return `<li>${innerHtml}</li>`;
-                            if (type === 'hardBreak') return '<br>';
-                            return innerHtml;
-                        }
-                        return content.content.map(processNode).join('');
-                    }
-
-                    document.addEventListener('DOMContentLoaded', renderCVPreview);
-
-                    // GAP-101: Listen for cvContentUpdated event from cv-editor.js after save
-                    window.addEventListener('cvContentUpdated', (event) => {
-                        if (event.detail && event.detail.jobId === '{{ job._id }}') {
-                            console.log('Received cvContentUpdated event, refreshing preview');
-                            renderCVPreview();
-                        }
-                    });
-                </script>
-            </div>
-        </div>
-        {% endif %}
-
         <!-- CV Review Section -->
         {% if job.cv_review %}
         <div class="job-detail-card">
@@ -2556,6 +2443,119 @@
             </details>
             {% endif %}
 
+
+        {% if job.cv_review and job.cv_review.full_review and job.cv_review.full_review.rewrite_suggestions %}
+        <div class="job-detail-card mt-4">
+            <h3 class="text-lg font-semibold mb-3">Suggested Rewrites</h3>
+
+            {% set rw = job.cv_review.full_review.rewrite_suggestions %}
+
+            <!-- Headline -->
+            {% if rw.headline %}
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-sm font-medium text-gray-700">Headline</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full
+                        {% if rw.headline.grounding == 'grounded' %}bg-green-100 text-green-700
+                        {% elif rw.headline.grounding == 'inferred' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ rw.headline.grounding }}
+                    </span>
+                </div>
+                <div class="text-sm text-red-600 line-through mb-1">{{ rw.headline.current }}</div>
+                <div class="text-sm text-green-700 font-medium">{{ rw.headline.rewritten }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ rw.headline.reason }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Tagline -->
+            {% if rw.tagline %}
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-sm font-medium text-gray-700">Tagline</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full
+                        {% if rw.tagline.grounding == 'grounded' %}bg-green-100 text-green-700
+                        {% elif rw.tagline.grounding == 'inferred' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ rw.tagline.grounding }}
+                    </span>
+                </div>
+                <div class="text-sm text-red-600 line-through mb-1">{{ rw.tagline.current }}</div>
+                <div class="text-sm text-green-700 font-medium">{{ rw.tagline.rewritten }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ rw.tagline.reason }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Core Competencies -->
+            {% if rw.core_competencies %}
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <span class="text-sm font-medium text-gray-700">Core Competencies</span>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                        <div class="text-xs text-gray-400 mb-1">Current</div>
+                        {% for c in rw.core_competencies.current %}
+                        <span class="inline-block text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded mr-1 mb-1">{{ c }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 mb-1">Suggested</div>
+                        {% for c in rw.core_competencies.rewritten %}
+                        <span class="inline-block text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded mr-1 mb-1">{{ c }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">{{ rw.core_competencies.reason }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Key Achievements -->
+            {% if rw.key_achievements %}
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <span class="text-sm font-medium text-gray-700">Key Achievements</span>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                        <div class="text-xs text-gray-400 mb-1">Current</div>
+                        {% for a in rw.key_achievements.current %}
+                        <div class="text-xs text-red-500 line-through mb-1">{{ a }}</div>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-400 mb-1">Suggested</div>
+                        {% for a in rw.key_achievements.rewritten %}
+                        <div class="text-xs text-green-700 mb-1">{{ a }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">{{ rw.key_achievements.reason }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Experience Items (roles + projects) -->
+            {% if rw.experience_items %}
+            {% for name, item in rw.experience_items.items() %}
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-sm font-medium text-gray-700">{{ name }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{{ item.type }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full
+                        {% if item.grounding == 'grounded' %}bg-green-100 text-green-700
+                        {% elif item.grounding == 'inferred' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ item.grounding }}
+                    </span>
+                </div>
+                {% for i in range(item.current | length) %}
+                <div class="mb-2 pl-3 border-l-2 border-gray-300">
+                    <div class="text-xs text-red-500 line-through">{{ item.current[i] }}</div>
+                    <div class="text-xs text-green-700">{{ item.rewritten[i] if i < item.rewritten | length else '' }}</div>
+                </div>
+                {% endfor %}
+                <div class="text-xs text-gray-500 mt-1">{{ item.reason }}</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+        {% endif %}
             {% endif %}{# end full_review #}
         </div>
         {% endif %}{# end cv_review #}
@@ -2626,6 +2626,119 @@
             </div>
         </div>
         {% endif %}{# end not cv_review and has_cv #}
+
+        <!-- Generated CV Section (Prominent in Main) -->
+        {% if job.has_cv %}
+        <div class="job-detail-card">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="job-detail-card-title mb-0">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Generated CV
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="openCVEditorPanel('{{ job._id }}')"
+                            class="btn btn-secondary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                        Edit CV
+                    </button>
+                    <button onclick="exportCVFromDetailPage()"
+                            class="btn btn-primary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                        </svg>
+                        Export PDF
+                    </button>
+                    <button id="gdrive-upload-btn-detail"
+                            onclick="uploadCVToGDrive('{{ job._id }}')"
+                            class="btn btn-secondary btn-sm gdrive-btn {{ 'gdrive-uploaded' if job.gdrive_uploaded_at else '' }}">
+                        <svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
+                        </svg>
+                        <span class="gdrive-btn-text">{{ 'Uploaded' if job.gdrive_uploaded_at else 'Upload to Drive' }}</span>
+                    </button>
+                </div>
+            </div>
+            <!-- CV Preview - Full Width -->
+            <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white" style="max-height: 600px;">
+                <div id="cv-display-area" class="cv-preview-content" style="padding: 0.75in; max-width: 8.5in; margin: 0 auto;">
+                    <!-- Rendered by TipTap from editor state -->
+                </div>
+                <script>
+                    /**
+                     * GAP-101: CV Preview Sync
+                     * Renders the CV preview from the saved editor state in MongoDB.
+                     * Called on page load and when cvContentUpdated event is dispatched.
+                     */
+                    async function renderCVPreview() {
+                        try {
+                            const response = await fetch('/api/jobs/{{ job._id }}/cv-editor');
+                            if (!response.ok) return;
+                            const data = await response.json();
+                            const editorState = data.editor_state;
+                            if (!editorState || !editorState.content) return;
+                            const htmlContent = tiptapJsonToHtml(editorState.content);
+                            const displayArea = document.getElementById('cv-display-area');
+                            displayArea.innerHTML = htmlContent;
+                            if (editorState.documentStyles) {
+                                const styles = editorState.documentStyles;
+                                displayArea.style.fontFamily = styles.fontFamily || 'Inter, sans-serif';
+                                displayArea.style.lineHeight = styles.lineHeight || 1.5;
+                                displayArea.style.color = styles.colorText || '#1f2a38';
+                            }
+                            console.log('CV preview updated from saved state');
+                        } catch (error) {
+                            console.error('Error rendering CV preview:', error);
+                        }
+                    }
+
+                    // GAP-101: Expose renderCVPreview globally for cv-editor.js fallback
+                    window.renderCVPreview = renderCVPreview;
+
+                    function tiptapJsonToHtml(content) {
+                        if (!content || content.type !== 'doc') return '';
+                        function processNode(node) {
+                            const type = node.type;
+                            const children = node.content || [];
+                            const attrs = node.attrs || {};
+                            const marks = node.marks || [];
+                            if (type === 'text') {
+                                let text = node.text || '';
+                                marks.forEach(mark => {
+                                    if (mark.type === 'bold') text = `<strong>${text}</strong>`;
+                                    if (mark.type === 'italic') text = `<em>${text}</em>`;
+                                    if (mark.type === 'underline') text = `<u>${text}</u>`;
+                                });
+                                return text;
+                            }
+                            const innerHtml = children.map(processNode).join('');
+                            if (type === 'paragraph') return `<p>${innerHtml}</p>`;
+                            if (type === 'heading') return `<h${attrs.level || 1}>${innerHtml}</h${attrs.level || 1}>`;
+                            if (type === 'bulletList') return `<ul>${innerHtml}</ul>`;
+                            if (type === 'orderedList') return `<ol>${innerHtml}</ol>`;
+                            if (type === 'listItem') return `<li>${innerHtml}</li>`;
+                            if (type === 'hardBreak') return '<br>';
+                            return innerHtml;
+                        }
+                        return content.content.map(processNode).join('');
+                    }
+
+                    document.addEventListener('DOMContentLoaded', renderCVPreview);
+
+                    // GAP-101: Listen for cvContentUpdated event from cv-editor.js after save
+                    window.addEventListener('cvContentUpdated', (event) => {
+                        if (event.detail && event.detail.jobId === '{{ job._id }}') {
+                            console.log('Received cvContentUpdated event, refreshing preview');
+                            renderCVPreview();
+                        }
+                    });
+                </script>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Generated Cover Letter Section (Main Content) -->
         {% if job.cover_letter %}

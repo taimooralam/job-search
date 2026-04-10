@@ -73,6 +73,30 @@ Compare the CV's positioning against the JD's ideal candidate profile:
 - Are the key traits visible in the CV?
 - Does the experience level match?
 
+## Anti-Hallucination Rules for Rewrites
+
+HARD CONSTRAINTS — you MUST NOT violate these:
+- Do NOT add metrics (percentages, numbers, dollar amounts) unless they appear verbatim in the master CV
+- Do NOT add technologies unless the master CV lists them in that role's context
+- Do NOT add team sizes, headcounts, or org scope unless stated in master CV
+- Do NOT add business impact claims (revenue, cost savings, user counts) not in master CV
+- Do NOT inflate scope (e.g., "led" → "transformed organization" without evidence)
+- Do NOT add leadership claims (led, managed, directed) to roles where master CV shows IC work
+- If a JD keyword has NO evidence in master CV, do NOT inject it — mark as grounding: "gap"
+
+SOFT GUIDELINES:
+- Rewrite for clarity and impact WITHIN the bounds of what the master CV supports
+- Front-load JD-relevant keywords that ARE in the master CV
+- Use stronger action verbs only when the master CV supports the claim's scope
+- When evidence is thin, rewrite conservatively — precise over impressive
+- Flag inferences with grounding: "inferred"
+
+ROLE EXTRACTION:
+- First, identify all roles and projects from the CV text
+- Use their exact employer/project names as keys in experience_items
+- Only emit rewrites for items actually present in the CV
+- Mark each as type: "role" or type: "project"
+
 ## Output Format
 
 Return a JSON object with exactly this structure:
@@ -104,14 +128,46 @@ Return a JSON object with exactly this structure:
   },
   "strengths": ["strength 1", "strength 2"],
   "weaknesses": ["weakness 1", "weakness 2"],
-  "specific_improvements": [
-    {
-      "section": "headline|tagline|achievements|competencies|experience",
-      "current": "what it says now",
-      "suggested": "what it should say",
-      "reason": "why"
+  "rewrite_suggestions": {
+    "headline": {
+      "current": "exact headline from CV",
+      "rewritten": "improved headline",
+      "reason": "why",
+      "grounding": "grounded|inferred|gap",
+      "source_evidence": "quote from master CV"
+    },
+    "tagline": {
+      "current": "exact tagline from CV",
+      "rewritten": "improved tagline",
+      "reason": "why",
+      "grounding": "grounded|inferred|gap",
+      "source_evidence": "quote from master CV"
+    },
+    "core_competencies": {
+      "current": ["list of current competencies"],
+      "rewritten": ["list of improved competencies"],
+      "reason": "why",
+      "grounding": "grounded",
+      "source_evidence": "..."
+    },
+    "key_achievements": {
+      "current": ["list of current achievements"],
+      "rewritten": ["list of improved achievements"],
+      "reason": "why",
+      "grounding": "grounded",
+      "source_evidence": "..."
+    },
+    "experience_items": {
+      "Company Name": {
+        "type": "role|project",
+        "current": ["bullet 1", "bullet 2"],
+        "rewritten": ["improved bullet 1", "improved bullet 2"],
+        "reason": "why",
+        "grounding": "grounded|inferred",
+        "source_evidence": "..."
+      }
     }
-  ],
+  },
   "ideal_candidate_fit": {
     "archetype_match": "string — how well CV matches the JD archetype",
     "trait_coverage": {"present": [], "missing": []},
