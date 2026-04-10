@@ -63,8 +63,8 @@ services:
       - ./credentials:/app/credentials:ro
       # Master CV data directory (file fallback for MongoDB)
       - ./data/master-cv:/app/data/master-cv:ro
-      # Claude Code CLI auth is via CLAUDE_CODE_OAUTH_TOKEN env var (see environment section)
-      # No file mount needed - the OAuth token is passed as environment variable
+      # Codex CLI auth (ChatGPT Plus OAuth for CV review)
+      - ./credentials/codex-auth.json:/home/runner/.codex/auth.json:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
