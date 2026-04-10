@@ -382,7 +382,8 @@ class CVReviewService(OperationService):
 
             try:
                 result = subprocess.run(
-                    ["codex", "exec", "-m", self.model, "--full-auto", full_prompt],
+                    ["codex", "exec", "-m", self.model, "--full-auto"],
+                    input=full_prompt,
                     capture_output=True,
                     text=True,
                     timeout=300,  # 5 min timeout
