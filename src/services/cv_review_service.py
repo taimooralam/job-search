@@ -446,14 +446,30 @@ class CVReviewService(OperationService):
                 _log(f"Copied codex auth from {codex_auth_src}")
 
             try:
+                # Write prompt to temp file — codex exec reads from stdin pipe
+                import tempfile
+                prompt_file = tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".txt", delete=False, dir="/tmp"
+                )
+                prompt_file.write(full_prompt)
+                prompt_file.close()
+                _log(f"Prompt written to {prompt_file.name} ({len(full_prompt)} chars)")
+
+                # Pipe prompt via stdin using shell redirection
                 result = subprocess.run(
-                    ["codex", "exec", "-m", self.model, "--full-auto"],
-                    input=full_prompt,
+                    f"cat {prompt_file.name} | codex exec -m {self.model} --full-auto",
+                    shell=True,
                     capture_output=True,
                     text=True,
                     timeout=300,  # 5 min timeout
                     env={**os.environ, "NO_COLOR": "1"},
                 )
+
+                # Cleanup temp file
+                try:
+                    os.unlink(prompt_file.name)
+                except OSError:
+                    pass
                 raw_content = result.stdout.strip()
 
                 if result.returncode != 0:
