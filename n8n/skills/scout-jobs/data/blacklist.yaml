@@ -1,0 +1,18 @@
+# Job Blacklist — running document
+# Jobs matching any entry below are filtered out at every pipeline stage.
+# Case-insensitive substring matching (e.g. "Dice" matches "Jobs Via Dice").
+# Add new entries and push to VPS to take effect.
+
+companies:
+  - Joppy
+  - Mercor
+  - Jobs Via Dice
+
+# Uncomment and add as needed:
+# titles:
+#   - "Unpaid Intern"
+#   - "Commission Only"
+
+# keywords_in_description:
+#   - "unpaid"
+#   - "commission only"

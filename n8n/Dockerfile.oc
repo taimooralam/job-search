@@ -1,0 +1,54 @@
+FROM alpine/openclaw:latest
+
+USER root
+
+# ── System packages (Debian bookworm) ────────────────────────────
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      python3 python3-pip git curl unzip gh && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ── yt-dlp (pip) ────────────────────────────────────────────────
+RUN pip3 install --break-system-packages --no-cache-dir yt-dlp
+
+# ── deno ─────────────────────────────────────────────────────────
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
+
+# ── Python deps for skills ──────────────────────────────────────
+RUN pip3 install --break-system-packages --no-cache-dir \
+      "requests>=2.31" "pymongo>=4.6" "python-dateutil>=2.8" \
+      "linkedin-api>=2.2.0" \
+      "duckduckgo-search>=6.0" "openai>=1.0" "firecrawl-py>=0.0.5" \
+      "beautifulsoup4>=4.12" \
+      "PyYAML>=6.0"
+
+# ── Codex CLI ──────────────────────────────────────────────────────
+RUN npm i -g @openai/codex
+
+# ── Verify all tools are present (build fails if any missing) ────
+RUN gh --version && yt-dlp --version && deno --version && python3 --version
+
+# ── Clone repos and extract skills at build time ─────────────────
+ARG GITHUB_TOKEN
+RUN git clone --depth 1 https://${GITHUB_TOKEN}@github.com/taimooralam/agentic-ai.git /tmp/agentic-ai && \
+    git clone --depth 1 https://${GITHUB_TOKEN}@github.com/taimooralam/togaf.git /tmp/togaf && \
+    mkdir -p /opt/skills && \
+    cp -r /tmp/agentic-ai/skills/audio-teacher /opt/skills/ && \
+    cp -r /tmp/togaf/skills/togaf-audio-teacher /opt/skills/ && \
+    rm -rf /tmp/agentic-ai /tmp/togaf /root/.gitconfig
+
+# ── Copy local skills into image ─────────────────────────────────
+COPY skills/linkedin-intel /opt/skills/linkedin-intel
+COPY skills/url-resolver /opt/skills/url-resolver
+COPY skills/scout-jobs /opt/skills/scout-jobs
+
+# ── Git identity (non-secret) ────────────────────────────────────
+ENV GIT_AUTHOR_NAME="Taimoor Alam"
+ENV GIT_AUTHOR_EMAIL=taimoor.alam12@gmail.com
+ENV GIT_COMMITTER_NAME="Taimoor Alam"
+ENV GIT_COMMITTER_EMAIL=taimoor.alam12@gmail.com
+
+# ── Budget caps ──────────────────────────────────────────────────
+ENV FIRECRAWL_DAILY_LIMIT=20
+
+# All secrets passed via docker-compose environment from .env

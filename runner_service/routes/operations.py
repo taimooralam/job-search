@@ -1800,6 +1800,8 @@ VALID_QUEUE_OPERATIONS = {
     # Combo operations
     "full-analysis",         # All Phase 1 operations in parallel
     "batch-pipeline",        # Complete batch: extraction + research + CV + uploads (move-to-batch)
+    # Review operations
+    "cv-review",             # Grade generated CV against JD (5-dimension scoring)
     # Legacy names (still valid for backward compatibility, but aliases are preferred)
     "structure-jd",
     "full-extraction",
@@ -1838,6 +1840,7 @@ OPERATION_TIME_ESTIMATES = {
     "generate-outreach": 25,
     "full-analysis": 90,
     "batch-pipeline": 180,  # Complete batch: extraction + research + CV + uploads (~3 min)
+    "cv-review": 60,        # CV grading via CVGrader (LLM + rule-based, ~1 min)
     # Legacy names (same times as their canonical equivalents)
     "structure-jd": 15,
     "full-extraction": 45,
@@ -2283,6 +2286,17 @@ async def _execute_queued_operation(
                 progress_callback=layer_cb,
                 log_callback=log_cb,
                 stop_on_failure=False,  # Continue on non-critical failures
+            )
+
+        elif operation == "cv-review":
+            from src.services.cv_review_service import CVReviewService
+            model = os.getenv("CV_REVIEW_MODEL", "gpt-4o")
+            service = CVReviewService(model=model)
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                progress_callback=layer_cb,
+                log_callback=log_cb,
             )
 
         # Update operation status
