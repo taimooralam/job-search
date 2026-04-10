@@ -380,6 +380,15 @@ class CVReviewService(OperationService):
                 "IMPORTANT: Return ONLY valid JSON matching the schema above. No markdown, no explanation, just the JSON object."
             )
 
+            # Ensure codex auth is available — credentials mount has it at /app/credentials/
+            codex_auth_src = "/app/credentials/codex-auth.json"
+            codex_auth_dst = os.path.expanduser("~/.codex/auth.json")
+            if os.path.exists(codex_auth_src) and not os.path.exists(codex_auth_dst):
+                os.makedirs(os.path.dirname(codex_auth_dst), exist_ok=True)
+                import shutil
+                shutil.copy2(codex_auth_src, codex_auth_dst)
+                _log(f"Copied codex auth from {codex_auth_src}")
+
             try:
                 result = subprocess.run(
                     ["codex", "exec", "-m", self.model, "--full-auto"],
