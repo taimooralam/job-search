@@ -144,7 +144,7 @@ class CVReviewService(OperationService):
             model: OpenAI model override. Defaults to CV_REVIEW_MODEL env var,
                    then falls back to "gpt-4o".
         """
-        self.model = model or os.getenv("CV_REVIEW_MODEL", "gpt-4o")
+        self.model = model or os.getenv("CV_REVIEW_MODEL", "openai/gpt-4o")
         self._mongo_uri = os.getenv("MONGODB_URI")
         if not self._mongo_uri:
             raise ValueError("MONGODB_URI environment variable is required")
@@ -371,8 +371,23 @@ class CVReviewService(OperationService):
             # ----------------------------------------------------------------
             # 5. Call OpenAI API
             # ----------------------------------------------------------------
-            _log(f"Calling OpenAI ({self.model}) for hiring-manager review...")
-            client = openai.OpenAI()  # Uses OPENAI_API_KEY env var
+            _log(f"Calling LLM ({self.model}) for hiring-manager review...")
+            # Use OpenRouter (OpenAI-compatible API) for model access
+            openrouter_key = os.getenv("OPENROUTER_API_KEY")
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if openrouter_key:
+                client = openai.OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=openrouter_key,
+                )
+            elif openai_key:
+                client = openai.OpenAI(api_key=openai_key)
+            else:
+                return self.create_error_result(
+                    run_id,
+                    "No API key — set OPENROUTER_API_KEY or OPENAI_API_KEY",
+                    int((time.perf_counter() - t_start) * 1000),
+                )
             response = client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -440,7 +455,7 @@ class CVReviewService(OperationService):
             logger.error(f"OpenAI authentication error: {exc}")
             return self.create_error_result(
                 run_id,
-                "OpenAI authentication failed — check OPENAI_API_KEY",
+                "LLM authentication failed — check OPENROUTER_API_KEY or OPENAI_API_KEY",
                 int((time.perf_counter() - t_start) * 1000),
             )
         except openai.RateLimitError as exc:
