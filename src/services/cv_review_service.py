@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
-import openai
+import subprocess
 from bson import ObjectId
 from pymongo import MongoClient
 
@@ -144,7 +144,7 @@ class CVReviewService(OperationService):
             model: OpenAI model override. Defaults to CV_REVIEW_MODEL env var,
                    then falls back to "gpt-4o".
         """
-        self.model = model or os.getenv("CV_REVIEW_MODEL", "openai/gpt-4o")
+        self.model = model or os.getenv("CV_REVIEW_MODEL", "gpt-5.3-codex")
         self._mongo_uri = os.getenv("MONGODB_URI")
         if not self._mongo_uri:
             raise ValueError("MONGODB_URI environment variable is required")
@@ -369,43 +369,75 @@ class CVReviewService(OperationService):
             _log(f"Prompts built (user_prompt={len(user_prompt)} chars)")
 
             # ----------------------------------------------------------------
-            # 5. Call OpenAI API
+            # 5. Call Codex CLI (uses ChatGPT Plus OAuth — no API key needed)
             # ----------------------------------------------------------------
-            _log(f"Calling LLM ({self.model}) for hiring-manager review...")
-            # Use OpenRouter (OpenAI-compatible API) for model access
-            openrouter_key = os.getenv("OPENROUTER_API_KEY")
-            openai_key = os.getenv("OPENAI_API_KEY")
-            if openrouter_key:
-                client = openai.OpenAI(
-                    base_url="https://openrouter.ai/api/v1",
-                    api_key=openrouter_key,
-                )
-            elif openai_key:
-                client = openai.OpenAI(api_key=openai_key)
-            else:
-                return self.create_error_result(
-                    run_id,
-                    "No API key — set OPENROUTER_API_KEY or OPENAI_API_KEY",
-                    int((time.perf_counter() - t_start) * 1000),
-                )
-            response = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": REVIEWER_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.3,
+            _log(f"Calling Codex CLI ({self.model}) for hiring-manager review...")
+
+            # Build the full prompt for codex exec
+            full_prompt = (
+                f"{REVIEWER_SYSTEM_PROMPT}\n\n"
+                f"{user_prompt}\n\n"
+                "IMPORTANT: Return ONLY valid JSON matching the schema above. No markdown, no explanation, just the JSON object."
             )
-            raw_content = response.choices[0].message.content or "{}"
+
             try:
-                review: Dict[str, Any] = json.loads(raw_content)
-            except json.JSONDecodeError as exc:
+                result = subprocess.run(
+                    ["codex", "exec", "-m", self.model, "--full-auto", full_prompt],
+                    capture_output=True,
+                    text=True,
+                    timeout=300,  # 5 min timeout
+                    env={**os.environ, "NO_COLOR": "1"},
+                )
+                raw_content = result.stdout.strip()
+
+                if result.returncode != 0:
+                    error_msg = result.stderr.strip() or f"Codex exec failed with code {result.returncode}"
+                    _log(f"Codex CLI error: {error_msg}")
+                    return self.create_error_result(
+                        run_id, f"Codex CLI failed: {error_msg}",
+                        int((time.perf_counter() - t_start) * 1000),
+                    )
+
+                if not raw_content:
+                    return self.create_error_result(
+                        run_id, "Codex CLI returned empty response",
+                        int((time.perf_counter() - t_start) * 1000),
+                    )
+
+            except subprocess.TimeoutExpired:
                 return self.create_error_result(
-                    run_id,
-                    f"OpenAI returned invalid JSON: {exc}",
+                    run_id, "Codex CLI timed out after 300s",
                     int((time.perf_counter() - t_start) * 1000),
                 )
+            except FileNotFoundError:
+                return self.create_error_result(
+                    run_id, "Codex CLI not found — ensure @openai/codex is installed",
+                    int((time.perf_counter() - t_start) * 1000),
+                )
+
+            # Parse JSON from codex output (may contain extra text before/after)
+            try:
+                # Try direct parse first
+                review: Dict[str, Any] = json.loads(raw_content)
+            except json.JSONDecodeError:
+                # Extract JSON from mixed output (codex may prepend status lines)
+                import re
+                json_match = re.search(r'\{[\s\S]*\}', raw_content)
+                if json_match:
+                    try:
+                        review = json.loads(json_match.group())
+                    except json.JSONDecodeError as exc:
+                        return self.create_error_result(
+                            run_id,
+                            f"Codex returned invalid JSON: {exc}\nRaw: {raw_content[:500]}",
+                            int((time.perf_counter() - t_start) * 1000),
+                        )
+                else:
+                    return self.create_error_result(
+                        run_id,
+                        f"No JSON found in Codex output: {raw_content[:500]}",
+                        int((time.perf_counter() - t_start) * 1000),
+                    )
 
             _log(
                 f"Review complete: verdict={review.get('verdict', '?')} "
@@ -455,7 +487,7 @@ class CVReviewService(OperationService):
             logger.error(f"OpenAI authentication error: {exc}")
             return self.create_error_result(
                 run_id,
-                "LLM authentication failed — check OPENROUTER_API_KEY or OPENAI_API_KEY",
+                "Codex CLI authentication failed — check codex auth",
                 int((time.perf_counter() - t_start) * 1000),
             )
         except openai.RateLimitError as exc:
