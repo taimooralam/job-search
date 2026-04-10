@@ -18,6 +18,7 @@ Sources (fetched by refresh cron):
 
 import json
 import logging
+import os
 import random
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -43,12 +44,12 @@ VALIDATION_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPosting
 VALIDATION_TIMEOUT = 8  # seconds — must be enough for LinkedIn HTTPS round-trip
 FETCH_TIMEOUT = 15  # seconds for fetching the proxy list
 
-# Default path — resolved relative to project root
-_DEFAULT_CACHE_PATH = Path(__file__).parent.parent.parent / "data" / "scout" / "proxies.json"
-
-
+# Default path — use SCOUT_QUEUE_DIR env var, fallback to skill-relative
 def _default_cache_path() -> Path:
-    return _DEFAULT_CACHE_PATH
+    env_dir = os.environ.get("SCOUT_QUEUE_DIR")
+    if env_dir:
+        return Path(env_dir) / "proxies.json"
+    return Path(__file__).parent.parent.parent / "data" / "scout" / "proxies.json"
 
 
 def _parse_proxy_lines(text: str) -> List[str]:
