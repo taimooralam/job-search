@@ -462,7 +462,7 @@ class CVReviewService(OperationService):
                     capture_output=True,
                     text=True,
                     timeout=300,  # 5 min timeout
-                    env={**os.environ, "NO_COLOR": "1"},
+                    env={**{k: v for k, v in os.environ.items() if k != "OPENAI_API_KEY"}, "NO_COLOR": "1"},
                 )
 
                 # Cleanup temp file
