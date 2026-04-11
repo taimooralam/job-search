@@ -318,8 +318,8 @@ def insert_jobs(
             ),
             "tier": job.get("tier"),
             "score": job.get("score"),  # Seed with rule score; full LLM score overwrites later
-            "starred": job.get("tier") == "A",
-            "starredAt": datetime.utcnow() if job.get("tier") == "A" else None,
+            "starred": False,
+            "starredAt": None,
             "salary": None,
             "jobType": job.get("employment_type"),
             "linkedin_metadata": {
