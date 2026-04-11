@@ -580,8 +580,8 @@ jobs:
           # Pull latest images from GHCR (build jobs push to registry, not local)
           docker compose -f docker-compose.runner.yml pull
 
-          # Restart services (picks up new compose file - replicas defined in compose)
-          docker compose -f docker-compose.runner.yml up -d --remove-orphans
+          # Restart services — force-recreate ensures new images are picked up
+          docker compose -f docker-compose.runner.yml up -d --force-recreate --remove-orphans
 
           # Clean up old images
           docker system prune -f

@@ -140,6 +140,19 @@ REGION_CONFIGS = {
             "Switzerland",
         ]
     },
+    # EEA regional clusters — faster than full EEA sweep
+    "eea_dach": {
+        "locations": ["Germany", "Austria", "Switzerland", "Netherlands", "Belgium", "Luxembourg"]
+    },
+    "eea_nordics": {
+        "locations": ["Sweden", "Denmark", "Norway", "Finland", "Iceland", "Estonia", "Latvia", "Lithuania"]
+    },
+    "eea_south": {
+        "locations": ["Spain", "Portugal", "Italy", "Greece", "Malta", "Cyprus"]
+    },
+    "eea_west": {
+        "locations": ["France", "Ireland"]
+    },
     "mena": {
         "locations": [
             "United Arab Emirates", "Saudi Arabia", "Qatar",
