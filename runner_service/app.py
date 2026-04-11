@@ -1612,8 +1612,29 @@ async def startup_queue_polling_loop():
         runner_id = get_runner_id()
         logger.info(f"[poll] Queue polling loop active for runner {runner_id}")
 
+        _stale_check_counter = 0
+        _STALE_CHECK_INTERVAL = 6  # check every 6 polls (~30s at 5s interval)
+
         while True:
             try:
+                # Self-healing: detect stuck semaphore (acquired but no job running in Redis)
+                _stale_check_counter += 1
+                if (
+                    _stale_check_counter >= _STALE_CHECK_INTERVAL
+                    and _semaphore._value == 0  # semaphore says "busy"
+                    and _queue_manager
+                    and _queue_manager.is_connected
+                    and _queue_manager._redis
+                ):
+                    _stale_check_counter = 0
+                    running_count = await _queue_manager._redis.scard("queue:running")
+                    if running_count == 0:
+                        logger.warning(
+                            "[poll] Stale semaphore detected: semaphore=0 but "
+                            "queue:running has 0 items. Force-releasing."
+                        )
+                        _do_release_semaphore()
+
                 if (
                     _queue_manager
                     and _queue_manager.is_connected
