@@ -2316,28 +2316,19 @@ async def _execute_queued_operation(
             )
             log_cb(f"Operation complete" if result.success else f"Operation failed: {result.error}")
 
-            # Telegram notification (non-blocking, best-effort)
-            try:
-                _job = _validate_job_exists_sync(job_id)
-                _company = _job.get("company", "Unknown") if _job else "Unknown"
-                _title = _job.get("title", "Unknown") if _job else "Unknown"
-                _location = _job.get("location", "") if _job else ""
-                _job_url = _job.get("jobUrl", "") if _job else ""
-                _duration_s = (result.duration_ms or 0) / 1000.0
-                if result.success:
-                    notify_pipeline_complete(
-                        job_id=job_id, company=_company, role=_title,
-                        duration_s=_duration_s, operation=operation,
-                        location=_location, job_url=_job_url,
-                    )
-                else:
+            # Telegram: only notify on failures (success is silent — selector sends 30-min summary)
+            if result and not result.success:
+                try:
+                    _job = _validate_job_exists_sync(job_id)
+                    _company = _job.get("company", "Unknown") if _job else "Unknown"
+                    _title = _job.get("title", "Unknown") if _job else "Unknown"
                     notify_pipeline_failed(
                         job_id=job_id, company=_company, role=_title,
                         error=result.error or "Unknown error",
                         run_id=run_id, operation=operation,
                     )
-            except Exception:
-                pass  # Telegram is best-effort
+                except Exception:
+                    pass
 
             # Complete queue item (broadcasts WebSocket event)
             # Use thread-safe wrapper since we're running in executor thread.

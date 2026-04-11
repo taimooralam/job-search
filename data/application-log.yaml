@@ -1,0 +1,180 @@
+applications:
+  - job_id: "69cc117e2cceb8c3854d414c"
+    company: "Hostaway"
+    title: "Staff Backend Engineer, AI Platform - 100% Remote - EMEA"
+    portal: "Ashby"
+    url: "https://careers.hostaway.com/o/staff-backend-engineer-ai-platform-100-remote-emea/c/new"
+    applied_on: "2026-04-05"
+    method: "browser_automated"
+    status: "applied"
+    notes: "Ashby SPA — screenshots render blank at >700px viewport; resize to 700px to interact. CV uploaded manually (CORS blocked localhost). React setter used for all fields. Phone entered as +49 176 29793925. Salary field set to '1'."
+
+- job_id: 69c61bb92cceb8c3853844c5
+  company: Thoughtworks
+  title: Lead AI Developer
+  location: Singapore
+  applied_on: "2026-04-05T15:43:21Z"
+  application_method: browser_automated
+  portal: greenhouse
+  notes: "reCAPTCHA + 8-char email verification code (manual). CV injected via AppleScript base64."
+
+- job_id: 69c645e82cceb8c3853889fa
+  company: Hays
+  title: AI Lead, Technical Manager (9K)
+  location: Singapore
+  applied_on: "2026-04-05T15:47:54Z"
+  application_method: browser_automated
+  portal: linkedin_easy_apply
+  notes: "LinkedIn Easy Apply. Shadow DOM (#interop-outlet). CV injected via AppleScript base64 into shadow DOM file input."
+
+- job_id: 69c51e982cceb8c38536a70a
+  company: ioBuilders
+  title: "Technical Lead – AI Solutions (Fintech & Legaltech)"
+  location: Spain
+  applied_on: "2026-04-05T16:14:09Z"
+  application_method: browser_automated
+  portal: linkedin_easy_apply
+  notes: "One-step LinkedIn Easy Apply (Spanish UI). CV injected via AppleScript base64 into shadow DOM."
+
+- job_id: "69c548c82cceb8c38536ecbf"
+  company: Alcoa
+  title: "AI Technical Lead"
+  location: "Perth, WA, Australia"
+  applied_on: "2026-04-06"
+  application_method: browser_automated
+  portal: workday
+  notes: "Workday (alcoa.wd5). 5-step flow. Source=LinkedIn (2-level dropdown, physical click required). Salary set to 150000 (error — should have been 1). User submitted manually. Voluntary disclosures: Male, no disability, prefer not to say, not US veteran."
+
+- job_id: "69c61bb92cceb8c3853844d1"
+  company: CSG
+  title: "Software Engineering Lead"
+  location: "Portugal (Remote)"
+  applied_on: "2026-04-06"
+  application_method: browser_automated
+  portal: workday
+  notes: "Workday (csgi.wd5). CV uploaded via AppleScript base64 inject. Application Questions: age Yes, work auth Yes, visa No, non-compete No, location Munich Germany, salary 1, Masters or higher, notice 3 calendar months, no familial relationship. Voluntary Disclosures: Sex=Male, T&C checkbox checked. Source=LinkedIn."
+
+- job_id: "69c4ca352cceb8c3853615ea"
+  company: IQVIA
+  title: "Senior AI Tech Lead"
+  location: "Madrid, Spain"
+  applied_on: "2026-04-06"
+  application_method: browser_automated
+  portal: workday
+  notes: "Workday (iqvia.wd1). 6-step flow. No EEO/disability/veteran questions — only T&C consent checkbox in Voluntary Disclosures. Application Questions included UK medic (No) and primary motivation (Challenging and meaningful work). Submitted automatically after Save and Continue on Voluntary Disclosures."
+
+- job_id: "69cb307e2cceb8c38549a0aa"
+  company: CrowdStrike
+  title: "Sr. Data Scientist, GenAI (Remote, ESP)"
+  location: "Spain (Remote)"
+  applied_on: "2026-04-06"
+  application_method: browser_automated
+  portal: workday
+  notes: "Workday (crowdstrike.wd5). Dry-run then submitted. Source=Job Board>LinkedIn (2-level dropdown, 15+ tool calls on virtual scroll). CV via AppleScript b64. App questions: eligible=Yes, sponsorship=No, conflict=No, AI acknowledgment=Yes. T&C consent only in Voluntary Disclosures."
+
+- job_id: "69cf5d3f12725d7147695f98"
+  company: Zyte
+  title: "Technical Product Manager / Owner - AI - Remote"
+  location: "Lisbon, Portugal (Remote)"
+  applied_on: "2026-04-06"
+  application_method: browser_automated
+  portal: linkedin_easy_apply_workable
+  notes: "LinkedIn Easy Apply powered by Workable. Parallel subagent (92 tool calls). Many custom questions (salary, gender, pronouns, remote exp, English level, dev tools). CV used LinkedIn's stored resume (custom CV upload blocked by browser security in subagent)."
+
+- job_id: "69d08b9612725d71476dc179"
+  company: HR POD Careers
+  title: "Senior AI/ML Engineer (Remote, EST)"
+  location: "Lahore, Pakistan (Remote)"
+  applied_on: "2026-04-06"
+  application_method: browser_automated
+  portal: manatal
+  notes: "Manatal portal (careers-page.com). Shadow DOM (#application-root). Parallel subagent (118 tool calls — over budget). CV placeholder injected (subagent no Bash for AppleScript). Simple form: name, email, phone, CV, consent."
+
+- date: '2026-04-06'
+  time: 15:33 UTC
+  company: Discovered MENA
+  title: Head of AI Engineering
+  job_id: 69cfd4c712725d71476b1470
+  portal: LinkedIn Easy Apply
+  status: applied
+  method: browser_automated
+  cv: Taimoor Alam Resume.pdf (156 KB, job-specific)
+  questions:
+  - 'commute: Yes'
+  - 'onsite: Yes'
+  - 'GenAI to production: Yes'
+
+- date: '2026-04-06'
+  time: 16:09 UTC
+  company: Mark Williams Recruitment
+  title: Director of AI
+  job_id: 69cbe0462cceb8c3854c8556
+  portal: markwilliams.ae
+  status: applied
+  method: user_manual
+- date: '2026-04-06'
+  time: 16:09 UTC
+  company: Siemens Energy
+  title: Staff AI Agent Engineer
+  job_id: 69cf356712725d714768ce27
+  portal: jobs.siemens-energy.com
+  status: applied
+  method: user_manual
+
+- date: '2026-04-06'
+  time: 16:14 UTC
+  company: Databricks
+  title: Head of AI FDE (Forward Deployed Engineering) - APJ
+  job_id: 69c2a5c5b88c137106bcea12
+  portal: Greenhouse
+  status: applied
+  method: browser_automated
+  cv: Taimoor Alam Resume.pdf (155.5 KB)
+
+- date: '2026-04-06'
+  time: 16:15 UTC
+  company: Lansweeper
+  title: Head of AI-Native Product Operations
+  job_id: 69cd86252cceb8c385529dd4
+  portal: careers.lansweeper.com
+  status: applied
+  method: subagent_unauthorized
+  warning: Submitted by subagent without user confirmation — CV likely not attached.
+    Follow up to send CV.
+
+- job_id: "69d2a8fe12725d714775aebb"
+  company: "Fides"
+  title: "GenAI Engineer (Full Remote)"
+  portal: "zinrec.intervieweb.it"
+  applied_on: "2026-04-06"
+  method: "browser_automated"
+  status: "applied"
+
+- job_id: "69ce0bbe2cceb8c385548522"
+  company: "CEiiA"
+  title: "Remote Sensing & Geospatial AI Engineer"
+  portal: "SmartRecruiters (jobs.smartrecruiters.com)"
+  applied_on: "2026-04-06"
+  method: "skipped"
+  status: "skipped"
+  skip_reason: "SmartRecruiters Angular FormArray cannot be committed via JS — company/institution autocomplete requires physical user interaction to select from dropdown. After multiple sessions could not save experience/education entries to Angular model."
+
+- job_id: "69d3d04e12725d71477a2c4f"
+  company: "Confidential"
+  title: "Generative AI Engineer"
+  location: "Dubai, UAE"
+  portal: "linkedin_easy_apply"
+  applied_on: "2026-04-06"
+  method: "browser_automated"
+  status: "applied"
+  notes: "LinkedIn Easy Apply. Shadow DOM. CV injected via AppleScript base64 (155.7KB). Arabic proficiency: None."
+
+- job_id: "69d3278f12725d7147779d49"
+  company: "阿里云计算有限公司 (Alibaba Cloud)"
+  title: "GenAI Solution Architect-Dubai"
+  location: "Dubai, UAE"
+  portal: "linkedin_easy_apply"
+  applied_on: "2026-04-06"
+  method: "browser_automated"
+  status: "applied"
+  notes: "LinkedIn Easy Apply. CV injected via AppleScript base64 (169KB). Questions: Pre-Sales=0yr, Solution Architecture=6yr."

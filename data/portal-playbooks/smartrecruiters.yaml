@@ -1,0 +1,137 @@
+portal: "SmartRecruiters OneClick"
+url_patterns:
+  - "jobs.smartrecruiters.com/oneclick-ui/*"
+  - "jobs.smartrecruiters.com/*/publication/*"
+detect_signal: "oc-app-root or oc-oneclick-form in DOM"
+last_updated: "2026-04-06"
+
+# ─────────────────────────────────────────────
+# AUTOMATION VERDICT: PARTIALLY AUTOMATABLE
+# ─────────────────────────────────────────────
+# Personal info (name, email, phone, links) → fully automatable via JS
+# CV upload → automatable via AppleScript base64
+# Work experience / Education → REQUIRES PHYSICAL USER INTERACTION
+#   because company/institution fields use OC-COMPANY-AUTOCOMPLETE /
+#   OC-INSTITUTION-AUTOCOMPLETE which require selecting from a live dropdown.
+#   Native JS value injection does NOT commit to Angular FormArray.
+#
+# RECOMMENDED STRATEGY: Ask user to manually add 1 experience + 1 education entry,
+# then automate the rest (profiles section, message, submit).
+
+# ─────────────────────────────────────────────
+# ARCHITECTURE
+# ─────────────────────────────────────────────
+# Framework: Angular (Ivy, production mode — ng.getComponent returns null)
+# Custom elements (no shadow DOM, light DOM Angular components):
+#   OC-APP-ROOT, OC-ONECLICK-FORM, OC-EXPERIENCE, OC-EDUCATION
+#   OC-EXPERIENCE-EDIT-FORM, OC-EDUCATION-EDIT-FORM
+#   OC-COMPANY-AUTOCOMPLETE, OC-INSTITUTION-AUTOCOMPLETE
+#   OC-JOB-TITLE-AUTOCOMPLETE, OC-DATEPICKER
+# SPL elements (shadow DOM with open roots):
+#   SPL-INPUT, SPL-BUTTON, SPL-DATE-FIELD, SPL-AUTOCOMPLETE
+#   SPL-FORM-FIELD, SPL-CHECKBOX
+# Buttons: OC-BUTTON and SPL-BUTTON (NOT standard <button> elements)
+#   → querySelector('button') finds nothing inside form
+#   → Use: document.querySelectorAll('oc-button, spl-button')
+
+# ─────────────────────────────────────────────
+# KNOWN ISSUES
+# ─────────────────────────────────────────────
+known_issues:
+  - "OC-BUTTON / SPL-BUTTON — standard querySelector('button') finds nothing. Use querySelectorAll('oc-button, spl-button')"
+  - "Angular FormArray not updatable via JS — company/institution autocomplete requires real DOM interaction (click → type → select option). Native setter does not commit to FormArray."
+  - "SPL-DATE-FIELD contains TWO inputs: type=text ('2020-01-01') and type=number (year '2020'). Must set BOTH + dispatch blur. Datepicker becomes ng-valid visually but FormArray still requires Save button click to commit."
+  - "ng.getComponent() returns null in production mode — cannot access component instances for FormArray manipulation"
+  - "Cancel button closes the form but does NOT remove the displayed entry (profile display is separate from FormArray)"
+  - "Clicking Next triggers validation and re-opens any forms with validation errors"
+  - "CV upload verification: input.files is ALWAYS 0 (Angular stores file in component state). Correct check: document.body.innerText.includes('Taimoor Alam Resume.pdf')"
+
+# ─────────────────────────────────────────────
+# CV UPLOAD (AppleScript base64 — VERIFIED WORKING)
+# ─────────────────────────────────────────────
+cv_upload_method: "appleScript_base64"
+cv_upload_notes: |
+  File input is in light DOM: document.querySelector('input[name^="file-upload"]')
+  OR inside oc-resume-upload light DOM.
+
+  Python script (run via Bash):
+    import base64, subprocess
+    with open('/tmp/apply-jobs/{company}_{job_id}/resume.pdf', 'rb') as f:
+        b64 = base64.b64encode(f.read()).decode()
+    js = """(function() {
+      var b64 = '""" + b64 + """';
+      var bin = atob(b64); var bytes = new Uint8Array(bin.length);
+      for (var i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var blob = new Blob([bytes], {type:'application/pdf'});
+      var file = new File([blob], 'Taimoor Alam Resume.pdf', {type:'application/pdf'});
+      var dt = new DataTransfer(); dt.items.add(file);
+      var inp = document.querySelector('input[type="file"]');
+      try { inp.files = dt.files; } catch(e) {
+        Object.defineProperty(inp, 'files', {value: dt.files, writable:true, configurable:true});
+      }
+      inp.dispatchEvent(new Event('change', {bubbles:true}));
+      return 'INJECTED: ' + file.name;
+    })()"""
+    js_e = js.replace('\\','\\\\').replace('"','\\"')
+    asc = f'tell application "Google Chrome"\n  repeat with w in windows\n    repeat with t in tabs of w\n      if URL of t contains "smartrecruiters.com" then\n        return execute t javascript "{js_e}"\n      end if\n    end repeat\n  end repeat\nend tell'
+    r = subprocess.run(['osascript','-e',asc], capture_output=True, text=True, timeout=30)
+    print(r.stdout)
+
+cv_verify: |
+  # CORRECT verification — check body text, NOT input.files (always 0 in Angular):
+  document.body.innerText.includes('Taimoor Alam Resume.pdf')
+
+# ─────────────────────────────────────────────
+# PERSONAL INFO BATCH FILL (JS — works)
+# ─────────────────────────────────────────────
+batch_fill_scripts:
+  personal_info: |
+    (function() {
+      function deepQueryAll(root, sel, res=[]) {
+        root.querySelectorAll(sel).forEach(e => res.push(e));
+        root.querySelectorAll('*').forEach(e => { if(e.shadowRoot) deepQueryAll(e.shadowRoot,sel,res); });
+        return res;
+      }
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+      const tSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
+      function fill(el, val) {
+        if(!el) return;
+        if(el.tagName==='TEXTAREA') tSetter.call(el,val);
+        else setter.call(el,val);
+        el.dispatchEvent(new Event('input',{bubbles:true}));
+        el.dispatchEvent(new Event('change',{bubbles:true}));
+        el.dispatchEvent(new Event('blur',{bubbles:true}));
+      }
+      const filled=[], errors=[];
+      // Personal info
+      const fn = document.getElementById('first-name-input'); fill(fn,'Taimoor'); if(fn) filled.push('first_name');
+      const ln = document.getElementById('last-name-input'); fill(ln,'Alam'); if(ln) filled.push('last_name');
+      const em = document.getElementById('email-input'); fill(em,'alamtaimoor.de@gmail.com'); if(em) filled.push('email');
+      const em2 = document.getElementById('confirm-email-input'); fill(em2,'alamtaimoor.de@gmail.com'); if(em2) filled.push('confirm_email');
+      // LinkedIn
+      const li = document.getElementById('linkedin-input'); fill(li,'https://linkedin.com/in/taimooralam'); if(li) filled.push('linkedin');
+      const ws = document.getElementById('website-input'); fill(ws,'https://taimooralam.com'); if(ws) filled.push('website');
+      return JSON.stringify({filled, errors, needs_physical: ['phone_country_code']});
+    })()
+
+# ─────────────────────────────────────────────
+# EXPERIENCE / EDUCATION — REQUIRES PHYSICAL INTERACTION
+# ─────────────────────────────────────────────
+experience_education_protocol: |
+  SmartRecruiters Angular FormArray CANNOT be populated via JS alone.
+
+  REQUIRED: Ask user to manually add at least 1 experience and 1 education entry:
+  "Please add at least 1 work experience entry (click Add, type company in search box,
+   select from dropdown, fill dates, click Save) and 1 education entry, then say 'done'."
+
+  After user confirms, click Next button to advance form.
+
+  HOW TO FIND BUTTONS:
+    const cancelBtns = [...document.querySelectorAll('oc-button')].filter(b => b.textContent.trim() === 'Cancel');
+    const saveBtns = [...document.querySelectorAll('oc-button')].filter(b => b.textContent.trim() === 'Save');
+    const nextBtn = [...document.querySelectorAll('oc-button')].find(b => b.textContent.trim() === 'Next');
+    nextBtn.click();
+
+  HOW TO CANCEL STALE OPEN FORMS:
+    const cancelBtns = [...document.querySelectorAll('oc-button')].filter(b => b.textContent.trim() === 'Cancel');
+    cancelBtns.forEach(b => b.click());

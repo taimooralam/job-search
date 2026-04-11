@@ -1,0 +1,311 @@
+portal: "Greenhouse"
+url_patterns:
+  - "job-boards.greenhouse.io/embed/job_app*"
+  - "boards.greenhouse.io/embed/job_app*"
+  - "boards.greenhouse.io/{company}/jobs/*"
+  - "*.greenhouse.io/*"
+  # Also triggered when company site URL contains ?gh_jid= — navigate directly to boards.greenhouse.io
+apply_button_selector: "button[type='submit'], input[type='submit']"
+submit_button_selector: "button[type='submit'].btn.btn--rectangle"
+form_id: null  # no stable form id; use document.querySelector('form')
+file_upload_method: "base64_inject_appleascript"
+login_required: false
+multi_step: false
+last_updated: "2026-04-05"
+
+# ─────────────────────────────────────────────
+# URL RESOLUTION
+# ─────────────────────────────────────────────
+# LinkedIn apply links look like:
+#   https://www.linkedin.com/safety/go/?url=https%3A%2F%2Fwww.thoughtworks.com%2Fen-gb%2Fjobs%2F...%3Fgh_jid%3D7423707
+# Extract gh_jid value → navigate directly to:
+#   https://job-boards.greenhouse.io/embed/job_app?for=thoughtworks&token=7423707
+# company slug = lowercased company name without spaces (e.g. "thoughtworks", "spendesk", "personio")
+#
+# Sometimes the LinkedIn URL resolves to an embed on a company careers page.
+# The company page has an <iframe id="grnhse_iframe"> or ?gh_jid= in URL.
+# Extract token from iframe src or ?gh_jid= and navigate directly to boards.greenhouse.io.
+
+# ─────────────────────────────────────────────
+# KNOWN ISSUES
+# ─────────────────────────────────────────────
+known_issues:
+  - "Resume file input has id='cover_letter' — misleading name, but IS the resume input"
+  - "Page goes blank in screenshots when scrolled — use ref-based clicks (computer tool ref=) not coordinate-based"
+  - "React-Select dropdowns do NOT open via JS .click() alone — must use computer tool left_click with ref= to physically click the container, then JS to select option"
+  - "reCAPTCHA v2 present — must be solved manually by user"
+  - "Email verification step appears after CAPTCHA — 8-char code sent to applicant email; 8 separate maxlength=1 inputs (security-input-0 through security-input-7); user must check email and enter code manually"
+  - "PNA blocks localhost fetch from HTTPS pages — use AppleScript base64 injection for CV upload"
+  - "candidate-location uses Google Places autocomplete — type city name, wait 1-2s for dropdown, click first option OR let react-select fill from profile"
+  - "intl-tel-input for phone country (iti-0__search-input) — set phone directly in #phone without touching country select"
+
+# ─────────────────────────────────────────────
+# STANDARD FIELD MAPPING
+# ─────────────────────────────────────────────
+field_mapping:
+  first_name:
+    selector: "#first_name"
+    method: native_setter
+    profile_key: first_name
+
+  last_name:
+    selector: "#last_name"
+    method: native_setter
+    profile_key: last_name
+
+  email:
+    selector: "#email"
+    method: native_setter
+    profile_key: email
+
+  phone:
+    selector: "#phone"
+    method: native_setter
+    profile_key: phone_full  # e.g. "+49 176 29793925" — set directly, don't touch country dropdown
+
+  location:
+    selector: "#candidate-location"
+    method: react_select_or_type
+    profile_key: location_city  # e.g. "Munich, Germany"
+    note: "Type the city name, autocomplete should populate; or use computer tool to type + click first suggestion"
+
+  resume:
+    selector: "input[type='file']"  # id=cover_letter (misleading)
+    method: base64_appleascript
+    note: "See CV Upload section below"
+
+# ─────────────────────────────────────────────
+# CUSTOM QUESTIONS (vary per job/company)
+# ─────────────────────────────────────────────
+# Custom question IDs change per job posting. Discover them at runtime:
+#   document.querySelectorAll('[id^="question_"]') → get IDs and labels
+# Common patterns:
+#   - Text input:    #question_{ID}  → native_setter
+#   - React-Select:  #question_{ID}  → react_select (combobox role)
+#   - Checkbox:      input[name="question_{ID}[]"]  → .click()
+#   - Textarea:      textarea[id^="question_"]  → textarea_setter
+#
+# Discovery script (run at form load):
+#   [...document.querySelectorAll('[id^="question_"]')].map(el => ({
+#     id: el.id, tag: el.tagName, type: el.type,
+#     label: document.querySelector('label[for="'+el.id+'"]')?.textContent?.replace(/\*/g,'').trim(),
+#     isReactSelect: !!el.closest('[class*="-container"]')
+#   }))
+
+# ─────────────────────────────────────────────
+# BATCH FILL SCRIPTS (one JS call fills ALL fields per step)
+# ─────────────────────────────────────────────
+batch_fill_scripts:
+  main_form: |
+    (function batchFillGreenhouse() {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      const textSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+      const results = {filled: [], needs_physical: [], errors: []};
+
+      function fill(sel, val) {
+        const el = document.querySelector(sel);
+        if (!el) { results.errors.push(sel); return; }
+        const s = el.tagName === 'TEXTAREA' ? textSetter : setter;
+        s.call(el, val);
+        el.dispatchEvent(new Event('input', {bubbles:true}));
+        el.dispatchEvent(new Event('change', {bubbles:true}));
+        results.filled.push(sel);
+      }
+
+      // Standard fields
+      fill('#first_name', 'Taimoor');
+      fill('#last_name', 'Alam');
+      fill('#email', 'alamtaimoor.de@gmail.com');
+      fill('#phone', '+49 176 29793925');
+      fill('#candidate-location', 'Munich, Germany');
+
+      // Discover custom questions
+      const questions = [...document.querySelectorAll('[id^="question_"]')].map(el => ({
+        id: el.id, tag: el.tagName, type: el.type,
+        label: document.querySelector('label[for="'+el.id+'"]')?.textContent?.replace(/\s*\*/g,'').trim(),
+        isReactSelect: !!el.closest('[class*="-container"]')
+      }));
+
+      // Match text questions against common patterns and fill inline
+      for (const q of questions) {
+        if (q.isReactSelect) continue;
+        const l = (q.label || '').toLowerCase();
+        let val = null;
+        if (l.includes('city') || l.includes('location')) val = 'Munich';
+        else if (l.includes('state') || l.includes('province')) val = 'Bavaria';
+        else if (l.includes('country')) val = 'Germany';
+        else if (l.includes('how did you hear') || l.includes('source')) val = 'LinkedIn';
+        else if (l.includes('linkedin')) val = 'https://linkedin.com/in/taimooralam';
+        else if (l.includes('github')) val = 'https://github.com/taimooralam';
+        else if (l.includes('website') || l.includes('portfolio')) val = 'https://taimooralam.com';
+        if (val) fill('#'+q.id, val);
+        else results.needs_physical.push({field: q.id, label: q.label, method: 'text'});
+      }
+
+      // React-Select dropdowns need physical click to open
+      questions.filter(q => q.isReactSelect).forEach(q => {
+        results.needs_physical.push({field: q.id, label: q.label, method: 'react_select'});
+      });
+
+      return JSON.stringify(results);
+    })()
+
+# ─────────────────────────────────────────────
+# STEP-BY-STEP JS AUTOMATION
+# ─────────────────────────────────────────────
+automation_script: |
+  // ═══════════════════════════════════════════
+  // STEP 1: Fill standard text inputs
+  // ═══════════════════════════════════════════
+  const inputSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  const textareaSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+
+  function fillInput(selector, value) {
+    const el = document.querySelector(selector);
+    if (!el) return 'NOT FOUND: ' + selector;
+    const setter = el.tagName === 'TEXTAREA' ? textareaSetter : inputSetter;
+    setter.call(el, value);
+    el.dispatchEvent(new Event('input',  { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return 'filled: ' + selector;
+  }
+
+  fillInput('#first_name', 'Taimoor');
+  fillInput('#last_name', 'Alam');
+  fillInput('#email', 'alamtaimoor.de@gmail.com');
+  fillInput('#phone', '+49 176 29793925');
+  fillInput('#candidate-location', 'Munich, Germany');
+
+  // Custom text questions (update IDs per job):
+  // fillInput('#question_XXXXXXX', 'Munich');   // City
+  // fillInput('#question_XXXXXXX', 'Bavaria');  // State
+  // fillInput('#question_XXXXXXX', 'Germany');  // Country
+  // fillInput('#question_XXXXXXX', 'LinkedIn'); // How did you hear
+
+  'Text inputs filled';
+
+  // ═══════════════════════════════════════════
+  // STEP 2: Fill React-Select dropdowns
+  // ═══════════════════════════════════════════
+  // Must use computer tool (physical click) to OPEN the menu:
+  //   1. computer left_click ref=<ref of combobox from read_page>
+  //   2. Check menu is open: document.querySelector('[class*="-menu"]') !== null
+  //   3. Click option by text:
+  //      [...document.querySelectorAll('[class*="-option"]')]
+  //        .find(o => o.textContent.trim() === 'TARGET_TEXT')?.click()
+  //
+  // Dropdown option sets (observed in Thoughtworks job):
+  //   Singapore residency: ["Singapore Citizen", "Singapore Permanent Resident", "Other"]
+  //   Worked at Thoughtworks: ["Yes", "No"]
+
+  // ═══════════════════════════════════════════
+  // STEP 3: Checkboxes
+  // ═══════════════════════════════════════════
+  // Acknowledge / consent checkboxes:
+  //   document.querySelector('input[type="checkbox"]').click()
+  // Or by name pattern:
+  //   document.querySelector('input[name^="question_"][type="checkbox"]').click()
+
+  // ═══════════════════════════════════════════
+  // STEP 4: Discover remaining custom questions
+  // ═══════════════════════════════════════════
+  // Run this to see all question fields and their types:
+  JSON.stringify([...document.querySelectorAll('[id^="question_"]')].map(el => ({
+    id: el.id,
+    tag: el.tagName,
+    type: el.type || null,
+    label: document.querySelector('label[for="'+el.id+'"]')?.textContent?.replace(/\s*\*/g,'').trim(),
+    isSelect: !!el.closest('[class*="-container"]'),
+    currentValue: el.value || el.closest('[class*="-container"]')?.querySelector('[class*="-singleValue"]')?.textContent?.trim()
+  })));
+
+# ─────────────────────────────────────────────
+# CV UPLOAD — AppleScript Base64 Injection
+# ─────────────────────────────────────────────
+cv_upload: |
+  # Run this Python block via Bash tool (not JS tool — base64 too large for JS text param):
+
+  import base64, subprocess
+
+  with open('/tmp/apply-jobs-server/resume.pdf', 'rb') as f:
+      b64 = base64.b64encode(f.read()).decode()
+
+  js = """(function() {
+    var b64 = '""" + b64 + """';
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var blob = new Blob([bytes], {type: 'application/pdf'});
+    var file = new File([blob], 'Taimoor Alam Resume.pdf', {type: 'application/pdf'});
+    var dt = new DataTransfer();
+    dt.items.add(file);
+    var input = document.querySelector('input[type="file"]');
+    try { input.files = dt.files; } catch(e) {
+      Object.defineProperty(input, 'files', {value: dt.files, writable: true, configurable: true});
+    }
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+    input.dispatchEvent(new Event('input',  {bubbles: true}));
+    return 'INJECTED: ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+  })()"""
+
+  js_escaped = js.replace('\\', '\\\\').replace('"', '\\"')
+  applescript = f'''tell application "Google Chrome"
+      repeat with w in windows
+          repeat with t in tabs of w
+              if URL of t contains "greenhouse.io" then
+                  return execute t javascript "{js_escaped}"
+              end if
+          end repeat
+      end repeat
+  end tell'''
+
+  result = subprocess.run(['osascript', '-e', applescript], capture_output=True, text=True, timeout=30)
+  print(result.stdout)  # Should print: INJECTED: Taimoor Alam Resume.pdf (XXX KB)
+
+  # REQUIRES: Chrome > View > Developer > Allow JavaScript from Apple Events (one-time toggle)
+  # VERIFY: document.querySelector('.file-upload__filename p')?.textContent === 'Taimoor Alam Resume.pdf'
+
+# ─────────────────────────────────────────────
+# EMAIL VERIFICATION (post-CAPTCHA)
+# ─────────────────────────────────────────────
+email_verification: |
+  # After solving reCAPTCHA, Greenhouse sends an 8-char verification code to the applicant's email.
+  # The form shows: "A verification code was sent to {email}. Enter the 8-character code."
+  # 8 separate inputs: #security-input-0 through #security-input-7, each maxlength=1
+  # This is a MANUAL step — user must check email, read the 8-char code, then type it in.
+  # The code does NOT auto-fill. Always pause and ask user to enter it.
+  #
+  # Check current fill state:
+  #   [...document.querySelectorAll('[id^="security-input-"]')].map(i => i.value).join('')
+  #
+  # To fill programmatically (if not auto-filled):
+  #   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  #   const code = 'ABCD1234';  // 8-char code from email
+  #   [...document.querySelectorAll('[id^="security-input-"]')].forEach((inp, i) => {
+  #     setter.call(inp, code[i]);
+  #     inp.dispatchEvent(new Event('input', {bubbles: true}));
+  #     inp.dispatchEvent(new Event('change', {bubbles: true}));
+  #   });
+  #
+  # Human-in-the-loop trigger: Ask user to check email and provide the 8-char code.
+  # Then fill programmatically using the setter script above, OR ask user to type it manually.
+
+# ─────────────────────────────────────────────
+# SUBMIT
+# ─────────────────────────────────────────────
+submit: |
+  # Confirm all fields look correct, CAPTCHA solved, email code entered, then:
+  #   document.querySelector('button[type="submit"]').scrollIntoView();
+  #   const r = document.querySelector('button[type="submit"]').getBoundingClientRect();
+  #   // Use computer tool: left_click at [r.left + r.width/2, r.top + r.height/2]
+  #
+  # Success indicator: URL changes to /confirmation or page shows "Application submitted" message
+  # Or use computer tool with ref= from read_page for the Submit button.
+
+# ─────────────────────────────────────────────
+# POST-SUBMIT SUCCESS CHECK
+# ─────────────────────────────────────────────
+success_indicators:
+  - "URL contains '/confirmation'"
+  - "Page text contains 'Application submitted' or 'Thank you for applying'"
+  - "Submit button disappears from DOM"

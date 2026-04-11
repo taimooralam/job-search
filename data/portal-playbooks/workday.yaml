@@ -1,0 +1,466 @@
+portal: "Workday"
+url_patterns:
+  - "*.wd1.myworkdayjobs.com/*"
+  - "*.wd3.myworkdayjobs.com/*"
+  - "*.wd5.myworkdayjobs.com/*"
+detect_signal: "URL contains .wd1. / .wd3. / .wd5. myworkdayjobs.com"
+login_required: true  # Each company has its own Workday tenant — user must sign in manually per domain
+multi_step: true
+last_updated: "2026-04-06"
+
+# ─────────────────────────────────────────────
+# KNOWN INSTANCES
+# ─────────────────────────────────────────────
+known_instances:
+  - domain: "alcoa.wd5.myworkdayjobs.com"
+    company: Alcoa
+    steps: 5  # My Information, My Experience, Application Questions, Voluntary Disclosures, Review
+  - domain: "csgi.wd5.myworkdayjobs.com"
+    company: CSG
+    steps: 5
+  - domain: "iqvia.wd1.myworkdayjobs.com"
+    company: IQVIA
+    steps: 6  # Autofill with Resume, My Information, My Experience, Application Questions, Voluntary Disclosures, Review
+
+# ─────────────────────────────────────────────
+# STANDARD FLOW
+# ─────────────────────────────────────────────
+# Step 1: My Information  — name, email, phone, address, source ("How did you hear about us?")
+# Step 2: My Experience   — work history, education, CV upload (REQUIRED — blocks Save if missing)
+# Step 3: Application Questions — job-specific yes/no questions, location, salary, notice period
+# Step 4: Voluntary Disclosures — gender, disability, veteran (US portals); or just T&C consent (EU portals)
+# Step 5: Review + Submit
+
+# ─────────────────────────────────────────────
+# CRITICAL: DROPDOWN STRATEGY
+# ─────────────────────────────────────────────
+dropdown_strategy: |
+  Workday uses two types of dropdowns. Use DIFFERENT methods for each:
+
+  TYPE A — Single-select (Yes/No, degree, gender, notice period, etc.):
+    1. computer left_click ref=<button_ref>  ← opens the listbox
+    2. JS: Array.from(document.querySelectorAll('[role="option"]')).find(o => o.textContent.trim() === 'TARGET').click()
+    → Closes automatically after selection. Fast and reliable.
+
+  TYPE B — Multi-select / source field ("How Did You Hear About Us?"):
+    The source field is a TWO-LEVEL hierarchy:
+      Level 1: Category (e.g., "Job Boards / Social Media")
+      Level 2: Specific platform (e.g., "LinkedIn")
+    CRITICAL: JS .click() on [role="option"] does NOT register in React state for this widget.
+    Must use PHYSICAL CLICKS via computer tool:
+    1. computer left_click ref=<search_textbox_in_group>  ← opens level-1 list
+    2. computer left_click ref=<category_option>           ← opens level-2 sub-list
+    3. computer left_click ref=<specific_option>           ← selects value
+    Verification: document.body.innerText should contain "Minimized LinkedIn" (or chosen value)
+    → Default answer: always select LinkedIn via this 2-level path.
+
+  TYPE C — Consent checkbox (Voluntary Disclosures):
+    It is type="checkbox" NOT a button.
+    1. computer left_click ref=<checkbox_ref>
+    OR: document.querySelector('input[type="checkbox"]').click()
+    Check checked=true to verify.
+
+# ─────────────────────────────────────────────
+# STEP 1: MY INFORMATION — FIELD MAPPING
+# ─────────────────────────────────────────────
+my_information:
+  first_name:
+    selector: "input[data-automation-id='legalNameSection_firstName']"
+    fallback: "first visible input after Legal Name heading"
+    method: native_setter + input/change events
+
+  last_name:
+    selector: "input[data-automation-id='legalNameSection_lastName']"
+    method: native_setter + input/change events
+
+  family_name_prefix:
+    selector: "id='name--legalName--hereditary'"
+    warning: "Do NOT confuse with source/hear-about button. Use ID to distinguish."
+
+  address_line1:
+    profile_key: address  # "Nawiaskystr. 22"
+    method: native_setter
+
+  city:
+    profile_key: city  # "Munich"
+    method: native_setter
+
+  postal_code:
+    profile_key: postal_code  # "81735"
+    method: native_setter
+
+  country:
+    note: "Usually pre-filled or dropdown. If dropdown, use Type-A strategy."
+
+  phone_country:
+    method: virtual_scroll_physical_click
+    note: |
+      Phone country uses virtual scrolling (~13 options visible at a time).
+      Cannot rely on JS to find option by text — must scroll until visible.
+      To search: find the search input inside the phone country group (textbox with placeholder "Search").
+      Type 'Ger' character by character using keyboard events + native setter per character.
+      Verification: document.querySelector('[aria-label="items selected"]').textContent.trim()
+        → should return "Germany (+49)"
+      The Escape key does NOT close this dropdown — verify via items selected and proceed.
+      Script: /tmp/workday-germany.js has working char-by-char input simulation.
+
+  phone_number:
+    profile_key: phone  # "+49 176 2979 3925"
+    note: "Enter without country code if country already selected: '0176 2979 3925' or '176 2979 3925'"
+
+  how_did_you_hear:
+    type: "TYPE B — multi-select two-level dropdown"
+    default_answer: "LinkedIn"
+    path: "Job Boards / Social Media → LinkedIn"
+    method: "physical computer clicks only — see DROPDOWN STRATEGY TYPE B above"
+
+# ─────────────────────────────────────────────
+# STEP 2: MY EXPERIENCE — CV UPLOAD
+# ─────────────────────────────────────────────
+cv_upload: |
+  CRITICAL: CV upload is REQUIRED. Save and Continue will fail with error if missing.
+  File input selector: input[type="file"] (usually one on the page)
+  Method: AppleScript base64 injection (same as other portals — CORS blocks localhost fetch)
+
+  Python script (run via Bash tool):
+
+  import base64, subprocess
+  with open('/tmp/apply-jobs/{company}_{job_id}/resume.pdf', 'rb') as f:
+      b64 = base64.b64encode(f.read()).decode()
+  js = """(function() {
+    var b64 = '""" + b64 + """';
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var blob = new Blob([bytes], {type: 'application/pdf'});
+    var file = new File([blob], 'Taimoor Alam Resume.pdf', {type: 'application/pdf'});
+    var dt = new DataTransfer();
+    dt.items.add(file);
+    var input = document.querySelector('input[type="file"]');
+    if (!input) return 'NO FILE INPUT FOUND';
+    try { input.files = dt.files; } catch(e) {
+      Object.defineProperty(input, 'files', {value: dt.files, writable: true, configurable: true});
+    }
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    return 'INJECTED: ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+  })()"""
+  js_escaped = js.replace('\\', '\\\\').replace('"', '\\"')
+  applescript = f'''tell application "Google Chrome"
+      repeat with w in windows
+          repeat with t in tabs of w
+              if URL of t contains "myworkdayjobs.com" then
+                  return execute t javascript "{js_escaped}"
+              end if
+          end repeat
+      end repeat
+  end tell'''
+  result = subprocess.run(['osascript', '-e', applescript], capture_output=True, text=True, timeout=30)
+  print(result.stdout)  # Should print: INJECTED: Taimoor Alam Resume.pdf (XXX KB)
+
+  Verification: get_page_text should show "Taimoor Alam Resume.pdf successfully uploaded"
+
+# ─────────────────────────────────────────────
+# STEP 3: APPLICATION QUESTIONS — COMMON FIELDS
+# ─────────────────────────────────────────────
+application_questions:
+  age_18_plus:
+    answer: "Yes"
+    method: "Type-A dropdown"
+
+  legally_authorized_to_work:
+    answer: "Yes"
+    note: "German citizen — no visa needed in EU. For non-EU roles (USA, Gulf, APAC), may need to say Yes with sponsorship."
+
+  visa_sponsorship_required:
+    answer: "No"
+    note: "German national, EU work rights. Never needs sponsorship in EU/EMEA."
+
+  non_compete_agreement:
+    answer: "No"
+
+  current_location:
+    answer: "Munich, Germany"
+    method: "click + type (NOT native_setter alone — React doesn't pick it up)"
+
+  salary_expectation:
+    answer: "1"
+    method: "click + type"
+    warning: "Always use 1 — never enter real salary expectation in ATS fields"
+
+  highest_qualification:
+    answer: "Master's or higher"
+    method: "Type-A dropdown"
+
+  notice_period:
+    answer: "3 calendar months"  # = 90 days, standard German notice period
+    method: "Type-A dropdown"
+    alternatives: ["3 months", "90 days", "3 calendar months"]
+
+  familial_relationship_at_company:
+    answer: "No"
+    method: "Type-A dropdown"
+
+# ─────────────────────────────────────────────
+# BATCH FILL SCRIPTS
+# One javascript_tool call per form step — fills ALL fields at once
+# ─────────────────────────────────────────────
+batch_fill_scripts:
+
+  my_information: |
+    (function() {
+      var filled = [];
+      var needs_physical = [];
+      var errors = [];
+
+      var nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+
+      function fill(selector, value, label) {
+        try {
+          var el = document.querySelector(selector);
+          if (!el) { errors.push('NOT FOUND: ' + label + ' (' + selector + ')'); return; }
+          nativeSetter.call(el, value);
+          el.dispatchEvent(new Event('input',  { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          filled.push(label + '=' + value);
+        } catch(e) {
+          errors.push('ERROR: ' + label + ': ' + e.message);
+        }
+      }
+
+      fill("input[data-automation-id='legalNameSection_firstName']", 'Taimoor',           'first_name');
+      fill("input[data-automation-id='legalNameSection_lastName']",  'Alam',              'last_name');
+      fill("input[data-automation-id='email']",                      'alamtaimoor.de@gmail.com', 'email');
+      fill("input[data-automation-id='phone-number']",               '176 2979 3925',     'phone_number');
+      fill("input[data-automation-id='addressSection_addressLine1']",'Nawiaskystr. 22',   'address_line1');
+      fill("input[data-automation-id='addressSection_city']",        'Munich',            'city');
+      fill("input[data-automation-id='addressSection_postalCode']",  '81735',             'postal_code');
+
+      needs_physical.push('phone_country: virtual-scroll dropdown — type "Ger" char-by-char, verify [aria-label="items selected"] contains "Germany (+49)"');
+      needs_physical.push('source (how_did_you_hear): 2-level physical click — use dropdown_sequences.source_fast (pick first available, dont waste time finding LinkedIn)');
+
+      return JSON.stringify({ filled: filled, needs_physical: needs_physical, errors: errors }, null, 2);
+    })()
+
+  application_questions: |
+    (function() {
+      var filled = [];
+      var needs_physical = [];
+      var errors = [];
+
+      var nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+
+      var question_cache = [
+        { pattern: /age.*18|18.*older/i,          type: 'dropdown', answer: 'Yes'                  },
+        { pattern: /legally.*authoriz|work.*auth/i, type: 'dropdown', answer: 'Yes'                 },
+        { pattern: /visa.*sponsor|sponsor.*visa/i,  type: 'dropdown', answer: 'No'                  },
+        { pattern: /non.?compete/i,                type: 'dropdown', answer: 'No'                   },
+        { pattern: /location|city.*based|where.*located/i, type: 'text', answer: 'Munich, Germany'  },
+        { pattern: /salary|compensation|expect/i,  type: 'text',    answer: '1'                     },
+        { pattern: /qualif|degree|education/i,     type: 'dropdown', answer: "Master's or higher"   },
+        { pattern: /notice.*period|available.*start/i, type: 'dropdown', answer: '3 calendar months'},
+        { pattern: /famili|relat.*employ|employ.*relat/i, type: 'dropdown', answer: 'No'            }
+      ];
+
+      function fillDropdownTypeA(buttonEl, target, label) {
+        try {
+          buttonEl.click();
+          var opt = Array.from(document.querySelectorAll('[role="option"]'))
+                        .find(function(o) { return o.textContent.trim() === target; });
+          if (opt) {
+            opt.click();
+            filled.push(label + '=' + target);
+          } else {
+            needs_physical.push(label + ': option "' + target + '" not found in listbox');
+          }
+        } catch(e) {
+          errors.push('ERROR dropdown ' + label + ': ' + e.message);
+        }
+      }
+
+      function fillText(inputEl, value, label) {
+        try {
+          nativeSetter.call(inputEl, value);
+          inputEl.dispatchEvent(new Event('input',  { bubbles: true }));
+          inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+          filled.push(label + '=' + value);
+        } catch(e) {
+          errors.push('ERROR text ' + label + ': ' + e.message);
+        }
+      }
+
+      var groups = document.querySelectorAll('[data-automation-id="formField"], [role="group"], .css-1l2i2c5');
+      if (!groups.length) groups = document.querySelectorAll('div[data-automation-id]');
+
+      groups.forEach(function(group) {
+        var labelEl = group.querySelector('label, [data-automation-id="questionText"], legend');
+        if (!labelEl) return;
+        var labelText = labelEl.textContent.trim();
+
+        var match = null;
+        for (var i = 0; i < question_cache.length; i++) {
+          if (question_cache[i].pattern.test(labelText)) { match = question_cache[i]; break; }
+        }
+        if (!match) { needs_physical.push('UNMATCHED question: ' + labelText.substring(0, 80)); return; }
+
+        if (match.type === 'dropdown') {
+          var btn = group.querySelector('button[aria-haspopup="listbox"], button[data-automation-id]');
+          if (btn) {
+            fillDropdownTypeA(btn, match.answer, labelText.substring(0, 40));
+          } else {
+            needs_physical.push(labelText.substring(0, 60) + ': no listbox button found');
+          }
+        } else {
+          var inp = group.querySelector('input[type="text"], input:not([type])');
+          if (inp) {
+            fillText(inp, match.answer, labelText.substring(0, 40));
+          } else {
+            needs_physical.push(labelText.substring(0, 60) + ': no text input found');
+          }
+        }
+      });
+
+      return JSON.stringify({ filled: filled, needs_physical: needs_physical, errors: errors }, null, 2);
+    })()
+
+  voluntary_disclosures: |
+    (function() {
+      var filled = [];
+      var needs_physical = [];
+      var errors = [];
+
+      try {
+        var genderBtns = Array.from(document.querySelectorAll('button[aria-haspopup="listbox"]'))
+          .filter(function(b) {
+            var group = b.closest('[role="group"]') || b.closest('[data-automation-id="formField"]') || b.parentElement;
+            return group && /gender/i.test(group.textContent);
+          });
+
+        if (genderBtns.length) {
+          genderBtns[0].click();
+          var maleOpt = Array.from(document.querySelectorAll('[role="option"]'))
+                             .find(function(o) { return o.textContent.trim() === 'Male'; });
+          if (maleOpt) {
+            maleOpt.click();
+            filled.push('gender=Male');
+          } else {
+            needs_physical.push('gender: "Male" option not found in listbox — open dropdown and click manually');
+          }
+        } else {
+          needs_physical.push('gender: no listbox button found — check page structure');
+        }
+      } catch(e) {
+        errors.push('ERROR gender: ' + e.message);
+      }
+
+      needs_physical.push('consent_checkbox: type=checkbox — use computer left_click ref= or JS input[type="checkbox"].click()');
+
+      return JSON.stringify({ filled: filled, needs_physical: needs_physical, errors: errors }, null, 2);
+    })()
+
+# ─────────────────────────────────────────────
+# DROPDOWN SEQUENCES
+# Deterministic step-by-step sequences for problematic dropdowns
+# ─────────────────────────────────────────────
+dropdown_sequences:
+
+  source_fast:
+    description: "PREFERRED — pick first available sub-option in any category. User doesn't care about exact value."
+    max_tool_calls: 5
+    steps:
+      1: "click search textbox (id='source--source' or find via read_page) to open level-1 categories"
+      2: "JS: get first category coordinates — var cat = document.querySelectorAll('[role=\"option\"]')[1]; var r = cat.getBoundingClientRect(); [r.right - 15, r.top + r.height/2]"
+      3: "computer left_click at category arrow coordinates — opens sub-menu"
+      4: "JS: get first sub-option coordinates — var opt = document.querySelectorAll('[role=\"option\"]')[1]; opt.scrollIntoView({block:'center'}); var r = opt.getBoundingClientRect(); [r.left + r.width/2, r.top + r.height/2]"
+      5: "computer left_click at sub-option coordinates — selects value"
+    verify: "source group innerText shows '1 item selected'"
+    note: "This is the DEFAULT. The source field is the least important field — any value works. Do NOT waste time scrolling to find LinkedIn specifically."
+
+  source_linkedin_slow:
+    description: "Select 'LinkedIn' specifically (ONLY if user explicitly requests it). Slow — requires virtual scrolling."
+    max_tool_calls: 8
+    steps:
+      1: "click search textbox to open level-1 categories"
+      2: "JS: find 'Job Board' option coordinates, click its > arrow"
+      3: "ArrowDown x15 to scroll virtual list until LinkedIn visible"
+      4: "JS: linkedin.scrollIntoView({block:'center'}), get viewport coords"
+      5: "computer left_click at LinkedIn coordinates (MUST be in viewport — y < window.innerHeight)"
+    verify: "source group innerText shows '1 item selected, LinkedIn'"
+    note: "This is SLOW. Use source_fast instead unless specifically asked for LinkedIn."
+
+  phone_country_germany:
+    description: "Select 'Germany (+49)' in the phone country virtual-scroll dropdown"
+    max_tool_calls: 3
+    steps:
+      1: |
+        javascript_tool — char-by-char input simulation:
+        (function() {
+          var searchInput = Array.from(document.querySelectorAll('input[placeholder="Search"], input[type="search"]'))
+            .find(function(el) {
+              var grp = el.closest('[data-automation-id="phone"], [data-automation-id="phoneSection"]') || el.closest('div');
+              return grp && /phone|country/i.test(grp.getAttribute('data-automation-id') || grp.className || '');
+            });
+          if (!searchInput) return 'SEARCH INPUT NOT FOUND';
+          var nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+          ['G','e','r'].forEach(function(ch) {
+            nativeSetter.call(searchInput, searchInput.value + ch);
+            searchInput.dispatchEvent(new KeyboardEvent('keydown',  { key: ch, bubbles: true }));
+            searchInput.dispatchEvent(new Event('input',  { bubbles: true }));
+            searchInput.dispatchEvent(new KeyboardEvent('keyup',    { key: ch, bubbles: true }));
+          });
+          return 'TYPED: Ger into ' + (searchInput.placeholder || searchInput.getAttribute('aria-label') || 'search input');
+        })()
+      2: "computer left_click ref={'Germany (+49)' option visible in filtered list}"
+      3: "verify: javascript_tool — document.querySelector('[aria-label=\"items selected\"]').textContent.trim() — must contain 'Germany (+49)'"
+
+# ─────────────────────────────────────────────
+# STEP 4: VOLUNTARY DISCLOSURES
+# ─────────────────────────────────────────────
+voluntary_disclosures:
+  gender: "Male"
+  disability: "No"
+  sexual_orientation: "Prefer not to say"
+  veteran_status: "Not a protected US veteran"
+  note: |
+    US-based Workday portals (e.g., Alcoa) have full EEO questions (gender, disability, veteran).
+    EU-based portals (e.g., IQVIA Spain, CSG Portugal) may only have gender + T&C consent,
+    or just T&C consent only.
+    Always check page content — do not assume all EEO fields are present.
+
+  terms_and_conditions:
+    method: "checkbox click — input[type='checkbox'] or ref from read_page"
+    note: "T&C consent is type='checkbox' NOT a button. Use computer left_click ref= or JS .click()"
+
+# ─────────────────────────────────────────────
+# KNOWN ISSUES
+# ─────────────────────────────────────────────
+known_issues:
+  - "Source field (How Did You Hear): JS .click() on [role=option] does NOT register React state — must use physical computer left_click ref= for BOTH level-1 category AND level-2 option"
+  - "Source field is a 2-level dropdown: first click category (e.g. 'Job Boards / Social Media'), then click sub-option (e.g. 'LinkedIn')"
+  - "Family name prefix button and source button both show 'Select One' — use element ID to distinguish: id='name--legalName--hereditary' for prefix"
+  - "Phone country uses virtual scrolling — type 'Ger' char-by-char with keyboard events to filter, then verify via [aria-label='items selected']"
+  - "Escape key does NOT close phone country dropdown — verify selection and proceed anyway"
+  - "CV upload is REQUIRED in My Experience — Save will error if missing"
+  - "Text inputs (location, salary) need click + type, NOT native_setter alone — React state does not update from setter without focus"
+  - "T&C consent is a type='checkbox' NOT a button — do not look for it in read_page interactive buttons"
+  - "Salary: ALWAYS enter 1 — never enter real salary expectation"
+  - "IQVIA submitted automatically after Voluntary Disclosures Save and Continue (no separate Submit click needed on some portals — check page URL for 'completed/application')"
+
+# ─────────────────────────────────────────────
+# SUCCESS INDICATORS
+# ─────────────────────────────────────────────
+success_indicators:
+  - "Tab title changes to 'Candidate Home'"
+  - "URL contains '/jobTasks/completed/application'"
+  - "Page shows 'Application Submitted — Thank you for your application!'"
+  - "Page shows 'You have no more tasks.'"
+
+# ─────────────────────────────────────────────
+# SUBMIT
+# ─────────────────────────────────────────────
+submit: |
+  On the Review page, find the Submit button:
+    read_page filter=interactive → look for button "Submit" or "Submit Application"
+    computer left_click ref=<submit_ref>
+  Some portals (IQVIA) submit automatically when Save and Continue is clicked on Voluntary Disclosures.
+  Always verify post-submit by checking URL for 'completed/application'.

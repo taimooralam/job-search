@@ -1,0 +1,189 @@
+# Applicant Profile — Source of truth for form auto-fill
+# This file grows over time as new questions are encountered
+
+personal:
+  full_name: "Taimoor Alam"
+  first_name: "Taimoor"
+  last_name: "Alam"
+  email: "alamtaimoor.de@gmail.com"
+  phone: "+49 176 2979 3925"
+  location: "Munich, Germany"
+  city: "Munich"
+  country: "Germany"
+  street: "Nawiaskystr."
+  house_number: "22"
+  postcode: "81735"
+  nationality: "German"
+  linkedin: "https://linkedin.com/in/taimooralam"
+  github: "https://github.com/taimooralam"
+  website: "https://taimooralam.com"
+
+work_authorization:
+  eu_work_right: true
+  visa_sponsorship_needed: false  # No for EU/EMEA roles (German citizen); Yes for non-EU (USA, Gulf, APAC)
+  willing_to_relocate: true
+  relocation_note: "Open to relocation for the right opportunity"
+
+professional:
+  years_experience: 10
+  current_title: "Technical Lead"
+  current_company: "Seven.One Entertainment Group (ProSiebenSat.1)"
+  notice_period: "3 months"
+  education_degree: "M.Sc. Computer Science"
+  education_institution: "Technical University of Munich"
+
+salary:
+  expectation: "negotiable"
+  currency: "EUR"
+  note: "Open to discussion based on total compensation package"
+  mandatory_field_value: "1"  # Use "1" in required salary fields to avoid locking in a number
+
+preferences:
+  remote_preference: "hybrid or remote"
+  employment_type: "permanent"
+  languages: "English (C1), German (B1), Urdu (Native)"
+
+voluntary_disclosures:
+  gender: "Male"
+  disability: "No"
+  sexual_orientation: "Prefer not to say"
+  veteran_status: "Not a protected US veteran"
+  nationality: "German"  # Always German only — do not mention Pakistani
+  note: "For US-portal EEO forms only. IQVIA Spain had T&C consent only (no EEO questions)."
+
+# Question cache — substring pattern match for auto-fill. Grows after each session (Step 12).
+# type: dropdown | text | radio | checkbox | multi_select
+# confidence: confirmed (user-provided) | inferred (LLM-generated)
+question_cache:
+  - patterns: ["18 years", "at least 18", "age requirement"]
+    answer: "Yes"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["legally authorized", "authorized to work", "right to work", "work eligibility"]
+    answer: "Yes"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["visa sponsorship", "require sponsorship", "work permit"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["non-compete", "restrictive covenant", "non compete", "non-disclosure"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["current location", "where are you based", "city"]
+    answer: "Munich, Germany"
+    type: text
+    confidence: confirmed
+
+  - patterns: ["salary", "compensation", "expected pay", "annual salary"]
+    answer: "1"
+    type: text
+    confidence: confirmed
+    note: "ALWAYS 1 — never real salary"
+
+  - patterns: ["notice period", "when can you start", "availability"]
+    answer: "3 calendar months"
+    type: dropdown
+    alternatives: ["3 months", "90 days"]
+    confidence: confirmed
+
+  - patterns: ["highest qualification", "education level", "degree"]
+    answer: "Master's or higher"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["gender", "sex"]
+    answer: "Male"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["disability", "disabled"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["veteran", "military", "protected veteran"]
+    answer: "Not a protected US veteran"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["sexual orientation"]
+    answer: "Prefer not to say"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["how did you hear", "referral source", "source", "where did you find"]
+    answer: "LinkedIn"
+    type: multi_select
+    confidence: confirmed
+
+  - patterns: ["background check", "criminal record"]
+    answer: "Yes"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["relocate", "relocation", "willing to move"]
+    answer: "Yes"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["uk medic", "gmc", "general medical council"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["iqvia employee", "quintiles", "regular employee", "ims health"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["contingent worker", "agency temporary", "contractor at"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["familial relationship", "family member", "relative at", "personal relationship"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["english level", "level of english", "english proficiency"]
+    answer: "Ability to conduct business in the language."
+    type: dropdown
+    note: "C1 equivalent"
+    confidence: confirmed
+
+  - patterns: ["reason.*interested", "motivation.*role", "why.*company", "primary reason"]
+    answer: "Challenging and meaningful work"
+    type: dropdown
+    confidence: inferred
+
+  - patterns: ["nationality", "citizenship"]
+    answer: "German"
+    type: text
+    note: "Always German only — never mention Pakistani"
+    confidence: confirmed
+
+  - patterns: ["previously worked", "former employee", "worked for this organization"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+  - patterns: ["preferred name", "nickname"]
+    answer: "No"
+    type: dropdown
+    confidence: confirmed
+
+# Portals where you already have accounts
+known_accounts:
+  - linkedin.com
+  - greenhouse.io
+  - lever.co
+  - alcoa.wd5.myworkdayjobs.com
+  - csgi.wd5.myworkdayjobs.com
+  - iqvia.wd1.myworkdayjobs.com

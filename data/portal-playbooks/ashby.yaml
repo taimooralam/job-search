@@ -1,0 +1,261 @@
+portal: "Ashby"
+url_patterns:
+  - "ashbyhq.com/*/jobs/*"
+  - "{company}.ashbyhq.com/o/*"
+  - "careers.{company}.com/o/*"
+  - "jobs.{company}.com/o/*"
+apply_button_selector: "a[href*='/c/new']"
+submit_button_selector: "[data-testid='submit-application-form-button']"
+form_id: "offer-application-form"
+file_upload_method: "base64_inject or manual"
+login_required: false
+multi_step: false
+last_updated: "2026-04-05"
+
+# ─────────────────────────────────────────────
+# KNOWN ISSUES
+# ─────────────────────────────────────────────
+known_issues:
+  - "SPA renders blank in screenshots at viewport width >700px — always resize to 700 before any screenshot"
+  - "CORS blocks fetch('http://localhost:18923') from external Ashby domains — cannot load CV from local server"
+  - "Phone country dropdown (Downshift-based) conflicts with location autocomplete if you type country name — bypass it entirely by setting full +XX number directly"
+
+# ─────────────────────────────────────────────
+# BATCH FILL SCRIPTS (one JS call fills ALL fields per step)
+# ─────────────────────────────────────────────
+# Run via: mcp__claude-in-chrome__javascript_tool
+# after navigating to /c/new and resizing viewport to 700px.
+batch_fill_scripts:
+  main_form: |
+    (function batchFillAshby() {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      const textSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+      const results = {filled: [], needs_physical: [], errors: []};
+
+      function fill(sel, val) {
+        const el = document.querySelector(sel);
+        if (!el) { results.errors.push(sel); return; }
+        const s = el.tagName === 'TEXTAREA' ? textSetter : setter;
+        s.call(el, val);
+        el.dispatchEvent(new Event('input', {bubbles:true}));
+        el.dispatchEvent(new Event('change', {bubbles:true}));
+        results.filled.push(sel);
+      }
+
+      function clickRadio(name, value) {
+        const radio = document.querySelector('[name="'+name+'"][value="'+value+'"]');
+        if (radio) { radio.click(); results.filled.push(name); }
+        else { results.errors.push(name); }
+      }
+
+      // Core fields
+      fill('[name="candidate.name"]', 'Taimoor Alam');
+      fill('[name="candidate.email"]', 'alamtaimoor.de@gmail.com');
+      fill('[name="candidate.phone"]', '+49 176 29793925');
+
+      // Discover open questions dynamically
+      const form = document.querySelector('form#offer-application-form');
+      const openQs = form ? [...form.querySelectorAll('[name*="openQuestionAnswers"]')]
+        .filter(el => !el.name.endsWith('.openQuestionId'))
+        .map(el => {
+          let label = '';
+          let node = el;
+          for (let i = 0; i < 8 && node; i++) {
+            const candidates = node.querySelectorAll('label, h1, h2, h3, h4, p, span');
+            for (const c of candidates) {
+              const t = c.textContent.trim().replace(/\s+/g, ' ');
+              if (t.length > 5 && t.length < 200 && !t.includes('Upload')) { label = t; break; }
+            }
+            if (label) break;
+            node = node.parentElement;
+          }
+          return {name: el.name, tag: el.tagName, type: el.type, label};
+        }) : [];
+
+      // Question matching — inline common patterns
+      for (const q of openQs) {
+        const l = q.label.toLowerCase();
+        if (l.includes('location') || l.includes('where')) fill('[name="'+q.name+'"]', 'Munich, Germany');
+        else if (l.includes('salary') || l.includes('compensation')) fill('[name="'+q.name+'"]', '1');
+        else if (l.includes('visa') || l.includes('sponsorship')) clickRadio(q.name, 'false');
+        else if (l.includes('linkedin')) fill('[name="'+q.name+'"]', 'https://linkedin.com/in/taimooralam');
+        else if (l.includes('github')) fill('[name="'+q.name+'"]', 'https://github.com/taimooralam');
+        else if (l.includes('website') || l.includes('portfolio')) fill('[name="'+q.name+'"]', 'https://taimooralam.com');
+        else if (l.includes('how did you hear') || l.includes('source')) fill('[name="'+q.name+'"]', 'LinkedIn');
+        else results.needs_physical.push({field: q.name, label: q.label});
+      }
+
+      return JSON.stringify(results);
+    })()
+
+# ─────────────────────────────────────────────
+# STEP-BY-STEP JS AUTOMATION
+# ─────────────────────────────────────────────
+# Copy-paste this block into mcp__claude-in-chrome__javascript_tool
+# after navigating to /c/new and resizing viewport to 700px.
+
+automation_script: |
+  // ═══════════════════════════════════════════════
+  // ASHBY FORM FILL — complete JS automation script
+  // Run via: mcp__claude-in-chrome__javascript_tool
+  // ═══════════════════════════════════════════════
+
+  // ── Helpers ──────────────────────────────────
+  const inputSetter    = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,  'value').set;
+  const textareaSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
+
+  function fillInput(selector, value) {
+    const el = document.querySelector(selector);
+    if (!el) return `NOT FOUND: ${selector}`;
+    const setter = el.tagName === 'TEXTAREA' ? textareaSetter : inputSetter;
+    setter.call(el, value);
+    el.dispatchEvent(new Event('input',  { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return `OK: ${el.name} = "${value.substring(0,40)}"`;
+  }
+
+  function clickRadio(name, value) {
+    // Radio buttons: use native .click() — React's onChange fires from it
+    const radio = document.querySelector(`[name="${name}"][value="${value}"]`);
+    if (!radio) return `NOT FOUND: radio[name=${name}][value=${value}]`;
+    radio.click();
+    return `CLICKED: ${name}=${value}`;
+  }
+
+  // ── 1. Discover all open questions dynamically ──
+  // (question IDs like 6899431 change per company/job — do NOT hardcode them)
+  // Instead, read the labels and match to answers
+  function getOpenQuestions() {
+    const form = document.querySelector('form#offer-application-form');
+    return [...form.querySelectorAll('[name*="openQuestionAnswers"]')]
+      .filter(el => !el.name.endsWith('.openQuestionId'))
+      .map(el => {
+        let label = '';
+        let node = el;
+        for (let i = 0; i < 8 && node; i++) {
+          const candidates = node.querySelectorAll('label, h1, h2, h3, h4, p, span');
+          for (const c of candidates) {
+            const t = c.textContent.trim().replace(/\s+/g, ' ');
+            if (t.length > 5 && t.length < 200 && !t.includes('Upload')) { label = t; break; }
+          }
+          if (label) break;
+          node = node.parentElement;
+        }
+        return { name: el.name, tag: el.tagName, type: el.type, label };
+      });
+  }
+
+  // ── 2. Core field fill ──────────────────────────
+  const results = [
+    fillInput('[name="candidate.name"]',  'Taimoor Alam'),
+    fillInput('[name="candidate.email"]', 'alamtaimoor.de@gmail.com'),
+    // Phone: set full international number directly — SKIP country dropdown
+    fillInput('[name="candidate.phone"]', '+49 176 29793925'),
+  ];
+
+  // ── 3. Open questions (label-driven matching) ───
+  // After calling getOpenQuestions(), match labels to answers:
+  //
+  //   "location" / "where are you"  → "Munich, Germany"
+  //   "visa sponsorship"            → clickRadio(name, 'false')  [No]
+  //   "tech stack"                  → tech stack answer from master-cv
+  //   "ai project" / "latest"       → commander-4 answer from master-cv
+  //   "compensation" / "salary"     → "1"
+  //   "how did you hear"            → "LinkedIn"
+  //   "linkedin"                    → "https://linkedin.com/in/taimooralam"
+  //   "github"                      → "https://github.com/taimooralam"
+  //   "website" / "portfolio"       → "https://taimooralam.com"
+  //
+  // Example (IDs discovered from getOpenQuestions()):
+  //   fillInput('[name="candidate.openQuestionAnswers.XXXXXXX.content"]', '...')
+  //   clickRadio('candidate.openQuestionAnswers.XXXXXXX.flag', 'false')
+
+  results
+
+# ── 4. File Upload ──────────────────────────────
+cv_upload_script: |
+  // METHOD A: Base64 inject (preferred — no CORS, no file picker)
+  // Step 1: Read PDF as base64 in Python BEFORE opening the browser:
+  //   python3 -c "
+  //   import base64
+  //   with open('/path/to/Taimoor Alam Resume.pdf','rb') as f:
+  //       print(base64.b64encode(f.read()).decode())
+  //   " > /tmp/cv_b64.txt
+  //
+  // Step 2: Inject the base64 string into JS:
+  //   BASE64_STRING = open('/tmp/cv_b64.txt').read().strip()
+  //
+  // Step 3: Run this JS in the browser tab:
+  (function injectCV(base64String) {
+    const b64 = base64String; // paste the base64 string here
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const file = new File([blob], 'Taimoor Alam Resume.pdf', { type: 'application/pdf' });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const input = document.querySelector('[name="candidate.cv"]');
+    // FileList is read-only — use Object.defineProperty
+    Object.defineProperty(input, 'files', { value: dt.files, writable: false });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return `CV injected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  })('YOUR_BASE64_HERE');
+
+  // METHOD B: Manual upload (fallback)
+  // Click the upload area to open file picker, user selects the file manually.
+  // The drop zone selector: div[class*="bEkvbc"] or div[role="presentation"]
+  // wrapping input[name="candidate.cv"]
+
+# ── 5. Submit ───────────────────────────────────
+submit_script: |
+  // After all fields are filled and CV is attached:
+  const btn = document.querySelector('[data-testid="submit-application-form-button"]');
+  btn.scrollIntoView({ behavior: 'instant', block: 'center' });
+  // Get viewport coordinates for physical click:
+  const rect = btn.getBoundingClientRect();
+  // → use mcp__claude-in-chrome__computer left_click at:
+  //     x = rect.left + rect.width/2
+  //     y = rect.top  + rect.height/2
+  //
+  // After click, verify success:
+  //   window.location.href  → should contain '/applied'
+  //   document.body.innerText → should contain 'All done!' or 'successfully submitted'
+  JSON.stringify({ centerX: rect.left + rect.width/2, centerY: rect.top + rect.height/2 })
+
+# ── 6. Field name schema ────────────────────────
+field_name_schema: |
+  # Standard fields (fixed names across all Ashby jobs):
+  candidate.name                                     → full name input
+  candidate.email                                    → email input
+  candidate.phone                                    → phone tel input
+  candidate.cv                                       → file input (CV/resume)
+  candidate.coverLetterFile                          → file input (optional cover letter)
+
+  # Open questions (IDs vary per company/job posting):
+  candidate.openQuestionAnswers.{ID}.openQuestionId  → hidden input (the question ID)
+  candidate.openQuestionAnswers.{ID}.content         → text/textarea answer
+  candidate.openQuestionAnswers.{ID}.flag            → radio Yes/No (value="true"|"false")
+
+  # To discover IDs dynamically, run getOpenQuestions() from automation_script above
+
+# ── 7. React internals ─────────────────────────
+react_notes: |
+  - Framework: React Hook Form (onChange-driven, not onSubmit-only)
+  - All inputs have __reactProps$* with onChange + onBlur
+  - Text/email/tel/textarea: nativeInputValueSetter + input+change events
+  - Radio: native .click() triggers React onChange correctly
+  - Submit button: type="submit", aria-busy toggles true during submission
+  - Form: id="offer-application-form", has noValidate + onSubmit handler
+  - Country phone selector: Downshift listbox (button[id^="country-select-input-candidate.phone"])
+    → skip entirely, set full number directly via nativeInputValueSetter on phone input
+  - FileList on input[type=file] is read-only — use Object.defineProperty() to set it
+    OR just open the native file picker (button click) and user selects manually
+
+# ── 8. Viewport fix ────────────────────────────
+viewport_fix: |
+  # Always run BEFORE taking screenshots on Ashby:
+  mcp__claude-in-chrome__resize_window width=700 height=900
+  # Ashby SPA has a responsive breakpoint — at >~800px the form shifts
+  # off-screen relative to the screenshot viewport, rendering blank.
+  # At 700px the layout is single-column mobile and renders correctly.

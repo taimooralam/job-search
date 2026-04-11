@@ -1,0 +1,243 @@
+portal: "LinkedIn Easy Apply"
+url_patterns:
+  - "linkedin.com/jobs/view/*/apply*"
+  - "linkedin.com/jobs/view/*"  # with Easy Apply button on page
+detect_signal: "button or link with text 'Easy Apply'"
+submit_button_selector: "shadow:#interop-outlet >> button:text('Submit application')"
+file_upload_method: "base64_appleascript_shadow_dom"
+login_required: true
+multi_step: true
+last_updated: "2026-04-05"
+
+# ─────────────────────────────────────────────
+# CRITICAL: SHADOW DOM
+# ─────────────────────────────────────────────
+# LinkedIn's Easy Apply modal (new SDUI flow) renders entirely inside
+# the shadow DOM of #interop-outlet. Standard document.querySelector
+# finds NOTHING inside the modal. ALL interactions must go through:
+#
+#   const shadow = document.querySelector('#interop-outlet').shadowRoot;
+#   shadow.querySelector(...) / shadow.querySelectorAll(...)
+#
+# This applies to: buttons, inputs, file inputs, progress indicators,
+# radio buttons, text inputs — everything in the modal.
+
+# ─────────────────────────────────────────────
+# KNOWN ISSUES
+# ─────────────────────────────────────────────
+known_issues:
+  - "All modal content is inside #interop-outlet shadow DOM — regular DOM queries fail"
+  - "computer tool coordinate clicks on modal buttons may miss — use JS shadow DOM click instead"
+  - "LinkedIn stores previously used resumes — ALWAYS upload a fresh job-specific CV, never use stored ones"
+  - "PNA blocks localhost fetch from linkedin.com (HTTPS) — use AppleScript base64 injection into shadow DOM file input"
+  - "Title shows '{:companyName}' placeholder — this is a LinkedIn rendering bug, application still works"
+  - "Modal has no stable form ID — navigate by button text (Next, Review, Submit application, Back)"
+  - "Progress bar shows 0% / 50% / 100% for 2-step flow (contact → resume → review)"
+
+# ─────────────────────────────────────────────
+# FLOW OVERVIEW
+# ─────────────────────────────────────────────
+# Step 1 (0%):   Contact info — pre-filled from LinkedIn profile, just click Next
+# Step 2 (50%):  Resume — select or upload; ALWAYS upload fresh job-specific CV
+# Step 3 (100%): Review — verify all details, click Submit application
+# Success: "Application sent" / "Your application was sent to {Company}!" modal
+
+# ─────────────────────────────────────────────
+# BATCH FILL SCRIPTS (one JS call fills ALL fields per step)
+# ─────────────────────────────────────────────
+# LinkedIn uses shadow DOM — all queries go through #interop-outlet.shadowRoot.
+batch_fill_scripts:
+  contact_step: |
+    (function() {
+      const shadow = document.querySelector('#interop-outlet').shadowRoot;
+      const nextBtn = [...shadow.querySelectorAll('button')].find(b => b.textContent.trim() === 'Next');
+      if (nextBtn) { nextBtn.click(); return JSON.stringify({filled: ['contact_prefilled'], needs_physical: []}); }
+      return JSON.stringify({filled: [], needs_physical: [], errors: ['Next button not found']});
+    })()
+
+  extra_questions: |
+    (function() {
+      const shadow = document.querySelector('#interop-outlet').shadowRoot;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      const results = {filled: [], needs_physical: [], errors: []};
+
+      // Find all inputs/selects in shadow DOM
+      const inputs = shadow.querySelectorAll('input, select, textarea');
+      inputs.forEach(inp => {
+        // Label discovery
+        const label = inp.closest('label, [class*="field"]')?.textContent?.trim()?.substring(0,100) || '';
+        const l = label.toLowerCase();
+
+        if (inp.type === 'radio') {
+          // Radio buttons — flag for physical click
+          results.needs_physical.push({field: label, method: 'radio'});
+        } else if (inp.tagName === 'SELECT') {
+          results.needs_physical.push({field: label, method: 'select'});
+        } else {
+          // Text inputs — match common patterns
+          let val = null;
+          if (l.includes('year') || l.includes('experience')) val = '10';
+          else if (l.includes('city') || l.includes('location')) val = 'Munich';
+          else if (l.includes('linkedin')) val = 'https://linkedin.com/in/taimooralam';
+          else if (l.includes('github')) val = 'https://github.com/taimooralam';
+          else if (l.includes('website') || l.includes('portfolio')) val = 'https://taimooralam.com';
+          if (val) {
+            setter.call(inp, val);
+            inp.dispatchEvent(new Event('input', {bubbles:true}));
+            results.filled.push(label);
+          } else {
+            results.needs_physical.push({field: label, method: 'text'});
+          }
+        }
+      });
+
+      return JSON.stringify(results);
+    })()
+
+  review_step: |
+    (function() {
+      const shadow = document.querySelector('#interop-outlet').shadowRoot;
+      const submitBtn = [...shadow.querySelectorAll('button')].find(b => b.textContent.trim() === 'Submit application');
+      const buttons = [...shadow.querySelectorAll('button')].map(b => b.textContent.trim()).filter(t => t);
+      return JSON.stringify({
+        ready: !!submitBtn,
+        buttons: buttons,
+        needs_physical: submitBtn ? [{field: 'submit', method: 'shadow_click', text: 'Submit application'}] : []
+      });
+    })()
+
+# ─────────────────────────────────────────────
+# STEP-BY-STEP JS AUTOMATION
+# ─────────────────────────────────────────────
+automation_script: |
+  // ═══════════════════════════════════════════
+  // HELPER: get shadow root
+  // ═══════════════════════════════════════════
+  const shadow = document.querySelector('#interop-outlet').shadowRoot;
+
+  // ═══════════════════════════════════════════
+  // STEP 1: Discover all buttons in modal
+  // ═══════════════════════════════════════════
+  [...shadow.querySelectorAll('button')]
+    .map(b => b.textContent.trim().substring(0, 40))
+    .filter(t => t);
+  // Expected on Contact step: ["Next", ...]
+  // Expected on Resume step:  ["Show X more resumes", "Back", "Review", ...]
+  // Expected on Review step:  ["Edit", "Edit", "View", "Back", "Submit application", ...]
+
+  // ═══════════════════════════════════════════
+  // STEP 2: Navigate between steps
+  // ═══════════════════════════════════════════
+  function clickBtn(text) {
+    const btn = [...shadow.querySelectorAll('button')].find(b => b.textContent.trim() === text);
+    if (btn) { btn.click(); return 'clicked: ' + text; }
+    return 'NOT FOUND: ' + text;
+  }
+  // clickBtn('Next');           // Step 1 → Step 2
+  // clickBtn('Review');         // Step 2 → Step 3
+  // clickBtn('Submit application'); // Step 3 → Submit
+
+  // ═══════════════════════════════════════════
+  // STEP 3: Check current progress
+  // ═══════════════════════════════════════════
+  const progress = shadow.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')
+    || shadow.querySelector('[class*="progress"]')?.textContent?.trim();
+  // Or check page title text:
+  shadow.querySelector('h3, h2, [class*="title"]')?.textContent?.trim();
+
+# ─────────────────────────────────────────────
+# CV UPLOAD — AppleScript Base64 into Shadow DOM
+# ─────────────────────────────────────────────
+cv_upload: |
+  # ALWAYS upload fresh CV — never use stored LinkedIn resumes.
+  # The file input is in the shadow DOM:
+  #   shadow.querySelector('input[type="file"]')
+  # Its ID pattern: jobs-document-upload-file-input-upload-resume-urn:li:fsu_jobApplicationFileUploadFormElement:...
+  #
+  # Run this Python block via Bash tool:
+
+  import base64, subprocess
+
+  with open('/tmp/apply-jobs-server/resume.pdf', 'rb') as f:
+      b64 = base64.b64encode(f.read()).decode()
+
+  js = """(function() {
+    var b64 = '""" + b64 + """';
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var blob = new Blob([bytes], {type: 'application/pdf'});
+    var file = new File([blob], 'Taimoor Alam Resume.pdf', {type: 'application/pdf'});
+    var dt = new DataTransfer();
+    dt.items.add(file);
+    var shadow = document.querySelector('#interop-outlet').shadowRoot;
+    var input = shadow.querySelector('input[type="file"]');
+    try { input.files = dt.files; } catch(e) {
+      Object.defineProperty(input, 'files', {value: dt.files, writable: true, configurable: true});
+    }
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+    input.dispatchEvent(new Event('input',  {bubbles: true}));
+    return 'INJECTED: ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+  })()"""
+
+  js_escaped = js.replace('\\', '\\\\').replace('"', '\\"')
+  applescript = f'''tell application "Google Chrome"
+      repeat with w in windows
+          repeat with t in tabs of w
+              if URL of t contains "linkedin.com/jobs/view/" then
+                  return execute t javascript "{js_escaped}"
+              end if
+          end repeat
+      end repeat
+  end tell'''
+
+  result = subprocess.run(['osascript', '-e', applescript], capture_output=True, text=True, timeout=30)
+  print(result.stdout)
+  # Verify: shadow.querySelector('[class*="resume-item"] p, [class*="filename"]')?.textContent
+  # Should show "Taimoor Alam Resume.pdf" with today's upload date
+
+  # REQUIRES: Chrome > View > Developer > Allow JavaScript from Apple Events
+
+# ─────────────────────────────────────────────
+# VERIFY UPLOAD WORKED
+# ─────────────────────────────────────────────
+verify_upload: |
+  const shadow = document.querySelector('#interop-outlet').shadowRoot;
+  // Check if new resume appears at top of list with today's date
+  const resumeItems = [...shadow.querySelectorAll('[class*="resume"]')];
+  // Look for "Uploaded on {today}" text
+  shadow.querySelector('[class*="date"], [class*="timestamp"]')?.textContent;
+
+# ─────────────────────────────────────────────
+# SUCCESS INDICATORS
+# ─────────────────────────────────────────────
+success_indicators:
+  - "Modal title changes to 'Application sent'"
+  - "Body text: 'Your application was sent to {Company}!'"
+  - "Page shows 'Application status: Application submitted'"
+  - "Job card shows checkmark 'Applied' badge"
+
+# ─────────────────────────────────────────────
+# ADDITIONAL FORM QUESTIONS (some jobs have extra steps)
+# ─────────────────────────────────────────────
+extra_questions: |
+  # Some Easy Apply jobs have extra steps between Contact and Resume:
+  # - Work experience confirmation
+  # - Location / work authorization questions
+  # - "How many years of X experience?" numeric inputs
+  # - Multiple choice questions
+  #
+  # All inputs follow the same shadow DOM pattern:
+  #   shadow.querySelectorAll('input, select, textarea')
+  #
+  # For text inputs:
+  #   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  #   setter.call(input, 'value');
+  #   input.dispatchEvent(new Event('input', {bubbles: true}));
+  #
+  # For selects:
+  #   shadow.querySelector('select').value = 'option_value';
+  #   shadow.querySelector('select').dispatchEvent(new Event('change', {bubbles: true}));
+  #
+  # For radio buttons:
+  #   shadow.querySelector('input[type="radio"][value="Yes"]').click();
