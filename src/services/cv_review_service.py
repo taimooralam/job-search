@@ -527,10 +527,9 @@ class CVReviewService(OperationService):
                 f"confidence={review.get('confidence', '?')}"
             )
 
-            # Capture token usage if available
-            usage = response.usage
-            input_tokens = usage.prompt_tokens if usage else 0
-            output_tokens = usage.completion_tokens if usage else 0
+            # Codex CLI doesn't expose token counts
+            input_tokens = 0
+            output_tokens = 0
 
             # ----------------------------------------------------------------
             # 6. Build cv_review document and persist to MongoDB
