@@ -20,7 +20,8 @@ RUN pip3 install --break-system-packages --no-cache-dir \
       "linkedin-api>=2.2.0" \
       "duckduckgo-search>=6.0" "openai>=1.0" "firecrawl-py>=0.0.5" \
       "beautifulsoup4>=4.12" \
-      "PyYAML>=6.0"
+      "PyYAML>=6.0" \
+      "flights>=0.1" "mcp[cli]>=1.0"
 
 # ── Codex CLI ──────────────────────────────────────────────────────
 RUN npm i -g @openai/codex
@@ -41,6 +42,7 @@ RUN git clone --depth 1 https://${GITHUB_TOKEN}@github.com/taimooralam/agentic-a
 COPY skills/linkedin-intel /opt/skills/linkedin-intel
 COPY skills/url-resolver /opt/skills/url-resolver
 COPY skills/scout-jobs /opt/skills/scout-jobs
+COPY skills/flightclaw /opt/skills/flightclaw
 
 # ── Git identity (non-secret) ────────────────────────────────────
 ENV GIT_AUTHOR_NAME="Taimoor Alam"

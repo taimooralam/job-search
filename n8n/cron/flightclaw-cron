@@ -1,0 +1,7 @@
+# FlightClaw — check tracked flight prices (UTC)
+# Default: every 6 hours. Adjust frequency as needed:
+#   Every 4h: 0 1,5,9,13,17,21 * * *
+#   Every 2h: 0 */2 * * *
+#   Every 1h: 0 * * * *
+
+0 0,6,12,18 * * * docker exec oc python3 /home/node/skills/flightclaw/scripts/check-prices-notify.py --threshold 10 >> /var/log/flightclaw.log 2>&1

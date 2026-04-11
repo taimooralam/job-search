@@ -165,6 +165,7 @@ services:
       - |
         cp -r /opt/skills/* /home/node/.openclaw/skills/ 2>/dev/null
         mkdir -p /home/node/.openclaw/data/scout
+        mkdir -p /home/node/.openclaw/data/flightclaw
         chown -R node:node /home/node/.openclaw 2>/dev/null
         exec su -s /bin/sh node -c 'cd /app && exec node openclaw.mjs gateway --allow-unconfigured --bind lan --port 18789 --auth token'
     environment:
@@ -182,6 +183,7 @@ services:
       - PDF_SERVICE_URL=${PDF_SERVICE_URL}
       - FIRECRAWL_DAILY_LIMIT=20
       - SCOUT_QUEUE_DIR=/home/node/.openclaw/data/scout
+      - FLIGHTCLAW_DATA_DIR=/home/node/.openclaw/data/flightclaw
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - oc_data:/home/node/.openclaw
