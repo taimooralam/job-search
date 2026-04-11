@@ -188,7 +188,7 @@ services:
     volumes:
       - oc_data:/home/node/.openclaw
       # Cookies
-      - /root/n8n-prod/yt-cookies.txt:/home/node/yt-cookies.txt:ro
+      - /root/n8n-prod/yt-cookies.txt:/home/node/yt-cookies.txt
       - /root/n8n-prod/cookies/linkedin-cookies.txt:/home/node/linkedin-cookies.txt:ro
       # Codex CLI auth
       - /root/n8n-prod/credentials/codex-auth.json:/root/.codex/auth.json:ro
