@@ -387,7 +387,7 @@ def main():
     if args.location or args.region or args.profile:
         # Direct mode: specific region/location + profile, search → dedup → enqueue immediately
         profile_name = args.profile or "ai"
-        keywords = SEARCH_PROFILES.get(profile_name, SEARCH_PROFILES["ai"])
+        keywords = SEARCH_PROFILES.get(profile_name, SEARCH_PROFILES["ai_core"])
 
         # --location overrides --region with a single-country temp region
         if args.location:
@@ -485,19 +485,7 @@ def main():
     logger.info(f"  Enqueued:      {enqueued} new jobs for scraping")
     logger.info("=" * 60)
 
-    # Notify via Telegram (non-blocking, best-effort)
-    label = args.location or args.region or "all"
-    if args.profile:
-        label += f"/{args.profile}"
-    try:
-        notify_search_complete(
-            searched=searched_count,
-            already_in_db=already_in_db,
-            enqueued=enqueued,
-            label=label,
-        )
-    except Exception:
-        pass  # Telegram is best-effort, never block cron
+    # Telegram notifications removed — selector sends 30-min summary instead
 
 
 if __name__ == "__main__":

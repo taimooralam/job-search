@@ -391,15 +391,7 @@ def _run(args):
         f"{skipped} skipped, {len(retry_jobs)} retried, {len(dead_jobs)} dead-lettered"
     )
 
-    # Telegram (only if we actually processed jobs)
-    if scored_count > 0 or skipped > 0:
-        try:
-            send_telegram(
-                f"&#9881; <b>Scraper</b>: {len(batch)} dequeued &#8594; "
-                f"{scored_count} scored, {skipped} skipped &#8594; {scored_count} to L1"
-            )
-        except Exception:
-            pass
+    # Telegram notifications removed — selector sends 30-min summary instead
 
 
 if __name__ == "__main__":

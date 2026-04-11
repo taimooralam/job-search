@@ -289,6 +289,7 @@ def insert_jobs(
     collection,
     source_tag: str = "linkedin_scout_cron",
     dry_run: bool = False,
+    status: str = None,
 ) -> List[str]:
     """Insert jobs into MongoDB level-2. Returns list of inserted ObjectId strings."""
     inserted_ids = []
@@ -305,7 +306,7 @@ def insert_jobs(
             "dedupeKey": dedupe_key,
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow(),
-            "status": "not processed",
+            "status": status,
             "batch_added_at": datetime.utcnow(),
             "source": source_tag,
             "auto_discovered": True,
@@ -405,14 +406,16 @@ def notify_selector_complete(
     queued: int,
     failed: int = 0,
     job_summaries: List[str] = None,
+    queue_depth: int = 0,
+    l1_count: int = 0,
 ) -> bool:
-    """Send Telegram summary when selector finishes scoring and queues pipeline."""
+    """Send 30-min pipeline summary via Telegram."""
     icon = "&#9888;" if failed > 0 else "&#9989;"
     lines = [
-        f"{icon} <b>Selector</b>: {total_scored} scored &#8594; {inserted} inserted &#8594; {queued} pipeline",
+        f"{icon} <b>Scout 30m</b>: queue={queue_depth} | scored={total_scored} | L2={inserted} | pipe={queued}",
     ]
     if job_summaries:
-        for s in job_summaries[:5]:
+        for s in job_summaries[:3]:
             lines.append(f"  &#8226; {s}")
     return send_telegram("\n".join(lines))
 
@@ -544,21 +547,31 @@ def main():
         logger.info("No tier C+ jobs. Exiting.")
         return
 
-    # Step 6: Insert ALL tier C+ into level-2 (status: "new")
+    # Step 6: Insert ALL tier C+ into level-2 (status: null — visible in main view)
     logger.info(f"Inserting {len(tier_c_plus)} tier C+ jobs into level-2...")
     all_inserted_ids = insert_jobs(
         tier_c_plus, collection,
         source_tag="linkedin_scout_cron",
+        status=None,
         dry_run=args.dry_run,
     )
 
-    # Step 7: Trigger batch pipeline for TOP N only (by score)
+    # Step 7: Trigger batch pipeline for TOP N by score
+    # Set their status to "under processing" (shows in batch view on frontend)
     tier_c_plus.sort(key=lambda j: j.get("score", 0), reverse=True)
-    batch_candidates = tier_c_plus[:args.hourly_quota]
     batch_ids = [str(j_id) for j_id in all_inserted_ids[:args.hourly_quota]]
+    batch_candidates = tier_c_plus[:args.hourly_quota]
 
     trigger_stats = {"queued": 0, "failed": 0}
     if not args.dry_run and batch_ids:
+        # Mark batch candidates as "under processing"
+        from bson import ObjectId
+        for bid in batch_ids:
+            collection.update_one(
+                {"_id": ObjectId(bid)},
+                {"$set": {"status": "under processing"}},
+            )
+        logger.info(f"Marked {len(batch_ids)} jobs as 'under processing'")
         logger.info(f"Triggering batch pipeline for top {len(batch_ids)} jobs...")
         trigger_stats = trigger_batch_pipeline(batch_ids)
         logger.info(f"Pipeline: queued={trigger_stats['queued']}, failed={trigger_stats['failed']}")
@@ -584,7 +597,8 @@ def main():
             f"[{job.get('tier', '?')}/{job.get('score', 0)}] {batched}"
         )
 
-    # Telegram notification
+    # Telegram 30-min summary
+    from src.common.scout_queue import queue_length
     try:
         notify_selector_complete(
             total_scored=len(scored_jobs),
@@ -594,6 +608,7 @@ def main():
             queued=trigger_stats["queued"],
             failed=trigger_stats["failed"],
             job_summaries=job_summaries,
+            queue_depth=queue_length(),
         )
     except Exception:
         pass  # Best-effort
