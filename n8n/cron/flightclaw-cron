@@ -4,4 +4,4 @@
 #   Every 2h: 0 */2 * * *
 #   Every 1h: 0 * * * *
 
-0 0,6,12,18 * * * docker exec oc python3 /home/node/skills/flightclaw/scripts/check-prices-notify.py --threshold 10 >> /var/log/flightclaw.log 2>&1
+0 0,6,12,18 * * * docker exec oc python3 /home/node/.openclaw/skills/flightclaw/scripts/check-prices-notify.py --threshold 10 >> /var/log/flightclaw.log 2>&1
