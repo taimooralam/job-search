@@ -1,0 +1,24 @@
+# Scout Jobs Pipeline — times in UTC (VPS timezone)
+# Architecture: Proxy refresh on VPS, all other phases in OpenClaw container
+
+# Phase 0: Proxy refresh (every 20 min)
+*/20 * * * * docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_proxy_refresh_cron.py >> /var/log/scout-proxy-refresh.log 2>&1
+
+# Phase 1: LinkedIn search (every 3h) — enqueues to queue.jsonl
+5 */3 * * * docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_linkedin_cron.py >> /var/log/scout-cron.log 2>&1
+
+# Phase 1b: AI top-15 search (every 6h)
+5 */6 * * * docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_ai_top15_cron.py >> /var/log/scout-ai-top15.log 2>&1
+
+# Phase 2: Scraper (every 2.5 min) — dequeues queue.jsonl, writes scored.jsonl
+*/5 * * * *    docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_scraper_cron.py >> /var/log/scout-scraper.log 2>&1
+2-57/5 * * * * docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_scraper_cron.py >> /var/log/scout-scraper.log 2>&1
+
+# Phase 3: Selector (every 3h at :55) — reads scored.jsonl, inserts MongoDB, triggers pipeline
+55 2,5,8,11,14,17,20,23 * * * docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_selector_cron.py >> /var/log/scout-selector.log 2>&1
+
+# Phase 4: Dimensional selectors (profile-based)
+25 0,6,12,18 * * *             docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_dimensional_selector.py --profile uae_ksa_leadership >> /var/log/scout-dimensional.log 2>&1
+25 2,5,8,11,14,17,20,23 * * *  docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_dimensional_selector.py --profile global_remote >> /var/log/scout-dimensional.log 2>&1
+35 0,6,12,18 * * *             docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_dimensional_selector.py --profile eea_remote >> /var/log/scout-dimensional.log 2>&1
+45 0,6,12,18 * * *             docker exec -u node oc python3 /home/node/.openclaw/skills/scout-jobs/scripts/scout_dimensional_selector.py --profile eea_staff_architect >> /var/log/scout-dimensional.log 2>&1

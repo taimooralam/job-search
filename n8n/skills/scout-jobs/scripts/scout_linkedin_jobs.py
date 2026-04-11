@@ -51,64 +51,34 @@ logger = logging.getLogger(__name__)
 # LinkedIn search API
 LINKEDIN_SEARCH_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 
-# Search keyword profiles — organized by role category
+# Search keyword profiles — AI-focused, de-duplicated across profiles
 SEARCH_PROFILES = {
-    "ai": [
-        "AI Engineer",
-        "AI Architect",
-        "AI Lead",
-        "GenAI Engineer",
-        "LLM Engineer",
-        "Agentic AI Engineer",
-        "Applied AI Engineer",
-        "Head of AI",
-        "AI Tech Lead",
-        "Tech Lead AI",
-        "Engineering Lead AI",
+    "ai_core": [
+        "AI Engineer", "GenAI Engineer", "LLM Engineer",
+        "Agentic AI Engineer", "Applied AI Engineer",
+        "AI Developer", "Forward Deployed AI Engineer",
+        "AI Software Engineer",
     ],
     "ai_leadership": [
-        "Head of AI",
-        "Director of AI",
-        "VP of AI",
-        "Chief AI Officer",
-        "AI Engineering Manager",
-        "Head of Artificial Intelligence",
-        "Head of GenAI",
-        "AI Director",
-        "Head of Machine Learning",
-        "Director AI Engineering",
+        "Head of AI", "Head of AI Engineering", "Head of GenAI",
+        "Director of AI", "AI Director", "VP of AI",
+        "Chief AI Officer", "AI Engineering Manager",
+        "Head of Machine Learning", "Head of Applied AI",
     ],
-    "staff_principal": [
-        "Staff Engineer",
-        "Staff Software Engineer",
-        "Principal Engineer",
-        "Staff ML Engineer",
-        "Staff AI Engineer",
-        "Principal Software Engineer",
-        "Staff Platform Engineer",
-        "Principal ML Engineer",
+    "ai_senior_ic": [
+        "Staff AI Engineer", "Principal AI Engineer",
+        "Staff LLM Engineer", "Staff GenAI Engineer",
+        "Principal ML Engineer", "Staff ML Engineer",
+        "Tech Lead AI", "AI Tech Lead",
+        "Staff Software Engineer AI",
+        "Founding AI Engineer",
     ],
-    "engineering_leadership": [
-        "CTO",
-        "VP Engineering",
-        "Director of Engineering",
-        "Head of Engineering",
-        "Engineering Director",
-        "Tech Lead",
-        "Technical Lead",
-        "Head of Platform",
-        "VP of Technology",
-    ],
-    "architect": [
-        "AI Architect",
-        "Solutions Architect AI",
-        "Enterprise Architect",
-        "Cloud Architect",
-        "Data Architect",
-        "ML Architect",
-        "Platform Architect",
-        "Software Architect",
-        "Technical Architect",
+    "ai_architect": [
+        "AI Architect", "AI Solutions Architect",
+        "GenAI Architect", "LLM Architect",
+        "ML Architect", "AI Platform Architect",
+        "AI Infrastructure Architect",
+        "Cloud Architect AI",
     ],
 }
 

@@ -78,7 +78,7 @@
                 data-job-id="{{ job._id }}"
                 onmouseenter="if(window.JDPrefetch) JDPrefetch.prefetch('{{ job._id }}')"
                 onclick="navigateToJob(event, '{{ job._id }}')"
-                oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
+                oncontextmenu="showJobContextMenu(event, '{{ job._id }}', {{ (job.title or '') | tojson }}, {{ (job_url or '') | tojson }}); return false;">
                 <!-- Checkbox -->
                 <td class="px-2 py-3" onclick="event.stopPropagation()">
                     <input type="checkbox"
@@ -293,7 +293,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </a>
-                        <button onclick="processJob('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
+                        <button onclick="processJob('{{ job._id }}', {{ (job.title or '') | tojson }})"
                                 class="inline-flex items-center justify-center w-6 h-6 text-sm rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
                                 title="Process job through pipeline">
                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

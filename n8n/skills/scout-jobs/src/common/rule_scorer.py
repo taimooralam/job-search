@@ -38,6 +38,10 @@ TARGET_ROLE_FILTER = [
 
 PROMOTION_THRESHOLD = 40
 
+# Fixed normalization cap — realistic achievable max for a strong-match job.
+# Prevents the dynamic max_possible (~382) from crushing all scores into D tier.
+NORMALIZATION_CAP = 200
+
 # =============================================================================
 # ROLE DEFINITIONS
 # =============================================================================
@@ -184,9 +188,6 @@ UNWANTED_TITLE_KEYWORDS = [
     "network engineer", "systems administrator",
     "frontend engineer", "frontend developer", "ui engineer", "ux engineer",
     "ios developer", "android developer", "mobile developer",
-    "data scientist", "senior data scientist", "lead data scientist",
-    "ml engineer", "machine learning engineer", "senior ml engineer",
-    "lead ml engineer", "staff ml engineer",
 ]
 
 # Hard negatives: always penalize these in title, even if a target role was detected.
@@ -238,6 +239,7 @@ GENAI_LLM_KEYWORDS = [
     "transformer", "foundation model", "llm integration", "llm systems",
     "llm applications", "llm ecosystem", "llm proxy", "vllm",
     "text generation", "language model", "multimodal",
+    "llmops", "llm ops",
 ]
 
 AGENTIC_AI_KEYWORDS = [
@@ -296,6 +298,7 @@ AI_INFRA_KEYWORDS = [
     "model monitoring", "model registry", "ml pipeline", "model pipeline",
     "inference", "streaming inference", "distributed inference",
     "ml inference optimization", "gpu", "cuda", "tpu",
+    "llmops", "llm ops", "ai ops", "aiops",
     "pytorch", "tensorflow", "hugging face", "huggingface",
     "deep learning", "deep learning systems", "neural network",
 ]
@@ -366,6 +369,16 @@ GCC_PRIORITY_LOCATIONS = [
     "qatar", "doha",
 ]
 GCC_LOCATION_BONUS = 12
+
+# Europe remote bonus (P2)
+EUROPE_LOCATIONS = [
+    "germany", "netherlands", "france", "belgium", "austria", "switzerland",
+    "sweden", "denmark", "norway", "finland", "ireland", "united kingdom",
+    "spain", "portugal", "italy", "estonia", "latvia", "lithuania",
+    "iceland", "luxembourg",
+]
+EUROPE_REMOTE_BONUS = 15
+GERMANY_REMOTE_BONUS = 10  # stacks with Europe bonus (P3)
 
 REMOTE_NEGATIVE = [
     "onsite only", "on-site only", "office only", "no remote",
@@ -762,12 +775,12 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         remote_score += 15
     elif _contains_any(loc_and_desc, REMOTE_POSITIVE):
         remote_score += 10
-    # Significant boost for worldwide/anywhere remote — best fit for candidate
+    # Significant boost for worldwide/anywhere remote — P1 priority
     anywhere_keywords = ["remote anywhere", "work from anywhere", "anywhere in the world",
                          "worldwide", "global remote", "fully remote worldwide",
                          "remote - worldwide", "100% remote"]
     if _contains_any(f"{title_lower} {desc_lower}", anywhere_keywords):
-        remote_score += 10
+        remote_score += 15
     if _contains_any(loc_and_desc, REMOTE_NEGATIVE):
         remote_score -= 10
 
@@ -788,10 +801,19 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
             language_score -= 20
             break
 
-    # --- 6) GCC LOCATION BONUS (0 to +12) ---
+    # --- 6) LOCATION BONUSES ---
     gcc_bonus = 0
     if _contains_any(loc_lower, GCC_PRIORITY_LOCATIONS):
         gcc_bonus = GCC_LOCATION_BONUS
+
+    # Europe remote bonus (P2) — stacks if job is remote + European location
+    europe_bonus = 0
+    is_remote = remote_score > 0
+    if is_remote and _contains_any(loc_lower, EUROPE_LOCATIONS):
+        europe_bonus = EUROPE_REMOTE_BONUS
+    # Germany remote extra bonus (P3) — stacks on top of Europe
+    if is_remote and ("germany" in loc_lower or "deutschland" in loc_lower):
+        europe_bonus += GERMANY_REMOTE_BONUS
 
     # --- CALCULATE TOTAL ---
     keyword_total = sum(kw_scores.values())
@@ -805,14 +827,14 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         + remote_score
         + language_score
         + gcc_bonus
+        + europe_bonus
         - unwanted_penalty
     )
 
-    max_keyword_score = sum(w["max"] for w in weights.values())
-    # title(50) + seniority(35) + combo(20) + provenFit(15) + keywords + remote(20) + gcc(12)
-    max_possible = 50 + 35 + SENIOR_AI_TITLE_COMBO_BONUS + 15 + max_keyword_score + 20 + GCC_LOCATION_BONUS
-
-    normalized_score = max(0, min(100, round((raw_score / max_possible) * 100)))
+    # Use fixed normalization cap instead of theoretical max to prevent score crushing.
+    # Old formula: max_possible = ~382, making tier C (25%) require raw 96 — nearly impossible.
+    # New: NORMALIZATION_CAP = 200, so tier C (25%) = raw 50, much more reachable.
+    normalized_score = max(0, min(100, round((raw_score / NORMALIZATION_CAP) * 100)))
 
     # --- TIER ---
     if normalized_score >= 70:
@@ -832,6 +854,7 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         "remote": remote_score,
         "language": language_score,
         "gccBonus": gcc_bonus,
+        "europeBonus": europe_bonus,
         "unwantedPenalty": -unwanted_penalty,
     }
     for key, val in kw_scores.items():

@@ -23,8 +23,8 @@ RUN pip3 install --break-system-packages --no-cache-dir \
       "PyYAML>=6.0" \
       "flights>=0.1" "mcp[cli]>=1.0"
 
-# ── Codex CLI ──────────────────────────────────────────────────────
-RUN npm i -g @openai/codex
+# ── Codex CLI + MongoDB MCP ────────────────────────────────────────
+RUN npm i -g @openai/codex mongodb-mcp-server
 
 # ── Verify all tools are present (build fails if any missing) ────
 RUN gh --version && yt-dlp --version && deno --version && python3 --version

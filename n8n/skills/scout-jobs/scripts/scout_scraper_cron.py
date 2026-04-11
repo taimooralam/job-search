@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Scout Scraper Cron — Phase 2: Dequeue jobs, fetch details via proxy, score, write to scored.jsonl.
+Scout Scraper Cron — Phase 2: Dequeue jobs, fetch details via proxy, score, write to scored.jsonl + level-1.
 
-Runs every 2.5 minutes. Processes a small batch (default 5) per run.
-Does NOT insert into MongoDB — that's the selector's job (Phase 3).
+Runs every 5 minutes. Processes a batch (default 15) per run.
+Inserts all scored jobs into MongoDB level-1 (status: "scored").
+The selector (Phase 3) promotes top jobs from scored pool to level-2.
 
 Cron (every 2.5 min via two entries):
     */5 * * * *    cd /root/scout-cron && .venv/bin/python scripts/scout_scraper_cron.py >> /var/log/scout-scraper.log 2>&1
@@ -29,7 +30,7 @@ sys.path.insert(0, _SKILL_ROOT)
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(_SKILL_ROOT) / ".env")
 except ImportError:
     pass  # In container, env vars come from docker-compose
 
@@ -51,6 +52,8 @@ from src.services.linkedin_scraper import (
     extract_job_id,
 )
 from src.common.blacklist import is_blacklisted
+from src.common.telegram import send_telegram
+from src.common.dedupe import generate_dedupe_key
 
 logging.basicConfig(
     level=logging.INFO,
@@ -93,7 +96,15 @@ _TITLE_PATTERNS = re.compile(
     r"director.of.ai|director.ai|ai.director|"
     r"director.of.engineering|director.engineering|"
     # Researcher
-    r"research.scientist|researcher|applied.scientist"
+    r"research.scientist|researcher|applied.scientist|"
+    # AI-specific variants
+    r"software.architect|vp.engineering|"
+    r"staff.ai|principal.ai|staff.genai|staff.llm|"
+    r"ai.solutions.architect|"
+    r"head.of.ai.engineering|head.of.platform|"
+    r"llmops|llm.ops|"
+    r"founding.ai|forward.deployed|"
+    r"ml.engineer|machine.learning.engineer"
     r")\b",
     re.IGNORECASE,
 )
@@ -267,6 +278,11 @@ def main():
 def _run(args):
     logger.info(f"Scraper started at {datetime.now(timezone.utc).isoformat()}")
 
+    # MongoDB connection for level-1 insertion
+    from pymongo import MongoClient
+    db = MongoClient(os.environ["MONGODB_URI"])["jobs"]
+    level1 = db["level-1"]
+
     # Purge stale queue entries
     purged = purge_stale(max_age_hours=48)
     if purged:
@@ -318,6 +334,27 @@ def _run(args):
             # Write each scored job immediately — never batch at the end
             if not args.dry_run:
                 append_scored([scored])
+                # Insert to level-1 for tracking all scored jobs
+                dk = generate_dedupe_key("linkedin_scout", source_id=scored["job_id"])
+                level1.update_one(
+                    {"dedupeKey": dk},
+                    {"$setOnInsert": {
+                        "company": scored["company"], "title": scored["title"],
+                        "location": scored["location"], "jobUrl": scored["job_url"],
+                        "dedupeKey": dk, "createdAt": datetime.now(timezone.utc),
+                        "source": "scout_scraper", "auto_discovered": True,
+                        "quick_score": scored["score"], "tier": scored["tier"],
+                        "status": "scored", "description": scored.get("description", ""),
+                        "detected_role": scored.get("detected_role"),
+                        "linkedin_metadata": {
+                            "linkedin_job_id": scored["job_id"],
+                            "seniority_level": scored.get("seniority"),
+                            "employment_type": scored.get("employment_type"),
+                            "rule_score_breakdown": scored.get("breakdown"),
+                        },
+                    }},
+                    upsert=True,
+                )
             else:
                 logger.info(f"  [DRY RUN] Would append scored job: {scored['title']}")
             scored_count += 1
@@ -353,6 +390,16 @@ def _run(args):
         f"Scraper done: {scored_count}/{len(batch)} scored, "
         f"{skipped} skipped, {len(retry_jobs)} retried, {len(dead_jobs)} dead-lettered"
     )
+
+    # Telegram (only if we actually processed jobs)
+    if scored_count > 0 or skipped > 0:
+        try:
+            send_telegram(
+                f"&#9881; <b>Scraper</b>: {len(batch)} dequeued &#8594; "
+                f"{scored_count} scored, {skipped} skipped &#8594; {scored_count} to L1"
+            )
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

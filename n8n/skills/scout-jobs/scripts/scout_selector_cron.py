@@ -32,7 +32,7 @@ sys.path.insert(0, _SKILL_ROOT)
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(_SKILL_ROOT) / ".env")
 except ImportError:
     pass  # In container, env vars come from docker-compose
 
@@ -95,7 +95,7 @@ def _purge_old_discarded() -> int:
 # Configuration
 # ---------------------------------------------------------------------------
 
-HOURLY_QUOTA = 1   # jobs per 3h cycle from hourly cron
+HOURLY_QUOTA = 8   # top N jobs per selector run to trigger batch pipeline
 AI_TOP15_QUOTA = 0  # jobs per 3h cycle from ai_top15 cron
 
 CATEGORY_WEIGHTS = {
@@ -135,11 +135,11 @@ def get_db():
 
 
 def dedupe_against_db(jobs: List[Dict[str, Any]], db) -> List[Dict[str, Any]]:
-    """Remove jobs that already exist in MongoDB (checks both level-1 and level-2).
+    """Remove jobs that already exist in level-2 (already promoted or processed).
 
-    Two-pass deduplication:
+    Two-pass deduplication (level-2 only — level-1 is the staging area):
     1. Primary: exact dedupeKey match (linkedin_scout|<job_id> or linkedin_import|<job_id>)
-    2. Secondary: normalized company+title match against level-2, catching the same job
+    2. Secondary: normalized company+title match, catching the same job
        posted with a different LinkedIn job_id (e.g. different location variants).
     """
     from src.common.dedupe import normalize_for_dedupe
@@ -153,15 +153,14 @@ def dedupe_against_db(jobs: List[Dict[str, Any]], db) -> List[Dict[str, Any]]:
         dedupe_keys.append(generate_dedupe_key("linkedin_scout", source_id=job["job_id"]))
         dedupe_keys.append(generate_dedupe_key("linkedin_import", source_id=job["job_id"]))
 
-    # Batch query both collections
+    # Dedup against level-2 only (level-1 is the staging area for all scored jobs)
     existing_keys = set()
-    for coll_name in ("level-2", "level-1"):
-        cursor = db[coll_name].find(
-            {"dedupeKey": {"$in": dedupe_keys}},
-            {"dedupeKey": 1},
-        )
-        for doc in cursor:
-            existing_keys.add(doc["dedupeKey"])
+    cursor = db["level-2"].find(
+        {"dedupeKey": {"$in": dedupe_keys}},
+        {"dedupeKey": 1},
+    )
+    for doc in cursor:
+        existing_keys.add(doc["dedupeKey"])
 
     after_primary = []
     for job in jobs:
@@ -306,7 +305,7 @@ def insert_jobs(
             "dedupeKey": dedupe_key,
             "createdAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow(),
-            "status": "under processing",
+            "status": "not processed",
             "batch_added_at": datetime.utcnow(),
             "source": source_tag,
             "auto_discovered": True,
@@ -408,24 +407,13 @@ def notify_selector_complete(
     job_summaries: List[str] = None,
 ) -> bool:
     """Send Telegram summary when selector finishes scoring and queues pipeline."""
-    now = datetime.now(timezone.utc).strftime("%H:%M UTC")
-    status = "&#9888;" if failed > 0 else "&#9989;"
-
+    icon = "&#9888;" if failed > 0 else "&#9989;"
     lines = [
-        f"{status} <b>Scout Selector</b> ({now})",
-        f"Scored pool: {total_scored} jobs",
-        f"Selected: {hourly_selected} hourly + {ai_selected} ai_top15",
-        f"Inserted: {inserted} | Pipeline queued: {queued}",
+        f"{icon} <b>Selector</b>: {total_scored} scored &#8594; {inserted} inserted &#8594; {queued} pipeline",
     ]
-    if failed > 0:
-        lines.append(f"Queue failures: {failed}")
-
     if job_summaries:
-        lines.append("")
-        lines.append("<b>Jobs queued to pipeline:</b>")
-        for summary in job_summaries[:10]:  # Cap at 10 for message length
-            lines.append(f"  • {summary}")
-
+        for s in job_summaries[:5]:
+            lines.append(f"  &#8226; {s}")
     return send_telegram("\n".join(lines))
 
 
@@ -512,44 +500,19 @@ def main():
         logger.info("All jobs already in DB. Exiting.")
         return
 
-    # Step 5: Split by source_cron and apply quotas
-    hourly_jobs = [j for j in new_jobs if j.get("source_cron") == "hourly"]
-    ai_jobs = [j for j in new_jobs if j.get("source_cron") == "ai_top15"]
-    other_jobs = [j for j in new_jobs if j.get("source_cron") not in ("hourly", "ai_top15")]
+    # Step 5: Split by tier — C+ to level-2, D and below to level-1
+    tier_c_plus = [j for j in new_jobs if j.get("tier") in ("A", "B", "C")]
+    tier_low = [j for j in new_jobs if j.get("tier") not in ("A", "B", "C")]
 
-    logger.info(f"By source: hourly={len(hourly_jobs)}, ai_top15={len(ai_jobs)}, other={len(other_jobs)}")
+    logger.info(f"By tier: C+={len(tier_c_plus)}, D/below={len(tier_low)}")
 
-    # Hourly: category-weighted quota
-    selected_hourly = []
-    if hourly_jobs:
-        selected_hourly = apply_quota(hourly_jobs, quota=args.hourly_quota)
-        logger.info(f"Hourly selected: {len(selected_hourly)} (quota: {args.hourly_quota})")
-
-    # AI top-15: simple top-N by score
-    selected_ai = []
-    if ai_jobs:
-        ai_jobs.sort(key=lambda j: j.get("score", 0), reverse=True)
-        selected_ai = ai_jobs[:args.ai_quota]
-        logger.info(f"AI top-15 selected: {len(selected_ai)} (quota: {args.ai_quota})")
-
-    # Other (shouldn't happen, but handle gracefully): top-3 by score
-    selected_other = []
-    if other_jobs:
-        other_jobs.sort(key=lambda j: j.get("score", 0), reverse=True)
-        selected_other = other_jobs[:3]
-        logger.info(f"Other selected: {len(selected_other)}")
-
-    all_selected = selected_hourly + selected_ai + selected_other
-
-    # Insert discarded jobs into level-1 (discovered but not promoted to level-2)
-    selected_ids = {j.get("job_id") for j in all_selected}
-    discarded = [j for j in new_jobs if j.get("job_id") not in selected_ids]
-    if discarded:
-        _append_discarded(discarded)  # Keep file log for debugging
+    # Insert tier D and below into level-1
+    if tier_low:
+        _append_discarded(tier_low)
         if not args.dry_run:
             level1 = db["level-1"]
             level1_inserted = 0
-            for job in discarded:
+            for job in tier_low:
                 dedupe_key = generate_dedupe_key("linkedin_scout", source_id=job["job_id"])
                 result = level1.update_one(
                     {"dedupeKey": dedupe_key},
@@ -575,78 +538,58 @@ def main():
                 )
                 if result.upserted_id:
                     level1_inserted += 1
-            logger.info(f"Discarded: {len(discarded)} total, {level1_inserted} new inserted to level-1")
+            logger.info(f"Tier D/below: {len(tier_low)} total, {level1_inserted} new to level-1")
 
-    if not all_selected:
-        logger.info("No jobs selected after quotas. Exiting.")
+    if not tier_c_plus:
+        logger.info("No tier C+ jobs. Exiting.")
         return
 
-    # Step 6: Insert into MongoDB
-    logger.info(f"Inserting {len(all_selected)} jobs into MongoDB...")
+    # Step 6: Insert ALL tier C+ into level-2 (status: "new")
+    logger.info(f"Inserting {len(tier_c_plus)} tier C+ jobs into level-2...")
+    all_inserted_ids = insert_jobs(
+        tier_c_plus, collection,
+        source_tag="linkedin_scout_cron",
+        dry_run=args.dry_run,
+    )
 
-    # Insert hourly jobs with hourly source tag
-    hourly_ids = []
-    if selected_hourly:
-        hourly_ids = insert_jobs(
-            selected_hourly, collection,
-            source_tag="linkedin_scout_cron",
-            dry_run=args.dry_run,
-        )
+    # Step 7: Trigger batch pipeline for TOP N only (by score)
+    tier_c_plus.sort(key=lambda j: j.get("score", 0), reverse=True)
+    batch_candidates = tier_c_plus[:args.hourly_quota]
+    batch_ids = [str(j_id) for j_id in all_inserted_ids[:args.hourly_quota]]
 
-    # Insert AI jobs with ai_top15 source tag
-    ai_ids = []
-    if selected_ai:
-        ai_ids = insert_jobs(
-            selected_ai, collection,
-            source_tag="linkedin_scout_ai_top15",
-            dry_run=args.dry_run,
-        )
-
-    # Insert other jobs
-    other_ids = []
-    if selected_other:
-        other_ids = insert_jobs(
-            selected_other, collection,
-            source_tag="linkedin_scout_cron",
-            dry_run=args.dry_run,
-        )
-
-    all_inserted_ids = hourly_ids + ai_ids + other_ids
-
-    # Step 7: Trigger batch pipeline
     trigger_stats = {"queued": 0, "failed": 0}
-    if not args.dry_run and all_inserted_ids:
-        logger.info("Triggering batch pipeline...")
-        trigger_stats = trigger_batch_pipeline(all_inserted_ids)
+    if not args.dry_run and batch_ids:
+        logger.info(f"Triggering batch pipeline for top {len(batch_ids)} jobs...")
+        trigger_stats = trigger_batch_pipeline(batch_ids)
         logger.info(f"Pipeline: queued={trigger_stats['queued']}, failed={trigger_stats['failed']}")
 
     # Summary
     logger.info("=" * 60)
     logger.info("Selector Summary")
     logger.info(f"  Scored pool:     {len(scored_jobs)} jobs")
-    logger.info(f"  Hourly selected: {len(selected_hourly)} (quota: {args.hourly_quota})")
-    logger.info(f"  AI selected:     {len(selected_ai)} (quota: {args.ai_quota})")
-    logger.info(f"  Total inserted:  {len(all_inserted_ids)}")
-    logger.info(f"  Pipeline queued: {trigger_stats['queued']}")
+    logger.info(f"  Tier C+ → L2:   {len(tier_c_plus)}")
+    logger.info(f"  Tier D → L1:    {len(tier_low)}")
+    logger.info(f"  Inserted to L2: {len(all_inserted_ids)}")
+    logger.info(f"  Pipeline queued: {trigger_stats['queued']} (top {args.hourly_quota})")
     if trigger_stats["failed"]:
         logger.info(f"  Queue failures:  {trigger_stats['failed']}")
     logger.info("=" * 60)
 
     # Build job summaries for Telegram
     job_summaries = []
-    for job in all_selected:
-        src = job.get("source_cron", "?")
+    for job in tier_c_plus[:5]:
+        batched = "→batch" if job in batch_candidates else ""
         job_summaries.append(
             f"{job.get('title', '?')} @ {job.get('company', '?')} "
-            f"[{job.get('tier', '?')}/{job.get('score', 0)}] ({src})"
+            f"[{job.get('tier', '?')}/{job.get('score', 0)}] {batched}"
         )
 
     # Telegram notification
     try:
         notify_selector_complete(
             total_scored=len(scored_jobs),
-            hourly_selected=len(selected_hourly),
-            ai_selected=len(selected_ai),
+            hourly_selected=len(tier_c_plus),
+            ai_selected=0,
             inserted=len(all_inserted_ids),
             queued=trigger_stats["queued"],
             failed=trigger_stats["failed"],

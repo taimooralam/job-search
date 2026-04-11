@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # for sibling script i
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(_SKILL_ROOT) / ".env")
 except ImportError:
     pass  # In container, env vars come from docker-compose
 
@@ -49,8 +49,22 @@ from src.common.blacklist import filter_blacklisted
 # Configuration
 # ---------------------------------------------------------------------------
 
-TIME_FILTER = "r43200"  # last 12 hours
+DEFAULT_TIME_FILTER = "r43200"  # last 12 hours
 MAX_PAGES = 1
+
+
+def _parse_time_window(value: str) -> str:
+    """Convert human-readable time window to LinkedIn f_TPR value.
+
+    Examples: '30m' -> 'r1800', '1h' -> 'r3600', '12h' -> 'r43200', '1d' -> 'r86400'
+    """
+    import re as _re
+    m = _re.match(r"^(\d+)(m|h|d)$", value.strip().lower())
+    if not m:
+        raise ValueError(f"Invalid time window '{value}'. Use format like 30m, 1h, 12h, 1d")
+    num, unit = int(m.group(1)), m.group(2)
+    seconds = num * {"m": 60, "h": 3600, "d": 86400}[unit]
+    return f"r{seconds}"
 
 SEARCH_COMBOS = [
     # (region, remote_only, few_applicants, profile_override)
@@ -101,6 +115,7 @@ def run_all_searches(
     profile_filter: Optional[str] = None,
     dry_run: bool = False,
     limit: Optional[int] = None,
+    no_proxy: bool = False,
 ) -> int:
     """Run searches across all profiles and combos; dedup + enqueue per combo.
 
@@ -122,16 +137,19 @@ def run_all_searches(
 
     # Initialize proxy pool — optional, falls back to direct if unavailable
     proxy_pool: Optional[ProxyPool] = None
-    try:
-        pool = ProxyPool()
-        working = pool.initialize()
-        if working >= 1:
-            proxy_pool = pool
-            logger.info(f"Proxy pool ready: {working} working proxies")
-        else:
-            logger.warning("Proxy pool returned 0 working proxies — using direct requests")
-    except Exception as e:
-        logger.warning(f"Proxy pool initialization failed: {e} — using direct requests")
+    if no_proxy:
+        logger.info("Proxy pool skipped (--no-proxy)")
+    else:
+        try:
+            pool = ProxyPool()
+            working = pool.initialize()
+            if working >= 1:
+                proxy_pool = pool
+                logger.info(f"Proxy pool ready: {working} working proxies")
+            else:
+                logger.warning("Proxy pool returned 0 working proxies — using direct requests")
+        except Exception as e:
+            logger.warning(f"Proxy pool initialization failed: {e} — using direct requests")
 
     db = get_db()
 
@@ -277,18 +295,11 @@ def notify_search_complete(
     searched: int,
     already_in_db: int,
     enqueued: int,
+    label: str = "",
 ) -> bool:
     """Send Telegram summary for the search phase."""
-    from datetime import timezone
-    now = datetime.now(timezone.utc).strftime("%H:%M UTC")
-
-    lines = [
-        f"&#128269; <b>Scout Search</b> ({now})",
-        f"Searched: {searched} unique jobs",
-        f"Already in DB: {already_in_db}",
-        f"Enqueued: {enqueued} new jobs",
-    ]
-    return send_telegram("\n".join(lines))
+    tag = f" {label}" if label else ""
+    return send_telegram(f"&#128269;<b>Search{tag}</b>: {searched} found &#8594; {enqueued} new ({already_in_db} dupe)")
 
 
 # ---------------------------------------------------------------------------
@@ -332,10 +343,37 @@ def main():
         metavar="N",
         help="Stop after enqueueing N jobs (useful for testing, e.g. --region eea --profile ai --limit 10)",
     )
+    parser.add_argument(
+        "--time-window",
+        type=str,
+        default=None,
+        metavar="WINDOW",
+        help="Lookback window for job postings (e.g. 30m, 1h, 12h, 1d). Default: 12h",
+    )
+    parser.add_argument(
+        "--no-proxy",
+        action="store_true",
+        help="Skip proxy pool, use direct requests (faster for testing)",
+    )
+    parser.add_argument(
+        "--location",
+        type=str,
+        default=None,
+        metavar="COUNTRY",
+        help="Search a single country (e.g. 'United Arab Emirates'). Overrides --region.",
+    )
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    # Resolve time window
+    global TIME_FILTER
+    if args.time_window:
+        TIME_FILTER = _parse_time_window(args.time_window)
+        logger.info(f"Time window override: {args.time_window} → {TIME_FILTER}")
+    else:
+        TIME_FILTER = DEFAULT_TIME_FILTER
 
     logger.info("=" * 60)
     logger.info(f"Scout cron started at {datetime.utcnow().isoformat()}")
@@ -346,26 +384,40 @@ def main():
         )
     logger.info("=" * 60)
 
-    if args.region or args.profile:
-        # Direct mode: specific region + profile, search → dedup → enqueue immediately
-        region = args.region or "eea"
+    if args.location or args.region or args.profile:
+        # Direct mode: specific region/location + profile, search → dedup → enqueue immediately
         profile_name = args.profile or "ai"
         keywords = SEARCH_PROFILES.get(profile_name, SEARCH_PROFILES["ai"])
-        logger.info(
-            f"Step 1: Searching {region} with profile={profile_name} "
-            f"({len(keywords)} keywords) remote={args.remote}..."
-        )
+
+        # --location overrides --region with a single-country temp region
+        if args.location:
+            from scripts.scout_linkedin_jobs import REGION_CONFIGS as _RC
+            region = f"_single_{args.location.replace(' ', '_').lower()}"
+            _RC[region] = {"location": args.location}
+            logger.info(
+                f"Step 1: Searching {args.location} with profile={profile_name} "
+                f"({len(keywords)} keywords) remote={args.remote}..."
+            )
+        else:
+            region = args.region or "eea"
+            logger.info(
+                f"Step 1: Searching {region} with profile={profile_name} "
+                f"({len(keywords)} keywords) remote={args.remote}..."
+            )
 
         # Initialize proxy pool
         proxy_pool = None
-        try:
-            pool = ProxyPool()
-            working = pool.initialize()
-            if working >= 1:
-                proxy_pool = pool
-                logger.info(f"Proxy pool ready: {working} proxies")
-        except Exception as e:
-            logger.warning(f"Proxy pool failed: {e}")
+        if args.no_proxy:
+            logger.info("Proxy pool skipped (--no-proxy)")
+        else:
+            try:
+                pool = ProxyPool()
+                working = pool.initialize()
+                if working >= 1:
+                    proxy_pool = pool
+                    logger.info(f"Proxy pool ready: {working} proxies")
+            except Exception as e:
+                logger.warning(f"Proxy pool failed: {e}")
 
         raw_jobs = search_jobs(
             keywords_list=keywords,
@@ -419,7 +471,7 @@ def main():
     else:
         # Full mode: run all SEARCH_COMBOS; each combo dedupes + enqueues incrementally
         logger.info("Step 1: Searching LinkedIn across all categories and regions (incremental)...")
-        enqueued = run_all_searches(dry_run=args.dry_run, limit=args.limit)
+        enqueued = run_all_searches(dry_run=args.dry_run, limit=args.limit, no_proxy=args.no_proxy)
         # In full mode, run_all_searches handles everything; totals are logged per-combo
         searched_count = 0  # not tracked in full mode (dedup is per-combo)
         already_in_db = 0
@@ -434,11 +486,15 @@ def main():
     logger.info("=" * 60)
 
     # Notify via Telegram (non-blocking, best-effort)
+    label = args.location or args.region or "all"
+    if args.profile:
+        label += f"/{args.profile}"
     try:
         notify_search_complete(
             searched=searched_count,
             already_in_db=already_in_db,
             enqueued=enqueued,
+            label=label,
         )
     except Exception:
         pass  # Telegram is best-effort, never block cron
