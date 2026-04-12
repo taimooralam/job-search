@@ -75,6 +75,14 @@ WEIGHT_PAIN_POINT = 0.30
 WEIGHT_ROLE_CATEGORY = 0.20
 WEIGHT_ACHIEVEMENT_KEYWORDS = 0.10
 
+# Pain point rebalancing constants
+REBALANCE_MIN_COVERAGE = 0.6
+REBALANCE_MAX_SCORE_DROP = 0.10
+REBALANCE_TOKEN_OVERLAP_THRESHOLD = 0.2
+_FORCED_AI_ACHIEVEMENT_IDS = frozenset({
+    "achievement_15", "achievement_16", "achievement_17", "achievement_18",
+})
+
 
 # ============================================================================
 # DATA CLASSES
@@ -113,15 +121,19 @@ class VariantScore:
     architecture_boost: float = 1.0
 
     @property
-    def total_score(self) -> float:
-        """Calculate weighted total score with annotation and architecture boosts."""
-        base_score = (
+    def base_score(self) -> float:
+        """Unboosted score (without annotation/architecture multipliers)."""
+        return (
             self.keyword_score * WEIGHT_KEYWORD_OVERLAP +
             self.pain_point_score * WEIGHT_PAIN_POINT +
             self.role_category_score * WEIGHT_ROLE_CATEGORY +
             self.achievement_keyword_score * WEIGHT_ACHIEVEMENT_KEYWORDS
         )
-        return base_score * self.annotation_boost * self.architecture_boost
+
+    @property
+    def total_score(self) -> float:
+        """Calculate weighted total score with annotation and architecture boosts."""
+        return self.base_score * self.annotation_boost * self.architecture_boost
 
     @property
     def word_count(self) -> int:
@@ -467,7 +479,7 @@ class VariantSelector:
                                     jd_keywords=jd_keywords, pain_points=pain_points,
                                     role_category=role_category, annotation_calculator=annotation_calculator,
                                 )
-                                if best_extra_score is None or score.total > best_extra_score.total:
+                                if best_extra_score is None or score.total_score > best_extra_score.total_score:
                                     best_extra = (achievement, chosen_var, score)
                                     best_extra_score = score
                             break
@@ -487,6 +499,17 @@ class VariantSelector:
                         selected.append(forced_extra)
                     selected_achievement_ids.add(ach.id)
                     self._logger.info(f"🤖 Forced {ach.id} ({ach.title}) for AI job coverage")
+
+        # Pain point rebalancing (runs AFTER forced AI insertion)
+        if pain_points:
+            selected = self._rebalance_for_pain_points(
+                selected=selected,
+                all_scores=all_scores,
+                pain_points=pain_points,
+                role_id=role.id,
+                role_category=role_category,
+                target_count=target_count,
+            )
 
         # Calculate keyword coverage
         covered, missing = self._calculate_keyword_coverage(selected, jd_keywords)
@@ -605,6 +628,166 @@ class VariantSelector:
             score.reframe_notes = boost_result.reframe_notes
 
         return score
+
+    # ---- Pain point rebalancing ----
+
+    def _is_forced_ai_achievement(
+        self, role_id: str, role_category: str, achievement_id: str,
+    ) -> bool:
+        """Check if an achievement was force-inserted for AI roles."""
+        return (
+            role_category in ("ai_architect", "ai_leadership")
+            and role_id == "01_seven_one_entertainment"
+            and achievement_id in _FORCED_AI_ACHIEVEMENT_IDS
+        )
+
+    def _token_overlap_score(self, text: str, pain_point: str) -> float:
+        """Token overlap between bullet text and a pain point (content words ≥3 chars)."""
+        text_tokens = set(re.findall(r'\b\w{3,}\b', text.lower()))
+        pp_tokens = set(re.findall(r'\b\w{3,}\b', pain_point.lower()))
+        if not pp_tokens:
+            return 0.0
+        return len(text_tokens & pp_tokens) / len(pp_tokens)
+
+    def _rebalance_for_pain_points(
+        self,
+        selected: List[SelectedVariant],
+        all_scores: List[Tuple],  # List[(Achievement, AchievementVariant, VariantScore)]
+        pain_points: List[str],
+        role_id: str,
+        role_category: str,
+        target_count: int = 5,
+    ) -> List[SelectedVariant]:
+        """
+        Post-selection rebalancing to improve pain point coverage.
+
+        Runs AFTER forced AI achievement insertion. Uses token overlap (not
+        SequenceMatcher) and unboosted base_score for swap eligibility.
+        """
+        if not pain_points or not selected:
+            return selected
+
+        # Build covered set from matched_pain_point strings
+        def _get_covered(sel: List[SelectedVariant]) -> Set[str]:
+            return {
+                sv.score.matched_pain_point
+                for sv in sel
+                if sv.score.matched_pain_point
+            }
+
+        covered = _get_covered(selected)
+        coverage = len(covered) / len(pain_points)
+        if coverage >= REBALANCE_MIN_COVERAGE:
+            return selected
+
+        uncovered = [pp for pp in pain_points if pp not in covered]
+
+        # Build full candidate pool: all scored variants not currently selected
+        # Allow same-achievement different-variant (variant_type swap)
+        selected_keys = {(sv.achievement_id, sv.variant_type) for sv in selected}
+
+        def _makes_candidate(ach, var, score):
+            key = (ach.id, var.variant_type)
+            if key in selected_keys:
+                return False
+            # Must address at least one uncovered pain point via token overlap
+            for pp in uncovered:
+                if self._token_overlap_score(var.text, pp) >= REBALANCE_TOKEN_OVERLAP_THRESHOLD:
+                    return True
+            return False
+
+        candidates = [
+            (ach, var, score)
+            for ach, var, score in all_scores
+            if _makes_candidate(ach, var, score)
+        ]
+        candidates.sort(key=lambda x: x[2].base_score, reverse=True)
+
+        # Fill phase: if room, append without swapping
+        for ach, var, score in list(candidates):
+            if len(selected) >= target_count:
+                break
+            if ach.id in {sv.achievement_id for sv in selected}:
+                continue  # Fill only new achievements
+            # Re-verify candidate covers something uncovered now
+            best_pp = ""
+            for pp in uncovered:
+                if self._token_overlap_score(var.text, pp) >= REBALANCE_TOKEN_OVERLAP_THRESHOLD:
+                    best_pp = pp
+                    break
+            if not best_pp:
+                continue
+            new_sv = SelectedVariant(
+                achievement_id=ach.id, achievement_title=ach.title,
+                variant_type=var.variant_type, text=var.text, score=score,
+                core_fact=ach.core_fact, keywords=ach.keywords,
+            )
+            selected.append(new_sv)
+            selected_keys.add((ach.id, var.variant_type))
+            covered.add(best_pp)
+            uncovered = [pp for pp in uncovered if pp not in covered]
+            candidates.remove((ach, var, score))
+            if len(covered) / len(pain_points) >= REBALANCE_MIN_COVERAGE:
+                return selected
+
+        # Swap phase
+        for ach, var, score in candidates:
+            if not uncovered:
+                break
+            if len(covered) / len(pain_points) >= REBALANCE_MIN_COVERAGE:
+                break
+
+            # Re-verify candidate still covers an uncovered point
+            best_pp = ""
+            for pp in uncovered:
+                if self._token_overlap_score(var.text, pp) >= REBALANCE_TOKEN_OVERLAP_THRESHOLD:
+                    best_pp = pp
+                    break
+            if not best_pp:
+                continue
+
+            # Find weakest swappable bullet
+            weakest_idx = -1
+            weakest_base = float('inf')
+            for i, sv in enumerate(selected):
+                # Cannot swap forced AI achievements
+                if self._is_forced_ai_achievement(role_id, role_category, sv.achievement_id):
+                    continue
+                # Cannot swap sole coverage for another pain point
+                if sv.score.matched_pain_point:
+                    others_covering = [
+                        o for j, o in enumerate(selected)
+                        if j != i and o.score.matched_pain_point == sv.score.matched_pain_point
+                    ]
+                    if not others_covering:
+                        continue
+                if sv.score.base_score < weakest_base:
+                    weakest_base = sv.score.base_score
+                    weakest_idx = i
+
+            if weakest_idx < 0:
+                continue  # No legal swap target
+
+            # Check score drop threshold (unboosted)
+            if weakest_base - score.base_score > REBALANCE_MAX_SCORE_DROP:
+                continue
+
+            # Perform swap
+            old_sv = selected[weakest_idx]
+            new_sv = SelectedVariant(
+                achievement_id=ach.id, achievement_title=ach.title,
+                variant_type=var.variant_type, text=var.text, score=score,
+                core_fact=ach.core_fact, keywords=ach.keywords,
+            )
+            selected[weakest_idx] = new_sv
+            selected_keys.discard((old_sv.achievement_id, old_sv.variant_type))
+            selected_keys.add((ach.id, var.variant_type))
+
+            # Update coverage
+            covered.add(best_pp)
+            uncovered = [pp for pp in uncovered if pp not in covered]
+
+        return selected
 
     def _extract_jd_keywords(self, extracted_jd: Dict) -> Set[str]:
         """Extract and normalize all keywords from JD."""

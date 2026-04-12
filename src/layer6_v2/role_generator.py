@@ -571,7 +571,7 @@ class RoleGenerator:
                 source_text=source_text,
                 source_metric=source_metric,
                 jd_keyword_used=selected.score.matched_keywords[0] if selected.score.matched_keywords else None,
-                pain_point_addressed=None,  # Variant selection doesn't track pain points per-bullet
+                pain_point_addressed=selected.score.matched_pain_point or None,
                 # STAR components not explicitly tracked in variant selection
                 situation=None,
                 action=None,
