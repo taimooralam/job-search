@@ -74,11 +74,11 @@ SEARCH_PROFILES = {
         "Founding AI Engineer",
     ],
     "ai_architect": [
-        "AI Architect", "AI Solutions Architect",
+        "AI Architect", "AI Solutions Architect", "AI Systems Architect",
         "GenAI Architect", "LLM Architect",
         "ML Architect", "AI Platform Architect",
-        "AI Infrastructure Architect",
-        "Cloud Architect AI",
+        "AI Infrastructure Architect", "Enterprise AI Architect",
+        "Agentic AI Architect", "Cloud Architect AI",
     ],
 }
 
