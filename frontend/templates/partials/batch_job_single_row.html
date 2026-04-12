@@ -235,7 +235,7 @@
                     class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
                     onchange="updateBatchJobStatus('{{ job._id }}', this.value)"
                     data-current-status="{{ status }}"
-                    style="min-width: 130px;">
+                    style="min-width: 0; width: 100%;">
                 {% for s in statuses %}
                 <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
                 {% endfor %}

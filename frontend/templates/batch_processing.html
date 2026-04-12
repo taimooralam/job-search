@@ -605,6 +605,13 @@ html, body {
     overflow-x: hidden;
 }
 
+/* Ensure table cells clip content with table-fixed layout */
+.theme-table td,
+.theme-table th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Expanded row styling for batch processing table */
 .expanded-detail-row {
     position: relative;

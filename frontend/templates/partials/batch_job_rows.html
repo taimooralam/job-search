@@ -16,8 +16,8 @@
             {% set sort_fields = [
                 ('company', 'Company', 'w-[130px]'),
                 ('title', 'Role', ''),
-                ('score', 'Score', 'w-[55px]'),
-                ('batch_added_at', 'Added', 'w-[85px]'),
+                ('score', 'Score', 'w-[80px]'),
+                ('batch_added_at', 'Added', 'w-[100px]'),
             ] %}
 
             {% for field, label, width_class in sort_fields %}
@@ -52,7 +52,7 @@
             {% endfor %}
 
             <!-- Status column -->
-            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[120px]">
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[140px]">
                 Status
             </th>
 
@@ -67,7 +67,7 @@
             </th>
 
             <!-- Actions column -->
-            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[70px]">
+            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[100px]">
                 Actions
             </th>
         </tr>
