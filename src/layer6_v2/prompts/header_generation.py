@@ -40,6 +40,12 @@ You will generate FOUR components:
    - The credibility anchor must reflect actual years from experience
    - When the JD title is a reasonable match (AI Architect, Head of AI, etc.), use it as-is for ATS
 
+   COMMANDER-4 FACTS (verified — do not embellish):
+   - "42 plugins" — NEVER "42 agents", "42 multi-agent plugins", or "42 AI agents"
+   - "2,000 users" — NEVER "2,000+ enterprise users" or "2,000+ production users"
+   - Platform name: "Commander-4 (Joyia)" — it is a PROJECT within Seven.One, not a standalone product
+   - Use exact source terminology: "workflow plugins" not "skill-based agents" or "multi-agent workflows"
+
 2. **TAGLINE** (15-25 words, max 200 characters)
    - CRITICAL: Use third-person ABSENT voice (NO pronouns: I, my, you, your, we, our)
    - Start with role/identity noun phrase

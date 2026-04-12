@@ -144,6 +144,20 @@ def _load_ai_project_skills() -> List[str]:
         return []
 
 
+def _load_lantern_skills() -> List[str]:
+    """Load all Lantern skills (verified + post-checklist) for whitelist expansion."""
+    path = Path(__file__).parent.parent.parent / "data" / "master-cv" / "projects" / "lantern_skills.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        skills = list(data.get("verified_skills", []))
+        skills.extend(data.get("verified_competencies", []))
+        skills.extend(data.get("post_checklist_skills", []))
+        skills.extend(data.get("post_checklist_competencies", []))
+        return skills
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
 def _load_ai_project() -> Optional[Dict[str, Any]]:
     """
     Load AI project section from data/master-cv/projects/commander4.md.
@@ -515,13 +529,18 @@ class CVGeneratorV2:
                         f"  AI IC job detected (was {original_category}) — using ai_architect role category"
                     )
 
-                # Expand skill whitelist with Commander-4 project skills for AI jobs
+                # Expand skill whitelist with Commander-4 + Lantern project skills for AI jobs
                 ai_project_skills = _load_ai_project_skills()
-                if ai_project_skills:
+                lantern_skills = _load_lantern_skills()
+                combined_project_skills = list(set(ai_project_skills + lantern_skills))
+                if combined_project_skills:
                     existing_hard = set(skill_whitelist.get("hard_skills", []))
-                    new_skills = [s for s in ai_project_skills if s not in existing_hard]
-                    skill_whitelist.setdefault("hard_skills", []).extend(new_skills)
-                    self._logger.info(f"  Expanded whitelist with {len(new_skills)} Commander-4 skills")
+                    new_hard = [s for s in combined_project_skills if s not in existing_hard]
+                    skill_whitelist.setdefault("hard_skills", []).extend(new_hard)
+                    self._logger.info(
+                        f"  Expanded hard_skills whitelist with {len(new_hard)} "
+                        f"project skills (Commander-4 + Lantern)"
+                    )
 
             # Phase 2: Generate tailored bullets for each role
             # Phase 4: Pass JD annotations for boost calculation
@@ -1322,8 +1341,14 @@ class CVGeneratorV2:
         # Role tagline
         job_title = extracted_jd.get("clean_title") or extracted_jd.get("title", "Engineering Professional")
         role_category = extracted_jd.get("role_category", "engineering_manager")
+        from src.layer6_v2.headline_resolver import clean_jd_title
+        bounded_title = clean_jd_title(job_title, role_category)
         generic_title = self._get_generic_title(role_category)
-        lines.append(f"### {job_title} · {generic_title}")
+        # Only append generic title if it adds information the bounded title doesn't already convey
+        if generic_title.lower() not in bounded_title.lower():
+            lines.append(f"### {bounded_title} · {generic_title}")
+        else:
+            lines.append(f"### {bounded_title}")
 
         # Contact info
         contact_parts = []
@@ -1352,7 +1377,10 @@ class CVGeneratorV2:
         summary_title = "EXECUTIVE SUMMARY" if role_category in executive_roles else "PROFESSIONAL SUMMARY"
         lines.append(f"**{summary_title}**")
         lines.append(f"**{profile.headline}**")
-        lines.append(profile.tagline)
+        # Validate tagline leads with verified identity, not ungrounded AI-first claims
+        from src.layer6_v2.headline_resolver import validate_tagline_evidence_first
+        validated_tagline = validate_tagline_evidence_first(profile.tagline, role_category)
+        lines.append(validated_tagline)
         lines.append("")
 
         # Key achievements
@@ -1667,7 +1695,11 @@ class CVGeneratorV2:
         from src.layer6_v2.headline_resolver import clean_jd_title
         bounded_title = clean_jd_title(job_title, role_category)
         generic_title = self._get_generic_title(role_category)
-        lines.append(f"### {bounded_title} · {generic_title}")
+        # Only append generic title if it adds information the bounded title doesn't already convey
+        if generic_title.lower() not in bounded_title.lower():
+            lines.append(f"### {bounded_title} · {generic_title}")
+        else:
+            lines.append(f"### {bounded_title}")
 
         # Build contact info with dot separators - no linkedin (it's in the links line above)
         contact_parts = []
@@ -1700,6 +1732,9 @@ class CVGeneratorV2:
             or header.profile.narrative
         )
         if tagline_text:
+            # Validate tagline leads with verified identity, not ungrounded AI-first claims
+            from src.layer6_v2.headline_resolver import validate_tagline_evidence_first
+            tagline_text = validate_tagline_evidence_first(tagline_text, role_category)
             lines.append(sanitize_markdown(tagline_text))
             lines.append("")
 

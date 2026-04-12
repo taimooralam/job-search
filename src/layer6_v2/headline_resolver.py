@@ -225,3 +225,59 @@ def enforce_achievement_diversity(
         unselected.remove(new_text)
 
     return result
+
+
+# ---- Tagline Evidence-First Validator ----
+
+# Patterns that indicate AI-first framing (unverified lead)
+_AI_FIRST_PATTERNS = [
+    r"^AI\s",
+    r"^GenAI\s",
+    r"^Generative\s+AI\s",
+    r"^LLM\s",
+    r"^Machine\s+Learning\s",
+    r"^ML\s",
+    r"^Agentic\s+AI\s",
+    r"^NLP\s",
+    r"^Deep\s+Learning\s",
+]
+
+# Evidence-first fallback taglines per role category (from taxonomy identity_statements)
+_EVIDENCE_FIRST_FALLBACKS = {
+    "ai_architect": (
+        "Production infrastructure leader applying 11+ years of distributed systems "
+        "rigor to LLM gateway design, evaluation pipelines, and AI reliability at scale."
+    ),
+    "ai_leadership": (
+        "Hands-on AI platform leader with 11+ years building production systems — "
+        "from LLM gateway design to AI governance at enterprise scale."
+    ),
+}
+
+
+def validate_tagline_evidence_first(tagline: str, role_category: str) -> str:
+    """
+    Reject taglines that lead with unverified AI-specialist claims.
+
+    The candidate's verified identity is "Engineering Leader / Software Architect"
+    with hands-on AI platform experience. Taglines must lead with a verifiable
+    claim before introducing AI framing.
+
+    Args:
+        tagline: Generated tagline text
+        role_category: Target role category
+
+    Returns:
+        Original tagline if evidence-first, or fallback if AI-first
+    """
+    if not tagline:
+        return _EVIDENCE_FIRST_FALLBACKS.get(role_category, tagline or "")
+
+    for pattern in _AI_FIRST_PATTERNS:
+        if re.match(pattern, tagline.strip(), re.IGNORECASE):
+            fallback = _EVIDENCE_FIRST_FALLBACKS.get(role_category)
+            if fallback:
+                return fallback
+            break
+
+    return tagline
