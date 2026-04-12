@@ -2059,6 +2059,262 @@
       "max_sections": 4,
       "max_skills_per_section": 6,
       "lax_multiplier": 1.3
+    },
+    "ai_leadership": {
+      "display_name": "Head of AI / AI Leadership",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "AI Strategy & Platform Architecture",
+          "description": "AI strategy, LLM platform design, RAG architecture, agentic system design"
+        },
+        "section_2": {
+          "name": "Engineering Leadership & Team Building",
+          "description": "AI team building, technical hiring, mentoring, cross-functional leadership"
+        },
+        "section_3": {
+          "name": "Production AI Operations",
+          "description": "LLM reliability, evaluation pipelines, observability, cost optimization"
+        },
+        "section_4": {
+          "name": "AI Governance & Compliance",
+          "description": "EU AI Act, GDPR for AI, guardrail design, risk assessment, responsible AI"
+        }
+      },
+      "persona": {
+        "identity_statement": "hands-on AI platform leader building and governing enterprise AI systems with 11 years of production infrastructure foundation",
+        "voice": "strategic, hands-on, governance-aware",
+        "tagline_templates": [
+          "Hands-on AI leader with {years} years building production platforms — from LLM gateway design to AI governance at enterprise scale.",
+          "{Identity} bridging distributed systems rigor with AI platform leadership and team building."
+        ],
+        "headline_pattern": "{Title} | {Years}+ Years AI Platform Leadership & Production Systems",
+        "power_verbs": [
+          "led",
+          "architected",
+          "scaled",
+          "governed",
+          "established",
+          "pioneered",
+          "built",
+          "transformed",
+          "mentored",
+          "orchestrated"
+        ],
+        "metric_priorities": [
+          "team_scale",
+          "platform_scale",
+          "reliability",
+          "cost_optimization"
+        ],
+        "key_achievement_focus": [
+          "AI platform at scale",
+          "team building",
+          "governance frameworks",
+          "cost optimization",
+          "engineering culture"
+        ],
+        "differentiators": [
+          "hands-on + leadership hybrid",
+          "infrastructure-to-AI bridge",
+          "governance depth",
+          "team building from zero"
+        ],
+        "metric_emphasis": 0.4,
+        "high_impact_themes": [
+          "Building AI teams from zero and establishing engineering culture",
+          "LLM platform architecture with production reliability guarantees",
+          "AI governance and compliance (GDPR, guardrails, responsible AI)",
+          "Cost-optimized multi-provider AI routing at enterprise scale",
+          "Cross-functional AI strategy alignment with business stakeholders"
+        ],
+        "red_flags_to_avoid": [
+          "Overstating org-scale beyond 10-15 direct reports",
+          "Claiming P&L ownership without evidence",
+          "Implying deep ML research expertise",
+          "Missing hands-on technical credibility",
+          "Forcing AI lens on older roles where evidence is thin"
+        ],
+        "board_level_language": false,
+        "expected_team_size_range": "8-20",
+        "expected_budget_range": null,
+        "ats_priority": "high"
+      },
+      "sections": [
+        {
+          "name": "AI Strategy & Platform Architecture",
+          "priority": 1,
+          "description": "AI strategy, LLM platform design, agentic systems, RAG architecture, technology evaluation",
+          "skills": [
+            "AI Strategy",
+            "LLM Platform Design",
+            "LLM Gateway Design",
+            "RAG Architecture",
+            "Agentic System Design",
+            "Multi-Provider AI Routing",
+            "Semantic Caching",
+            "LangGraph",
+            "LangChain",
+            "Vector Search",
+            "Prompt Engineering",
+            "AI Roadmap Development",
+            "Technology Evaluation",
+            "Platform Migration",
+            "API Gateway Design",
+            "Quality Gates",
+            "LLM-as-Judge Evaluation"
+          ],
+          "jd_signals": [
+            "ai strategy",
+            "llm",
+            "large language model",
+            "genai",
+            "generative ai",
+            "platform",
+            "architecture",
+            "rag",
+            "retrieval",
+            "agentic",
+            "agent",
+            "langchain",
+            "langgraph",
+            "vector",
+            "semantic",
+            "roadmap",
+            "vision",
+            "technical direction",
+            "technology evaluation",
+            "ai platform"
+          ]
+        },
+        {
+          "name": "Engineering Leadership & Team Building",
+          "priority": 2,
+          "description": "AI team building, hiring, mentoring, cross-functional alignment, engineering culture",
+          "skills": [
+            "Engineering Leadership",
+            "Technical Hiring",
+            "Mentoring",
+            "Cross-Functional Leadership",
+            "Agile/Scrum",
+            "Stakeholder Management",
+            "OKR Setting",
+            "Performance Management",
+            "Engineering Culture",
+            "Career Pathing",
+            "Blameless Postmortems",
+            "Innovation Programs",
+            "Vendor Management",
+            "Talent Development",
+            "Executive Communication"
+          ],
+          "jd_signals": [
+            "team",
+            "leadership",
+            "hiring",
+            "mentor",
+            "manage",
+            "build",
+            "cross-functional",
+            "stakeholder",
+            "agile",
+            "scrum",
+            "okr",
+            "culture",
+            "talent",
+            "grow",
+            "develop",
+            "scale team",
+            "direct reports",
+            "headcount",
+            "people management",
+            "engineering manager"
+          ]
+        },
+        {
+          "name": "Production AI Operations",
+          "priority": 3,
+          "description": "LLM reliability, evaluation, observability, cost optimization, incident management",
+          "skills": [
+            "LLM Reliability Engineering",
+            "Evaluation Pipelines",
+            "Quality Gates",
+            "Prometheus",
+            "Grafana",
+            "OpenSearch",
+            "Docker",
+            "Kubernetes",
+            "CI/CD",
+            "AWS",
+            "SLO/SLI Design",
+            "Cost Optimization",
+            "Incident Management",
+            "Langfuse Tracing"
+          ],
+          "jd_signals": [
+            "production",
+            "reliability",
+            "monitoring",
+            "observability",
+            "evaluation",
+            "quality",
+            "docker",
+            "kubernetes",
+            "aws",
+            "cloud",
+            "devops",
+            "infrastructure",
+            "slo",
+            "sli",
+            "cost",
+            "incident",
+            "tracing",
+            "langfuse",
+            "opensearch"
+          ]
+        },
+        {
+          "name": "AI Governance & Compliance",
+          "priority": 4,
+          "description": "AI governance, GDPR, EU AI Act, guardrails, responsible AI, compliance frameworks",
+          "skills": [
+            "AI Governance",
+            "GDPR Compliance",
+            "EU AI Act",
+            "TCF Compliance",
+            "Consent Management",
+            "Guardrail Design",
+            "Risk Assessment",
+            "Responsible AI",
+            "Data Privacy",
+            "Model Auditing",
+            "Bias Detection",
+            "Regulatory Stakeholder Management"
+          ],
+          "jd_signals": [
+            "governance",
+            "compliance",
+            "gdpr",
+            "eu ai act",
+            "guardrail",
+            "risk",
+            "responsible ai",
+            "ethics",
+            "privacy",
+            "audit",
+            "bias",
+            "regulation",
+            "policy",
+            "safety",
+            "consent",
+            "tcf",
+            "regulatory"
+          ]
+        }
+      ],
+      "max_sections": 4,
+      "max_skills_per_section": 6,
+      "lax_multiplier": 1.3
     }
   },
   "skill_aliases": {

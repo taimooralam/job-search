@@ -1009,6 +1009,7 @@ VALUE_PROPOSITION_TEMPLATES = {
         "examples": [
             "Hands-on AI leader with 11+ years building production platforms — from LLM gateway design to AI governance at enterprise scale.",
             "AI platform leader bridging distributed systems architecture with team building and AI governance.",
+            "Engineering leader turned AI platform architect — building teams and governance frameworks for enterprise LLM systems.",
         ],
         "emphasis": ["team building", "AI platform architecture", "governance", "production reliability"],
     },

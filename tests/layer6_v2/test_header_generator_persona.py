@@ -178,11 +178,14 @@ class TestHeaderGeneratorPersonaLoading:
         assert "engineering executive" in persona.get("identity_statement", "").lower(), \
             "VP Engineering identity should mention executive"
 
-    def test_load_role_persona_ai_leadership_falls_back_cleanly(self):
-        """Missing ai_leadership taxonomy should fall back without error."""
+    def test_load_role_persona_ai_leadership_loads_correctly(self):
+        """ai_leadership taxonomy should load AI leadership persona."""
         persona = _load_role_persona("ai_leadership")
         assert isinstance(persona, dict)
-        assert persona == {}
+        assert persona != {}, "ai_leadership persona should not be empty"
+        assert "leader" in persona.get("identity_statement", "").lower()
+        assert persona.get("voice"), "ai_leadership should have a voice"
+        assert len(persona.get("power_verbs", [])) >= 8
 
 
 # ===== TESTS: Profile Generation with V2 =====
