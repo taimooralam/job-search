@@ -21,8 +21,7 @@ uae_ksa_leadership:
     - NEOM
   rank_boosts:
     leadership: 15     # head, lead, director, vp, chief, principal, staff
-    staff_architect: 10  # also boost staff/architect titles in Gulf
-    high_score: 0      # natural score weight
+    staff_architect: 12  # boost architect titles in Gulf
     newest: 5          # posted recently bonus
 
 global_remote:
@@ -37,9 +36,8 @@ global_remote:
     - global
   location_mode: "require_any"  # job must match at least one pattern
   rank_boosts:
+    staff_architect: 15  # architect titles are primary signal
     leadership: 10
-    staff_architect: 10
-    high_score: 0
     newest: 5
 
 eea_remote:
@@ -103,10 +101,9 @@ eea_remote:
     - EEA
     - EMEA
   rank_boosts:
+    staff_architect: 12  # boost architect titles in EEA
     remote: 10
-    staff_architect: 8
     leadership: 8
-    high_score: 0
     newest: 5
 
 eea_staff_architect:
@@ -167,8 +164,7 @@ eea_staff_architect:
     - EEA
     - EMEA
   rank_boosts:
-    staff_architect: 15   # staff, architect, principal
-    newest: 8
-    high_score: 0
-    leadership: 5
-    remote: 3
+    staff_architect: 20   # primary signal: staff, architect, principal
+    newest: 10
+    leadership: 8
+    remote: 5
