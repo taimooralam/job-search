@@ -268,6 +268,7 @@ def insert_jobs(jobs: List[Dict], collection, source_tag: str, dry_run: bool = F
                 "employment_type": job.get("employment_type"),
                 "job_function": job.get("job_function"),
                 "industries": job.get("industries"),
+                "work_mode": job.get("work_mode"),
                 "rule_score_breakdown": job.get("breakdown"),
             },
         }

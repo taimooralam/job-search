@@ -350,6 +350,7 @@ def _run(args):
                             "linkedin_job_id": scored["job_id"],
                             "seniority_level": scored.get("seniority"),
                             "employment_type": scored.get("employment_type"),
+                            "work_mode": scored.get("work_mode"),
                             "rule_score_breakdown": scored.get("breakdown"),
                         },
                     }},

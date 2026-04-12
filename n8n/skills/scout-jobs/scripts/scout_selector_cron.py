@@ -328,6 +328,7 @@ def insert_jobs(
                 "employment_type": job.get("employment_type"),
                 "job_function": job.get("job_function"),
                 "industries": job.get("industries"),
+                "work_mode": job.get("work_mode"),
                 "rule_score_breakdown": job.get("breakdown"),
             },
         }

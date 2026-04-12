@@ -417,6 +417,7 @@ def fetch_details_and_score(jobs: List[Dict]) -> List[Dict]:
                 "employment_type": job_data.employment_type,
                 "job_function": job_data.job_function,
                 "industries": job_data.industries,
+                "work_mode": job_data.work_mode,
                 "breakdown": result["breakdown"],
             })
 

@@ -54,6 +54,7 @@ class LinkedInJobData:
     employment_type: Optional[str] = None
     job_function: Optional[str] = None
     industries: Optional[List[str]] = None
+    work_mode: Optional[str] = None  # Remote, Hybrid, On-site
 
     # Metadata
     scraped_at: Optional[datetime] = None
@@ -255,6 +256,9 @@ def _parse_job_html(job_id: str, html: str) -> LinkedInJobData:
     # Extract job criteria (optional)
     criteria = _extract_job_criteria(soup)
 
+    # Extract work mode (Remote/Hybrid/On-site)
+    work_mode = _extract_work_mode(soup)
+
     # Build job URL
     job_url = f"https://www.linkedin.com/jobs/view/{job_id}"
 
@@ -269,6 +273,7 @@ def _parse_job_html(job_id: str, html: str) -> LinkedInJobData:
         employment_type=criteria.get("employment_type"),
         job_function=criteria.get("job_function"),
         industries=criteria.get("industries"),
+        work_mode=work_mode,
         scraped_at=datetime.utcnow(),
         raw_html=html[:5000]  # Store first 5KB for debugging
     )
@@ -317,17 +322,57 @@ def _extract_company(soup: BeautifulSoup) -> Optional[str]:
 
 
 def _extract_location(soup: BeautifulSoup) -> Optional[str]:
-    """Extract job location from page."""
+    """Extract job location from page (strips work mode parenthetical)."""
+    raw = None
     # Primary: location span
     loc_elem = soup.find("span", class_=re.compile(r"topcard__flavor--bullet"))
     if loc_elem:
-        return loc_elem.get_text(strip=True)
+        raw = loc_elem.get_text(strip=True)
 
     # Fallback: look for location in subtitles
+    if not raw:
+        for elem in soup.find_all(class_=re.compile(r"location")):
+            text = elem.get_text(strip=True)
+            if text:
+                raw = text
+                break
+
+    if not raw:
+        return None
+
+    # Strip work mode parenthetical e.g. "Munich (Hybrid)" → "Munich"
+    return re.sub(r"\s*\((Remote|Hybrid|On-site)\)\s*$", "", raw, flags=re.IGNORECASE).strip() or raw
+
+
+def _extract_work_mode(soup: BeautifulSoup) -> Optional[str]:
+    """Extract work mode (Remote/Hybrid/On-site) from location badge or job criteria."""
+    # Primary: parenthetical in location span e.g. "City, Country (Remote)"
+    loc_elem = soup.find("span", class_=re.compile(r"topcard__flavor--bullet"))
+    if loc_elem:
+        text = loc_elem.get_text(strip=True)
+        m = re.search(r"\((Remote|Hybrid|On-site)\)\s*$", text, re.IGNORECASE)
+        if m:
+            return m.group(1).capitalize()
+
+    # Fallback: location class elements
     for elem in soup.find_all(class_=re.compile(r"location")):
         text = elem.get_text(strip=True)
-        if text:
-            return text
+        m = re.search(r"\((Remote|Hybrid|On-site)\)\s*$", text, re.IGNORECASE)
+        if m:
+            return m.group(1).capitalize()
+
+    # Fallback: job criteria section may have "Workplace type" header
+    criteria_list = soup.find("ul", class_=re.compile(r"job-criteria"))
+    if criteria_list:
+        for item in criteria_list.find_all("li", class_=re.compile(r"job-criteria__item")):
+            header = item.find(class_=re.compile(r"job-criteria__subheader"))
+            if not header:
+                continue
+            header_text = header.get_text(strip=True).lower()
+            if "workplace" in header_text or "work type" in header_text or "work mode" in header_text:
+                value_elem = item.find(class_=re.compile(r"job-criteria__text"))
+                if value_elem:
+                    return value_elem.get_text(strip=True)
 
     return None
 
@@ -496,6 +541,7 @@ def linkedin_job_to_mongodb_doc(job_data: LinkedInJobData) -> Dict[str, Any]:
             "employment_type": job_data.employment_type,
             "job_function": job_data.job_function,
             "industries": job_data.industries,
+            "work_mode": job_data.work_mode,
             "scraped_at": job_data.scraped_at.isoformat() if job_data.scraped_at else None,
         }
     }
