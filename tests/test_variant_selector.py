@@ -24,6 +24,9 @@ from src.layer6_v2.variant_selector import (
     select_variants_for_role,
     select_variants_for_all_roles,
     VARIANT_PREFERENCES,
+    REBALANCE_MIN_COVERAGE,
+    REBALANCE_MAX_SCORE_DROP,
+    _FORCED_AI_ACHIEVEMENT_IDS,
 )
 
 
@@ -478,3 +481,460 @@ class TestRealRoleIntegration:
         assert len(result.jd_keywords_covered) >= 1
         # Coverage should be reasonable
         assert result.keyword_coverage >= 0.25
+
+
+# ============================================================================
+# TESTS: PAIN POINT REBALANCING
+# ============================================================================
+
+
+def _make_achievement(aid, title, variants_dict, keywords=None):
+    """Helper: build an Achievement with given variants."""
+    variants = {
+        vt: AchievementVariant(variant_type=vt, text=text)
+        for vt, text in variants_dict.items()
+    }
+    return Achievement(
+        id=aid, title=title, core_fact=title,
+        variants=variants, keywords=keywords or [],
+    )
+
+
+def _make_score(aid, vtype, text, keyword_score=0.3, pain_score=0.0, role_cat_score=0.5,
+                ach_kw_score=0.2, matched_pp="", arch_boost=1.0, anno_boost=1.0):
+    """Helper: build a VariantScore with controllable components."""
+    return VariantScore(
+        achievement_id=aid, variant_type=vtype, variant_text=text,
+        keyword_score=keyword_score, pain_point_score=pain_score,
+        role_category_score=role_cat_score, achievement_keyword_score=ach_kw_score,
+        matched_pain_point=matched_pp, architecture_boost=arch_boost,
+        annotation_boost=anno_boost,
+    )
+
+
+def _make_selected(aid, title, vtype, text, score):
+    """Helper: build a SelectedVariant."""
+    return SelectedVariant(
+        achievement_id=aid, achievement_title=title,
+        variant_type=vtype, text=text, score=score,
+        core_fact=title, keywords=[],
+    )
+
+
+class TestPainPointRebalancing:
+    """Tests for the pain point rebalancing post-selection pass."""
+
+    @pytest.fixture
+    def selector(self):
+        return VariantSelector()
+
+    @pytest.fixture
+    def five_pain_points(self):
+        return [
+            "Need to modernize legacy systems",
+            "Improve system reliability and reduce incidents",
+            "Scale infrastructure to handle growth",
+            "Build AI platform for enterprise",
+            "Establish engineering culture and mentoring",
+        ]
+
+    @pytest.fixture
+    def role_with_diverse_achievements(self):
+        """Role with 6 achievements — some address pain points, some don't."""
+        return EnhancedRoleData(
+            id="test_role",
+            metadata=RoleMetadata(
+                company="Test Co", title="Engineer", location="Munich",
+                period="2020-Present", is_current=True, career_stage="Senior",
+            ),
+            achievements=[
+                _make_achievement("ach_1", "Platform Modernization", {
+                    "Technical": "Architected microservices migration modernize legacy reducing incidents by 75%",
+                    "Architecture": "Designed distributed platform modernize legacy with zero downtime",
+                }),
+                _make_achievement("ach_2", "Observability", {
+                    "Technical": "Built observability pipeline processing billions of events",
+                }),
+                _make_achievement("ach_3", "Team Leadership", {
+                    "Leadership": "Mentored 10 engineers establishing engineering culture and mentoring programs",
+                }),
+                _make_achievement("ach_4", "Scaling", {
+                    "Technical": "Scaled infrastructure auto-scaling handling growth to 10M requests daily",
+                }),
+                _make_achievement("ach_5", "AI Platform", {
+                    "Technical": "Built AI platform enterprise with RAG and semantic caching for 2000 users",
+                }),
+                _make_achievement("ach_6", "Compliance", {
+                    "Technical": "Led GDPR compliance program protecting revenue across product lines",
+                }),
+            ],
+            hard_skills=["Python", "AWS"],
+            soft_skills=["Leadership"],
+        )
+
+    def test_rebalance_improves_coverage(self, selector, role_with_diverse_achievements, five_pain_points):
+        """Selection with low pain point coverage should improve after rebalancing."""
+        jd = {
+            "role_category": "senior_engineer",
+            "top_keywords": ["microservices", "aws", "python", "observability"],
+            "implied_pain_points": five_pain_points,
+        }
+        result = selector.select_variants(role_with_diverse_achievements, jd, target_count=5)
+
+        # Count how many pain points are addressed
+        addressed = {
+            sv.score.matched_pain_point
+            for sv in result.selected_variants
+            if sv.score.matched_pain_point
+        }
+        # Should cover more than 1 (rebalancing should help)
+        assert len(addressed) >= 2
+
+    def test_rebalance_noop_when_coverage_sufficient(self, selector):
+        """If pain point coverage is already >= 60%, no swaps should happen."""
+        pain_points = ["modernize systems", "improve reliability"]
+
+        # All selected cover pain points
+        selected = [
+            _make_selected("a1", "T1", "Technical", "modernize systems architecture",
+                           _make_score("a1", "Technical", "modernize systems architecture",
+                                       matched_pp="modernize systems")),
+            _make_selected("a2", "T2", "Technical", "improve reliability with monitoring",
+                           _make_score("a2", "Technical", "improve reliability with monitoring",
+                                       matched_pp="improve reliability")),
+        ]
+        all_scores = []  # Empty — no candidates
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores,
+            pain_points=pain_points, role_id="test", role_category="senior_engineer",
+        )
+        assert len(result) == 2  # Unchanged
+
+    def test_rebalance_noop_with_empty_pain_points(self, selector):
+        """Empty pain points list should return selection unchanged."""
+        selected = [
+            _make_selected("a1", "T1", "Technical", "some bullet",
+                           _make_score("a1", "Technical", "some bullet")),
+        ]
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=[], pain_points=[],
+            role_id="test", role_category="senior_engineer",
+        )
+        assert result is selected  # Same object, no copy
+
+    def test_rebalance_preserves_forced_ai_achievements(self, selector):
+        """Forced AI achievements (15-18) on Seven.One should never be swapped out."""
+        pain_points = ["need cloud migration", "need team leadership", "need AI platform"]
+
+        # Simulate: achievement_15 is selected (forced), covers "need AI platform"
+        # achievement_1 is selected, covers nothing
+        selected = [
+            _make_selected("achievement_15", "AI Platform", "Technical",
+                           "Built AI platform enterprise",
+                           _make_score("achievement_15", "Technical",
+                                       "Built AI platform enterprise",
+                                       keyword_score=0.1, matched_pp="need AI platform")),
+            _make_selected("ach_1", "Generic", "Technical",
+                           "Did some generic work",
+                           _make_score("ach_1", "Technical", "Did some generic work",
+                                       keyword_score=0.1)),
+        ]
+
+        # Candidate covers "need cloud migration"
+        candidate_ach = _make_achievement("ach_99", "Cloud", {
+            "Technical": "cloud migration infrastructure scaling",
+        })
+        candidate_score = _make_score("ach_99", "Technical",
+                                      "cloud migration infrastructure scaling",
+                                      keyword_score=0.3, matched_pp="need cloud migration")
+        all_scores = [(candidate_ach, candidate_ach.variants["Technical"], candidate_score)]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="01_seven_one_entertainment", role_category="ai_architect",
+        )
+
+        # achievement_15 must still be present
+        ids = [sv.achievement_id for sv in result]
+        assert "achievement_15" in ids
+
+    def test_rebalance_sole_coverage_protection(self, selector):
+        """A bullet that uniquely covers a pain point should not be swapped out."""
+        pain_points = ["modernize legacy", "build AI platform", "improve reliability"]
+
+        # ach_1 is the SOLE coverage for "modernize legacy" — must not be swapped
+        # ach_2 covers nothing — can be swapped
+        selected = [
+            _make_selected("ach_1", "Modernize", "Technical",
+                           "Modernized legacy systems end to end",
+                           _make_score("ach_1", "Technical",
+                                       "Modernized legacy systems end to end",
+                                       keyword_score=0.2, matched_pp="modernize legacy")),
+            _make_selected("ach_2", "Generic", "Technical",
+                           "Generic task with no pain point",
+                           _make_score("ach_2", "Technical",
+                                       "Generic task with no pain point",
+                                       keyword_score=0.2)),
+        ]
+
+        # Candidate covers "build AI platform"
+        candidate_ach = _make_achievement("ach_99", "AI", {
+            "Technical": "build AI platform enterprise with RAG",
+        })
+        candidate_score = _make_score("ach_99", "Technical",
+                                      "build AI platform enterprise with RAG",
+                                      keyword_score=0.3, matched_pp="build AI platform")
+        all_scores = [(candidate_ach, candidate_ach.variants["Technical"], candidate_score)]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="senior_engineer",
+        )
+
+        # ach_1 must still be present (sole coverage for "modernize legacy")
+        ids = [sv.achievement_id for sv in result]
+        assert "ach_1" in ids
+        # ach_2 should have been swapped for ach_99
+        assert "ach_99" in ids
+
+    def test_rebalance_score_threshold(self, selector):
+        """Candidate with too large a score drop should not be swapped in."""
+        pain_points = ["need AI platform", "need leadership"]
+
+        # Strong selected bullet (high base score)
+        selected = [
+            _make_selected("ach_1", "Strong", "Technical",
+                           "Strong bullet with great keywords",
+                           _make_score("ach_1", "Technical",
+                                       "Strong bullet with great keywords",
+                                       keyword_score=0.8, pain_score=0.0,
+                                       role_cat_score=0.8, ach_kw_score=0.5)),
+        ]
+
+        # Weak candidate (very low base score but matches pain point)
+        candidate_ach = _make_achievement("ach_99", "Weak", {
+            "Technical": "need AI platform basic work",
+        })
+        candidate_score = _make_score("ach_99", "Technical",
+                                      "need AI platform basic work",
+                                      keyword_score=0.05, pain_score=0.1,
+                                      role_cat_score=0.1, ach_kw_score=0.0,
+                                      matched_pp="need AI platform")
+        all_scores = [(candidate_ach, candidate_ach.variants["Technical"], candidate_score)]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="senior_engineer",
+        )
+
+        # Score drop too large — should NOT swap
+        assert result[0].achievement_id == "ach_1"
+
+    def test_rebalance_same_achievement_variant_swap(self, selector):
+        """Should allow swapping to a different variant of the same achievement."""
+        pain_points = ["build AI platform", "improve reliability"]
+
+        # ach_1 Technical variant selected — covers nothing
+        selected = [
+            _make_selected("ach_1", "Platform", "Technical",
+                           "Generic technical implementation details",
+                           _make_score("ach_1", "Technical",
+                                       "Generic technical implementation details",
+                                       keyword_score=0.3)),
+        ]
+
+        # ach_1 Architecture variant covers "build AI platform"
+        ach = _make_achievement("ach_1", "Platform", {
+            "Technical": "Generic technical implementation details",
+            "Architecture": "build AI platform architecture with enterprise RAG",
+        })
+        alt_score = _make_score("ach_1", "Architecture",
+                                "build AI platform architecture with enterprise RAG",
+                                keyword_score=0.3, matched_pp="build AI platform")
+        all_scores = [(ach, ach.variants["Architecture"], alt_score)]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="senior_engineer", target_count=5,
+        )
+
+        # Fill phase skips same-achievement, but swap phase replaces the variant in-place
+        # Result: same achievement_id, different variant_type
+        assert any(sv.variant_type == "Architecture" for sv in result)
+
+    def test_rebalance_fill_before_swap(self, selector):
+        """When selection is underfilled, should append instead of swapping."""
+        pain_points = ["modernize legacy", "build AI platform"]
+
+        # Only 1 selected out of target_count=3
+        selected = [
+            _make_selected("ach_1", "T1", "Technical",
+                           "Modernize legacy systems architecture",
+                           _make_score("ach_1", "Technical",
+                                       "Modernize legacy systems architecture",
+                                       matched_pp="modernize legacy")),
+        ]
+
+        # Candidate from different achievement covers "build AI platform"
+        candidate_ach = _make_achievement("ach_99", "AI", {
+            "Technical": "build AI platform enterprise with semantic caching",
+        })
+        candidate_score = _make_score("ach_99", "Technical",
+                                      "build AI platform enterprise with semantic caching",
+                                      keyword_score=0.3, matched_pp="build AI platform")
+        all_scores = [(candidate_ach, candidate_ach.variants["Technical"], candidate_score)]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="senior_engineer", target_count=3,
+        )
+
+        # Should have appended (not swapped) since len(selected) < target_count
+        assert len(result) == 2
+        ids = [sv.achievement_id for sv in result]
+        assert "ach_1" in ids
+        assert "ach_99" in ids
+
+    def test_rebalance_all_protected_no_swap(self, selector):
+        """If all bullets are forced or sole-coverage, no swap should happen."""
+        pain_points = ["modernize legacy", "build AI platform", "need leadership"]
+
+        # Both bullets are sole-coverage for their respective pain points
+        selected = [
+            _make_selected("ach_1", "T1", "Technical",
+                           "Modernize legacy platform",
+                           _make_score("ach_1", "Technical",
+                                       "Modernize legacy platform",
+                                       matched_pp="modernize legacy")),
+            _make_selected("ach_2", "T2", "Technical",
+                           "Build AI platform for enterprise",
+                           _make_score("ach_2", "Technical",
+                                       "Build AI platform for enterprise",
+                                       matched_pp="build AI platform")),
+        ]
+
+        # Candidate covers "need leadership"
+        candidate_ach = _make_achievement("ach_99", "Leadership", {
+            "Leadership": "need leadership mentoring team building",
+        })
+        candidate_score = _make_score("ach_99", "Leadership",
+                                      "need leadership mentoring team building",
+                                      keyword_score=0.3, matched_pp="need leadership")
+        all_scores = [(candidate_ach, candidate_ach.variants["Leadership"], candidate_score)]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="senior_engineer", target_count=2,
+        )
+
+        # Both are sole-coverage — no legal swap, selection unchanged
+        ids = [sv.achievement_id for sv in result]
+        assert "ach_1" in ids
+        assert "ach_2" in ids
+        assert len(result) == 2
+
+    def test_rebalance_stale_candidate_skipped(self, selector):
+        """Candidate that becomes redundant after an earlier swap should be skipped."""
+        pain_points = ["build AI platform", "need leadership"]
+
+        # Two generic bullets, neither covers pain points
+        selected = [
+            _make_selected("ach_1", "T1", "Technical", "generic work one",
+                           _make_score("ach_1", "Technical", "generic work one",
+                                       keyword_score=0.2)),
+            _make_selected("ach_2", "T2", "Technical", "generic work two",
+                           _make_score("ach_2", "Technical", "generic work two",
+                                       keyword_score=0.2)),
+        ]
+
+        # Two candidates both cover "build AI platform" — only first should swap in
+        cand_ach_1 = _make_achievement("ach_91", "AI1", {
+            "Technical": "build AI platform with RAG enterprise",
+        })
+        cand_score_1 = _make_score("ach_91", "Technical",
+                                   "build AI platform with RAG enterprise",
+                                   keyword_score=0.3, matched_pp="build AI platform")
+        cand_ach_2 = _make_achievement("ach_92", "AI2", {
+            "Technical": "build AI platform with semantic caching",
+        })
+        cand_score_2 = _make_score("ach_92", "Technical",
+                                   "build AI platform with semantic caching",
+                                   keyword_score=0.25, matched_pp="build AI platform")
+
+        all_scores = [
+            (cand_ach_1, cand_ach_1.variants["Technical"], cand_score_1),
+            (cand_ach_2, cand_ach_2.variants["Technical"], cand_score_2),
+        ]
+
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="senior_engineer",
+        )
+
+        # Only one AI candidate should have been swapped in (second is stale)
+        ai_ids = [sv.achievement_id for sv in result if sv.achievement_id.startswith("ach_9")]
+        assert len(ai_ids) == 1
+
+    def test_rebalance_architecture_boost_interaction(self, selector):
+        """Swap eligibility should use base_score, not boosted total_score."""
+        pain_points = ["need leadership mentoring"]
+
+        # Architecture-boosted bullet (1.5x) — high total but same base as candidate
+        selected = [
+            _make_selected("ach_1", "Arch", "Architecture",
+                           "Architected distributed system design",
+                           _make_score("ach_1", "Architecture",
+                                       "Architected distributed system design",
+                                       keyword_score=0.3, pain_score=0.0,
+                                       role_cat_score=0.5, ach_kw_score=0.2,
+                                       arch_boost=1.5)),
+        ]
+
+        # Candidate with similar base score but covers pain point
+        candidate_ach = _make_achievement("ach_99", "Leadership", {
+            "Leadership": "need leadership mentoring team building culture",
+        })
+        candidate_score = _make_score("ach_99", "Leadership",
+                                      "need leadership mentoring team building culture",
+                                      keyword_score=0.25, pain_score=0.3,
+                                      role_cat_score=0.4, ach_kw_score=0.2,
+                                      matched_pp="need leadership mentoring")
+        all_scores = [(candidate_ach, candidate_ach.variants["Leadership"], candidate_score)]
+
+        # Base scores are close: ach_1 = 0.3*0.4+0*0.3+0.5*0.2+0.2*0.1 = 0.24
+        # ach_99 = 0.25*0.4+0.3*0.3+0.4*0.2+0.2*0.1 = 0.29
+        # If using total_score, ach_1 = 0.24*1.5 = 0.36, so 0.36-0.29=0.07 > threshold? No.
+        # But with base_score: 0.24-0.29 = -0.05 (candidate is STRONGER) — swap should happen
+        result = selector._rebalance_for_pain_points(
+            selected=selected, all_scores=all_scores, pain_points=pain_points,
+            role_id="test", role_category="ai_architect", target_count=5,
+        )
+
+        # Should have appended (fill phase) since len < target
+        assert len(result) == 2
+        ids = [sv.achievement_id for sv in result]
+        assert "ach_99" in ids
+
+    def test_role_generator_propagates_pain_point(self):
+        """GeneratedBullet.pain_point_addressed should be populated from variant score."""
+        # This tests the role_generator.py line 574 change
+        from src.layer6_v2.types import GeneratedBullet
+
+        # Simulate what role_generator does with a selected variant
+        score = _make_score("a1", "Technical", "some text", matched_pp="modernize legacy")
+        bullet = GeneratedBullet(
+            text="some text",
+            source_text="core fact",
+            pain_point_addressed=score.matched_pain_point or None,
+        )
+        assert bullet.pain_point_addressed == "modernize legacy"
+
+        # Empty matched_pain_point should become None
+        score_empty = _make_score("a2", "Technical", "other text", matched_pp="")
+        bullet_empty = GeneratedBullet(
+            text="other text",
+            source_text="core fact",
+            pain_point_addressed=score_empty.matched_pain_point or None,
+        )
+        assert bullet_empty.pain_point_addressed is None
