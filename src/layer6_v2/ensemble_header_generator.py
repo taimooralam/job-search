@@ -269,7 +269,7 @@ class EnsembleHeaderGenerator:
         # Synthesize best elements
         self._logger.info("  Running synthesis...")
         synthesized_profile = await self._synthesize_profiles(
-            persona_results, extracted_jd, candidate_data
+            persona_results, extracted_jd, candidate_data, stitched_cv=stitched_cv
         )
 
         # Generate skills using taxonomy-based approach (from fallback generator)
@@ -312,7 +312,7 @@ class EnsembleHeaderGenerator:
         # Synthesize best elements
         self._logger.info("  Running synthesis...")
         synthesized_profile = await self._synthesize_profiles(
-            persona_results, extracted_jd, candidate_data
+            persona_results, extracted_jd, candidate_data, stitched_cv=stitched_cv
         )
 
         # Generate skills
@@ -460,6 +460,7 @@ Return JSON matching this ProfileResponse schema:
         persona_results: List[PersonaProfileResult],
         extracted_jd: Dict,
         candidate_data: Dict,
+        stitched_cv: "StitchedCV" = None,
     ) -> ProfileOutput:
         """
         Combine best elements from multiple hybrid executive summary outputs.
@@ -529,9 +530,10 @@ Return JSON matching this ProfileResponse schema:
         from src.layer6_v2.headline_resolver import enforce_achievement_diversity
         role_category = extracted_jd.get("role_category", "engineering_manager")
         all_bullets = []
-        for role in stitched_cv.roles:
-            for bullet in role.bullets:
-                all_bullets.append(bullet)
+        if stitched_cv:
+            for role in stitched_cv.roles:
+                for bullet in role.bullets:
+                    all_bullets.append(bullet)
         diversified_achievements = enforce_achievement_diversity(
             achievements=response.key_achievements,
             all_candidates=all_bullets[:20],
