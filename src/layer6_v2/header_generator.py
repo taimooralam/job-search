@@ -951,6 +951,14 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                     for i, b in enumerate(key_achievements[:3])
                 ],
             })
+            # Enforce achievement diversity (post-LLM rebalancing)
+            from src.layer6_v2.headline_resolver import enforce_achievement_diversity
+            key_achievements = enforce_achievement_diversity(
+                achievements=key_achievements,
+                all_candidates=all_bullets[:20],
+                role_category=role_category,
+            )
+
         else:
             self._logger.warning(f"V2 bullet selection failed: {bullets_result.error}")
 
@@ -1062,8 +1070,9 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
         executive_roles = {"director_of_engineering", "head_of_engineering", "vp_engineering", "cto"}
         summary_type = "executive_summary" if role_category in executive_roles else "professional_summary"
 
-        # Build headline
-        headline = f"{job_title} | {years_experience}+ Years Technology Leadership"
+        # Build headline (evidence-bounded: strips dual-titles, rejects unearned specializations)
+        from src.layer6_v2.headline_resolver import resolve_headline
+        headline = resolve_headline(job_title, role_category, years_experience)
 
         # Phase 0: Log headline construction decision point (algorithmic, no LLM)
         self._emit_struct_log("decision_point", {

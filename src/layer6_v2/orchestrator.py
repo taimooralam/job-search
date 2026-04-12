@@ -1648,10 +1648,12 @@ class CVGeneratorV2:
             links_line = " · ".join(link_parts)
             lines.append(links_line)  # Plain text links line (styled by CSS)
 
-        # Role tagline (H3): JD Title · Generic Title
+        # Role tagline (H3): JD Title (evidence-bounded) · Generic Title
         role_category = extracted_jd.get("role_category", "engineering_manager")
+        from src.layer6_v2.headline_resolver import clean_jd_title
+        bounded_title = clean_jd_title(job_title, role_category)
         generic_title = self._get_generic_title(role_category)
-        lines.append(f"### {job_title} · {generic_title}")
+        lines.append(f"### {bounded_title} · {generic_title}")
 
         # Build contact info with dot separators - no linkedin (it's in the links line above)
         contact_parts = []

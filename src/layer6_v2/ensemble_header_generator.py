@@ -525,10 +525,23 @@ Return JSON matching this ProfileResponse schema:
             all_metrics.update(pr.metrics_found)
             all_keywords.update(pr.keywords_found)
 
+        # Enforce achievement diversity (post-synthesis rebalancing)
+        from src.layer6_v2.headline_resolver import enforce_achievement_diversity
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+        all_bullets = []
+        for role in stitched_cv.roles:
+            for bullet in role.bullets:
+                all_bullets.append(bullet)
+        diversified_achievements = enforce_achievement_diversity(
+            achievements=response.key_achievements,
+            all_candidates=all_bullets[:20],
+            role_category=role_category,
+        )
+
         return ProfileOutput(
             headline=response.headline,
             tagline=response.tagline,                    # NEW: Hybrid format
-            key_achievements=response.key_achievements,  # NEW: Hybrid format
+            key_achievements=diversified_achievements,   # Diversity-enforced
             core_competencies=response.core_competencies,
             highlights_used=list(all_metrics),
             keywords_integrated=list(all_keywords),
