@@ -21,12 +21,13 @@ uae_ksa_leadership:
     - NEOM
   rank_boosts:
     leadership: 15     # head, lead, director, vp, chief, principal, staff
+    staff_architect: 10  # also boost staff/architect titles in Gulf
     high_score: 0      # natural score weight
     newest: 5          # posted recently bonus
 
 global_remote:
   description: "Top remote-everywhere AI roles globally"
-  quota: 2
+  quota: 3
   cron: "every 3h"
   source_tag: "scout_dim_global_remote"
   location_patterns:
@@ -37,6 +38,7 @@ global_remote:
   location_mode: "require_any"  # job must match at least one pattern
   rank_boosts:
     leadership: 10
+    staff_architect: 10
     high_score: 0
     newest: 5
 
@@ -102,13 +104,14 @@ eea_remote:
     - EMEA
   rank_boosts:
     remote: 10
+    staff_architect: 8
     leadership: 8
     high_score: 0
     newest: 5
 
 eea_staff_architect:
   description: "EEA staff/architect/principal-level AI roles"
-  quota: 2
+  quota: 3
   cron: "every 6h"
   source_tag: "scout_dim_eea_architect"
   location_patterns:

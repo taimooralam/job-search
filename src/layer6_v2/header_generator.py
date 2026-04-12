@@ -152,7 +152,7 @@ class ProfileResponse(BaseModel):
     1. Headline: "[EXACT JD TITLE] | [X]+ Years Technology Leadership"
     2. Tagline: Persona-driven hook, third-person absent voice (15-25 words, max 200 chars)
     3. Key Achievements: 5-6 quantified proof points (no pronouns)
-    4. Core Competencies: 6-8 ATS-friendly keywords
+    4. Core Competencies: 10-12 ATS-friendly keywords
     """
     headline: str = Field(
         description="[EXACT JD TITLE] | [X]+ Years Technology Leadership"
@@ -166,7 +166,7 @@ class ProfileResponse(BaseModel):
                     "No pronouns. Format: 'Achieved X by doing Y, resulting in Z'"
     )
     core_competencies: List[str] = Field(
-        description="6-8 ATS-friendly keywords matching JD terminology"
+        description="10-12 ATS-friendly keywords matching JD terminology"
     )
     highlights_used: List[str] = Field(
         description="Exact metrics from source bullets used in key_achievements"
@@ -799,6 +799,7 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             for bullet in ai_project_context["bullets"]:
                 ai_section += f"- {bullet}\n"
             ai_section += "\nIMPORTANT: Do NOT invent claims beyond these verified bullets."
+            ai_section += "\nNOTE: '42 plugins' NOT '42 agents'. '2,000 users' NOT '2,000+ enterprise users'. Commander-4 is a PROJECT within Seven.One, not a standalone job."
             user_prompt += ai_section
 
         # Phase 0: Log LLM call start with prompt previews

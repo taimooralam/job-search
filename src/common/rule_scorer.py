@@ -38,6 +38,10 @@ TARGET_ROLE_FILTER = [
 
 PROMOTION_THRESHOLD = 40
 
+# Fixed normalization cap — realistic achievable max for a strong-match job.
+# Prevents the dynamic max_possible (~382) from crushing all scores into D tier.
+NORMALIZATION_CAP = 200
+
 # =============================================================================
 # ROLE DEFINITIONS
 # =============================================================================
@@ -166,7 +170,9 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
             "head of ai engineering", "head of agentic",
             "ai engineering manager", "engineering manager ai",
         ],
-        "excludeIfContains": [],
+        "excludeIfContains": [
+            "sales", "pre-sales", "presales", "marketing", "customer success",
+        ],
     },
 }
 
@@ -187,12 +193,64 @@ UNWANTED_TITLE_KEYWORDS = [
     "data scientist", "senior data scientist", "lead data scientist",
     "ml engineer", "machine learning engineer", "senior ml engineer",
     "lead ml engineer", "staff ml engineer",
+    "ml researcher", "research scientist",
+    "computer vision", "robotics", "firmware",
+    "devops engineer",
 ]
 
 # Hard negatives: always penalize these in title, even if a target role was detected.
 # Prevents "AI Sales Engineer" or "Java AI Developer" from scoring well.
 TITLE_HARD_NEGATIVES = [
     "java", "sales", "account", "account manager", "account executive",
+    "data scientist", "ml researcher", "machine learning research",
+    "computer vision engineer", "robotics engineer",
+    "android engineer", "ios engineer",
+    "firmware engineer", "network engineer",
+]
+
+# JD body negative signals — scanned in description only (not title).
+JD_NEGATIVE_SIGNALS = {
+    "hard": {
+        "keywords": [
+            "pytorch", "tensorflow", "keras", "jax", "mxnet",
+            "cuda", "gpu programming", "model training at scale",
+            "rlhf", "reinforcement learning from human feedback",
+            "fine-tuning pipeline", "model fine-tuning",
+            "kaggle", "competition", "research paper",
+            "phd required", "phd preferred",
+            "android development", "ios development", "kotlin", "swift",
+            "mobile genai", "on-device ai", "on-device ml",
+            "manufacturing domain", "manufacturing experience required",
+            "time-series forecasting", "predictive maintenance",
+            "computer vision required", "opencv required",
+            "matlab required",
+        ],
+        "penalty_per_match": 8,
+        "max_penalty": 35,
+    },
+    "soft": {
+        "keywords": [
+            "azure required", "azure experience required", "azure as primary",
+            "gcp required", "gcp experience required", "google cloud required",
+            "databricks required", "databricks experience",
+            "snowflake required", "snowflake experience",
+            "spark required", "apache spark",
+            "scikit-learn", "sklearn",
+            "data scientist", "data science team",
+            "feature engineering", "feature store",
+            "model registry", "model serving infrastructure",
+            "mlflow required",
+        ],
+        "penalty_per_match": 4,
+        "max_penalty": 20,
+    },
+}
+
+LACKING_TECH = [
+    "pytorch", "tensorflow", "keras", "cuda", "scikit-learn",
+    "azure", "gcp", "databricks", "snowflake", "spark",
+    "android", "ios", "kotlin", "swift", "flutter",
+    "computer vision", "opencv",
 ]
 
 # =============================================================================
@@ -238,6 +296,7 @@ GENAI_LLM_KEYWORDS = [
     "transformer", "foundation model", "llm integration", "llm systems",
     "llm applications", "llm ecosystem", "llm proxy", "vllm",
     "text generation", "language model", "multimodal",
+    "llmops", "llm ops",
 ]
 
 AGENTIC_AI_KEYWORDS = [
@@ -296,6 +355,7 @@ AI_INFRA_KEYWORDS = [
     "model monitoring", "model registry", "ml pipeline", "model pipeline",
     "inference", "streaming inference", "distributed inference",
     "ml inference optimization", "gpu", "cuda", "tpu",
+    "llmops", "llm ops", "ai ops", "aiops",
     "pytorch", "tensorflow", "hugging face", "huggingface",
     "deep learning", "deep learning systems", "neural network",
 ]
@@ -366,6 +426,16 @@ GCC_PRIORITY_LOCATIONS = [
     "qatar", "doha",
 ]
 GCC_LOCATION_BONUS = 12
+
+# Europe remote bonus (P2)
+EUROPE_LOCATIONS = [
+    "germany", "netherlands", "france", "belgium", "austria", "switzerland",
+    "sweden", "denmark", "norway", "finland", "ireland", "united kingdom",
+    "spain", "portugal", "italy", "estonia", "latvia", "lithuania",
+    "iceland", "luxembourg",
+]
+EUROPE_REMOTE_BONUS = 15
+GERMANY_REMOTE_BONUS = 10  # stacks with Europe bonus (P3)
 
 REMOTE_NEGATIVE = [
     "onsite only", "on-site only", "office only", "no remote",
@@ -505,7 +575,7 @@ ROLE_WEIGHTS: Dict[str, _W] = {
         "promptEng":     {"weight": 0.5, "max": 5},
         "aiInfra":       {"weight": 1.5, "max": 15},
         "cloudInfra":    {"weight": 1,   "max": 10},
-        "architecture":  {"weight": 1.5, "max": 15},
+        "architecture":  {"weight": 2.5, "max": 25},
         "languages":     {"weight": 0.5, "max": 5},
         "dataKnowledge": {"weight": 1,   "max": 10},
         "aiLeadership":  {"weight": 3,   "max": 30},
@@ -635,6 +705,30 @@ def _count_unwanted_title_keywords(title: str) -> int:
     return sum(1 for kw in UNWANTED_TITLE_KEYWORDS if kw.lower() in t)
 
 
+def _compute_jd_negative_penalties(text: str) -> tuple:
+    """Scan JD body for negative signals. Returns (hard_penalty, soft_penalty)."""
+    hard_count = sum(1 for kw in JD_NEGATIVE_SIGNALS["hard"]["keywords"] if kw in text)
+    soft_count = sum(1 for kw in JD_NEGATIVE_SIGNALS["soft"]["keywords"] if kw in text)
+    hard_penalty = min(hard_count * JD_NEGATIVE_SIGNALS["hard"]["penalty_per_match"],
+                       JD_NEGATIVE_SIGNALS["hard"]["max_penalty"])
+    soft_penalty = min(soft_count * JD_NEGATIVE_SIGNALS["soft"]["penalty_per_match"],
+                       JD_NEGATIVE_SIGNALS["soft"]["max_penalty"])
+    return (hard_penalty, soft_penalty)
+
+
+def _compute_experience_mismatch_penalty(text: str) -> int:
+    """Penalize JDs requiring multi-year experience in technologies candidate lacks."""
+    penalty = 0
+    for tech in LACKING_TECH:
+        pattern = rf"(\d+)\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience\s+(?:with|in|using)\s+)?{re.escape(tech)}"
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            years = int(match.group(1))
+            if years >= 2:
+                penalty += min(years * 4, 20)
+    return min(penalty, 30)
+
+
 # =============================================================================
 # MAIN SCORING FUNCTION
 # =============================================================================
@@ -762,12 +856,12 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         remote_score += 15
     elif _contains_any(loc_and_desc, REMOTE_POSITIVE):
         remote_score += 10
-    # Significant boost for worldwide/anywhere remote — best fit for candidate
+    # Significant boost for worldwide/anywhere remote — P1 priority
     anywhere_keywords = ["remote anywhere", "work from anywhere", "anywhere in the world",
                          "worldwide", "global remote", "fully remote worldwide",
                          "remote - worldwide", "100% remote"]
     if _contains_any(f"{title_lower} {desc_lower}", anywhere_keywords):
-        remote_score += 10
+        remote_score += 15
     if _contains_any(loc_and_desc, REMOTE_NEGATIVE):
         remote_score -= 10
 
@@ -788,10 +882,25 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
             language_score -= 20
             break
 
-    # --- 6) GCC LOCATION BONUS (0 to +12) ---
+    # --- 5b) JD BODY NEGATIVE SIGNALS ---
+    jd_body = f"{crit_lower} {desc_lower}"
+    jd_hard_penalty, jd_soft_penalty = _compute_jd_negative_penalties(jd_body)
+    jd_negative_penalty = jd_hard_penalty + jd_soft_penalty
+    experience_penalty = _compute_experience_mismatch_penalty(jd_body)
+
+    # --- 6) LOCATION BONUSES ---
     gcc_bonus = 0
     if _contains_any(loc_lower, GCC_PRIORITY_LOCATIONS):
         gcc_bonus = GCC_LOCATION_BONUS
+
+    # Europe remote bonus (P2) — stacks if job is remote + European location
+    europe_bonus = 0
+    is_remote = remote_score > 0
+    if is_remote and _contains_any(loc_lower, EUROPE_LOCATIONS):
+        europe_bonus = EUROPE_REMOTE_BONUS
+    # Germany remote extra bonus (P3) — stacks on top of Europe
+    if is_remote and ("germany" in loc_lower or "deutschland" in loc_lower):
+        europe_bonus += GERMANY_REMOTE_BONUS
 
     # --- CALCULATE TOTAL ---
     keyword_total = sum(kw_scores.values())
@@ -805,14 +914,16 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         + remote_score
         + language_score
         + gcc_bonus
+        + europe_bonus
         - unwanted_penalty
+        - jd_negative_penalty
+        - experience_penalty
     )
 
-    max_keyword_score = sum(w["max"] for w in weights.values())
-    # title(50) + seniority(35) + combo(20) + provenFit(15) + keywords + remote(20) + gcc(12)
-    max_possible = 50 + 35 + SENIOR_AI_TITLE_COMBO_BONUS + 15 + max_keyword_score + 20 + GCC_LOCATION_BONUS
-
-    normalized_score = max(0, min(100, round((raw_score / max_possible) * 100)))
+    # Use fixed normalization cap instead of theoretical max to prevent score crushing.
+    # Old formula: max_possible = ~382, making tier C (25%) require raw 96 — nearly impossible.
+    # New: NORMALIZATION_CAP = 200, so tier C (25%) = raw 50, much more reachable.
+    normalized_score = max(0, min(100, round((raw_score / NORMALIZATION_CAP) * 100)))
 
     # --- TIER ---
     if normalized_score >= 70:
@@ -832,7 +943,11 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         "remote": remote_score,
         "language": language_score,
         "gccBonus": gcc_bonus,
+        "europeBonus": europe_bonus,
         "unwantedPenalty": -unwanted_penalty,
+        "jdNegativeHard": -jd_hard_penalty,
+        "jdNegativeSoft": -jd_soft_penalty,
+        "experienceMismatch": -experience_penalty,
     }
     for key, val in kw_scores.items():
         breakdown[key] = round(val)

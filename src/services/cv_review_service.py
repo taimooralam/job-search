@@ -46,7 +46,7 @@ The top 1/3 determines if the CV gets read or rejected. Evaluate:
 - **Headline**: Does it match the exact JD title? Does it signal seniority correctly?
 - **Tagline/Profile**: Is it in third-person absent voice (no pronouns: I, my, we, our)? Does it answer: Who are you? What problems do you solve? What proof do you have? Why should I call you?
 - **Key Achievements**: Are there 5-6 quantified achievements with real metrics? Do they align with the role's pain points?
-- **Core Competencies**: Are there 6-8 ATS-friendly keywords that match the JD? Are they organized in relevant sections?
+- **Core Competencies**: Are there 10-12 ATS-friendly keywords that match the JD? Are they organized in relevant sections?
 
 ### Hiring Manager Questions
 For each section, answer:
@@ -291,6 +291,20 @@ class CVReviewService(OperationService):
 
         sections.append("\n## MASTER CV (Source of Truth for Hallucination Check)")
         sections.append(master_cv_text[:8000] if master_cv_text else "Master CV not available")
+
+        # Append AI project files for complete source-of-truth context
+        from pathlib import Path
+        project_base = Path(__file__).resolve().parents[2] / "data" / "master-cv" / "projects"
+        sections.append("\n## AI PROJECT FILES (Additional Source of Truth)")
+        for project_file in ("commander4.md", "lantern.md"):
+            project_path = project_base / project_file
+            try:
+                if project_path.exists():
+                    project_text = project_path.read_text(encoding="utf-8")
+                    sections.append(f"\n### {project_file}")
+                    sections.append(project_text[:3000])
+            except OSError:
+                pass  # File unreadable, skip gracefully
 
         sections.append("\n## CV TO REVIEW")
         sections.append(cv_text)

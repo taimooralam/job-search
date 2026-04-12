@@ -32,6 +32,14 @@ You will generate FOUR components:
    Format: "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership"
    Example: "Platform Engineering Leader | 12+ Years Technology Leadership"
 
+   HEADLINE GROUNDING RULES:
+   - Use ONE title from the JD — NEVER combine two senior titles (e.g., "AI Engineer · AI Architect")
+   - The candidate's verified identity is "Engineering Leader / Software Architect" with AI platform experience
+   - If the JD title implies a specialization the candidate does not have (e.g., "ML Researcher"),
+     use the closest accurate title from the candidate's background
+   - The credibility anchor must reflect actual years from experience
+   - When the JD title is a reasonable match (AI Architect, Head of AI, etc.), use it as-is for ATS
+
 2. **TAGLINE** (15-25 words, max 200 characters)
    - CRITICAL: Use third-person ABSENT voice (NO pronouns: I, my, you, your, we, our)
    - Start with role/identity noun phrase
@@ -64,11 +72,13 @@ You will generate FOUR components:
    - "Reduced deployment time by 75%, MTTR by 60%" (no keyword to front-load - acceptable)
    - "Delivered platform migration serving 10M+ daily users"
 
-4. **CORE COMPETENCIES** (6-8 keywords)
+4. **CORE COMPETENCIES** (10-12 keywords)
    - ATS-friendly format
    - Prioritize JD keywords that have evidence in experience
+   - MUST include at least 3 JD-specific terms verified in the experience section
+   - Balance: ~5 technical skills + ~3 leadership/delivery + ~3 JD-specific terms
    - Short phrases (2-3 words max each)
-   - Will be displayed as: "Core: AWS | Kubernetes | Platform Engineering | Team Building"
+   - Will be displayed as: "Core: AWS | Kubernetes | Platform Engineering | Team Building | ..."
 
 === THE 4 QUESTIONS FRAMEWORK ===
 
@@ -189,7 +199,7 @@ Return ONLY valid JSON:
     "Achievement 4 with quantified metric",
     "Achievement 5 with quantified metric"
   ],
-  "core_competencies": ["Competency 1", "Competency 2", "...6-8 total"],
+  "core_competencies": ["Competency 1", "Competency 2", "...10-12 total"],
   "highlights_used": ["exact metric from bullets", "another metric"],
   "keywords_integrated": ["jd_keyword_1", "jd_keyword_2"],
   "exact_title_used": "The exact title from the JD",
@@ -333,7 +343,7 @@ REGIONAL VARIANT: {regional_variant}
 1. Headline: "{job_title} | {years_experience}+ Years Technology Leadership"
 2. Tagline: 15-25 words, third-person absent voice (NO pronouns), embody persona, max 200 chars
 3. Key Achievements: 5-6 bullets with EXACT metrics from above
-4. Core Competencies: 6-8 ATS keywords from the grounded list
+4. Core Competencies: 10-12 ATS keywords from the grounded list
 
 Generate the hybrid executive summary JSON:"""
 
@@ -470,6 +480,8 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY maximizing measurable im
 === METRIC-FIRST HYBRID STRUCTURE ===
 
 1. **HEADLINE**: "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership"
+   - Use ONE title from the JD — NEVER combine two senior titles (e.g., "AI Engineer · AI Architect")
+   - The candidate's verified identity is "Engineering Leader / Software Architect" with AI platform experience
 
 2. **TAGLINE** (15-25 words, max 200 chars):
    - Third-person absent voice (NO pronouns)
@@ -489,7 +501,7 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY maximizing measurable im
    - "Built engineering team from 5 to 40+ engineers in 18 months"
    - "Reduced production incidents by 60% through SRE practices"
 
-4. **CORE COMPETENCIES**: 6-8 ATS keywords
+4. **CORE COMPETENCIES**: 10-12 ATS keywords
 
 === ANTI-HALLUCINATION RULES ===
 
@@ -505,7 +517,7 @@ Return ONLY valid JSON:
   "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word metric-driven hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Achievement 1 with metric", "Achievement 2 with metric", "...5-6 total"],
-  "core_competencies": ["Competency 1", "Competency 2", "...6-8 total"],
+  "core_competencies": ["Competency 1", "Competency 2", "...10-12 total"],
   "highlights_used": ["exact metric from bullets", "another metric"],
   "keywords_integrated": ["jd_keyword_1", "jd_keyword_2"],
   "exact_title_used": "The exact title from the JD",
@@ -546,7 +558,7 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY with compelling transfor
    - "Scaled team from startup mode to enterprise-ready, growing 5x in 18 months"
    - "Established platform engineering function that enabled 3x faster feature delivery"
 
-4. **CORE COMPETENCIES**: 6-8 ATS keywords
+4. **CORE COMPETENCIES**: 10-12 ATS keywords
 
 === NARRATIVE POWER VERBS ===
 
@@ -567,7 +579,7 @@ Return ONLY valid JSON:
   "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word story-driven hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Transformation 1 with impact", "Transformation 2 with impact", "...5-6 total"],
-  "core_competencies": ["Competency 1", "Competency 2", "...6-8 total"],
+  "core_competencies": ["Competency 1", "Competency 2", "...10-12 total"],
   "highlights_used": ["achievement referenced", "another achievement"],
   "keywords_integrated": ["jd_keyword_1", "jd_keyword_2"],
   "exact_title_used": "The exact title from the JD",
@@ -608,7 +620,7 @@ Your PRIMARY MISSION: Create a HYBRID EXECUTIVE SUMMARY maximizing keyword densi
    - "Established SRE practices achieving 99.99% platform uptime"
    - "Led cloud migration delivering $2M annual cost savings"
 
-4. **CORE COMPETENCIES**: 6-8 ATS keywords
+4. **CORE COMPETENCIES**: 10-12 ATS keywords
    - All from JD keywords list
    - Include both acronyms and full forms
 
@@ -631,7 +643,7 @@ Return ONLY valid JSON:
   "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word keyword-dense hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Achievement 1 with JD keyword", "Achievement 2 with JD keyword", "...5-6 total"],
-  "core_competencies": ["JD Keyword 1", "JD Keyword 2", "...6-8 total"],
+  "core_competencies": ["JD Keyword 1", "JD Keyword 2", "...10-12 total"],
   "highlights_used": ["achievement with keywords", "another achievement"],
   "keywords_integrated": ["EVERY grounded keyword used", "list them all"],
   "exact_title_used": "The exact title from the JD",
@@ -671,7 +683,7 @@ Your mission: Combine the best elements from multiple HYBRID EXECUTIVE SUMMARY d
 4. **CORE COMPETENCIES**:
    - Merge and deduplicate from all drafts
    - Prioritize JD keywords
-   - Final count: 6-8 keywords
+   - Final count: 10-12 keywords
 
 === QUALITY CHECKLIST ===
 
@@ -682,7 +694,7 @@ Before finalizing, verify:
 [ ] Tagline has compelling narrative arc
 [ ] All top JD keywords appear 2-3 times across components
 [ ] 5-6 key achievements (not more, not fewer)
-[ ] 6-8 core competencies
+[ ] 10-12 core competencies
 
 === OUTPUT FORMAT ===
 
@@ -691,7 +703,7 @@ Return ONLY valid JSON:
   "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word synthesized hook (third-person absent voice, max 200 chars)",
   "key_achievements": ["Best achievement 1", "Best achievement 2", "...5-6 total"],
-  "core_competencies": ["Best competencies from all drafts", "...6-8 total"],
+  "core_competencies": ["Best competencies from all drafts", "...10-12 total"],
   "highlights_used": ["all metrics used across drafts"],
   "keywords_integrated": ["all keywords integrated"],
   "exact_title_used": "The exact title from the JD",
@@ -837,7 +849,7 @@ YEARS OF EXPERIENCE: {years_experience}+
 1. Headline: "{job_title} | {years_experience}+ Years Technology Leadership"
 2. Tagline: 15-25 words, third-person absent voice (NO pronouns), max 200 chars
 3. Key Achievements: 5-6 bullets with {persona.upper()} emphasis
-4. Core Competencies: 6-8 ATS-friendly keywords
+4. Core Competencies: 10-12 ATS-friendly keywords
 5. All content must be grounded in the bullets above
 
 Generate the {persona}-focused hybrid executive summary JSON:"""
@@ -899,7 +911,7 @@ Combine the best elements:
    - Use transformation framing from narrative draft
    - Ensure keyword coverage from keyword draft
    - Deduplicate similar achievements
-3. CORE COMPETENCIES: Merge and prioritize JD keywords (6-8 total)
+3. CORE COMPETENCIES: Merge and prioritize JD keywords (10-12 total)
 
 Generate the synthesized hybrid executive summary JSON:"""
 
@@ -1031,6 +1043,22 @@ VALUE_PROPOSITION_SYSTEM_PROMPT_V2 = """You are generating a VALUE PROPOSITION S
 5. THIRD-PERSON ABSENT VOICE - Write as if describing the candidate
 6. MUST CONTAIN SCALE INDICATORS - Numbers from actual experience: team size, users, revenue, systems scale
 7. ONLY REFERENCE METRICS FROM PROVIDED ACHIEVEMENTS - Never invent numbers
+
+=== EVIDENCE-FIRST ORDERING (Critical for Authenticity) ===
+
+Lead with the candidate's VERIFIED identity, then extend to JD-relevant capabilities.
+
+PATTERN: "[Verified identity] + [JD-relevant extension backed by evidence]"
+
+BAD (leads with unverified AI-first identity):
+- "Generative AI architect delivering enterprise LLM platforms with cutting-edge RAG pipelines"
+
+GOOD (leads with verified identity, extends to AI with evidence):
+- "Production platform architect applying 11 years of distributed systems rigor to enterprise LLM reliability"
+- "Engineering leader who built Commander-4 AI platform (2,000 users, 42 plugins) on 11+ years scaling distributed teams"
+
+RULE: If the candidate's primary career is X and they have Y as a recent extension,
+the value proposition must lead with X and extend to Y — never the reverse.
 
 === ROLE-LEVEL TEMPLATES ===
 

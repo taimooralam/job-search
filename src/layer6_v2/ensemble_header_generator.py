@@ -391,7 +391,7 @@ Return JSON matching this ProfileResponse schema:
   "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word persona-driven hook (max 200 chars)",
   "key_achievements": ["5-6 quantified achievements"],
-  "core_competencies": ["6-8 ATS-friendly keywords"],
+  "core_competencies": ["10-12 ATS-friendly keywords"],
   "highlights_used": ["exact metrics used"],
   "keywords_integrated": ["JD keywords included"],
   "exact_title_used": "{job_title}",
@@ -408,6 +408,7 @@ Return JSON matching this ProfileResponse schema:
             for bullet in ai_project_context["bullets"]:
                 schema_guidance += f"- {bullet}\n"
             schema_guidance += "IMPORTANT: Do NOT invent claims beyond these verified bullets."
+            schema_guidance += "\nNOTE: '42 plugins' NOT '42 agents'. '2,000 users' NOT '2,000+ enterprise users'. Commander-4 is a PROJECT within Seven.One, not a standalone job."
 
         full_system_prompt = system_prompt + "\n\n" + schema_guidance
 
@@ -490,7 +491,7 @@ Return JSON matching this ProfileResponse schema:
   "headline": "[CLEANED JOB TITLE] | [X]+ Years Technology Leadership",
   "tagline": "15-25 word synthesized hook (max 200 chars)",
   "key_achievements": ["5-6 best quantified achievements from all personas"],
-  "core_competencies": ["6-8 ATS-friendly keywords"],
+  "core_competencies": ["10-12 ATS-friendly keywords"],
   "highlights_used": ["exact metrics used"],
   "keywords_integrated": ["JD keywords included"],
   "exact_title_used": "{synthesis_title}",

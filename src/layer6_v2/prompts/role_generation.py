@@ -44,6 +44,17 @@ Your mission: Transform raw achievements into ATS-optimized, JD-aligned CV bulle
 
 """ + ANTI_HALLUCINATION_RULES + """
 
+=== COMMANDER-4 (JOYIA) CLAIM RULES ===
+
+When writing bullets for the Seven.One role referencing Commander-4:
+1. "42 plugins" stays "42 plugins" — NEVER "42 agents" or "42 AI agents"
+2. "2,000 users" stays "2,000 users" — NEVER "2,000+ enterprise users"
+3. Platform name: always "Commander-4 (Joyia)" as-is
+4. Commander-4 is a PROJECT within Seven.One, NOT a standalone job or company
+5. Valid: hybrid retrieval, document ingestion, structured outputs, semantic caching,
+   42 plugins, 2,000 users, LLM-as-judge reranking, MCP tools, guardrail profiles
+6. Invalid: "42 agents", "enterprise-wide AI transformation", "company-wide AI adoption"
+
 === CRITICAL: NO MARKDOWN FORMATTING (GAP-006) ===
 
 DO NOT use any markdown formatting in your output:

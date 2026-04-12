@@ -300,3 +300,61 @@ class TestPromotionThreshold:
             "isTargetRole": False,
         }
         assert should_promote_to_level2(result) is False
+
+
+# ---------------------------------------------------------------------------
+# JD negative signals & experience mismatch
+# ---------------------------------------------------------------------------
+
+
+class TestJDNegativeSignals:
+    """Test JD body negative signals and experience mismatch penalties."""
+
+    def test_pytorch_heavy_jd_scores_lower(self):
+        base_result = score("Senior AI Engineer")
+        pytorch_jd = AI_JD_BASE + " Required: 3+ years PyTorch, TensorFlow, CUDA, model training."
+        pytorch_result = score("Senior AI Engineer", pytorch_jd)
+        assert pytorch_result["score"] < base_result["score"] - 10
+
+    def test_manufacturing_domain_penalized(self):
+        jd = "AI Engineer for manufacturing. Time-series forecasting, predictive maintenance, PyTorch."
+        result = score("AI Engineer", jd)
+        assert result["breakdown"]["jdNegativeHard"] < 0
+
+    def test_azure_required_soft_penalty(self):
+        jd = "AI Architect. Azure required. Azure OpenAI, Databricks experience, Azure ML."
+        result = score("AI Architect", jd)
+        assert result["breakdown"]["jdNegativeSoft"] < 0
+        assert result["score"] > 20
+
+    def test_good_fit_jd_no_penalty(self):
+        result = score("AI Architect")
+        assert result["breakdown"]["jdNegativeHard"] == 0
+        assert result["breakdown"]["jdNegativeSoft"] == 0
+        assert result["breakdown"]["experienceMismatch"] == 0
+
+    def test_experience_mismatch_penalty(self):
+        jd = "Requires 5+ years of TensorFlow and 3+ years PyTorch experience. " + AI_JD_BASE
+        result = score("ML Engineer", jd)
+        assert result["breakdown"]["experienceMismatch"] < 0
+
+    def test_mobile_genai_penalized(self):
+        jd = "GenAI on Android. Kotlin, on-device ML, mobile GenAI, TensorFlow Lite."
+        result = score("Senior AI Engineer", jd)
+        assert result["breakdown"]["jdNegativeHard"] < 0
+
+    def test_data_scientist_title_penalized(self):
+        result = score("Senior Data Scientist", "ML models, scikit-learn, pandas.")
+        assert result["score"] < 35
+
+    def test_penalties_capped(self):
+        worst_jd = (
+            "PyTorch TensorFlow CUDA RLHF fine-tuning Kaggle Android iOS "
+            "manufacturing computer vision keras jax mxnet on-device ai "
+            "azure required gcp required databricks required snowflake required "
+            "scikit-learn sklearn data scientist feature engineering mlflow required"
+        )
+        result = score("AI Engineer", worst_jd)
+        assert result["score"] >= 0
+        assert result["breakdown"]["jdNegativeHard"] >= -35
+        assert result["breakdown"]["jdNegativeSoft"] >= -20

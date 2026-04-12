@@ -170,7 +170,9 @@ ROLE_DEFINITIONS: Dict[str, Dict[str, Any]] = {
             "head of ai engineering", "head of agentic",
             "ai engineering manager", "engineering manager ai",
         ],
-        "excludeIfContains": [],
+        "excludeIfContains": [
+            "sales", "pre-sales", "presales", "marketing", "customer success",
+        ],
     },
 }
 
@@ -188,12 +190,67 @@ UNWANTED_TITLE_KEYWORDS = [
     "network engineer", "systems administrator",
     "frontend engineer", "frontend developer", "ui engineer", "ux engineer",
     "ios developer", "android developer", "mobile developer",
+    "data scientist", "senior data scientist", "lead data scientist",
+    "ml engineer", "machine learning engineer", "senior ml engineer",
+    "lead ml engineer", "staff ml engineer",
+    "ml researcher", "research scientist",
+    "computer vision", "robotics", "firmware",
+    "devops engineer",
 ]
 
 # Hard negatives: always penalize these in title, even if a target role was detected.
 # Prevents "AI Sales Engineer" or "Java AI Developer" from scoring well.
 TITLE_HARD_NEGATIVES = [
     "java", "sales", "account", "account manager", "account executive",
+    "data scientist", "ml researcher", "machine learning research",
+    "computer vision engineer", "robotics engineer",
+    "android engineer", "ios engineer",
+    "firmware engineer", "network engineer",
+]
+
+# JD body negative signals — scanned in description only (not title).
+JD_NEGATIVE_SIGNALS = {
+    "hard": {
+        "keywords": [
+            "pytorch", "tensorflow", "keras", "jax", "mxnet",
+            "cuda", "gpu programming", "model training at scale",
+            "rlhf", "reinforcement learning from human feedback",
+            "fine-tuning pipeline", "model fine-tuning",
+            "kaggle", "competition", "research paper",
+            "phd required", "phd preferred",
+            "android development", "ios development", "kotlin", "swift",
+            "mobile genai", "on-device ai", "on-device ml",
+            "manufacturing domain", "manufacturing experience required",
+            "time-series forecasting", "predictive maintenance",
+            "computer vision required", "opencv required",
+            "matlab required",
+        ],
+        "penalty_per_match": 8,
+        "max_penalty": 35,
+    },
+    "soft": {
+        "keywords": [
+            "azure required", "azure experience required", "azure as primary",
+            "gcp required", "gcp experience required", "google cloud required",
+            "databricks required", "databricks experience",
+            "snowflake required", "snowflake experience",
+            "spark required", "apache spark",
+            "scikit-learn", "sklearn",
+            "data scientist", "data science team",
+            "feature engineering", "feature store",
+            "model registry", "model serving infrastructure",
+            "mlflow required",
+        ],
+        "penalty_per_match": 4,
+        "max_penalty": 20,
+    },
+}
+
+LACKING_TECH = [
+    "pytorch", "tensorflow", "keras", "cuda", "scikit-learn",
+    "azure", "gcp", "databricks", "snowflake", "spark",
+    "android", "ios", "kotlin", "swift", "flutter",
+    "computer vision", "opencv",
 ]
 
 # =============================================================================
@@ -518,7 +575,7 @@ ROLE_WEIGHTS: Dict[str, _W] = {
         "promptEng":     {"weight": 0.5, "max": 5},
         "aiInfra":       {"weight": 1.5, "max": 15},
         "cloudInfra":    {"weight": 1,   "max": 10},
-        "architecture":  {"weight": 1.5, "max": 15},
+        "architecture":  {"weight": 2.5, "max": 25},
         "languages":     {"weight": 0.5, "max": 5},
         "dataKnowledge": {"weight": 1,   "max": 10},
         "aiLeadership":  {"weight": 3,   "max": 30},
@@ -646,6 +703,30 @@ def _get_seniority_score(text: str) -> Dict[str, Any]:
 def _count_unwanted_title_keywords(title: str) -> int:
     t = (title or "").lower()
     return sum(1 for kw in UNWANTED_TITLE_KEYWORDS if kw.lower() in t)
+
+
+def _compute_jd_negative_penalties(text: str) -> tuple:
+    """Scan JD body for negative signals. Returns (hard_penalty, soft_penalty)."""
+    hard_count = sum(1 for kw in JD_NEGATIVE_SIGNALS["hard"]["keywords"] if kw in text)
+    soft_count = sum(1 for kw in JD_NEGATIVE_SIGNALS["soft"]["keywords"] if kw in text)
+    hard_penalty = min(hard_count * JD_NEGATIVE_SIGNALS["hard"]["penalty_per_match"],
+                       JD_NEGATIVE_SIGNALS["hard"]["max_penalty"])
+    soft_penalty = min(soft_count * JD_NEGATIVE_SIGNALS["soft"]["penalty_per_match"],
+                       JD_NEGATIVE_SIGNALS["soft"]["max_penalty"])
+    return (hard_penalty, soft_penalty)
+
+
+def _compute_experience_mismatch_penalty(text: str) -> int:
+    """Penalize JDs requiring multi-year experience in technologies candidate lacks."""
+    penalty = 0
+    for tech in LACKING_TECH:
+        pattern = rf"(\d+)\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience\s+(?:with|in|using)\s+)?{re.escape(tech)}"
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            years = int(match.group(1))
+            if years >= 2:
+                penalty += min(years * 4, 20)
+    return min(penalty, 30)
 
 
 # =============================================================================
@@ -801,6 +882,12 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
             language_score -= 20
             break
 
+    # --- 5b) JD BODY NEGATIVE SIGNALS ---
+    jd_body = f"{crit_lower} {desc_lower}"
+    jd_hard_penalty, jd_soft_penalty = _compute_jd_negative_penalties(jd_body)
+    jd_negative_penalty = jd_hard_penalty + jd_soft_penalty
+    experience_penalty = _compute_experience_mismatch_penalty(jd_body)
+
     # --- 6) LOCATION BONUSES ---
     gcc_bonus = 0
     if _contains_any(loc_lower, GCC_PRIORITY_LOCATIONS):
@@ -829,6 +916,8 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         + gcc_bonus
         + europe_bonus
         - unwanted_penalty
+        - jd_negative_penalty
+        - experience_penalty
     )
 
     # Use fixed normalization cap instead of theoretical max to prevent score crushing.
@@ -856,6 +945,9 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
         "gccBonus": gcc_bonus,
         "europeBonus": europe_bonus,
         "unwantedPenalty": -unwanted_penalty,
+        "jdNegativeHard": -jd_hard_penalty,
+        "jdNegativeSoft": -jd_soft_penalty,
+        "experienceMismatch": -experience_penalty,
     }
     for key, val in kw_scores.items():
         breakdown[key] = round(val)
