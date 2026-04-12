@@ -1,5 +1,5 @@
 <!-- Batch processing job table rows with expandable details -->
-<table class="w-full theme-table">
+<table class="w-full table-fixed theme-table">
     <thead class="sticky-header">
         <tr>
             <!-- Expand toggle -->
@@ -14,10 +14,10 @@
             </th>
 
             {% set sort_fields = [
-                ('company', 'Company', 'w-[14%]'),
-                ('title', 'Role', 'w-[18%]'),
-                ('score', 'Score', 'w-16'),
-                ('batch_added_at', 'Added', 'w-24'),
+                ('company', 'Company', 'w-[130px]'),
+                ('title', 'Role', ''),
+                ('score', 'Score', 'w-[55px]'),
+                ('batch_added_at', 'Added', 'w-[85px]'),
             ] %}
 
             {% for field, label, width_class in sort_fields %}
@@ -52,22 +52,22 @@
             {% endfor %}
 
             <!-- Status column -->
-            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-32">
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[120px]">
                 Status
             </th>
 
             <!-- Progress indicators column -->
-            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-20">
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[120px]">
                 Progress
             </th>
 
             <!-- Pipeline status column (live WebSocket) -->
-            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-24">
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[70px]">
                 Pipeline
             </th>
 
             <!-- Actions column -->
-            <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-24">
+            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[70px]">
                 Actions
             </th>
         </tr>
