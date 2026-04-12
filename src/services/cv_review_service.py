@@ -106,16 +106,20 @@ Return a JSON object with exactly this structure:
   "would_interview": true/false,
   "top_third_assessment": {
     "headline_verdict": "string — what works/doesn't work",
+    "headline_evidence_bounded": true/false,
     "tagline_verdict": "string — pronoun check, 4-question framework",
+    "tagline_proof_gap": true/false,
     "achievements_verdict": "string — quantified? aligned? compelling?",
     "competencies_verdict": "string — ATS-friendly? relevant? organized?",
+    "bridge_quality_score": 1-10,
     "first_impression_score": 1-10,
     "first_impression_summary": "In 6 seconds, a hiring manager would think: ..."
   },
   "pain_point_alignment": {
     "addressed": ["pain point 1 — how CV addresses it"],
     "missing": ["pain point X — not covered in CV"],
-    "coverage_ratio": 0.0-1.0
+    "coverage_ratio": 0.0-1.0,
+    "low_pain_point_coverage": true/false
   },
   "hallucination_flags": [
     {"claim": "...", "issue": "not found in master CV", "severity": "high|medium|low"}
@@ -124,7 +128,8 @@ Return a JSON object with exactly this structure:
     "keyword_coverage": "X/Y keywords found",
     "missing_critical_keywords": ["kw1", "kw2"],
     "acronym_issues": ["K8s mentioned but Kubernetes not expanded"],
-    "ats_survival_likely": true/false
+    "ats_survival_likely": true/false,
+    "thin_competencies": true/false
   },
   "strengths": ["strength 1", "strength 2"],
   "weaknesses": ["weakness 1", "weakness 2"],
@@ -171,10 +176,113 @@ Return a JSON object with exactly this structure:
   "ideal_candidate_fit": {
     "archetype_match": "string — how well CV matches the JD archetype",
     "trait_coverage": {"present": [], "missing": []},
-    "experience_level_match": "string"
+    "experience_level_match": "string",
+    "missing_ai_evidence": true/false
   }
 }
+
+Notes on new boolean fields:
+- headline_evidence_bounded: false when headline overstates role identity or specialization beyond source evidence
+- tagline_proof_gap: true when tagline makes claims without sufficient proof in CV or master CV
+- bridge_quality_score: 1-10 rating of how well top third connects identity -> proof -> pain-point relevance
+- thin_competencies: true when competencies section is too sparse or generic for ATS survival
+- missing_ai_evidence: true when JD asks for AI/LLM/GenAI depth and CV lacks convincing proof
+- low_pain_point_coverage: true when CV misses a material portion of JD pain points
 """
+
+
+# ---- Structured taxonomy derivation helpers ----
+
+def _text_contains_any(text: str, phrases: list) -> bool:
+    """Check if lowercased text contains any of the given phrases."""
+    text_lower = text.lower()
+    return any(p in text_lower for p in phrases)
+
+
+def _derive_failure_modes(review: dict) -> list:
+    """Derive failure mode enums from review data."""
+    modes = []
+    tt = review.get("top_third_assessment", {})
+    pp = review.get("pain_point_alignment", {})
+    ats = review.get("ats_assessment", {})
+    fit = review.get("ideal_candidate_fit", {})
+    weaknesses = " ".join(review.get("weaknesses", []))
+
+    # headline_overclaim
+    if tt.get("headline_evidence_bounded") is False or _text_contains_any(
+        tt.get("headline_verdict", "") + " " + weaknesses,
+        ["overclaim", "inflated", "not supported", "overstates", "not grounded", "mispositioned"],
+    ):
+        modes.append("headline_overclaim")
+
+    # tagline_proof_gap
+    if tt.get("tagline_proof_gap") is True or _text_contains_any(
+        tt.get("tagline_verdict", "") + " " + weaknesses,
+        ["proof", "not credibly", "unsupported", "generic", "fails the"],
+    ):
+        modes.append("tagline_proof_gap")
+
+    # thin_competencies
+    if ats.get("thin_competencies") is True or _text_contains_any(
+        tt.get("competencies_verdict", "") + " " + weaknesses,
+        ["thin", "sparse", "too few", "not enough keywords", "underdeveloped"],
+    ):
+        modes.append("thin_competencies")
+
+    # low_pain_point_coverage
+    coverage = pp.get("coverage_ratio")
+    if pp.get("low_pain_point_coverage") is True or (
+        isinstance(coverage, (int, float)) and coverage < 0.5
+    ):
+        modes.append("low_pain_point_coverage")
+
+    # hallucination_project_context
+    for flag in review.get("hallucination_flags", []):
+        claim = (flag.get("claim", "") + " " + flag.get("issue", "")).lower()
+        if any(w in claim for w in ["commander", "lantern", "not found in master", "project"]):
+            modes.append("hallucination_project_context")
+            break
+
+    # missing_ai_evidence
+    if fit.get("missing_ai_evidence") is True:
+        modes.append("missing_ai_evidence")
+
+    return modes
+
+
+def _derive_headline_evidence_bounded(review: dict) -> bool:
+    """Derive whether headline stays within evidence bounds."""
+    tt = review.get("top_third_assessment", {})
+    explicit = tt.get("headline_evidence_bounded")
+    if isinstance(explicit, bool):
+        return explicit
+    # Infer from text
+    verdict = tt.get("headline_verdict", "")
+    if _text_contains_any(verdict, ["overclaim", "not supported", "overstates", "not grounded", "mispositioned"]):
+        return False
+    return True
+
+
+def _derive_bridge_quality_score(review: dict) -> int:
+    """Derive identity-to-impact bridge quality score (1-10)."""
+    tt = review.get("top_third_assessment", {})
+    explicit = tt.get("bridge_quality_score")
+    if isinstance(explicit, (int, float)) and 1 <= explicit <= 10:
+        return int(explicit)
+    # Fallback: start from first_impression_score and adjust
+    base = tt.get("first_impression_score", 5)
+    if not isinstance(base, (int, float)):
+        base = 5
+    score = float(base)
+    if tt.get("tagline_proof_gap") is True:
+        score -= 1
+    if tt.get("headline_evidence_bounded") is False:
+        score -= 1
+    pp = review.get("pain_point_alignment", {})
+    coverage = pp.get("coverage_ratio")
+    if isinstance(coverage, (int, float)) and coverage < 0.4:
+        score -= 1
+    return max(1, min(10, int(round(score))))
 
 
 class CVReviewService(OperationService):
@@ -546,7 +654,14 @@ class CVReviewService(OperationService):
             output_tokens = 0
 
             # ----------------------------------------------------------------
-            # 6. Build cv_review document and persist to MongoDB
+            # 6. Derive structured taxonomy from review
+            # ----------------------------------------------------------------
+            failure_modes = _derive_failure_modes(review)
+            headline_bounded = _derive_headline_evidence_bounded(review)
+            bridge_score = _derive_bridge_quality_score(review)
+
+            # ----------------------------------------------------------------
+            # 7. Build cv_review document and persist to MongoDB
             # ----------------------------------------------------------------
             cv_review: Dict[str, Any] = {
                 "reviewed_at": datetime.now(timezone.utc).isoformat(),
@@ -558,6 +673,9 @@ class CVReviewService(OperationService):
                 "first_impression_score": (
                     review.get("top_third_assessment", {}).get("first_impression_score")
                 ),
+                "failure_modes": failure_modes,
+                "headline_evidence_bounded": headline_bounded,
+                "bridge_quality_score": bridge_score,
                 "full_review": review,
             }
 

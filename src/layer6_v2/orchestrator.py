@@ -706,6 +706,20 @@ class CVGeneratorV2:
             # Determine tier based on fit score
             fit_score = state.get("fit_score")
             tier = get_tier_from_fit_score(fit_score)
+
+            # 4D: Cap to BRONZE if scout negative penalties are high
+            score_breakdown = state.get("score_breakdown") or {}
+            jd_neg_hard = abs(float(score_breakdown.get("jdNegativeHard", 0) or 0))
+            exp_mismatch = abs(float(score_breakdown.get("experienceMismatch", 0) or 0))
+            if tier in (ProcessingTier.GOLD, ProcessingTier.SILVER) and (
+                jd_neg_hard > 20 or exp_mismatch > 15
+            ):
+                self._logger.info(
+                    f"  Downgrading {tier.value}→BRONZE: scout penalties "
+                    f"(jdNegativeHard={jd_neg_hard}, experienceMismatch={exp_mismatch})"
+                )
+                tier = ProcessingTier.BRONZE
+
             self._logger.info(f"  Processing tier: {tier.value} (fit_score={fit_score})")
 
             # Create progress callback for LLM components

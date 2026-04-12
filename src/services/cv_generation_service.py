@@ -390,6 +390,14 @@ class CVGenerationService(OperationService):
         if not extracted_jd.get("company"):
             extracted_jd["company"] = job.get("company", "")
 
+        # Normalize scout score breakdown (stored under different keys depending on ingestion path)
+        score_breakdown = (
+            job.get("score_breakdown")
+            or job.get("breakdown")
+            or (job.get("linkedin_metadata") or {}).get("rule_score_breakdown")
+            or {}
+        )
+
         state = {
             "job_id": str(job["_id"]),
             "title": job.get("title", ""),
@@ -404,6 +412,7 @@ class CVGenerationService(OperationService):
             "fit_score": job.get("fit_score"),
             "fit_rationale": job.get("fit_rationale"),
             "location": job.get("location", ""),
+            "score_breakdown": score_breakdown,
         }
 
         # Include AI classification for conditional CV sections
