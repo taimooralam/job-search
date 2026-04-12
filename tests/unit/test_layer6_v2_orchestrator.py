@@ -5,6 +5,7 @@ Tests the integration of all 6 phases into a cohesive pipeline.
 All LLM calls are mocked for deterministic testing.
 """
 
+import sys
 import pytest
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from pathlib import Path
@@ -452,6 +453,7 @@ class TestReasoningSummary:
 class TestFullPipelineMocked:
     """Test full pipeline with mocked components."""
 
+    @patch.dict(sys.modules, {"nest_asyncio": MagicMock(apply=Mock())})
     @patch('src.layer6_v2.orchestrator.CVLoader')
     @patch.object(CVGeneratorV2, '_get_master_cv_text')
     @patch.object(CVGeneratorV2, '_save_cv_to_disk')
@@ -505,6 +507,7 @@ class TestFullPipelineMocked:
         assert result["cv_text"] is not None
         assert result["cv_path"] == "outputs/test_corp/cv_engineering_manager.md"
 
+    @patch.dict(sys.modules, {"nest_asyncio": MagicMock(apply=Mock())})
     @patch('src.layer6_v2.orchestrator.CVLoader')
     def test_handles_generation_error(self, mock_loader_class, sample_state):
         """Handles errors gracefully."""
@@ -517,6 +520,148 @@ class TestFullPipelineMocked:
         assert result["cv_path"] is None
         assert "errors" in result
         assert "Generation failed" in result["cv_reasoning"]
+
+
+class TestAIGate:
+    """Test AI gate role-category overrides."""
+
+    @patch.dict(sys.modules, {"nest_asyncio": MagicMock(apply=Mock())})
+    @patch.object(CVGeneratorV2, "_save_cv_to_disk")
+    @patch("src.layer6_v2.orchestrator.grade_cv", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.generate_ensemble_header", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.generate_header", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.stitch_all_roles")
+    @patch("src.layer6_v2.orchestrator.run_qa_on_all_roles")
+    @patch.object(CVGeneratorV2, "_generate_all_role_bullets")
+    def test_ai_gate_leadership_role(
+        self,
+        mock_generate_bullets,
+        mock_qa,
+        mock_stitch,
+        mock_header,
+        mock_ensemble_header,
+        mock_grade,
+        mock_save,
+        sample_state,
+        sample_role_bullets,
+        sample_stitched_cv,
+        sample_header_output,
+        sample_grade_result,
+    ):
+        """Head of AI jobs should map to ai_leadership."""
+        state = dict(sample_state)
+        state["is_ai_job"] = True
+        state["ai_categories"] = ["genai", "llm"]
+        state["title"] = "Head of AI Engineering"
+        state["extracted_jd"] = dict(sample_state["extracted_jd"])
+        state["extracted_jd"]["title"] = "Head of AI Engineering"
+        state["extracted_jd"]["role_category"] = "head_of_engineering"
+
+        mock_generate_bullets.return_value = sample_role_bullets
+        mock_qa.return_value = ([], [])
+        mock_stitch.return_value = sample_stitched_cv
+        mock_header.return_value = sample_header_output
+        mock_ensemble_header.return_value = sample_header_output
+        mock_grade.return_value = sample_grade_result
+        mock_save.return_value = "outputs/test_corp/cv_head_of_ai.md"
+
+        generator = CVGeneratorV2()
+        generator.generate(state)
+
+        assert state["extracted_jd"]["role_category"] == "ai_leadership"
+        mock_generate_bullets.assert_called_once()
+        assert mock_generate_bullets.call_args.args[1]["role_category"] == "ai_leadership"
+
+    @patch.dict(sys.modules, {"nest_asyncio": MagicMock(apply=Mock())})
+    @patch.object(CVGeneratorV2, "_save_cv_to_disk")
+    @patch("src.layer6_v2.orchestrator.grade_cv", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.generate_ensemble_header", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.generate_header", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.stitch_all_roles")
+    @patch("src.layer6_v2.orchestrator.run_qa_on_all_roles")
+    @patch.object(CVGeneratorV2, "_generate_all_role_bullets")
+    def test_ai_gate_ic_role(
+        self,
+        mock_generate_bullets,
+        mock_qa,
+        mock_stitch,
+        mock_header,
+        mock_ensemble_header,
+        mock_grade,
+        mock_save,
+        sample_state,
+        sample_role_bullets,
+        sample_stitched_cv,
+        sample_header_output,
+        sample_grade_result,
+    ):
+        """AI IC jobs should continue mapping to ai_architect."""
+        state = dict(sample_state)
+        state["is_ai_job"] = True
+        state["ai_categories"] = ["genai"]
+        state["title"] = "AI Solutions Architect"
+        state["extracted_jd"] = dict(sample_state["extracted_jd"])
+        state["extracted_jd"]["title"] = "AI Solutions Architect"
+        state["extracted_jd"]["role_category"] = "senior_engineer"
+
+        mock_generate_bullets.return_value = sample_role_bullets
+        mock_qa.return_value = ([], [])
+        mock_stitch.return_value = sample_stitched_cv
+        mock_header.return_value = sample_header_output
+        mock_ensemble_header.return_value = sample_header_output
+        mock_grade.return_value = sample_grade_result
+        mock_save.return_value = "outputs/test_corp/cv_ai_architect.md"
+
+        generator = CVGeneratorV2()
+        generator.generate(state)
+
+        assert state["extracted_jd"]["role_category"] == "ai_architect"
+        mock_generate_bullets.assert_called_once()
+        assert mock_generate_bullets.call_args.args[1]["role_category"] == "ai_architect"
+
+    @patch.dict(sys.modules, {"nest_asyncio": MagicMock(apply=Mock())})
+    @patch.object(CVGeneratorV2, "_save_cv_to_disk")
+    @patch("src.layer6_v2.orchestrator.grade_cv", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.generate_ensemble_header", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.generate_header", new_callable=AsyncMock)
+    @patch("src.layer6_v2.orchestrator.stitch_all_roles")
+    @patch("src.layer6_v2.orchestrator.run_qa_on_all_roles")
+    @patch.object(CVGeneratorV2, "_generate_all_role_bullets")
+    def test_non_ai_job_unchanged(
+        self,
+        mock_generate_bullets,
+        mock_qa,
+        mock_stitch,
+        mock_header,
+        mock_ensemble_header,
+        mock_grade,
+        mock_save,
+        sample_state,
+        sample_role_bullets,
+        sample_stitched_cv,
+        sample_header_output,
+        sample_grade_result,
+    ):
+        """Non-AI jobs should keep the extracted role category."""
+        state = dict(sample_state)
+        state.pop("ai_categories", None)
+        state["extracted_jd"] = dict(sample_state["extracted_jd"])
+        state["extracted_jd"]["role_category"] = "engineering_manager"
+
+        mock_generate_bullets.return_value = sample_role_bullets
+        mock_qa.return_value = ([], [])
+        mock_stitch.return_value = sample_stitched_cv
+        mock_header.return_value = sample_header_output
+        mock_ensemble_header.return_value = sample_header_output
+        mock_grade.return_value = sample_grade_result
+        mock_save.return_value = "outputs/test_corp/cv_engineering_manager.md"
+
+        generator = CVGeneratorV2()
+        generator.generate(state)
+
+        assert state["extracted_jd"]["role_category"] == "engineering_manager"
+        mock_generate_bullets.assert_called_once()
+        assert mock_generate_bullets.call_args.args[1]["role_category"] == "engineering_manager"
 
 
 # ===== TESTS: Node Function =====

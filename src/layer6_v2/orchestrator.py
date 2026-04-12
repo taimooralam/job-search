@@ -478,20 +478,42 @@ class CVGeneratorV2:
                 },
             })
 
-            # AI Gate: Override role_category for AI/GenAI/LLM jobs (before Phase 2 so variant selection sees ai_architect)
+            # AI Gate: Override role_category for AI/GenAI/LLM jobs (before Phase 2 so variant selection sees AI categories)
             is_ai = should_include_ai_section(state)
+            leadership_categories = {
+                "engineering_manager",
+                "director_of_engineering",
+                "head_of_engineering",
+                "vp_engineering",
+                "cto",
+            }
+            original_category = extracted_jd.get("role_category", "senior_engineer")
+            ai_override = None
+            if is_ai:
+                ai_override = (
+                    "ai_leadership"
+                    if original_category in leadership_categories
+                    else "ai_architect"
+                )
             self._emit_log("ai_classification",
                 f"AI job: {'Yes' if is_ai else 'No'}" +
                 (f" ({', '.join(state.get('ai_categories', []))})" if is_ai else ""))
             self._emit_struct_log("ai_classification", {
                 "is_ai_job": is_ai,
                 "ai_categories": state.get("ai_categories", []),
-                "role_category": extracted_jd.get("role_category"),
-                "role_category_override": "ai_architect" if is_ai else None,
+                "role_category": original_category,
+                "role_category_override": ai_override,
             })
             if is_ai:
-                extracted_jd["role_category"] = "ai_architect"
-                self._logger.info("  AI job detected — using ai_architect role category")
+                extracted_jd["role_category"] = ai_override
+                if ai_override == "ai_leadership":
+                    self._logger.info(
+                        f"  AI leadership job detected (was {original_category}) — using ai_leadership role category"
+                    )
+                else:
+                    self._logger.info(
+                        f"  AI IC job detected (was {original_category}) — using ai_architect role category"
+                    )
 
                 # Expand skill whitelist with Commander-4 project skills for AI jobs
                 ai_project_skills = _load_ai_project_skills()
@@ -1579,6 +1601,7 @@ class CVGeneratorV2:
             "tech_lead": "Technical Leader",
             "senior_engineer": "Software Engineer",
             "ai_architect": "AI Architect",
+            "ai_leadership": "Head of AI",
         }
         return title_map.get(role_category, "Engineering Professional")
 

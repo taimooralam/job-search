@@ -1004,6 +1004,14 @@ VALUE_PROPOSITION_TEMPLATES = {
         ],
         "emphasis": ["infrastructure-to-AI bridge", "LLM reliability", "production operations", "eval-driven quality"],
     },
+    "ai_leadership": {
+        "formula": "[Hands-on AI leader] building [AI platforms] with [X years] production systems + [team building/governance].",
+        "examples": [
+            "Hands-on AI leader with 11+ years building production platforms — from LLM gateway design to AI governance at enterprise scale.",
+            "AI platform leader bridging distributed systems architecture with team building and AI governance.",
+        ],
+        "emphasis": ["team building", "AI platform architecture", "governance", "production reliability"],
+    },
 }
 
 

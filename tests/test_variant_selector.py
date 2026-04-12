@@ -376,6 +376,15 @@ class TestVariantPreferences:
         assert "default" in VARIANT_PREFERENCES
         assert len(VARIANT_PREFERENCES["default"]) >= 3
 
+    def test_ai_leadership_preferences_prioritize_leadership(self):
+        """AI leadership roles should prefer leadership-first variants."""
+        assert VARIANT_PREFERENCES["ai_leadership"] == [
+            "Leadership",
+            "Architecture",
+            "Technical",
+            "Impact",
+        ]
+
 
 # ============================================================================
 # TESTS: CONVENIENCE FUNCTIONS

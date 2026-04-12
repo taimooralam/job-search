@@ -1216,6 +1216,10 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                 "Production infrastructure leader applying 11+ years of distributed systems rigor "
                 "to LLM gateway design, evaluation pipelines, and AI reliability at scale."
             ),
+            "ai_leadership": (
+                "Hands-on AI leader building production platforms through AI architecture, "
+                "team development, and governance at enterprise scale."
+            ),
         }
 
         tagline = taglines.get(role_category, taglines["engineering_manager"])

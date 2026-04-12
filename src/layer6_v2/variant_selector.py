@@ -63,6 +63,7 @@ VARIANT_PREFERENCES: Dict[str, List[str]] = {
 
     # AI roles - emphasize technical depth and innovation
     "ai_architect": ["Technical", "Architecture", "Innovation", "Impact"],
+    "ai_leadership": ["Leadership", "Architecture", "Technical", "Impact"],
 
     # Default fallback
     "default": ["Technical", "Impact", "Architecture", "Short"],
@@ -402,7 +403,7 @@ class VariantSelector:
                 break
 
         # Hard constraint: force Achievement 15 for AI jobs on Seven.One role
-        if role_category == "ai_architect" and role.id == "01_seven_one_entertainment":
+        if role_category in ("ai_architect", "ai_leadership") and role.id == "01_seven_one_entertainment":
             ach15_id = "achievement_15"
             if ach15_id not in selected_achievement_ids:
                 # Find Achievement 15 and pick best variant (prefer Technical)

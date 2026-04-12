@@ -378,9 +378,11 @@ class CVGrader:
         category_keywords = {
             "engineering_manager": ["team", "led", "managed", "hired", "mentored"],
             "staff_principal_engineer": ["architecture", "designed", "technical", "system"],
-            "director_of_engineering": ["organization", "scaled", "strategy", "directors"],
+            "director_of_engineering": ["built", "multiple", "organization", "scaled", "strategy"],
             "head_of_engineering": ["built", "function", "executive", "transformation"],
             "cto": ["vision", "board", "technology", "business", "transformation"],
+            "ai_architect": ["architecture", "designed", "llm", "ai", "evaluation", "production", "scale", "platform"],
+            "ai_leadership": ["led", "team", "ai", "platform", "architecture", "governance", "built", "scale"],
         }
         category_kws = category_keywords.get(role_category, [])
         category_match = sum(1 for kw in category_kws if kw in cv_lower)
@@ -446,7 +448,7 @@ class CVGrader:
         score = strategic_score + leadership_score + business_score
 
         # Adjust based on role category expectations
-        if role_category in ["cto", "head_of_engineering", "director_of_engineering"]:
+        if role_category in ["cto", "head_of_engineering", "director_of_engineering", "ai_leadership"]:
             # Higher expectations for senior roles
             if score < 7:
                 score = max(5, score - 1)  # Penalize slightly
