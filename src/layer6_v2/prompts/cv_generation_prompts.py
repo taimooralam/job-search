@@ -1,5 +1,11 @@
 """
-CV Generation Prompts with Reference Doc Integration.
+CV Generation Prompts with Reference Doc Integration (Legacy Path).
+
+Bullet Framework: CARS (Challenge → Action → Results → Strategic Impact)
+- Used by build_role_bullet_prompt() — the legacy prompt builder path
+- The primary pipeline now uses ARIS (role_generation.py) for variant-based generation
+- Both frameworks produce compatible output; CARS is retained here for backward compatibility
+- Decision: ARIS is the standard for all new generation
 
 Integrates key frameworks and best practices from:
 - thoughts/prompt-generation-guide.md: Personas, CoT, Few-shot, Constraints

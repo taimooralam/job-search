@@ -109,17 +109,19 @@ class VariantScore:
     annotation_ids: List[str] = field(default_factory=list)
     reframe_notes: List[str] = field(default_factory=list)
 
+    # Architecture variant boost for architect roles
+    architecture_boost: float = 1.0
+
     @property
     def total_score(self) -> float:
-        """Calculate weighted total score with annotation boost."""
+        """Calculate weighted total score with annotation and architecture boosts."""
         base_score = (
             self.keyword_score * WEIGHT_KEYWORD_OVERLAP +
             self.pain_point_score * WEIGHT_PAIN_POINT +
             self.role_category_score * WEIGHT_ROLE_CATEGORY +
             self.achievement_keyword_score * WEIGHT_ACHIEVEMENT_KEYWORDS
         )
-        # Phase 4: Apply annotation boost multiplier
-        return base_score * self.annotation_boost
+        return base_score * self.annotation_boost * self.architecture_boost
 
     @property
     def word_count(self) -> int:
@@ -586,6 +588,13 @@ class VariantSelector:
         achievement_match = achievement_keywords & jd_keywords
         if achievement_keywords:
             score.achievement_keyword_score = len(achievement_match) / len(achievement_keywords)
+
+        # 5. Architecture variant boost for architect roles (1.5x multiplier)
+        if (
+            role_category in ("ai_architect", "ai_leadership", "software_architect", "cto")
+            and variant.variant_type == "Architecture"
+        ):
+            score.architecture_boost = 1.5
 
         # Phase 4: Apply annotation boost
         if annotation_calculator and annotation_calculator.has_annotations():

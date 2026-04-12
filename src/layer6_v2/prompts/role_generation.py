@@ -4,6 +4,13 @@ Prompts for Per-Role CV Bullet Generation (Phase 3).
 These prompts generate tailored achievement bullets for a single role,
 with full traceability to prevent hallucination.
 
+Bullet Framework: ARIS (Action → Result → Impact → Situation)
+- Used for variant-based role bullet generation (the primary pipeline path)
+- Leads with action + result, puts situational context at the end
+- See also: cv_generation_prompts.py uses CARS for the legacy prompt builder path
+- Decision: ARIS is the standard for all new generation; CARS is retained for backward
+  compatibility in build_role_bullet_prompt() but both produce compatible output
+
 Phase 5 Enhancement (JD Annotation System):
 - Accepts annotation reframe guidance from manual JD annotations
 - Integrates reframe notes into bullet generation
