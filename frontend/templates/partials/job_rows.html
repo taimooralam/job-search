@@ -20,14 +20,14 @@
 
             {# Column widths: narrow for metadata, role column takes remaining space #}
             {% set sort_fields = [
-                ('createdAt', 'Created', 'hide-mobile', 'w-[55px]'),
-                ('company', 'Company', '', 'w-[90px] max-w-[90px]'),
-                ('title', 'Role/Title', '', 'max-w-[350px]'),
-                ('location', 'Location', 'hide-mobile', 'w-[36px]'),
-                ('jobId', 'Job ID', 'hide-tablet', 'w-[72px]'),
-                ('status', 'Status', '', 'w-[85px]'),
-                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[65px]'),
-                ('score', 'Score', 'hide-mobile', 'w-[45px]')
+                ('createdAt', 'Created', 'hide-mobile', 'w-[60px]'),
+                ('company', 'Company', '', 'w-[120px] max-w-[120px]'),
+                ('title', 'Role/Title', '', ''),
+                ('location', 'Location', 'hide-mobile', 'w-[45px]'),
+                ('jobId', 'Job ID', 'hide-tablet', 'w-[80px]'),
+                ('status', 'Status', '', 'w-[110px]'),
+                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[75px]'),
+                ('score', 'Score', 'hide-mobile', 'w-[55px]')
             ] %}
 
             {% for field, label, css_class, width_class in sort_fields %}
@@ -62,7 +62,7 @@
             {% endfor %}
 
             <!-- Actions column -->
-            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[70px]">
+            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[90px]">
                 Actions
             </th>
         </tr>
@@ -97,7 +97,7 @@
                 </td>
 
                 <!-- Company -->
-                <td class="px-2 py-3 max-w-[90px]">
+                <td class="px-2 py-3 max-w-[120px]">
                     <div class="text-sm font-semibold theme-text-primary truncate" title="{{ job.company or '-' }}">
                         {{ job.company or '-' }}
                     </div>
