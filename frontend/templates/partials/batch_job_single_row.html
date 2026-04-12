@@ -15,7 +15,9 @@
     <tr class="job-row hover:theme-bg-hover border-b theme-border {% if has_resolved_url %}bg-emerald-50/50 dark:bg-emerald-950/20{% endif %}{% if is_ai %} border-l-2 border-l-purple-400{% endif %}"
         :class="{ 'theme-bg-hover': expanded }"
         onmouseenter="if(window.JDPrefetch) JDPrefetch.prefetch('{{ job._id }}')"
-        oncontextmenu="showBatchJobContextMenu(event, '{{ job._id }}', {{ (job.title or '') | tojson | e }}, {{ (job_url or '') | tojson | e }}); return false;">
+        data-job-title="{{ (job.title or '') | e }}"
+        data-job-url="{{ (job_url or '') | e }}"
+        oncontextmenu="showBatchJobContextMenu(event, '{{ job._id }}', this.dataset.jobTitle, this.dataset.jobUrl); return false;">
         <!-- Expand toggle -->
         <td class="px-2 py-3 no-navigate" onclick="event.stopPropagation()">
             <button @click="expanded = toggleJobExpand('{{ job._id }}')"
@@ -475,7 +477,8 @@
                     <label class="block text-xs font-medium theme-text-tertiary uppercase mb-2">Actions</label>
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- View Logs Button -->
-                        <button @click="$store.cli.showJobLogs('{{ job._id }}', {{ (job.title or '') | tojson | e }})"
+                        <button data-title="{{ (job.title or '') | e }}"
+                                @click="$store.cli.showJobLogs('{{ job._id }}', $el.dataset.title)"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition
                                        text-white bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
                                 title="View pipeline logs for this job">
@@ -486,7 +489,8 @@
                         </button>
 
                         <!-- Scrape & Fill Button -->
-                        <button onclick="scrapeAndFillJob('{{ job._id }}', {{ (job.title or '') | tojson | e }})"
+                        <button data-title="{{ (job.title or '') | e }}"
+                                onclick="scrapeAndFillJob('{{ job._id }}', this.dataset.title)"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition
                                        {% if app_url %}text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
                                        {% else %}text-gray-400 bg-gray-200 dark:bg-gray-700 cursor-not-allowed{% endif %}"
