@@ -23,6 +23,7 @@ from pymongo import MongoClient
 
 from src.common.master_cv_store import MasterCVStore
 from src.services.cv_review_core import (
+    DEFAULT_CV_REVIEW_MODEL,
     REVIEWER_SYSTEM_PROMPT,
     build_cv_review_document,
     build_user_prompt,
@@ -64,7 +65,7 @@ class CVReviewService(OperationService):
             model: OpenAI model override. Defaults to CV_REVIEW_MODEL env var,
                    then falls back to "gpt-4o".
         """
-        self.model = model or os.getenv("CV_REVIEW_MODEL", "gpt-5.4-mini")
+        self.model = model or os.getenv("CV_REVIEW_MODEL", DEFAULT_CV_REVIEW_MODEL)
         self._mongo_uri = os.getenv("MONGODB_URI")
         if not self._mongo_uri:
             raise ValueError("MONGODB_URI environment variable is required")

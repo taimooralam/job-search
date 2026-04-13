@@ -50,6 +50,7 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 from src.services.cv_review_core import (
+    DEFAULT_CV_REVIEW_MODEL,
     REVIEWER_SYSTEM_PROMPT,
     build_cv_review_document,
     build_user_prompt,
@@ -226,7 +227,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--job-id", help="Review a single specific job by _id")
     parser.add_argument("--re-review", action="store_true", help="Re-review jobs that already have cv_review")
     parser.add_argument("--dry-run", action="store_true", help="List candidates without reviewing")
-    parser.add_argument("--model", default=None, help="Codex model override (default: CV_REVIEW_MODEL env or gpt-5.4-mini)")
+    parser.add_argument("--model", default=None, help="Codex model override (default: CV_REVIEW_MODEL env or gpt-5.2)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     return parser.parse_args()
 
@@ -237,7 +238,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    model = args.model or os.getenv("CV_REVIEW_MODEL", "gpt-5.4-mini")
+    model = args.model or os.getenv("CV_REVIEW_MODEL", DEFAULT_CV_REVIEW_MODEL)
 
     mongo_uri = os.getenv("MONGODB_URI")
     if not mongo_uri:

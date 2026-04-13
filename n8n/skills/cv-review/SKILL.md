@@ -79,4 +79,4 @@ token within minutes. Codex on a local Mac with a single process avoids this.
 - `RUNNER_API_SECRET` — Bearer token for runner API
 - `MONGODB_URI` — MongoDB connection string
 - `OPENAI_API_KEY` — OpenAI API key for GPT calls
-- `CV_REVIEW_MODEL` — Model override (default: gpt-5.4-mini)
+- `CV_REVIEW_MODEL` — Model override (default: gpt-5.2)

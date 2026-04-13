@@ -3,7 +3,11 @@ CV Review Core — shared pure logic for CV review.
 
 Zero project imports. Used by both CVReviewService (UI/API single-job)
 and bulk_review.py (local Codex batch runner).
+
+Default model: gpt-5.2 (best quality/cost ratio for review + rewrites).
 """
+
+DEFAULT_CV_REVIEW_MODEL = "gpt-5.2"
 
 import json
 import re
