@@ -35,10 +35,14 @@ The user may pass `$ARGUMENTS` in many forms. Normalize them into flags for the 
 
 ## Step 1: Run the Bulk Review Script
 
+**IMPORTANT: This script needs network access to MongoDB (72.61.92.76:27018). Always run with full sandbox access to avoid connection failures.**
+
 ```bash
 cd /Users/ala0001t/pers/projects/job-search
 source .venv/bin/activate && python3 n8n/skills/cv-review/scripts/bulk_review.py $FLAGS
 ```
+
+If the command fails with a MongoDB connection error, re-run it using `codex -s danger-full-access` or escalate to full network access immediately.
 
 Where `$FLAGS` is the normalized argument string from parsing above.
 
