@@ -68,7 +68,10 @@ from src.services.cv_review_core import (
 def build_query(args: argparse.Namespace) -> dict:
     """Build MongoDB query from CLI args."""
     if args.job_id:
-        return {"_id": ObjectId(args.job_id)}
+        ids = [ObjectId(jid) for jid in args.job_id]
+        if len(ids) == 1:
+            return {"_id": ids[0]}
+        return {"_id": {"$in": ids}}
 
     # CV text can be in cv_text or cv_editor_state
     cv_condition = {"$or": [
@@ -224,7 +227,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tier", help="Filter by tier (e.g. 'A', 'B')")
     parser.add_argument("--company", help="Filter by company name (substring, case-insensitive)")
     parser.add_argument("--since", type=int, help="Only jobs created in last N days")
-    parser.add_argument("--job-id", help="Review a single specific job by _id")
+    parser.add_argument("--job-id", nargs="+", help="Review specific job(s) by _id (one or more)")
     parser.add_argument("--re-review", action="store_true", help="Re-review jobs that already have cv_review")
     parser.add_argument("--dry-run", action="store_true", help="List candidates without reviewing")
     parser.add_argument("--model", default=None, help="Codex model override (default: CV_REVIEW_MODEL env or gpt-5.2)")
