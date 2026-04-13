@@ -1003,10 +1003,13 @@ class CoreCompetencyGeneratorV2:
         """
         from src.layer6_v2.types import SkillsProvenance
 
-        # Extract JD keywords for prioritization
+        # Extract JD keywords for prioritization (coerce strings to lists)
         jd_keywords = set()
         for key in ["priority_keywords", "top_keywords", "keywords", "technical_skills"]:
-            for kw in extracted_jd.get(key, []):
+            val = extracted_jd.get(key, [])
+            if isinstance(val, str):
+                val = [v.strip() for v in val.split(",") if v.strip()]
+            for kw in val:
                 jd_keywords.add(kw.lower())
 
         # Extract annotation emphasis for additional boost

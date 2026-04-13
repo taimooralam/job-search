@@ -272,7 +272,22 @@ class EnsembleHeaderGenerator:
             persona_results, extracted_jd, candidate_data, stitched_cv=stitched_cv
         )
 
-        # Generate skills using taxonomy-based approach (from fallback generator)
+        # Generate V2 core competencies using taxonomy-aware generator (whitelist + JD scoring)
+        if self._skill_whitelist:
+            from src.layer6_v2.skills_taxonomy import CoreCompetencyGeneratorV2
+            role_category = extracted_jd.get("role_category", "engineering_manager")
+            comp_generator = CoreCompetencyGeneratorV2(
+                role_category=role_category,
+                skill_whitelist=self._skill_whitelist,
+            )
+            core_competencies_v2, skills_provenance = comp_generator.generate(
+                extracted_jd=extracted_jd,
+                annotations=self._jd_annotations,
+            )
+            synthesized_profile.core_competencies_v2 = core_competencies_v2
+            synthesized_profile.skills_provenance = skills_provenance
+
+        # Generate skills sections as fallback (from fallback generator)
         skills_sections = self._fallback_generator.generate_skills(
             stitched_cv, extracted_jd
         )
@@ -315,7 +330,22 @@ class EnsembleHeaderGenerator:
             persona_results, extracted_jd, candidate_data, stitched_cv=stitched_cv
         )
 
-        # Generate skills
+        # Generate V2 core competencies using taxonomy-aware generator (whitelist + JD scoring)
+        if self._skill_whitelist:
+            from src.layer6_v2.skills_taxonomy import CoreCompetencyGeneratorV2
+            role_category = extracted_jd.get("role_category", "engineering_manager")
+            comp_generator = CoreCompetencyGeneratorV2(
+                role_category=role_category,
+                skill_whitelist=self._skill_whitelist,
+            )
+            core_competencies_v2, skills_provenance = comp_generator.generate(
+                extracted_jd=extracted_jd,
+                annotations=self._jd_annotations,
+            )
+            synthesized_profile.core_competencies_v2 = core_competencies_v2
+            synthesized_profile.skills_provenance = skills_provenance
+
+        # Generate skills sections as fallback
         skills_sections = self._fallback_generator.generate_skills(
             stitched_cv, extracted_jd
         )
@@ -428,9 +458,16 @@ Return JSON matching this ProfileResponse schema:
         # Parse into Pydantic model
         response = ProfileResponse(**result.parsed_json)
 
+        # Clean headline through resolve_headline for dual-title stripping + proper suffix
+        from src.layer6_v2.headline_resolver import resolve_headline
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+        cleaned_headline = resolve_headline(
+            response.headline, role_category, years_experience
+        )
+
         # Convert to ProfileOutput (hybrid format)
         profile = ProfileOutput(
-            headline=response.headline,
+            headline=cleaned_headline,
             tagline=response.tagline,                    # NEW: Hybrid format
             key_achievements=response.key_achievements,  # NEW: Hybrid format
             core_competencies=response.core_competencies,
@@ -526,9 +563,15 @@ Return JSON matching this ProfileResponse schema:
             all_metrics.update(pr.metrics_found)
             all_keywords.update(pr.keywords_found)
 
+        # Clean headline through resolve_headline for dual-title stripping + proper suffix
+        from src.layer6_v2.headline_resolver import resolve_headline
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+        cleaned_headline = resolve_headline(
+            response.headline, role_category, years_experience
+        )
+
         # Enforce achievement diversity (post-synthesis rebalancing)
         from src.layer6_v2.headline_resolver import enforce_achievement_diversity
-        role_category = extracted_jd.get("role_category", "engineering_manager")
         all_bullets = []
         if stitched_cv:
             for role in stitched_cv.roles:
@@ -541,7 +584,7 @@ Return JSON matching this ProfileResponse schema:
         )
 
         return ProfileOutput(
-            headline=response.headline,
+            headline=cleaned_headline,
             tagline=response.tagline,                    # NEW: Hybrid format
             key_achievements=diversified_achievements,   # Diversity-enforced
             core_competencies=response.core_competencies,

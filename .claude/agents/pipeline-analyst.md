@@ -1,7 +1,7 @@
 ---
 name: pipeline-analyst
 description: Use this agent to analyze pipeline run results, validate outputs, investigate failures, and check MongoDB state. It's the go-to agent for understanding what happened during a pipeline execution. Examples:\n- user: 'The pipeline finished but I'm not sure if the outputs are correct'\n  assistant: 'I'll use the pipeline-analyst agent to validate the pipeline outputs and check data quality.'\n- user: 'Check what the pipeline produced for this job'\n  assistant: 'Let me launch the pipeline-analyst agent to analyze the pipeline results in MongoDB.'\n- user: 'Why did the pipeline produce only 3 contacts?'\n  assistant: 'I'll engage the pipeline-analyst agent to investigate the contact generation logic and outputs.'
-model: sonnet
+model: opus
 color: green
 ---
 

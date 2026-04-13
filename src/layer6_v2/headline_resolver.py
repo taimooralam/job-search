@@ -231,6 +231,7 @@ def enforce_achievement_diversity(
 
 # Patterns that indicate AI-first framing (unverified lead)
 _AI_FIRST_PATTERNS = [
+    # Direct AI-first (word starts with AI keyword)
     r"^AI\s",
     r"^GenAI\s",
     r"^Generative\s+AI\s",
@@ -240,6 +241,12 @@ _AI_FIRST_PATTERNS = [
     r"^Agentic\s+AI\s",
     r"^NLP\s",
     r"^Deep\s+Learning\s",
+    # Compound AI-first: 0-2 modifiers before AI keyword + role noun
+    # Catches "Full-stack AI engineer", "Senior AI architect", "Lead AI developer"
+    r"^(?:[A-Za-z-]+\s+){0,2}AI\s+(?:engineer|architect|leader|specialist|developer)\b",
+    r"^(?:[A-Za-z-]+\s+){0,2}(?:GenAI|LLM)\s",
+    # Slash/hyphen variants: "AI/ML engineer", "AI-focused..."
+    r"^AI(?:/ML|-)",
 ]
 
 # Evidence-first fallback taglines per role category (from taxonomy identity_statements)
