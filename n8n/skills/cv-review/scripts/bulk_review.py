@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -137,6 +138,18 @@ def run_codex_review(full_prompt: str, model: str) -> tuple[dict | None, str | N
     env = {k: v for k, v in os.environ.items() if k != "OPENAI_API_KEY"}
     env["NO_COLOR"] = "1"
 
+    # Progress ticker — prints elapsed time every 30s so callers know we're alive
+    stop_ticker = threading.Event()
+
+    def _ticker():
+        start = time.time()
+        while not stop_ticker.wait(30):
+            elapsed = int(time.time() - start)
+            print(f"    ... still reviewing ({elapsed}s elapsed)", flush=True)
+
+    ticker = threading.Thread(target=_ticker, daemon=True)
+    ticker.start()
+
     try:
         result = subprocess.run(
             ["codex", "exec", "-m", model, "--full-auto"],
@@ -150,6 +163,8 @@ def run_codex_review(full_prompt: str, model: str) -> tuple[dict | None, str | N
         return None, "timeout after 300s"
     except FileNotFoundError:
         return None, "codex not found — install with: npm i -g @openai/codex"
+    finally:
+        stop_ticker.set()
 
     if result.returncode != 0:
         error = result.stderr.strip() or f"exit code {result.returncode}"
@@ -382,4 +397,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # Flush stdout after every print so Codex/callers see progress immediately
+    import functools
+    print = functools.partial(print, flush=True)  # type: ignore[assignment]
     main()
