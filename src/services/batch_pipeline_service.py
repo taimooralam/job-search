@@ -430,43 +430,6 @@ class BatchPipelineService(OperationService):
             _emit_progress("dossier_upload", "failed", error_msg)
 
         # =====================================================================
-        # STEP 8: CV Review (independent review via Codex)
-        # =====================================================================
-        _emit_progress("cv_review", "running", "Running independent CV review...")
-
-        try:
-            from src.services.cv_review_service import CVReviewService
-
-            review_model = os.environ.get("CV_REVIEW_MODEL", "gpt-5.4-mini")
-            review_service = CVReviewService(model=review_model)
-            review_result = await review_service.execute(
-                job_id=job_id,
-                tier=tier,
-                progress_callback=progress_callback,
-                log_callback=log_callback,
-            )
-
-            step_results["cv_review"] = {
-                "success": review_result.success,
-                "error": review_result.error,
-                "duration_ms": review_result.duration_ms,
-            }
-            total_cost += review_result.cost_usd
-            total_input_tokens += review_result.input_tokens
-            total_output_tokens += review_result.output_tokens
-
-            if review_result.success:
-                _emit_progress("cv_review", "completed", "CV review completed")
-            else:
-                _emit_progress("cv_review", "failed", f"CV review failed: {review_result.error}")
-
-        except Exception as e:
-            error_msg = f"CV review exception: {str(e)}"
-            logger.error(f"{error_msg}\n{traceback.format_exc()}")
-            step_results["cv_review"] = {"success": False, "error": error_msg}
-            _emit_progress("cv_review", "failed", error_msg)
-
-        # =====================================================================
         # BUILD FINAL RESULT
         # =====================================================================
         end_time = datetime.utcnow()
@@ -475,7 +438,7 @@ class BatchPipelineService(OperationService):
         # Count successes and failures
         # GDrive uploads are non-critical — their failure should not mark the
         # overall pipeline as failed since all generation work already succeeded.
-        non_critical_steps = {"cv_upload", "dossier_upload", "cv_review"}
+        non_critical_steps = {"cv_upload", "dossier_upload"}
         critical_results = {k: v for k, v in step_results.items() if k not in non_critical_steps}
         steps_completed = sum(1 for r in step_results.values() if r.get("success", False))
         steps_failed = sum(1 for r in step_results.values() if not r.get("success", True))
