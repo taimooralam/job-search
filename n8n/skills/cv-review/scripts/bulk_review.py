@@ -156,7 +156,7 @@ def run_codex_review(full_prompt: str, model: str) -> tuple[dict | None, str | N
             input=full_prompt,
             text=True,
             capture_output=True,
-            timeout=300,
+            timeout=600,
             env=env,
         )
     except subprocess.TimeoutExpired:
