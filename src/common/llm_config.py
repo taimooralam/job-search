@@ -162,6 +162,18 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     # Persona Builder
     "persona_synthesis": StepConfig(tier="high"),
 
+    # Eval Step 5: Category blueprint synthesis - require Claude-only JSON output
+    "eval_blueprint_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+
+    # Eval Step 6: Category baseline synthesis - require JSON output
+    "eval_baseline_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+
+    # Eval Step 7: Reusable category eval rubrics - require JSON output
+    "eval_rubric_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+
+    # Eval Step 9: Rubric-bound CV/JD scoring - require JSON scorecard
+    "eval_cv_scoring": StepConfig(tier="high", use_fallback=False, timeout_seconds=300),
+
     # ATS Validation
     "ats_validation": StepConfig(tier="low"),
 
