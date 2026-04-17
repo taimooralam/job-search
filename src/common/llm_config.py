@@ -29,6 +29,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional, Literal, Dict
 
+ProviderType = Literal["claude", "codex", "embedding", "none"]
+
 logger = logging.getLogger(__name__)
 
 # Type alias for tier levels
@@ -72,6 +74,11 @@ class StepConfig:
         timeout_seconds: Maximum time to wait for LLM response
         max_retries: Number of retry attempts before failing
         use_fallback: Whether to use LangChain fallback if Claude CLI fails
+        provider: Provider routing hint for pre-enrichment stages.
+                  "claude" (default) | "codex" (shadow/eval) |
+                  "embedding" | "none". UnifiedLLM routing is NOT
+                  changed by this field in Phase 0/1 — routing is
+                  isolated inside src/preenrich/stages/* only.
     """
 
     tier: TierType = "middle"
@@ -80,6 +87,7 @@ class StepConfig:
     timeout_seconds: int = 180
     max_retries: int = 2
     use_fallback: bool = True
+    provider: ProviderType = "claude"
 
     def get_claude_model(self) -> str:
         """

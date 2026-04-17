@@ -574,19 +574,39 @@ def main():
     batch_ids = [str(j_id) for j_id in all_inserted_ids[:args.hourly_quota]]
     batch_candidates = tier_c_plus[:args.hourly_quota]
 
+    # Feature flag: when true, hand ownership to the pre-enrichment worker
+    # instead of directly POSTing the runner. Default false = no behaviour change.
+    enqueue_via_worker = os.getenv("SELECTOR_ENQUEUE_VIA_WORKER", "false").lower() == "true"
+
     trigger_stats = {"queued": 0, "failed": 0}
     if not args.dry_run and batch_ids:
-        # Mark batch candidates as "under processing"
         from bson import ObjectId
-        for bid in batch_ids:
-            collection.update_one(
-                {"_id": ObjectId(bid)},
-                {"$set": {"status": "under processing"}},
+        if enqueue_via_worker:
+            # Worker path: set lifecycle="selected" so the pre-enrichment worker
+            # claims and enriches the job before the runner sees it.
+            # Does NOT call trigger_batch_pipeline or set status="under processing".
+            now = datetime.now(timezone.utc)
+            for bid in batch_ids:
+                collection.update_one(
+                    {"_id": ObjectId(bid)},
+                    {"$set": {"lifecycle": "selected", "selected_at": now}},
+                )
+            logger.info(
+                f"Worker path: marked {len(batch_ids)} jobs as lifecycle=selected "
+                f"(SELECTOR_ENQUEUE_VIA_WORKER=true)"
             )
-        logger.info(f"Marked {len(batch_ids)} jobs as 'under processing'")
-        logger.info(f"Triggering batch pipeline for top {len(batch_ids)} jobs...")
-        trigger_stats = trigger_batch_pipeline(batch_ids)
-        logger.info(f"Pipeline: queued={trigger_stats['queued']}, failed={trigger_stats['failed']}")
+            trigger_stats = {"queued": 0, "failed": 0}
+        else:
+            # Legacy path (default): mark as "under processing" + POST runner directly
+            for bid in batch_ids:
+                collection.update_one(
+                    {"_id": ObjectId(bid)},
+                    {"$set": {"status": "under processing"}},
+                )
+            logger.info(f"Marked {len(batch_ids)} jobs as 'under processing'")
+            logger.info(f"Triggering batch pipeline for top {len(batch_ids)} jobs...")
+            trigger_stats = trigger_batch_pipeline(batch_ids)
+            logger.info(f"Pipeline: queued={trigger_stats['queued']}, failed={trigger_stats['failed']}")
 
     # Summary
     logger.info("=" * 60)
