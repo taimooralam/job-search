@@ -286,14 +286,25 @@ class RecruiterCoverLetterGenerator:
         """
         Generate validated recruiter cover letter.
 
+        Gated by ENABLE_RECRUITER_COVER_LETTER env var (default: disabled).
+        When disabled, returns an empty string so downstream callers degrade
+        gracefully without errors.
+
         Args:
             state: JobState with job details and candidate achievements
 
         Returns:
-            Cover letter text (150-250 words)
+            Cover letter text (150-250 words), or "" when disabled.
 
         Raises:
-            ValueError: If validation fails after retries
+            ValueError: If validation fails after retries (only when enabled).
         """
+        import os
+        if os.getenv("ENABLE_RECRUITER_COVER_LETTER", "false").lower() != "true":
+            self.logger.info(
+                "Recruiter cover letter generation is disabled "
+                "(set ENABLE_RECRUITER_COVER_LETTER=true to enable). Returning empty string."
+            )
+            return ""
         self.logger.info("Generating recruiter-specific cover letter")
         return self._generate_with_retry(state, attempt=1)

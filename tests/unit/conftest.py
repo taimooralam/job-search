@@ -18,6 +18,14 @@ os.environ["ENVIRONMENT"] = "development"
 os.environ["USE_MASTER_CV_MONGODB"] = "false"
 # Don't clear MONGODB_URI as it may break validation in runner_service
 
+# Re-enable env-gated pipeline steps during tests so their existing test suites
+# still exercise the real codepath. Production defaults these to disabled
+# (see src/layer6/cover_letter_generator.py, src/layer6/recruiter_cover_letter.py,
+# src/layer7/interview_predictor.py) to save Claude tokens.
+os.environ["ENABLE_COVER_LETTER_GENERATION"] = "true"
+os.environ["ENABLE_RECRUITER_COVER_LETTER"] = "true"
+os.environ["ENABLE_INTERVIEW_PREDICTION"] = "true"
+
 
 @pytest.fixture(autouse=True)
 def mock_mongodb():

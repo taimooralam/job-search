@@ -1013,13 +1013,24 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         """
         Generate validated cover letter.
 
+        Gated by ENABLE_COVER_LETTER_GENERATION env var (default: disabled).
+        When disabled, returns an empty string so downstream callers degrade
+        gracefully without errors.
+
         Args:
             state: JobState with pain points, company/role research, STAR records, fit analysis
 
         Returns:
-            Cover letter text (3-4 paragraphs, 220-380 words)
+            Cover letter text (3-4 paragraphs, 220-380 words), or "" when disabled.
 
         Raises:
-            ValueError: If validation fails after retries
+            ValueError: If validation fails after retries (only when enabled).
         """
+        import os
+        if os.getenv("ENABLE_COVER_LETTER_GENERATION", "false").lower() != "true":
+            self.logger.info(
+                "Cover letter generation is disabled "
+                "(set ENABLE_COVER_LETTER_GENERATION=true to enable). Returning empty string."
+            )
+            return ""
         return self._generate_with_retry(state, attempt=1)

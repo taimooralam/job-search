@@ -318,6 +318,24 @@ class InterviewPredictor:
         """
         logger.info(f"Predicting interview questions for job: {state.get('job_id', 'unknown')}")
 
+        # Gated by ENABLE_INTERVIEW_PREDICTION env var (default: disabled).
+        # When disabled, return an empty InterviewPrep so callers degrade gracefully.
+        import os
+        if os.getenv("ENABLE_INTERVIEW_PREDICTION", "false").lower() != "true":
+            logger.info(
+                "Interview prediction is disabled "
+                "(set ENABLE_INTERVIEW_PREDICTION=true to enable). Returning empty InterviewPrep."
+            )
+            return InterviewPrep(
+                predicted_questions=[],
+                gap_summary="",
+                concerns_summary="",
+                company_context="",
+                role_context="",
+                generated_at=datetime.utcnow().isoformat(),
+                generated_by="disabled",
+            )
+
         # Extract gaps and concerns
         jd_annotations = state.get("jd_annotations") or {}
         annotations = jd_annotations.get("annotations", [])
