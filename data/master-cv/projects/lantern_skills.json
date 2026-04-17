@@ -19,6 +19,9 @@
     "Circuit Breaker Pattern",
     "Multi-Provider Routing",
     "LLM-as-Judge Evaluation",
+    "Golden-Set Testing",
+    "Eval Harness Design",
+    "Cost Optimization",
     "Langfuse Tracing",
     "RAG Pipeline",
     "Vector Search",
@@ -33,15 +36,12 @@
     "React", "Vite", "Tailwind CSS", "Vercel"
   ],
   "post_checklist_competencies": [
-    "Golden-Set Testing",
-    "Eval Harness Design",
     "Faithfulness Evaluation",
     "Regression Detection",
     "Streaming SSE",
     "Rate Limiting",
     "SLO/SLI Design",
     "Incident Runbooks",
-    "Cost Optimization",
     "Prompt Engineering",
     "Document Ingestion Pipeline",
     "Hybrid Search"

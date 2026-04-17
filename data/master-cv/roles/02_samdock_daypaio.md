@@ -174,7 +174,7 @@ Per the CV generation critique recommendations:
 ## Context for Generation
 
 ### Role Summary
-Lead Software Engineer at early-stage SaaS startup, responsible for architecting and delivering event-sourced CRM platform from inception to production. Combined technical leadership with hands-on development in fast-paced 0→1 environment.
+Lead Software Engineer responsible for end-to-end architecture and market launch of a greenfield CRM SaaS platform. Combined event storming, CQRS/event sourcing, engineering standards, and hands-on delivery to ship a scalable multi-tenant product from domain discovery to production in a fast-paced 0→1 environment.
 
 ### Key Technologies
 | Category | Technologies |
@@ -191,13 +191,13 @@ Lead Software Engineer at early-stage SaaS startup, responsible for architecting
 - **Stage**: Early-stage, 0→1 product development
 - **Scale**: 25 production tenants at launch
 - **Team**: 4-person cross-functional squad
-- **Challenge**: Build scalable platform at startup speed
+- **Challenge**: Build scalable platform at startup speed without sacrificing architectural runway
 
 ### What Made This Role Unique
-- **0→1 ownership**: Full architecture responsibility from blank slate
+- **0→1 ownership**: Full architecture responsibility from blank slate through market launch
 - **Event sourcing in production**: Not just theory—shipped to paying customers
 - **Startup leadership**: Balanced quality with speed constraints
-- **DDD practitioner**: Event storming facilitation with real business impact
+- **DDD practitioner**: Event storming facilitation with real business impact and bounded-context discovery
 
 ---
 

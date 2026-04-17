@@ -1,7 +1,8 @@
 {
   "candidate": {
     "name": "Taimoor Alam",
-    "title_base": "Engineering Leader / Software Architect",
+    "title_base": "Technical Architect / AI Platform Architect",
+    "summary": "Hands-on technical architect and player-coach with 11 years building distributed systems, modernizing revenue-critical platforms, and shipping production AI platforms. At Seven.One, combines large-scale platform modernization with enterprise AI workflow delivery across retrieval quality, evaluation harnesses, guardrails, structured outputs, MCP integrations, semantic caching, observability, and reliability. Earlier Daypaio work adds 0→1 event-sourced SaaS architecture, event storming, and scalable product launch experience.",
     "contact": {
       "email": "alamtaimoor.de@gmail.com",
       "phone": "+49 176 2979 3925",

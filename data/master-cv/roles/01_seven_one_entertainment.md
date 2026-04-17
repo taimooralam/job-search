@@ -23,6 +23,55 @@ Per the CV generation critique recommendations:
 
 ## Achievements
 
+### Achievement 15: AI Platform Engineering (Commander-4/Joyia)
+
+**Core Fact**: As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users across 42 plugins, personally engineered the retrieval-quality and runtime-control layer in TypeScript/Python: (1) BM25 + RRF hybrid search — implementing BM25 scoring from scratch for S3 Vectors (no inverted index available) with RRF fusion (k=60); (2) LLM-as-judge reranking via Claude Sonnet through the LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests, improving search quality while strengthening latency, cost, and production readiness.
+
+**Variants**:
+- **Architecture**: Led the retrieval-quality architecture for Commander-4/Joyia, an enterprise AI workflow platform serving 2,000 users across 42 plugins, combining hybrid search, reranking, semantic caching, and evaluation into a production-ready AI platform layer
+- **Technical**: Implemented BM25 scoring from scratch for S3 Vectors (no inverted index available) with RRF fusion (k=60), LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.all, two-tier cache (L1 sha256 exact-match ~2ms, L2 S3 Vectors cosine >= 0.95 ~200ms) with custom S3VectorSemanticCache in Python, and MRR@k/NDCG@k retrieval evaluation functions with 14 unit tests
+- **Leadership**: Platform lead for enterprise AI workflow platform serving 2,000 users across ProSiebenSat.1, setting retrieval quality direction and personally building the core search, caching, and evaluation components
+- **Impact**: Improved search relevance through hybrid BM25+semantic retrieval, reduced latency through semantic caching, lowered LLM costs via intelligent cache hits, and gave the platform a stronger quality and production-readiness foundation
+- **Innovation**: Built BM25 scoring from scratch on S3 Vectors — a non-traditional approach since S3 Vectors lacks inverted indices — computing corpus statistics in-memory and fusing with semantic results via RRF
+- **Short**: AI platform lead — hybrid retrieval, reranking, semantic caching, and evaluation for a 2,000-user enterprise workflow platform
+
+**Keywords**: AI platform, enterprise AI workflow platform, LLM, RAG, retrieval-augmented generation, hybrid search, BM25, reciprocal rank fusion, RRF, vector search, S3 Vectors, semantic caching, LLM-as-judge, LLM reranking, LiteLLM, AI gateway, model routing, production AI, retrieval quality, evaluation harness, prompt engineering, Claude, Commander-4, Joyia, TypeScript, Python, Redis, cosine similarity, MRR, NDCG, retrieval evaluation, search quality metrics, DCG
+
+**Interview Defensibility**: ✅ Can explain:
+- BM25 scoring math (TF-IDF variant with length normalization, k1 and b parameters)
+- Why RRF over linear combination (rank-based fusion is score-distribution-agnostic, k=60 is standard literature value)
+- LLM-as-judge architecture (Claude Sonnet via LiteLLM, parallel Promise.all for latency, structured relevance scoring)
+- Semantic caching design (S3 Vectors cosine ≥ 0.95 threshold, Redis TTL for expiry, custom S3VectorSemanticCache Python class)
+- L1/L2 cache tier rationale (exact-match is ~100x faster, catches 60-70% of hits; semantic catches remaining paraphrases)
+- MRR vs NDCG choice (MRR for single-answer queries, NDCG for ranked list quality), exponential gain variant (2^grade - 1)
+- Platform lead vs personal contribution distinction (led platform strategy, personally built these 4 features)
+
+**Differentiators**: Hands-on AI platform engineering at enterprise scale — not just strategy or integration, but implementing retrieval, caching, and evaluation primitives from scratch
+
+---
+
+### Achievement 17: Structured Outputs & Tool-Calling Architecture
+
+**Core Fact**: Designed the governed structured-output and tool-calling architecture for Commander-4 (Joyia), implementing Zod schema validation for all LLM responses to ensure type-safe outputs, 5 MCP server tools for external system integrations, composable guardrail profiles across 42 workflow plugins, and per-silo guardrail injection via LiteLLM proxy with access-control-aware behavior, enabling policy-safe AI workflows across organizational boundaries.
+
+**Variants**:
+- **Architecture**: Designed a governed AI workflow control layer with Zod-validated structured outputs, MCP-based integrations, composable guardrail profiles, and per-silo policy injection through LiteLLM across 42 workflow plugins
+- **Technical**: Implemented Zod schema validation for all LLM outputs, 5 MCP server tools for external integrations, composable guardrail profiles, per-silo guardrail injection via LiteLLM proxy, and type-safe structured output pipelines with access-control-aware behavior
+- **Leadership**: Defined structured output standards and guardrail patterns for Commander-4, enabling safer multi-tenant AI workflow delivery across organizational silos serving 2,000 users
+- **Impact**: Enabled safe, type-validated, policy-aware LLM outputs across 42 workflow plugins through composable guardrail profiles, per-silo controls, and governed tool calling, eliminating unstructured response failures
+- **Short**: Governed structured outputs — Zod validation, 5 MCP tools, 42 plugins, per-silo guardrails via LiteLLM
+
+**Keywords**: structured outputs, governed AI workflows, Zod, schema validation, MCP, Model Context Protocol, tool calling, guardrails, guardrail profiles, LiteLLM, per-silo, access control, workflow plugins, type safety, content policy, LLM safety, policy enforcement, multi-tenant AI
+
+**Interview Defensibility**: ✅ Can explain:
+- Zod schema validation (runtime type checking for LLM outputs, error recovery on schema mismatch)
+- MCP server tools (Model Context Protocol for external system integration, tool registration, parameter validation)
+- Guardrail profiles (per-silo content policies, injection via LiteLLM proxy, composable rule sets)
+- Per-silo access control (organizational unit isolation, data boundary enforcement)
+- Plugin architecture (42 workflow plugins, composable configuration, guardrail inheritance)
+
+---
+
 ### Achievement 1: Legacy Modernization & Platform Transformation
 
 **Core Fact**: Diagnosed and transformed legacy 2015-era JavaScript AdTech platform—plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns—into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity—while continuously shipping features.
@@ -49,23 +98,6 @@ Per the CV generation critique recommendations:
 
 ---
 
-### Achievement 2: Architectural Runway & Technical Debt Strategy
-
-**Core Fact**: Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system components while continuously delivering business-critical features.
-
-**Variants**:
-- **Strategy**: Designed Architectural Runway balancing technical debt reduction with feature delivery, achieving 70% system refactoring over multi-year roadmap
-- **Architecture**: Implemented incremental architectural transformation strategy enabling 70% codebase modernization without disrupting business delivery
-- **Leadership**: Led strategic technical debt initiative using Architectural Runway pattern, balancing quality with shipping velocity
-- **Impact**: Enabled sustained feature delivery while achieving 70% system modernization through strategic architectural planning
-- **Short**: Architectural Runway strategy—70% refactoring while shipping features continuously
-
-**Keywords**: architectural runway, technical debt, strategic planning, incremental modernization, refactoring, legacy systems
-
-**Interview Defensibility**: ✅ Can explain Architectural Runway concept, prioritization framework, how debt was quantified, trade-off decisions
-
----
-
 ### Achievement 3: Real-Time Observability Pipeline
 
 **Core Fact**: Led initiative to architect and realize data observability pipeline channeling billions of events daily to OpenSearch on AWS. Real-time dashboards uncovered issues and debug scenarios previously invisible, increasing shipping speed, faster issue resolution, and significant revenue increase.
@@ -80,6 +112,23 @@ Per the CV generation critique recommendations:
 **Keywords**: observability, OpenSearch, AWS, event streaming, real-time analytics, dashboards, monitoring, data pipeline, distributed systems, high-scale
 
 **Interview Defensibility**: ✅ Can explain pipeline architecture, why OpenSearch, cost optimization strategies, specific debugging scenarios enabled
+
+---
+
+### Achievement 2: Architectural Runway & Technical Debt Strategy
+
+**Core Fact**: Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system components while continuously delivering business-critical features.
+
+**Variants**:
+- **Strategy**: Designed Architectural Runway balancing technical debt reduction with feature delivery, achieving 70% system refactoring over multi-year roadmap
+- **Architecture**: Implemented incremental architectural transformation strategy enabling 70% codebase modernization without disrupting business delivery
+- **Leadership**: Led strategic technical debt initiative using Architectural Runway pattern, balancing quality with shipping velocity
+- **Impact**: Enabled sustained feature delivery while achieving 70% system modernization through strategic architectural planning
+- **Short**: Architectural Runway strategy—70% refactoring while shipping features continuously
+
+**Keywords**: architectural runway, technical debt, strategic planning, incremental modernization, refactoring, legacy systems
+
+**Interview Defensibility**: ✅ Can explain Architectural Runway concept, prioritization framework, how debt was quantified, trade-off decisions
 
 ---
 
@@ -277,33 +326,6 @@ Per the CV generation critique recommendations:
 
 ---
 
-### Achievement 15: AI Platform Engineering (Commander-4/Joyia)
-
-**Core Fact**: As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search — implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.
-
-**Variants**:
-- **Architecture**: Led enterprise AI platform (Commander-4/Joyia, 2,000 users, 42 plugins) and designed two-tier semantic caching architecture combining S3 Vectors (cosine ≥ 0.95) with Redis TTL, reducing LLM API costs while maintaining response quality
-- **Technical**: Implemented BM25 scoring from scratch for S3 Vectors (no inverted index available) with RRF fusion (k=60), LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.all, two-tier cache (L1 sha256 exact-match ~2ms, L2 S3 Vectors cosine >= 0.95 ~200ms) with custom S3VectorSemanticCache in Python, and MRR@k/NDCG@k retrieval eval functions with 14 unit tests
-- **Leadership**: Platform lead for enterprise AI workflow platform serving 2,000 users across ProSiebenSat.1, driving search quality strategy and personally contributing three core search improvements
-- **Impact**: Improved search relevance through hybrid BM25+semantic retrieval, reduced latency via semantic caching, and lowered LLM costs through intelligent cache hits on the enterprise AI platform
-- **Innovation**: Built BM25 scoring from scratch on S3 Vectors — a non-traditional approach since S3 Vectors lacks inverted indices — computing corpus statistics in-memory and fusing with semantic results via RRF
-- **Short**: AI platform lead — BM25+RRF hybrid search, LLM-as-judge reranking, semantic caching for 2,000-user enterprise platform
-
-**Keywords**: AI platform, LLM, RAG, retrieval-augmented generation, hybrid search, BM25, reciprocal rank fusion, RRF, vector search, S3 Vectors, semantic caching, LLM-as-judge, LLM reranking, LiteLLM, AI gateway, model routing, prompt engineering, Claude, enterprise AI, Commander-4, Joyia, TypeScript, Python, Redis, cosine similarity, MRR, NDCG, retrieval evaluation, search quality metrics, DCG, evaluation harness
-
-**Interview Defensibility**: ✅ Can explain:
-- BM25 scoring math (TF-IDF variant with length normalization, k1 and b parameters)
-- Why RRF over linear combination (rank-based fusion is score-distribution-agnostic, k=60 is standard literature value)
-- LLM-as-judge architecture (Claude Sonnet via LiteLLM, parallel Promise.all for latency, structured relevance scoring)
-- Semantic caching design (S3 Vectors cosine ≥ 0.95 threshold, Redis TTL for expiry, custom S3VectorSemanticCache Python class)
-- L1/L2 cache tier rationale (exact-match is ~100x faster, catches 60-70% of hits; semantic catches remaining paraphrases)
-- MRR vs NDCG choice (MRR for single-answer queries, NDCG for ranked list quality), exponential gain variant (2^grade - 1)
-- Platform lead vs personal contribution distinction (led platform strategy, personally built these 4 features)
-
-**Differentiators**: Hands-on AI/LLM engineering at enterprise scale — not just strategy or integration, but implementing search algorithms and caching from scratch
-
----
-
 ### Achievement 16: Document Ingestion Pipeline (Knowledgeflow)
 
 **Core Fact**: Engineered Knowledgeflow, the document ingestion pipeline for Commander-4 (Joyia), processing Confluence XML (macro stripping, metadata extraction) and Jira ADF→markdown conversion. Implemented sentence-boundary chunking (500-token windows, 50-token overlap), SHA-256 change detection for incremental updates eliminating redundant re-indexing, RAPTOR hierarchical indexing for multi-granularity retrieval, and thin content filtering to maintain knowledge base quality.
@@ -324,28 +346,6 @@ Per the CV generation critique recommendations:
 - SHA-256 change detection (content hashing for incremental updates, avoiding redundant embedding computation)
 - RAPTOR hierarchical tree (bottom-up clustering, multi-level summaries for different query granularities)
 - Thin content filtering (minimum token thresholds, boilerplate detection)
-
----
-
-### Achievement 17: Structured Outputs & Tool-Calling Architecture
-
-**Core Fact**: Designed the structured output and tool-calling architecture for Commander-4 (Joyia), implementing Zod schema validation for all LLM responses ensuring type-safe outputs, 5 MCP server tools for external system integrations, 42 workflow plugins with composable guardrail profiles, and per-silo guardrail injection via LiteLLM proxy enabling content policy enforcement across organizational units.
-
-**Variants**:
-- **Architecture**: Designed composable structured output architecture with Zod schema validation, MCP server tools, and per-silo guardrail injection via LiteLLM proxy across 42 workflow plugins
-- **Technical**: Implemented Zod schema validation for all LLM outputs, 5 MCP server tools for external integrations, per-silo guardrail profiles with LiteLLM proxy injection, and type-safe structured output pipelines
-- **Leadership**: Defined structured output standards and guardrail policies for Commander-4, enabling safe LLM deployment across organizational silos serving 2,000 users
-- **Impact**: Enabled safe, type-validated LLM outputs across 42 workflow plugins through composable guardrail profiles and per-silo access control, eliminating unstructured response failures
-- **Short**: Structured outputs—Zod validation, 5 MCP tools, 42 plugins, per-silo guardrails via LiteLLM
-
-**Keywords**: structured outputs, Zod, schema validation, MCP, Model Context Protocol, tool calling, guardrails, guardrail profiles, LiteLLM, per-silo, access control, workflow plugins, type safety, content policy, LLM safety
-
-**Interview Defensibility**: ✅ Can explain:
-- Zod schema validation (runtime type checking for LLM outputs, error recovery on schema mismatch)
-- MCP server tools (Model Context Protocol for external system integration, tool registration, parameter validation)
-- Guardrail profiles (per-silo content policies, injection via LiteLLM proxy, composable rule sets)
-- Per-silo access control (organizational unit isolation, data boundary enforcement)
-- Plugin architecture (42 workflow plugins, composable configuration, guardrail inheritance)
 
 ---
 
@@ -392,7 +392,7 @@ Per the CV generation critique recommendations:
 ## Context for Generation
 
 ### Role Summary
-Technical Lead driving platform modernization, architectural excellence, and team development at Seven.One Entertainment Group (ProSiebenSat.1 subsidiary). Responsible for AdTech platform serving millions of impressions daily across German broadcast TV digital properties.
+Technical Lead and architect driving both large-scale platform modernization and enterprise AI workflow delivery at Seven.One Entertainment Group (ProSiebenSat.1 subsidiary). Responsible for revenue-critical AdTech systems serving millions of impressions daily plus Commander-4/Joyia AI platform capabilities spanning retrieval quality, evaluation, guardrails, structured outputs, MCP integrations, observability, and reliability.
 
 ### Key Technologies
 | Category | Technologies |
@@ -409,10 +409,12 @@ Technical Lead driving platform modernization, architectural excellence, and tea
 - **Company**: Seven.One Entertainment Group (ProSiebenSat.1 Media)
 - **Domain**: Addressable TV advertising technology
 - **Scale**: Millions of daily ad impressions
+- **AI Scope**: Commander-4/Joyia enterprise AI workflow platform serving 2,000 users across 42 plugins
 - **Challenge**: Maintaining revenue growth despite declining linear TV viewership
 - **Regulatory**: GDPR/TCF compliance with BLM oversight
 
 ### Leadership Scope
+- **Architect scope**: Platform lead for Commander-4/Joyia and architectural north-star ownership across modernization and AI workflow delivery
 - 10+ engineers mentored
 - 3 engineers promoted to lead
 - Cross-functional matrixed teams
