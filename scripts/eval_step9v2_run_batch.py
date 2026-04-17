@@ -165,15 +165,33 @@ def run_anchor(cat: str, jid: str, jd: str, run_root: Path) -> dict:
 
 
 def main():
-    # read latest run root
-    run_root = Path(Path("data/eval/generated_cvs/LATEST_V2.txt").read_text().strip())
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--anchors-json", help="JSON file with list of {category_id, job_id, jd_path}")
+    parser.add_argument("--tag", default="step9_v2", help="Run-root tag; used to locate LATEST_<tag>.txt")
+    args = parser.parse_args()
+
+    # Resolve anchor list
+    if args.anchors_json:
+        anchors_data = json.loads(Path(args.anchors_json).read_text())
+        anchors = [(a["category_id"], a["job_id"], a["jd_path"]) for a in anchors_data]
+    else:
+        anchors = ANCHORS
+
+    # Resolve run root
+    latest_file = Path(f"data/eval/generated_cvs/LATEST_{args.tag.upper()}.txt")
+    if not latest_file.exists():
+        # fall back to legacy pointer for backward compat
+        latest_file = Path("data/eval/generated_cvs/LATEST_V2.txt")
+    run_root = Path(latest_file.read_text().strip())
     if not run_root.exists():
         print(f"run root missing: {run_root}", file=sys.stderr)
         sys.exit(1)
     print(f"Run root: {run_root}")
+    print(f"Anchors: {len(anchors)} pair(s) from {args.anchors_json or 'hardcoded default'}")
 
     results = []
-    for cat, jid, jd in ANCHORS:
+    for cat, jid, jd in anchors:
         try:
             r = run_anchor(cat, jid, jd, run_root)
         except Exception as e:

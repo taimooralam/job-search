@@ -526,96 +526,71 @@ def suggest_keywords_for_item(
 # ============================================================================
 
 
-def generate_annotations_for_job(
-    job_id: str,
-    extracted_jd: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+def compute_annotations(job_doc: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Generate annotations for a job's structured JD.
+    Pure function: compute annotations for a job document without writing to Mongo.
 
-    This is the main entry point called by the API endpoint.
-
-    Uses 4 sources for matching:
-    1. Master CV (skills I have)
-    2. Structured JD (where to annotate)
-    3. Extracted JD (what to look for, requirement type inference)
-    4. Priors (patterns I prefer)
+    This is the decomposed core used by the preenrich stage (§3.4).
+    The caller (dispatcher or shim) is responsible for persisting the result.
 
     Args:
-        job_id: MongoDB ObjectId string of the job
-        extracted_jd: Optional pre-loaded extracted_jd, loaded from job if None
+        job_doc: Full job document from MongoDB (must contain jd_annotations with
+                 processed_jd_sections and optionally extracted_jd).
 
     Returns:
-        Dict with success, created, skipped, annotations, error
+        Dict with:
+            success: bool
+            new_annotations: list of annotation dicts (empty list on failure)
+            all_annotations: existing + new (for patch write by caller)
+            skipped: int
+            error: str|None
+            priors_version: str (from loaded priors, for provenance tracking)
     """
-    from bson import ObjectId
-    from src.common.repositories import get_job_repository
-
-    logger.info(f"Generating annotations for job {job_id}")
-
     try:
-        # 1. Load job
-        repo = get_job_repository()
-        try:
-            job_oid = ObjectId(job_id)
-        except Exception:
-            job_oid = job_id  # Fallback for invalid ObjectId
-
-        job = repo.find_one({"_id": job_oid})
-        if not job:
-            return {"success": False, "error": "Job not found"}
-
-        # 2. Get structured JD sections
-        # The JD structuring saves to 'processed_jd_sections' as a list of section objects
-        jd_annotations = job.get("jd_annotations", {})
+        jd_annotations = job_doc.get("jd_annotations", {})
         processed_sections = jd_annotations.get("processed_jd_sections", [])
 
         if not processed_sections:
-            return {"success": False, "error": "No structured JD found. Please structure the JD first."}
+            return {
+                "success": False,
+                "new_annotations": [],
+                "all_annotations": jd_annotations.get("annotations", []),
+                "skipped": 0,
+                "error": "No structured JD found. Please structure the JD first.",
+                "priors_version": None,
+            }
 
-        # Load extracted_jd if not provided (Source 3)
-        if extracted_jd is None:
-            extracted_jd = job.get("extracted_jd") or {}
-        elif not isinstance(extracted_jd, dict):
-            logger.warning(f"Invalid extracted_jd type: {type(extracted_jd)}, using job document")
-            extracted_jd = job.get("extracted_jd") or {}
+        extracted_jd = job_doc.get("extracted_jd") or {}
 
-        # 3. Load priors + rebuild if needed (chunked storage for embeddings)
+        # Load priors
         priors = load_priors()
-
-        # Skip embedding rebuild — SentenceTransformer disabled to avoid OOM in 2GB containers.
-        # Keyword priors (skill_priors dict) are still updated via capture_feedback().
         if should_rebuild_priors(priors):
             logger.info("Skipping embedding rebuild (SentenceTransformer disabled)")
 
-        # 4. Load master CV data
+        priors_version = priors.get("version") or priors.get("stats", {}).get("version")
+
+        # Load master CV data
         master_cv = _load_master_cv_data()
 
-        # 5. Embedding model disabled — SentenceTransformer loads PyTorch (~1.5GB) which OOMs 2GB containers.
-        # Keyword priors (Layer 2) provide sufficient matching quality.
-        # Re-enable when: (a) containers have 4GB+, or (b) switch to API-based embeddings.
+        # Embedding model disabled — SentenceTransformer loads PyTorch (~1.5GB) which OOMs 2GB containers.
         embedding_model = None
         logger.info("Using keyword-prior matching (sentence embeddings disabled)")
 
-        # 6. Get existing annotations to avoid duplicates
         existing_annotations = jd_annotations.get("annotations", [])
         existing_texts = {
             ann.get("target", {}).get("text", "").lower()
             for ann in existing_annotations
         }
 
-        # 7. Generate annotations for each section
-        # Process sections directly from processed_jd_sections to preserve headers
         new_annotations = []
         skipped = 0
         skipped_sections = 0
 
         for section in processed_sections:
             section_type = section.get("section_type", "other")
-            section_header = section.get("header", "")  # Original header from JD
+            section_header = section.get("header", "")
             items = section.get("items") or []
 
-            # Skip non-skill sections (about_company, benefits, etc.)
             if section_type in SKIP_ANNOTATION_SECTIONS:
                 logger.debug(f"Skipping section '{section_type}' (non-skill section)")
                 skipped_sections += 1
@@ -629,29 +604,23 @@ def generate_annotations_for_job(
                     skipped += 1
                     continue
 
-                # Skip if already annotated
                 if item_text.lower() in existing_texts:
                     skipped += 1
                     continue
 
-                # Check if should generate (uses master_cv + priors)
                 should_gen, match_ctx = should_generate_annotation(item_text, master_cv, priors)
                 if not should_gen:
                     skipped += 1
                     continue
 
-                # Find best match for annotation values (uses priors/MiniLM)
                 match_result = find_best_match(item_text, priors, embedding_model)
 
-                # Infer requirement_type from extracted_jd (Source 3)
                 inferred_requirement = infer_requirement_type(
                     item_text, section_type, extracted_jd
                 )
 
-                # Suggest ATS keywords from extracted_jd (Source 3)
                 suggested_keywords = suggest_keywords_for_item(item_text, extracted_jd)
 
-                # Create annotation with section_header and extracted_jd for dimension inference
                 annotation = _create_annotation(
                     item_text,
                     section_type,
@@ -663,12 +632,10 @@ def generate_annotations_for_job(
                     master_cv=master_cv,
                 )
 
-                # Override requirement_type if inferred (when no match_result)
                 if match_result is None and inferred_requirement != "neutral":
                     annotation["requirement_type"] = inferred_requirement
                     annotation["original_values"]["requirement_type"] = inferred_requirement
 
-                # Add suggested keywords if any
                 if suggested_keywords:
                     annotation["suggested_keywords"] = suggested_keywords
 
@@ -677,10 +644,104 @@ def generate_annotations_for_job(
 
         logger.debug(f"Skipped {skipped_sections} non-skill sections")
 
-        # 8. Save annotations to job
-        if new_annotations:
-            all_annotations = existing_annotations + new_annotations
+        all_annotations = existing_annotations + new_annotations
 
+        # Update priors stats in-memory (caller responsible for save_priors if desired)
+        priors["stats"]["total_suggestions_made"] = (
+            priors["stats"].get("total_suggestions_made", 0) + len(new_annotations)
+        )
+        # Save priors here (the stat update is best-effort and doesn't affect the patch)
+        try:
+            save_priors(priors)
+        except Exception as priors_err:
+            logger.warning(f"Failed to save priors stats: {priors_err}")
+
+        logger.info(f"compute_annotations: {len(new_annotations)} new, {skipped} skipped")
+
+        return {
+            "success": True,
+            "new_annotations": new_annotations,
+            "all_annotations": all_annotations,
+            "skipped": skipped,
+            "error": None,
+            "priors_version": priors_version,
+        }
+
+    except Exception as e:
+        logger.error(f"compute_annotations failed: {e}", exc_info=True)
+        return {
+            "success": False,
+            "new_annotations": [],
+            "all_annotations": job_doc.get("jd_annotations", {}).get("annotations", []),
+            "skipped": 0,
+            "error": str(e),
+            "priors_version": None,
+        }
+
+
+def generate_annotations_for_job(
+    job_id: str,
+    extracted_jd: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Generate annotations for a job's structured JD.
+
+    Compatibility shim: loads the job doc from Mongo, calls the pure
+    compute_annotations() function, then writes the result back.
+
+    This is the main entry point called by the API endpoint and
+    full_extraction_service. Preenrich stages call compute_annotations()
+    directly (via the annotations stage adapter).
+
+    Uses 4 sources for matching:
+    1. Master CV (skills I have)
+    2. Structured JD (where to annotate)
+    3. Extracted JD (what to look for, requirement type inference)
+    4. Priors (patterns I prefer)
+
+    Args:
+        job_id: MongoDB ObjectId string of the job
+        extracted_jd: Optional pre-loaded extracted_jd, merged into job doc if given.
+
+    Returns:
+        Dict with success, created, skipped, annotations, error
+    """
+    from bson import ObjectId
+    from src.common.repositories import get_job_repository
+
+    logger.info(f"Generating annotations for job {job_id}")
+
+    try:
+        repo = get_job_repository()
+        try:
+            job_oid = ObjectId(job_id)
+        except Exception:
+            job_oid = job_id  # Fallback for invalid ObjectId
+
+        job = repo.find_one({"_id": job_oid})
+        if not job:
+            return {"success": False, "error": "Job not found"}
+
+        # Merge caller-supplied extracted_jd into the doc so compute_annotations sees it
+        if extracted_jd is not None:
+            if isinstance(extracted_jd, dict):
+                job = dict(job)
+                job["extracted_jd"] = extracted_jd
+            else:
+                logger.warning(f"Invalid extracted_jd type: {type(extracted_jd)}, using job document")
+
+        # Delegate to pure function
+        compute_result = compute_annotations(job)
+
+        if not compute_result["success"]:
+            return {"success": False, "error": compute_result["error"]}
+
+        new_annotations = compute_result["new_annotations"]
+        all_annotations = compute_result["all_annotations"]
+        skipped = compute_result["skipped"]
+
+        # Write combined annotations back to Mongo (the shim's responsibility)
+        if new_annotations:
             result = repo.update_one(
                 {"_id": job_oid},
                 {"$set": {"jd_annotations.annotations": all_annotations}}
@@ -688,14 +749,6 @@ def generate_annotations_for_job(
 
             if result.matched_count == 0:
                 return {"success": False, "error": "Failed to save annotations"}
-
-        # 9. Update priors stats and save (chunked storage keeps doc under 16MB)
-        priors["stats"]["total_suggestions_made"] = (
-            priors["stats"].get("total_suggestions_made", 0) + len(new_annotations)
-        )
-        save_priors(priors)
-
-        logger.info(f"Generated {len(new_annotations)} annotations, skipped {skipped}")
 
         return {
             "success": True,
