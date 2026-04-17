@@ -107,8 +107,25 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
     from src.preenrich.dispatcher import run_sequence as run_stages
     from src.preenrich.stages.jd_structure import JDStructureStage
     from src.preenrich.stages.jd_extraction import JDExtractionStage
+    from src.preenrich.stages.ai_classification import AIClassificationStage
+    from src.preenrich.stages.pain_points import PainPointsStage
+    from src.preenrich.stages.annotations import AnnotationsStage
+    from src.preenrich.stages.persona import PersonaStage
+    from src.preenrich.stages.company_research import CompanyResearchStage
+    from src.preenrich.stages.role_research import RoleResearchStage
 
-    stages = [JDStructureStage(), JDExtractionStage()]
+    # Phase 2: all 8 stages in DAG order
+    # fit_signal deferred to Phase 5 (no live consumer in BatchPipelineService yet)
+    stages = [
+        JDStructureStage(),
+        JDExtractionStage(),
+        AIClassificationStage(),
+        PainPointsStage(),
+        AnnotationsStage(),
+        PersonaStage(),
+        CompanyResearchStage(),
+        RoleResearchStage(),
+    ]
 
     while not shutdown.should_stop:
         enabled = os.getenv("PREENRICH_WORKER_ENABLED", "false").lower() == "true"

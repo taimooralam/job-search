@@ -11,7 +11,9 @@ invalidate() function returns the full set of stages that must be re-run.
 from typing import Dict, List, Set
 
 
-# Canonical execution order — dispatcher iterates in this order
+# Canonical execution order — dispatcher iterates in this order.
+# fit_signal is dropped from Phase 2 scope (no live consumer in BatchPipelineService
+# as of Phase 2 — Phase 5 runner-skip work will wire the consumer per plan §3.6).
 STAGE_ORDER: List[str] = [
     "jd_structure",
     "jd_extraction",
@@ -21,7 +23,6 @@ STAGE_ORDER: List[str] = [
     "persona",
     "company_research",
     "role_research",
-    "fit_signal",
 ]
 
 # Direct dependencies: stage -> stages it depends on
@@ -35,9 +36,7 @@ _DEPENDENCIES: Dict[str, List[str]] = {
     "persona": ["annotations"],
     "company_research": [],
     "role_research": ["jd_extraction", "company_research"],
-    "fit_signal": ["jd_structure", "jd_extraction", "ai_classification",
-                   "pain_points", "annotations", "persona",
-                   "company_research", "role_research"],
+    # fit_signal deferred to Phase 5 — will be re-added when consumer is wired
 }
 
 # Inputs that affect which stages are invalidated
@@ -111,9 +110,9 @@ def invalidate(changed_inputs: Set[str]) -> Set[str]:
     Example:
         >>> invalidate({"jd"})
         {'jd_structure', 'jd_extraction', 'ai_classification', 'pain_points',
-         'annotations', 'persona', 'role_research', 'fit_signal'}
+         'annotations', 'persona', 'role_research'}
         >>> invalidate({"company"})
-        {'company_research', 'role_research', 'fit_signal'}
+        {'company_research', 'role_research'}
     """
     directly_affected: Set[str] = set()
     for inp in changed_inputs:
