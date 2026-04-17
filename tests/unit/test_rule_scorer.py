@@ -358,3 +358,42 @@ class TestJDNegativeSignals:
         assert result["score"] >= 0
         assert result["breakdown"]["jdNegativeHard"] >= -35
         assert result["breakdown"]["jdNegativeSoft"] >= -20
+
+
+class TestLanguagePenalty:
+    def test_non_english_jd_loses_location_bonus_and_scores_lower(self):
+        english_result = score(
+            "Senior AI Engineer",
+            description=(
+                "Build LLM applications with generative AI, RAG, vector databases, "
+                "Python, AWS, and LangGraph. Remote worldwide role."
+            ),
+            location="Remote, Germany",
+        )
+        german_result = score(
+            "Senior AI Engineer",
+            description=(
+                "Wir suchen eine erfahrene Person für generative AI und RAG. "
+                "Mit Python, AWS und LangGraph bauen Sie produktive Systeme. "
+                "Remote in Deutschland."
+            ),
+            location="Remote, Germany",
+        )
+
+        assert english_result["breakdown"]["europeBonus"] > 0
+        assert german_result["breakdown"]["language"] <= -35
+        assert german_result["breakdown"]["europeBonus"] == 0
+        assert german_result["score"] < english_result["score"] - 10
+
+    def test_explicit_non_english_requirement_blocks_europe_bonus(self):
+        result = score(
+            "Senior AI Engineer",
+            description=(
+                "Build LLM applications with Python, AWS, and RAG. "
+                "Fluent German required for customer workshops."
+            ),
+            location="Remote, Germany",
+        )
+
+        assert result["breakdown"]["language"] <= -20
+        assert result["breakdown"]["europeBonus"] == 0

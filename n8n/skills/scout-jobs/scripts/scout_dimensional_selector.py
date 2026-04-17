@@ -45,6 +45,7 @@ from pymongo import MongoClient
 
 from src.common.scout_queue import read_pool, purge_pool
 from src.common.blacklist import filter_blacklisted
+from src.common.rule_scorer import is_non_english_jd
 from src.common.dedupe import generate_dedupe_key, normalize_for_dedupe
 from src.common.telegram import send_telegram
 
@@ -383,6 +384,16 @@ def main():
 
     # Step 2: Blacklist filter
     pool = filter_blacklisted(pool)
+
+    # Step 2b: Filter non-English JDs
+    before_lang = len(pool)
+    pool = [
+        j for j in pool
+        if not is_non_english_jd(j.get("title", ""), j.get("description", ""))
+    ]
+    lang_filtered = before_lang - len(pool)
+    if lang_filtered:
+        logger.info(f"Non-English filter: {lang_filtered} removed, {len(pool)} remain")
 
     # Step 3: Score > 0
     pool = [j for j in pool if j.get("score", 0) > 0]

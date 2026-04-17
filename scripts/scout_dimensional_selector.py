@@ -30,11 +30,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_SKILL_ROOT = str(Path(__file__).resolve().parent.parent)
+sys.path.insert(0, _SKILL_ROOT)
 
-from dotenv import load_dotenv
-
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # In container, env vars come from docker-compose
 
 import requests
 import yaml
@@ -42,6 +45,7 @@ from pymongo import MongoClient
 
 from src.common.scout_queue import read_pool, purge_pool
 from src.common.blacklist import filter_blacklisted
+from src.common.rule_scorer import is_non_english_jd
 from src.common.dedupe import generate_dedupe_key, normalize_for_dedupe
 from src.common.telegram import send_telegram
 
@@ -51,7 +55,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("scout_dimensional")
 
-PROFILES_PATH = Path(__file__).parent.parent / "data" / "selector_profiles.yaml"
+PROFILES_PATH = Path(_SKILL_ROOT) / "data" / "selector_profiles.yaml"
 RUNNER_URL = os.getenv("RUNNER_URL", "https://runner.uqab.digital")
 RUNNER_API_SECRET = os.getenv("RUNNER_API_SECRET", "")
 
@@ -265,6 +269,7 @@ def insert_jobs(jobs: List[Dict], collection, source_tag: str, dry_run: bool = F
                 "employment_type": job.get("employment_type"),
                 "job_function": job.get("job_function"),
                 "industries": job.get("industries"),
+                "work_mode": job.get("work_mode"),
                 "rule_score_breakdown": job.get("breakdown"),
             },
         }
@@ -379,6 +384,16 @@ def main():
 
     # Step 2: Blacklist filter
     pool = filter_blacklisted(pool)
+
+    # Step 2b: Filter non-English JDs
+    before_lang = len(pool)
+    pool = [
+        j for j in pool
+        if not is_non_english_jd(j.get("title", ""), j.get("description", ""))
+    ]
+    lang_filtered = before_lang - len(pool)
+    if lang_filtered:
+        logger.info(f"Non-English filter: {lang_filtered} removed, {len(pool)} remain")
 
     # Step 3: Score > 0
     pool = [j for j in pool if j.get("score", 0) > 0]

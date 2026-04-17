@@ -43,6 +43,7 @@ from src.common.scout_queue import read_and_clear_scored, append_to_pool, purge_
 from src.common.dedupe import generate_dedupe_key, consolidate_by_location
 from src.common.telegram import send_telegram
 from src.common.blacklist import filter_blacklisted
+from src.common.rule_scorer import is_non_english_jd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -476,6 +477,16 @@ def main():
     # Step 1b: Apply blacklist filter
     scored_jobs = filter_blacklisted(scored_jobs)
     logger.info(f"After blacklist filter: {len(scored_jobs)}")
+
+    # Step 1c: Filter non-English JDs (hard filter — discard before scoring/insertion)
+    before_lang = len(scored_jobs)
+    scored_jobs = [
+        j for j in scored_jobs
+        if not is_non_english_jd(j.get("title", ""), j.get("description", ""))
+    ]
+    lang_filtered = before_lang - len(scored_jobs)
+    if lang_filtered:
+        logger.info(f"Non-English filter: {lang_filtered} removed, {len(scored_jobs)} remain")
 
     # Step 2: Filter score > 0
     scored_jobs = [j for j in scored_jobs if j.get("score", 0) > 0]

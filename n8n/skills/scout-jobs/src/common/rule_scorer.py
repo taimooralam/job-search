@@ -459,8 +459,48 @@ NON_ENGLISH_STOPWORDS = {
     "spanish": [" para ", " con ", " por ", " una ", " los ", " las ", " del ", " como ", " ser ", " sus ", " esta ", " nuestro ", " sobre ", " entre "],
     "italian": [" per ", " con ", " una ", " dei ", " del ", " alla ", " nella ", " sono ", " questa ", " nostro ", " come ", " anche ", " essere ", " tra "],
     "portuguese": [" para ", " com ", " uma ", " dos ", " das ", " pela ", " como ", " ser ", " sua ", " nosso ", " sobre ", " entre ", " este ", " essa "],
+    "dutch": [" een ", " het ", " van ", " voor ", " met ", " zijn ", " dat ", " niet ", " ook ", " aan ", " maar ", " door ", " deze ", " naar "],
+    "polish": [" jest ", " nie ", " się ", " dla ", " lub ", " przy ", " jako ", " także ", " które ", " oraz ", " przez ", " tego ", " może "],
+    "czech": [" pro ", " není ", " jsou ", " při ", " nebo ", " jako ", " také ", " které ", " tento ", " jeho ", " mezi ", " více ", " může "],
+    "swedish": [" och ", " att ", " för ", " med ", " som ", " till ", " det ", " kan ", " vara ", " har ", " inte ", " din ", " våra "],
+    "danish": [" og ", " til ", " med ", " som ", " kan ", " har ", " ikke ", " fra ", " din ", " vores ", " skal ", " disse "],
 }
 NON_ENGLISH_THRESHOLD = 5  # minimum unique stop words to flag as non-English
+HIGH_NON_ASCII_RATIO = 0.3  # flag if >30% of chars are non-ASCII
+LANGUAGE_REQUIREMENT_PENALTY = 20
+HIGH_NON_ASCII_PENALTY = 10
+NON_ENGLISH_JD_PENALTY = 35
+
+
+def is_non_english_jd(title: str = "", description: str = "") -> bool:
+    """Return True if the job description is likely in a non-English language.
+
+    Uses two heuristics:
+    1. High non-ASCII character ratio (>30%) — catches CJK, Cyrillic, etc.
+    2. Stopword detection for European languages — catches French, German, etc.
+
+    This is intentionally a hard filter (bool), not a penalty.  Import and call
+    from selectors to skip non-English jobs before MongoDB insertion.
+    """
+    desc_lower = (description or "").lower()
+    title_lower = (title or "").lower()
+    text = f" {title_lower} {desc_lower} "
+
+    # Check 1: high non-ASCII ratio
+    chars = list(desc_lower)
+    non_ascii = sum(1 for ch in chars if ord(ch) > 127)
+    total = len(chars) or 1
+    if non_ascii / total > HIGH_NON_ASCII_RATIO:
+        return True
+
+    # Check 2: stopword detection
+    for _lang, stopwords in NON_ENGLISH_STOPWORDS.items():
+        matches = sum(1 for sw in stopwords if sw in text)
+        if matches >= NON_ENGLISH_THRESHOLD:
+            return True
+
+    return False
+
 
 # =============================================================================
 # ROLE-SPECIFIC WEIGHT CONFIGURATIONS
@@ -867,20 +907,27 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
 
     # --- 5) LANGUAGE REQUIREMENTS (-30 to 0) ---
     language_score = 0
-    if _contains_any(desc_lower, LANGUAGE_NEGATIVE):
-        language_score -= 10
+    has_non_english_requirement = _contains_any(desc_lower, LANGUAGE_NEGATIVE)
+    if has_non_english_requirement:
+        language_score -= LANGUAGE_REQUIREMENT_PENALTY
     chars = list(job_description or "")
     non_ascii = sum(1 for ch in chars if ord(ch) > 127)
     total_chars = len(chars) or 1
-    if non_ascii / total_chars > 0.3:
-        language_score -= 10
+    has_high_non_ascii_ratio = non_ascii / total_chars > HIGH_NON_ASCII_RATIO
+    if has_high_non_ascii_ratio:
+        language_score -= HIGH_NON_ASCII_PENALTY
     # Detect JDs written in non-English languages (French, German, Spanish, Italian, Portuguese)
     text_to_check = f" {title_lower} {desc_lower} "
+    has_non_english_jd = False
     for lang, stopwords in NON_ENGLISH_STOPWORDS.items():
         matches = sum(1 for sw in stopwords if sw in text_to_check)
         if matches >= NON_ENGLISH_THRESHOLD:
-            language_score -= 20
+            language_score -= NON_ENGLISH_JD_PENALTY
+            has_non_english_jd = True
             break
+    language_accessible = not (
+        has_non_english_requirement or has_high_non_ascii_ratio or has_non_english_jd
+    )
 
     # --- 5b) JD BODY NEGATIVE SIGNALS ---
     jd_body = f"{crit_lower} {desc_lower}"
@@ -890,16 +937,16 @@ def compute_rule_score(job: Dict[str, Any]) -> Dict[str, Any]:
 
     # --- 6) LOCATION BONUSES ---
     gcc_bonus = 0
-    if _contains_any(loc_lower, GCC_PRIORITY_LOCATIONS):
+    if language_accessible and _contains_any(loc_lower, GCC_PRIORITY_LOCATIONS):
         gcc_bonus = GCC_LOCATION_BONUS
 
     # Europe remote bonus (P2) — stacks if job is remote + European location
     europe_bonus = 0
     is_remote = remote_score > 0
-    if is_remote and _contains_any(loc_lower, EUROPE_LOCATIONS):
+    if language_accessible and is_remote and _contains_any(loc_lower, EUROPE_LOCATIONS):
         europe_bonus = EUROPE_REMOTE_BONUS
     # Germany remote extra bonus (P3) — stacks on top of Europe
-    if is_remote and ("germany" in loc_lower or "deutschland" in loc_lower):
+    if language_accessible and is_remote and ("germany" in loc_lower or "deutschland" in loc_lower):
         europe_bonus += GERMANY_REMOTE_BONUS
 
     # --- CALCULATE TOTAL ---
