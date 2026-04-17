@@ -20,7 +20,11 @@ from src.preenrich.dag import STAGE_ORDER, invalidate
 
 
 def test_stage_order_contains_all_v1_stages():
-    """STAGE_ORDER must include all 9 stages in the correct order."""
+    """STAGE_ORDER must include all 8 Phase-2 stages in the correct order.
+
+    fit_signal was dropped from Phase 2 scope (no live consumer in BatchPipelineService
+    as of Phase 2 — Phase 5 runner-skip work will wire the consumer per plan §3.6).
+    """
     expected = [
         "jd_structure",
         "jd_extraction",
@@ -30,7 +34,6 @@ def test_stage_order_contains_all_v1_stages():
         "persona",
         "company_research",
         "role_research",
-        "fit_signal",
     ]
     assert STAGE_ORDER == expected
 
@@ -41,8 +44,8 @@ def test_stage_order_starts_with_jd_structure():
 
 
 def test_stage_order_ends_with_fit_signal():
-    """fit_signal is last (depends on everything)."""
-    assert STAGE_ORDER[-1] == "fit_signal"
+    """role_research is last in Phase 2 (fit_signal deferred to Phase 5)."""
+    assert STAGE_ORDER[-1] == "role_research"
 
 
 def test_stage_order_jd_extraction_after_structure():
@@ -84,10 +87,12 @@ def test_jd_change_transitively_invalidates_role_research():
     assert "role_research" in stale
 
 
-def test_jd_change_transitively_invalidates_fit_signal():
-    """fit_signal depends on everything → stale after JD change."""
+def test_jd_change_transitively_invalidates_role_research_includes_fit_signal_placeholder():
+    """fit_signal deferred to Phase 5 — role_research is the terminal dependent for JD changes."""
     stale = invalidate({"jd"})
-    assert "fit_signal" in stale
+    # fit_signal not in Phase 2 — role_research is the deepest JD-dependent stage
+    assert "role_research" in stale
+    assert "fit_signal" not in stale  # Explicitly dropped from Phase 2
 
 
 def test_jd_change_does_not_invalidate_company_research():
@@ -113,10 +118,11 @@ def test_company_change_transitively_invalidates_role_research():
     assert "role_research" in stale
 
 
-def test_company_change_transitively_invalidates_fit_signal():
-    """fit_signal → stale after company change."""
+def test_company_change_terminal_dependent_is_role_research():
+    """fit_signal deferred to Phase 5 — role_research is terminal for company changes."""
     stale = invalidate({"company"})
-    assert "fit_signal" in stale
+    assert "role_research" in stale
+    assert "fit_signal" not in stale  # Explicitly dropped from Phase 2
 
 
 def test_company_change_does_not_invalidate_jd_stages():
@@ -143,10 +149,11 @@ def test_priors_change_transitively_invalidates_persona():
     assert "persona" in stale
 
 
-def test_priors_change_transitively_invalidates_fit_signal():
-    """fit_signal depends on annotations/persona → stale after priors change."""
+def test_priors_change_terminal_dependent_is_persona():
+    """fit_signal deferred to Phase 5 — persona is terminal for priors changes."""
     stale = invalidate({"priors"})
-    assert "fit_signal" in stale
+    assert "persona" in stale
+    assert "fit_signal" not in stale  # Explicitly dropped from Phase 2
 
 
 def test_priors_change_does_not_invalidate_jd_structure():
@@ -166,10 +173,10 @@ def test_priors_change_does_not_invalidate_company_research():
 # ---------------------------------------------------------------------------
 
 
-def test_combined_jd_and_company_covers_everything():
-    """When both jd and company change, all stages except company_research (indirect) are stale."""
+def test_combined_jd_and_company_covers_all_phase2_stages():
+    """When both jd and company change, all 8 Phase-2 stages are stale."""
     stale = invalidate({"jd", "company"})
-    # All 9 stages should be covered
+    # All Phase 2 stages should be covered
     for stage in STAGE_ORDER:
         assert stage in stale, f"'{stage}' should be stale when both jd and company change"
 
