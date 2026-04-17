@@ -39,7 +39,6 @@ from fixtures.sample_jobs import (
 # Import module under test
 from src.layer6.cover_letter_generator import CoverLetterGenerator
 
-
 # ===== FIXTURES =====
 
 @pytest.fixture
@@ -55,7 +54,6 @@ def sample_state_tech_saas():
         }
     )
 
-
 @pytest.fixture
 def sample_state_healthcare():
     """Sample state for healthcare platform engineer role."""
@@ -68,7 +66,6 @@ def sample_state_healthcare():
             ]
         }
     )
-
 
 @pytest.fixture
 def mock_llm_providers(mocker):
@@ -91,7 +88,6 @@ Your roadmap requires both scalability and velocity. My track record demonstrate
     )
 
     return {"openai": mock_openai}
-
 
 # ===== TESTS: Validation Helpers for Cover Letters =====
 
@@ -135,7 +131,6 @@ class TestCoverLetterValidationHelpers:
 
         # Should match "API platform" and "monolithic architecture"
         assert count >= 2
-
 
 # ===== TESTS: Cover Letter Validation V2 =====
 
@@ -290,80 +285,10 @@ https://calendly.com/taimooralam/15min
         # Should pass all gates
         assert len(errors) == 0, f"Validation errors: {errors}"
 
-
 # ===== TESTS: CoverLetterGenerator Integration =====
 
 class TestCoverLetterGeneratorV2Integration:
     """Test CoverLetterGenerator with V2 validation enabled."""
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_planning_phase_improves_structure(self, mock_llm_providers, sample_state_tech_saas):
-        """Test that structured planning reduces validation failures."""
-        generator = CoverLetterGenerator()
-
-        # Generate cover letter
-        cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-
-        # Validate against V2 requirements
-        errors = validate_cover_letter_v2(cover_letter, sample_state_tech_saas, allow_generic_phrases=0)
-
-        assert len(errors) == 0, f"Cover letter failed V2 validation: {errors}"
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_dual_persona_reduces_generic_phrases(self, mock_llm_providers, sample_state_tech_saas):
-        """Test that dual persona (marketer + skeptical manager) reduces boilerplate."""
-        generator = CoverLetterGenerator()
-
-        cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-
-        generic_count = count_generic_phrases(cover_letter)
-
-        # Target: 0 generic phrases
-        assert generic_count == 0, f"Found {generic_count} generic phrases"
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_self_critique_improves_quality(self, mock_llm_providers, sample_state_tech_saas):
-        """Test that self-critique phase catches issues before final output."""
-        generator = CoverLetterGenerator()
-
-        cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-
-        # Check all quality criteria
-        pain_count = count_pain_point_references(cover_letter, sample_state_tech_saas["pain_points"])
-        assert pain_count >= 2
-
-        # Check company+metric cooccurrence
-        companies = extract_star_companies(sample_state_tech_saas)
-        company_metric_pairs = 0
-        for company in companies:
-            sentences = extract_sentences_with_keyword(cover_letter, company)
-            for sent in sentences:
-                if re.search(r'\d+%|\$\d+[KMB]?|\d+x', sent, re.IGNORECASE):
-                    company_metric_pairs += 1
-                    break
-
-        assert company_metric_pairs >= 1
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_cross_domain_consistency(self, mock_llm_providers):
-        """Test that prompt improvements work across different job domains."""
-        generator = CoverLetterGenerator()
-
-        domains = ["tech_saas_backend_engineer", "healthcare_platform_engineer"]
-
-        for domain in domains:
-            state = create_mock_state_for_job(
-                domain,
-                selected_stars=[SAMPLE_STARS[0], SAMPLE_STARS[1]]
-            )
-
-            cover_letter = generator.generate_cover_letter(state)
-
-            # All domains should pass V2 validation
-            errors = validate_cover_letter_v2(cover_letter, state, allow_generic_phrases=0)
-
-            assert len(errors) == 0, f"Domain '{domain}' failed validation: {errors}"
-
 
 # ===== TESTS: Edge Cases =====
 
@@ -433,64 +358,7 @@ I have applied for this role. Let's discuss: https://calendly.com/taimooralam/15
         # Should validate regardless of length
         assert isinstance(errors, list)
 
-
 # ===== TESTS: A/B Comparison =====
 
 class TestABComparison:
     """Tests for comparing V1 vs V2 prompt outputs."""
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_eliminates_generic_phrases(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should eliminate generic phrases entirely."""
-        generator = CoverLetterGenerator()
-        cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-
-        generic_count = count_generic_phrases(cover_letter)
-
-        # Target: 0 generic phrases (zero tolerance)
-        assert generic_count == 0, f"Found {generic_count} generic phrases"
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_increases_pain_point_references(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should increase pain point references to 2.5 average."""
-        generator = CoverLetterGenerator()
-        cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-
-        pain_count = count_pain_point_references(cover_letter, sample_state_tech_saas["pain_points"])
-
-        # Target: ≥2 pain points referenced
-        assert pain_count >= 2
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_increases_company_signal_mentions(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should increase company signal mentions to >80%."""
-        generator = CoverLetterGenerator()
-        cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-
-        # Check for signal keywords
-        signal_keywords = ["funding", "series", "growth", "raised"]
-        has_signal = any(kw in cover_letter.lower() for kw in signal_keywords)
-
-        # Target: 80%+ mention rate
-        assert has_signal, "Cover letter must reference company signal"
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_reduces_validation_failures(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should reduce validation failure rate from ~50% to <25%."""
-        generator = CoverLetterGenerator()
-
-        # Run multiple times to test consistency
-        failures = 0
-        runs = 5
-
-        for _ in range(runs):
-            cover_letter = generator.generate_cover_letter(sample_state_tech_saas)
-            errors = validate_cover_letter_v2(cover_letter, sample_state_tech_saas, allow_generic_phrases=0)
-
-            if len(errors) > 0:
-                failures += 1
-
-        failure_rate = failures / runs
-
-        # Target: <25% validation failure rate
-        assert failure_rate < 0.25, f"Failure rate {failure_rate:.0%} exceeds 25% target"

@@ -37,7 +37,6 @@ from fixtures.sample_jobs import (
 # Import module under test
 from src.layer4.opportunity_mapper import OpportunityMapper
 
-
 # ===== FIXTURES =====
 
 @pytest.fixture
@@ -48,7 +47,6 @@ def sample_state_tech_saas():
         selected_stars=[SAMPLE_STARS[0], SAMPLE_STARS[2]]  # Microservices + deployment
     )
 
-
 @pytest.fixture
 def sample_state_fintech():
     """Sample state for fintech payments architect role."""
@@ -57,7 +55,6 @@ def sample_state_fintech():
         selected_stars=[SAMPLE_STARS[3]]  # Fraud detection
     )
 
-
 @pytest.fixture
 def sample_state_healthcare():
     """Sample state for healthcare platform engineer role."""
@@ -65,7 +62,6 @@ def sample_state_healthcare():
         "healthcare_platform_engineer",
         selected_stars=[SAMPLE_STARS[1], SAMPLE_STARS[2]]  # SRE + CI/CD
     )
-
 
 @pytest.fixture
 def mock_llm_providers(mocker):
@@ -88,7 +84,6 @@ def mock_llm_providers(mocker):
     }
 
     return {"openai": mock_openai}
-
 
 # ===== TESTS: Validation Helpers =====
 
@@ -140,7 +135,6 @@ class TestValidationHelpers:
         assert "75" in metrics or "75.0" in metrics
         assert "3" in metrics
         assert "16" in metrics
-
 
 # ===== TESTS: Rationale Validation V2 =====
 
@@ -294,71 +288,10 @@ class TestRationaleValidationV2:
         # Should fail - no metrics
         assert any("metric" in e.lower() for e in errors)
 
-
 # ===== TESTS: OpportunityMapper Integration =====
 
 class TestOpportunityMapperV2Integration:
     """Test OpportunityMapper with V2 validation enabled."""
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_few_shot_example_improves_quality(self, mock_llm_providers, sample_state_tech_saas):
-        """Test that domain-specific few-shot examples improve output quality."""
-        # This test will fail initially - validates improvement after V2 implementation
-        mapper = OpportunityMapper()
-
-        # Mock LLM to return output that should pass V2 validation
-        result = mapper.map_opportunity(sample_state_tech_saas)
-
-        # Validate result meets V2 standards
-        errors = validate_rationale_v2(
-            result["fit_rationale"],
-            sample_state_tech_saas["selected_stars"],
-            sample_state_tech_saas["pain_points"]
-        )
-
-        assert len(errors) == 0, f"Rationale failed V2 validation: {errors}"
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_structured_reasoning_framework_applied(self, mock_llm_providers, sample_state_tech_saas):
-        """Test that 4-step reasoning framework is applied."""
-        mapper = OpportunityMapper()
-
-        result = mapper.map_opportunity(sample_state_tech_saas)
-
-        # Check rationale shows evidence of structured reasoning
-        rationale = result["fit_rationale"]
-
-        # Should reference pain points
-        assert count_pain_point_references(rationale, sample_state_tech_saas["pain_points"]) >= 1
-
-        # Should cite STAR companies
-        companies = extract_star_companies(sample_state_tech_saas)
-        assert any(company.lower() in rationale.lower() for company in companies)
-
-        # Should include metrics
-        assert len(extract_metrics(rationale)) >= 1
-
-    @pytest.mark.skip(reason="Will fail until V2 prompts implemented")
-    def test_cross_domain_consistency(self, mock_llm_providers):
-        """Test that prompt improvements work across different job domains."""
-        mapper = OpportunityMapper()
-
-        domains = ["tech_saas_backend_engineer", "fintech_payments_architect", "healthcare_platform_engineer"]
-
-        for domain in domains:
-            state = create_mock_state_for_job(domain, selected_stars=[SAMPLE_STARS[0]])
-
-            result = mapper.map_opportunity(state)
-
-            # All domains should pass V2 validation
-            errors = validate_rationale_v2(
-                result["fit_rationale"],
-                state["selected_stars"],
-                state["pain_points"]
-            )
-
-            assert len(errors) == 0, f"Domain '{domain}' failed validation: {errors}"
-
 
 # ===== TESTS: Edge Cases =====
 
@@ -427,45 +360,7 @@ class TestEdgeCases:
         star_errors = [e for e in errors if "STAR" in e or "company" in e.lower()]
         assert len(star_errors) == 0
 
-
 # ===== TESTS: A/B Comparison =====
 
 class TestABComparison:
     """Tests for comparing V1 vs V2 prompt outputs."""
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_reduces_generic_phrases(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should reduce generic phrase count vs V1."""
-        # This test validates that V2 improves on V1
-        # Will be used for A/B testing during implementation
-
-        mapper = OpportunityMapper()
-        result = mapper.map_opportunity(sample_state_tech_saas)
-
-        generic_count = count_generic_phrases(result["fit_rationale"])
-
-        # Target: <0.5 generic phrases on average (strict)
-        assert generic_count <= 1, f"Too many generic phrases: {generic_count}"
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_increases_star_citation_rate(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should increase STAR citation rate to >90%."""
-        mapper = OpportunityMapper()
-        result = mapper.map_opportunity(sample_state_tech_saas)
-
-        companies = extract_star_companies(sample_state_tech_saas)
-        cited = any(company.lower() in result["fit_rationale"].lower() for company in companies)
-
-        # Target: 90%+ citation rate
-        assert cited, "Rationale must cite at least one STAR company"
-
-    @pytest.mark.skip(reason="Baseline comparison - run after V2 implementation")
-    def test_v2_increases_average_rationale_length(self, mock_llm_providers, sample_state_tech_saas):
-        """V2 prompts should increase average rationale length from ~30 to ~60 words."""
-        mapper = OpportunityMapper()
-        result = mapper.map_opportunity(sample_state_tech_saas)
-
-        word_count = len(result["fit_rationale"].split())
-
-        # Target: 50-100 words (increased from ~30)
-        assert 50 <= word_count <= 150, f"Rationale length {word_count} outside target range"
