@@ -123,3 +123,11 @@ plans/raw_thoughts.md
 # Scout queue runtime data (JSONL staging files, proxy cache, analytics)
 data/scout/
 data/linkedin-cookies.txt
+
+# Eval run artifacts (local-only; can be regenerated from scripts/eval_step*.py)
+data/eval/
+
+# Scratch / temp work (ad-hoc queries, codex scratch, throwaway test files)
+.codex-tmp/
+tmp/
+tmp_query*.py
