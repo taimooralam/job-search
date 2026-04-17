@@ -22,8 +22,10 @@
       "mcp__claude-in-chrome__*",
       "Bash(mkdir -p /tmp/apply-jobs/Gartner_69c6701c2cceb8c38538d419)",
       "Bash(cp \"/Users/ala0001t/Library/CloudStorage/GoogleDrive-alamtaimoor.de@gmail.com/My Drive/2 Areas/Job/Job Search/Resume/Companies/Gartner/Sr. Director, Analyst - AI Agentic Systems in Digital Workplace Applications For MS Copilot \\(Remote Europe\\)_69c6701c2cceb8c38538d419/Taimoor Alam Resume.pdf\" /tmp/apply-jobs/Gartner_69c6701c2cceb8c38538d419/resume.pdf)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(wc:*)"
     ]
   },
-  "outputStyle": "default"
+  "outputStyle": "default",
+  "prefersReducedMotion": false
 }

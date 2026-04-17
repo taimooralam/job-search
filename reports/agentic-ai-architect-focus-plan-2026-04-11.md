@@ -456,11 +456,10 @@ Each day, learn ONE thing from this prioritized list that directly improves your
 
 | # | Action | Time | Impact |
 |---|--------|------|--------|
-| 0.1 | **Apply** from the 681 ready-to-apply pool (Tier A first, then B) | 2h/day | Start applying NOW — don't wait for pipeline fixes |
-| 0.2 | Star/prioritize the 18 Tier A + 50 Tier B focused jobs | 15 min | Focus on highest-fit roles |
-| 0.3 | Score the 630 unscored jobs (run scraper cron on them) | 30 min | These need scoring before pipeline, NOT direct pipeline trigger |
+| 0.1 | **Apply** from the ready-to-apply pool (Tier A first, then B) | 2h/day | Start applying NOW — don't wait for pipeline fixes |
+| 0.3 | Score the unscored jobs (run scraper cron on VPS) | 30 min | These need scoring before pipeline, NOT direct pipeline trigger |
 
-> **Note:** 0.3 is scoring, not pipelining. The 630 unscored jobs need to go through the scraper first to get a tier assignment, then the selector picks the best ones for the pipeline. Don't batch-pipeline all 630.
+> **Note:** 0.3 is scoring, not pipelining. Unscored jobs need to go through the scraper first to get a tier assignment, then the selector picks the best ones for the pipeline. Don't batch-pipeline them all.
 
 ### Step 1: Fix Orchestrator AI Gate (Priority: CRITICAL) — ✅ COMPLETED 2026-04-12
 
