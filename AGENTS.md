@@ -1,38 +1,5 @@
 # Repository Guidelines
 
-## Request Classification (ALWAYS DO THIS FIRST)
-
-| Type | Indicators | Action |
-|------|------------|--------|
-| **Information/Research** | "How does...", "What is...", "Explain..." | Answer directly or use `Explore` agent |
-| **Architecture/Design** | "Should we...", "How should we architect..." | Delegate to `job-search-architect` |
-| **Bug Fix** | "X is broken", "Error when...", stack traces | Delegate to `job-search-architect` |
-| **Feature Request** | "Add...", "Implement...", "Build...", "Create..." | Delegate to `job-search-architect` |
-| **Simple Task** | Single file edit, typo, null check, config change, obvious fix, < 3 files | Handle directly |
-| **Medium Task** | Multi-file change, non-obvious bug | architect → developer |
-| **Complex Task** | New feature, architecture change, pipeline modification | Full chain: architect → developer → test-generator → doc-sync |
-
-## Workflow Steps (bugs & features)
-
-1. **Architecture**: `job-search-architect` → verify behavior, identify components, determine root cause/approach
-2. **Implement**: Route to `backend-developer` (Python/FastAPI/MongoDB/LangGraph) or `frontend-developer` (Flask/HTMX/Tailwind/JS) or `architecture-debugger` (cross-cutting)
-3. **Test**: `test-generator` → pytest tests with mocked external deps
-4. **Docs**: `doc-sync` → update `missing.md`, `architecture.md`
-5. **Commit**: Run tests first, atomic commits, no Claude signature
-
-## Agent Quick Reference
-
-| Agent | Model | Use |
-|-------|-------|-----|
-| `job-search-architect` | opus | Architecture verification for bugs/features |
-| `backend-developer` | sonnet | Python, FastAPI, MongoDB, LangGraph, pipeline |
-| `frontend-developer` | sonnet | Flask templates, TipTap, Tailwind, HTMX, JS |
-| `architecture-debugger` | sonnet | Cross-cutting bugs, integration issues |
-| `test-generator` | sonnet | Writing pytest tests with mocks |
-| `doc-sync` | haiku | Updating missing.md, architecture.md |
-| `pipeline-analyst` | sonnet | Validating pipeline outputs |
-| `session-continuity` | haiku | Context restoration |
-
 ## Skill Quick Reference
 
 | Skill | Use |
@@ -47,8 +14,8 @@ Project-local Codex skills are stored under `.codex/skills/`.
 
 ## Commit Checklist (bugs/features)
 
-- Tests: `test-generator` used, tests pass
-- Docs: `doc-sync` used, `missing.md` or `architecture.md` updated
+- Tests written and passing
+- Docs updated (`missing.md` or `architecture.md`) if behaviour changed
 - Commit: `git status` clean
 
 ## Project Context
