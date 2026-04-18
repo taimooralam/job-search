@@ -729,9 +729,10 @@ def _parse_window(value: str) -> timedelta:
 
 
 def _encode_cursor(last_seen_at: Optional[datetime], hit_id: ObjectId) -> Optional[str]:
-    if last_seen_at is None:
+    normalized = _coerce_utc(last_seen_at)
+    if normalized is None:
         return None
-    return f"{last_seen_at.isoformat()}|{str(hit_id)}"
+    return f"{normalized.isoformat()}|{str(hit_id)}"
 
 
 def _decode_cursor(cursor: Optional[str]) -> Optional[dict[str, Any]]:
@@ -781,9 +782,10 @@ def _heartbeat_state(
     ok_within: timedelta,
     warn_within: timedelta,
 ) -> str:
-    if last_seen_at is None:
+    normalized = _coerce_utc(last_seen_at)
+    if normalized is None:
         return "red"
-    age = datetime.now(timezone.utc) - last_seen_at
+    age = datetime.now(timezone.utc) - normalized
     if age <= ok_within:
         return "green"
     if age <= warn_within:
@@ -792,7 +794,8 @@ def _heartbeat_state(
 
 
 def _format_relative(value: datetime) -> str:
-    delta = datetime.now(timezone.utc) - value
+    normalized = _coerce_utc(value)
+    delta = datetime.now(timezone.utc) - normalized
     if delta < timedelta(minutes=1):
         return "just now"
     if delta < timedelta(hours=1):
@@ -800,3 +803,11 @@ def _format_relative(value: datetime) -> str:
     if delta < timedelta(days=1):
         return f"{int(delta.total_seconds() // 3600)}h ago"
     return f"{delta.days}d ago"
+
+
+def _coerce_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
