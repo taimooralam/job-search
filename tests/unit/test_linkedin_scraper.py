@@ -218,7 +218,8 @@ class TestParseJobHtml:
         assert job_data.job_id == "4081234567"
         assert job_data.title == "Senior Software Engineer"
         assert job_data.company == "TestCorp Inc"
-        assert job_data.location == "San Francisco, CA (Hybrid)"
+        assert job_data.location == "San Francisco, CA"
+        assert job_data.work_mode == "Hybrid"
         assert "talented engineer" in job_data.description
         assert job_data.seniority_level == "Mid-Senior level"
         assert job_data.employment_type == "Full-time"
