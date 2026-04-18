@@ -9,9 +9,10 @@ Defines the core data structures used across the pre-enrichment worker:
 """
 
 import hashlib
+import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 class StageStatus(str, Enum):
@@ -55,14 +56,110 @@ class StageResult:
     skip_reason: Optional[str] = None
     cache_source_job_id: Optional[str] = None
 
+    # Provider fallback provenance (Phase 2b)
+    # List of attempt dicts: {provider, model, outcome, error, duration_ms, ...}
+    provider_attempts: List[Dict[str, Any]] = field(default_factory=list)
+    # Outcome of the first non-success attempt when fallback was triggered
+    provider_fallback_reason: Optional[str] = None
+
+
+# Per-stage Codex-primary defaults.  Env overrides:
+#   PREENRICH_PROVIDER_<STAGE_UPPER>       e.g. PREENRICH_PROVIDER_JD_EXTRACTION=claude
+#   PREENRICH_MODEL_<STAGE_UPPER>          e.g. PREENRICH_MODEL_JD_EXTRACTION=gpt-5.4
+#   PREENRICH_FALLBACK_MODEL_<STAGE_UPPER> e.g. PREENRICH_FALLBACK_MODEL_JD_EXTRACTION=claude-haiku-4-5
+_STAGE_DEFAULTS: Dict[str, Dict[str, str]] = {
+    "jd_extraction": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-haiku-4-5",
+    },
+    "ai_classification": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4-mini",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-haiku-4-5",
+    },
+    "pain_points": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-sonnet-4-5",
+    },
+    "persona": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-sonnet-4-5",
+    },
+}
+
+
+def _stage_env_key(stage: str, field_name: str) -> str:
+    """Build the env-var key for a stage field override."""
+    return f"PREENRICH_{field_name.upper()}_{stage.upper()}"
+
+
+def get_stage_step_config(stage_name: str) -> "StepConfig":
+    """
+    Build a StepConfig for a named stage with env-var overrides.
+
+    Reads PREENRICH_PROVIDER_<STAGE>, PREENRICH_MODEL_<STAGE>,
+    PREENRICH_FALLBACK_MODEL_<STAGE> from the environment, falling back
+    to per-stage defaults in _STAGE_DEFAULTS, then to the generic StepConfig
+    defaults.
+
+    Args:
+        stage_name: Stage identifier (e.g. "jd_extraction").
+
+    Returns:
+        StepConfig with provider/model/fallback fields populated.
+    """
+    defaults = _STAGE_DEFAULTS.get(stage_name, {})
+
+    provider = os.environ.get(
+        _stage_env_key(stage_name, "PROVIDER"),
+        defaults.get("provider", "claude"),
+    )
+    primary_model = os.environ.get(
+        _stage_env_key(stage_name, "MODEL"),
+        defaults.get("primary_model"),
+    )
+    fallback_provider = os.environ.get(
+        _stage_env_key(stage_name, "FALLBACK_PROVIDER"),
+        defaults.get("fallback_provider", "claude"),
+    )
+    fallback_model = os.environ.get(
+        _stage_env_key(stage_name, "FALLBACK_MODEL"),
+        defaults.get("fallback_model"),
+    )
+
+    return StepConfig(
+        provider=provider,
+        primary_model=primary_model,
+        fallback_provider=fallback_provider,
+        fallback_model=fallback_model,
+    )
+
 
 @dataclass
 class StepConfig:
-    """Per-stage provider/model routing configuration."""
+    """
+    Per-stage provider/model routing configuration.
+
+    Phase 2b fields:
+        primary_model:    Codex model identifier (e.g. "gpt-5.4")
+        fallback_provider: Provider to try on Codex failure (e.g. "claude")
+        fallback_model:   Model for the fallback provider (e.g. "claude-haiku-4-5")
+    """
 
     provider: str = "claude"  # "claude" | "codex" | "embedding" | "none"
     model: Optional[str] = None
     prompt_version: str = "v1"
+    # Phase 2b: Codex-primary fields
+    primary_model: Optional[str] = None
+    fallback_provider: str = "claude"
+    fallback_model: Optional[str] = None
 
 
 @dataclass

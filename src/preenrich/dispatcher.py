@@ -386,6 +386,35 @@ def single_stage(
         )
 
 
+def _merge_patch_into_job_doc(job_doc: Dict[str, Any], patch: Dict[str, Any]) -> None:
+    """
+    Merge a stage output patch into job_doc in-place.
+
+    Handles both flat keys (e.g. "extracted_jd") and dot-notation keys
+    (e.g. "pre_enrichment.stages.foo.status") by writing the value at
+    the appropriate nested path.
+
+    This ensures subsequent stages in a run_sequence call see upstream
+    outputs without requiring a Mongo re-read between stages (Phase 2a fix).
+
+    Args:
+        job_doc: The mutable job document dict held in StageContext.
+        patch: The output dict from a successful StageResult.
+    """
+    for key, value in patch.items():
+        if "." not in key:
+            job_doc[key] = value
+        else:
+            # Dot-notation: traverse / create nested dicts
+            parts = key.split(".")
+            node = job_doc
+            for part in parts[:-1]:
+                if part not in node or not isinstance(node[part], dict):
+                    node[part] = {}
+                node = node[part]
+            node[parts[-1]] = value
+
+
 def run_sequence(
     db: Any,
     ctx: StageContext,
@@ -399,6 +428,10 @@ def run_sequence(
     the current checksum. Stops on first failure (does not retry here —
     retries happen on next worker tick via lease re-claim).
 
+    After each successful stage, merges the stage output patch into
+    ctx.job_doc in-place so subsequent stages see upstream results
+    without requiring a Mongo re-read (Phase 2a).
+
     After all required stages complete, sets lifecycle="ready" and ready_at.
 
     Args:
@@ -408,10 +441,27 @@ def run_sequence(
         worker_id: This worker's identity string
 
     Returns:
-        Dict summarising: {"completed": [...], "skipped": [...], "failed": [...]}
+        Dict summarising:
+          {
+            "completed": [...],   # stage names that succeeded
+            "skipped": [...],     # stage names skipped (already done)
+            "failed": [...],      # stage names that failed
+            "fallback_counts": {  # per-stage fallback metrics (Phase 2b)
+              "<stage_name>": {
+                "success": int,   # 1 if completed, 0 otherwise
+                "fallback": int,  # 1 if fallback was triggered, 0 otherwise
+                "fallback_reason": str | None,
+              }
+            }
+          }
     """
     job_id = ctx.job_doc["_id"]
-    summary: Dict[str, List[str]] = {"completed": [], "skipped": [], "failed": []}
+    summary: Dict[str, Any] = {
+        "completed": [],
+        "skipped": [],
+        "failed": [],
+        "fallback_counts": {},
+    }
 
     pre = ctx.job_doc.get("pre_enrichment") or {}
     existing_stages = pre.get("stages") or {}
@@ -438,6 +488,24 @@ def run_sequence(
                 summary["skipped"].append(stage_name)
             else:
                 summary["completed"].append(stage_name)
+                # Phase 2b: record fallback metrics
+                summary["fallback_counts"][stage_name] = {
+                    "success": 1,
+                    "fallback": 1 if result.provider_fallback_reason else 0,
+                    "fallback_reason": result.provider_fallback_reason,
+                }
+                # Phase 2a: merge output patch into ctx.job_doc so downstream
+                # stages in this same sequence see the upstream results.
+                if result.output:
+                    _merge_patch_into_job_doc(ctx.job_doc, result.output)
+                    # Also update the pre_enrichment.stages view so prerequisites
+                    # are visible to _check_prerequisites on the next stage.
+                    pre_enrich = ctx.job_doc.setdefault("pre_enrichment", {})
+                    stages_map = pre_enrich.setdefault("stages", {})
+                    stages_map[stage_name] = {
+                        "status": StageStatus.COMPLETED,
+                        "jd_checksum_at_completion": ctx.jd_checksum,
+                    }
         except PrerequisiteNotMet as exc:
             logger.error(
                 "Prerequisites not met for stage %s on job %s: %s",

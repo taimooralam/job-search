@@ -9,11 +9,12 @@ Verifies:
 - Summary contains all stage names in "completed" list
 - Idempotent: re-running with same checksum skips already-completed stages
 - Failed stage stops the sequence (no further stages run)
+- Phase 2a: second stage's run() receives ctx.job_doc containing first stage's output patch
 """
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -235,3 +236,57 @@ class TestDispatcherFullSequenceFailure:
 
         updated = db["level-2"].find_one({"_id": job_doc["_id"]})
         assert updated.get("lifecycle") != "ready"
+
+
+class TestDispatcherFullSequenceContextRefresh:
+    def test_second_stage_receives_first_stage_output_in_ctx(self):
+        """
+        Phase 2a: second stage's run() receives a ctx.job_doc that contains
+        the first stage's output patch fields.
+
+        Uses a spy MagicMock for stage B to capture the ctx argument passed
+        to its run() method, and verifies the first stage's output is present.
+        """
+        db = _make_db()
+        job_doc = _insert_job(db)
+        ctx = _make_ctx(db, job_doc)
+
+        # Stage A writes {"jd_structure_output": "value_from_jd_structure"}
+        stage_a = _make_stage("jd_structure", [])
+        stage_a.run.return_value = StageResult(
+            output={"jd_structure_output": "value_from_jd_structure"},
+            provider_used="claude",
+            model_used="claude-haiku-4-5",
+            prompt_version="v1",
+            duration_ms=50,
+        )
+
+        # Stage B: capture the ctx passed to run()
+        captured_ctx: Optional[StageContext] = None
+
+        class _StageBCapture:
+            name = "company_research"
+            dependencies: List[str] = []
+
+            def run(self, ctx: StageContext) -> StageResult:
+                nonlocal captured_ctx
+                captured_ctx = ctx
+                return StageResult(
+                    output={"company_research_output": "ok"},
+                    provider_used="claude",
+                    model_used="test",
+                    prompt_version="v1",
+                )
+
+        stages = [stage_a, _StageBCapture()]
+        summary = run_sequence(db, ctx, stages, WORKER_ID)
+
+        assert not summary["failed"], f"Unexpected failures: {summary['failed']}"
+        assert captured_ctx is not None, "Stage B run() was never called"
+
+        # The key assertion: Stage B's ctx.job_doc has Stage A's output
+        assert captured_ctx.job_doc.get("jd_structure_output") == "value_from_jd_structure", (
+            f"Stage B did not see Stage A's output in ctx.job_doc. "
+            f"Got: {captured_ctx.job_doc.get('jd_structure_output')!r}. "
+            "Phase 2a context refresh is not working."
+        )
