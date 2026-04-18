@@ -66,17 +66,90 @@ class TestAIClassificationStageProtocol:
 
 
 class TestAIClassificationStageProviderRouting:
-    def test_codex_raises_not_implemented(self):
-        stage = AIClassificationStage()
-        ctx = _make_ctx(provider="codex")
-        with pytest.raises(NotImplementedError, match="codex provider"):
-            stage.run(ctx)
-
     def test_unsupported_provider_raises_value_error(self):
         stage = AIClassificationStage()
         ctx = _make_ctx(provider="openai")
         with pytest.raises(ValueError, match="Unsupported provider"):
             stage.run(ctx)
+
+
+def _make_codex_result_ai(success: bool, result=None, error=None):
+    from dataclasses import dataclass
+
+    @dataclass
+    class _CR:
+        success: bool
+        result: Optional[dict]
+        error: Optional[str]
+        model: str = "gpt-5.4-mini"
+        input_tokens: Optional[int] = None
+        output_tokens: Optional[int] = None
+
+    return _CR(success=success, result=result, error=error)
+
+
+class TestAIClassificationCodexProvider:
+    @patch("src.preenrich.stages.base.CodexCLI")
+    def test_codex_happy_path(self, mock_codex_cls):
+        """
+        Codex provider happy path:
+          - provider_used="codex"
+          - provider_attempts length 1
+          - patch contains is_ai_job, ai_categories, ai_category_count
+        """
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result_ai(
+            success=True,
+            result={"is_ai_job": True, "categories": ["genai_llm"], "rationale": "Strong AI focus"},
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        stage = AIClassificationStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4-mini"
+        ctx.config.fallback_model = "claude-haiku-4-5"
+        result = stage.run(ctx)
+
+        assert result.provider_used == "codex"
+        assert len(result.provider_attempts) == 1
+        assert result.provider_attempts[0]["outcome"] == "success"
+        assert result.output["is_ai_job"] is True
+        assert "genai_llm" in result.output["ai_categories"]
+        assert result.provider_fallback_reason is None
+
+    @patch("src.preenrich.stages.base.CodexCLI")
+    @patch("src.preenrich.stages.ai_classification.classify_job_document_llm")
+    def test_codex_subprocess_fail_triggers_fallback(self, mock_classify, mock_codex_cls):
+        """
+        Codex subprocess fail → Claude fallback:
+          - provider_used="claude"
+          - provider_attempts length 2
+          - provider_fallback_reason="error_subprocess"
+        """
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result_ai(
+            success=False, error="codex failed"
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        mock_classify.return_value = _MockAIResult(
+            is_ai_job=True,
+            ai_categories=["agentic_ai"],
+            ai_category_count=1,
+            ai_rationale="Agentic AI",
+        )
+
+        stage = AIClassificationStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4-mini"
+        ctx.config.fallback_model = "claude-haiku-4-5"
+        result = stage.run(ctx)
+
+        assert result.provider_used == "claude"
+        assert len(result.provider_attempts) == 2
+        assert result.provider_attempts[0]["outcome"] == "error_subprocess"
+        assert result.provider_attempts[1]["outcome"] == "success"
+        assert result.provider_fallback_reason == "error_subprocess"
 
 
 class TestAIClassificationStageClaudeProvider:
