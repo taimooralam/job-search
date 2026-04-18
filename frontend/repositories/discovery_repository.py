@@ -12,10 +12,38 @@ from bson import ObjectId
 from pymongo import DESCENDING, MongoClient
 from pymongo.errors import OperationFailure
 
-from src.common.dedupe import generate_dedupe_key
-from src.pipeline.discovery import SearchDiscoveryStore
-from src.pipeline.queue import WorkItemQueue
-from src.pipeline.selector_store import SelectorStore
+try:
+    from src.common.dedupe import generate_dedupe_key as _generate_dedupe_key
+except ImportError:
+    def _normalize_for_dedupe(value: Optional[str]) -> str:
+        return re.sub(r"[^a-z0-9]", "", (value or "").lower())
+
+    def _generate_dedupe_key(
+        source: str,
+        source_id: Optional[str] = None,
+        company: Optional[str] = None,
+        title: Optional[str] = None,
+        location: Optional[str] = None,
+    ) -> str:
+        if source_id:
+            return f"{source}|{source_id}"
+        return "|".join(
+            [
+                source,
+                _normalize_for_dedupe(company),
+                _normalize_for_dedupe(title),
+                _normalize_for_dedupe(location),
+            ]
+        )
+
+try:
+    from src.pipeline.discovery import SearchDiscoveryStore
+    from src.pipeline.queue import WorkItemQueue
+    from src.pipeline.selector_store import SelectorStore
+except ImportError:
+    SearchDiscoveryStore = None
+    WorkItemQueue = None
+    SelectorStore = None
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +66,7 @@ class DiscoveryRepository:
         self.selector_runs = self.db["selector_runs"]
         self.work_items = self.db["work_items"]
         self.level2 = self.db["level-2"]
-        SearchDiscoveryStore(self.db).ensure_indexes()
-        WorkItemQueue(self.db).ensure_indexes()
-        SelectorStore(self.db).ensure_indexes()
+        self._ensure_indexes()
 
     @classmethod
     def get_instance(cls) -> "DiscoveryRepository":
@@ -63,6 +89,32 @@ class DiscoveryRepository:
         if cls._instance is not None:
             cls._instance.client.close()
             cls._instance = None
+
+    def _ensure_indexes(self) -> None:
+        """Ensure the discovery dashboard's hot query indexes exist.
+
+        On the VPS/backend code path we reuse the pipeline stores. On Vercel we
+        cannot rely on importing the full backend package layout, so we create
+        the small subset of indexes needed by the dashboard directly.
+        """
+        if SearchDiscoveryStore and WorkItemQueue and SelectorStore:
+            SearchDiscoveryStore(self.db).ensure_indexes()
+            WorkItemQueue(self.db).ensure_indexes()
+            SelectorStore(self.db).ensure_indexes()
+            return
+
+        self.search_hits.create_index([("last_seen_at", DESCENDING)], name="discovery_last_seen_idx")
+        self.search_hits.create_index([("first_seen_at", DESCENDING)], name="discovery_first_seen_idx")
+        self.search_hits.create_index([("search_profile", 1), ("last_seen_at", DESCENDING)], name="discovery_profile_last_seen_idx")
+        self.search_hits.create_index([("search_region", 1), ("last_seen_at", DESCENDING)], name="discovery_region_last_seen_idx")
+        self.search_hits.create_index([("scrape.status", 1), ("last_seen_at", DESCENDING)], name="discovery_scrape_status_last_seen_idx")
+        self.search_hits.create_index([("selection.main.decision", 1), ("last_seen_at", DESCENDING)], name="discovery_main_decision_last_seen_idx")
+        self.search_hits.create_index([("selection.pool.status", 1), ("last_seen_at", DESCENDING)], name="discovery_pool_status_last_seen_idx")
+        self.work_items.create_index([("task_type", 1), ("consumer_mode", 1), ("status", 1), ("updated_at", DESCENDING)], name="dashboard_work_items_status_updated_idx")
+        self.work_items.create_index([("task_type", 1), ("consumer_mode", 1), ("created_at", DESCENDING)], name="dashboard_work_items_created_idx")
+        self.work_items.create_index([("lane", 1), ("consumer_mode", 1), ("status", 1), ("available_at", 1), ("priority", 1), ("created_at", 1)], name="dashboard_work_items_lane_claim_idx")
+        self.selector_runs.create_index([("scheduled_for", DESCENDING)], name="dashboard_selector_runs_scheduled_idx")
+        self.selector_runs.create_index([("status", 1), ("scheduled_for", DESCENDING)], name="dashboard_selector_runs_status_scheduled_idx")
 
     def get_stats(self, since: datetime) -> dict[str, int]:
         """Return top-level stats for the discovery dashboard."""
@@ -451,7 +503,7 @@ class DiscoveryRepository:
                 level2_doc = None
 
         if level2_doc is None and hit.get("external_job_id"):
-            dedupe_key = generate_dedupe_key("linkedin_scout", source_id=hit["external_job_id"])
+            dedupe_key = _generate_dedupe_key("linkedin_scout", source_id=hit["external_job_id"])
             level2_doc = self.level2.find_one({"dedupeKey": dedupe_key})
 
         profile_links: dict[str, dict[str, Any]] = {}
