@@ -1,10 +1,24 @@
 """
-Codex CLI subprocess wrapper (shadow/eval mode only).
+Codex CLI subprocess wrapper — production transport for preenrich stages.
 
-SHADOW-ONLY STATUS: This module wraps `codex exec` for evaluation purposes.
-The production default for all pipeline steps is Claude (src/common/claude_cli.py).
-Codex will not become a production default until per-stage parity evidence
-clears the thresholds defined in the dual-run diff report (plans/scout-pre-enrichment-skills-plan.md §4).
+PRODUCTION STATUS (Phase 2b onwards):
+This module is the primary LLM transport for preenrich stages that use Codex:
+jd_extraction, ai_classification, pain_points, persona.  Claude remains the
+automatic fallback when CodexResult.success=False or schema validation fails.
+See src/preenrich/stages/base._call_llm_with_fallback() for the fallback contract.
+
+IMPORTANT — CodexResult.success=False contract:
+    CodexCLI.invoke() does NOT raise on subprocess non-zero exit codes or JSON
+    parse failures.  It always returns a CodexResult.  Check result.success before
+    using result.result.  Only CodexCLIError is raised for hard programming errors
+    (not subprocess failures).
+
+    Failure cases that set success=False:
+      - Non-zero subprocess exit code (proc.returncode != 0)
+      - validate_json=True and no JSON found in stdout
+      - validate_json=True and JSON parse error
+      - subprocess.TimeoutExpired (timeout exceeded)
+      - FileNotFoundError (codex binary not installed)
 
 Mirrors the interface of src/common/claude_cli.py: subprocess invocation,
 JSON extraction from stdout, CodexCLIError exception class, configurable timeout.
@@ -12,12 +26,11 @@ JSON extraction from stdout, CodexCLIError exception class, configurable timeout
 Usage:
     cli = CodexCLI(model="gpt-5.4")
     result = cli.invoke(prompt, job_id="123")
-
-    # Shadow run (production default stays Claude):
-    codex_cli = CodexCLI(model="gpt-5.4-mini")
-    shadow = codex_cli.invoke(prompt, job_id=job_id)
-    if shadow.success:
-        stage_doc["shadow_output"] = shadow.result
+    if result.success:
+        data = result.result  # parsed dict
+    else:
+        # fallback to Claude — see _call_llm_with_fallback()
+        ...
 """
 
 import json
