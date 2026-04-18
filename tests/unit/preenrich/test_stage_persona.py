@@ -5,12 +5,14 @@ Verifies:
 - Sonnet default replaces Opus (DEFAULT_TIER == "balanced")
 - Output schema identical to current persona_builder output
 - Skip when no persona annotations
-- Codex raises NotImplementedError
+- Codex primary happy path: provider_used="codex", provider_attempts length 1
+- Codex subprocess-fail path: fallback triggered, provider_fallback_reason set
 - Tier is configurable via StepConfig.model
 """
 
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -92,11 +94,6 @@ class TestPersonaStageDefaultTier:
 
 
 class TestPersonaStageProviderRouting:
-    def test_codex_raises_not_implemented(self):
-        ctx = _make_ctx(provider="codex")
-        with pytest.raises(NotImplementedError, match="codex provider"):
-            PersonaStage().run(ctx)
-
     def test_unknown_provider_raises_value_error(self):
         ctx = _make_ctx(provider="gpt4")
         with pytest.raises(ValueError, match="Unsupported provider"):
@@ -178,3 +175,120 @@ class TestPersonaStageSynthesis:
         result = PersonaStage().run(ctx)
 
         assert result.model_used == "quality"
+
+
+# ---------------------------------------------------------------------------
+# Codex provider tests (Phase 2b)
+# ---------------------------------------------------------------------------
+
+
+def _make_codex_result_persona(success: bool, result=None, error=None):
+    @dataclass
+    class _CR:
+        success: bool
+        result: Optional[dict]
+        error: Optional[str]
+        model: str = "gpt-5.4"
+        input_tokens: Optional[int] = None
+        output_tokens: Optional[int] = None
+
+    return _CR(success=success, result=result, error=error)
+
+
+class TestPersonaCodexProvider:
+    @patch("src.preenrich.stages.base.CodexCLI")
+    @patch("src.preenrich.stages.persona.PersonaBuilder")
+    def test_codex_happy_path(self, mock_builder_cls, mock_codex_cls):
+        """
+        Codex provider happy path:
+          - provider_used="codex"
+          - provider_attempts length 1
+          - jd_annotations.synthesized_persona in output
+        """
+        # PersonaBuilder.has_persona_annotations returns True
+        mock_builder_instance = MagicMock()
+        mock_builder_instance.has_persona_annotations.return_value = True
+        mock_builder_cls.return_value = mock_builder_instance
+
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result_persona(
+            success=True,
+            result={
+                "persona_statement": "An AI platform leader.",
+                "primary_identity": "AI builder",
+                "secondary_identities": ["ML architect"],
+                "source_annotations": ["ann_001"],
+            },
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        stage = PersonaStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4"
+        ctx.config.fallback_model = "claude-sonnet-4-5"
+        result = stage.run(ctx)
+
+        assert result.provider_used == "codex"
+        assert len(result.provider_attempts) == 1
+        assert result.provider_attempts[0]["outcome"] == "success"
+        assert "jd_annotations" in result.output
+        assert "synthesized_persona" in result.output["jd_annotations"]
+        assert result.provider_fallback_reason is None
+
+    @patch("src.preenrich.stages.persona._claude_synthesize_persona")
+    @patch("src.preenrich.stages.base.CodexCLI")
+    @patch("src.preenrich.stages.persona.PersonaBuilder")
+    def test_codex_subprocess_fail_triggers_fallback(
+        self, mock_builder_cls, mock_codex_cls, mock_claude_synth
+    ):
+        """
+        Codex fail → Claude fallback:
+          - provider_used="claude"
+          - provider_attempts length 2
+          - provider_fallback_reason="error_subprocess"
+        """
+        mock_builder_instance = MagicMock()
+        mock_builder_instance.has_persona_annotations.return_value = True
+        mock_builder_cls.return_value = mock_builder_instance
+
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result_persona(
+            success=False, error="codex failed"
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        mock_claude_synth.return_value = {
+            "persona_statement": "from claude",
+            "primary_identity": "claude identity",
+            "secondary_identities": [],
+            "source_annotations": [],
+            "synthesized_at": "2026-04-17T00:00:00",
+        }
+
+        stage = PersonaStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4"
+        ctx.config.fallback_model = "claude-sonnet-4-5"
+        result = stage.run(ctx)
+
+        assert result.provider_used == "claude"
+        assert len(result.provider_attempts) == 2
+        assert result.provider_attempts[0]["outcome"] == "error_subprocess"
+        assert result.provider_attempts[1]["outcome"] == "success"
+        assert result.provider_fallback_reason == "error_subprocess"
+
+    @patch("src.preenrich.stages.base.CodexCLI")
+    @patch("src.preenrich.stages.persona.PersonaBuilder")
+    def test_codex_no_annotations_skips(self, mock_builder_cls, mock_codex_cls):
+        """Codex path: no persona annotations → skip_reason='no_persona_annotations'."""
+        mock_builder_instance = MagicMock()
+        mock_builder_instance.has_persona_annotations.return_value = False
+        mock_builder_cls.return_value = mock_builder_instance
+
+        stage = PersonaStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4"
+        result = stage.run(ctx)
+
+        assert result.skip_reason == "no_persona_annotations"
+        assert result.output == {}
