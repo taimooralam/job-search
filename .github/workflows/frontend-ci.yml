@@ -33,6 +33,8 @@ jobs:
             paths: frontend/tests/test_cv_editing.py
           - name: job-detail
             paths: frontend/tests/test_job_detail_enhancements.py
+          - name: discovery
+            paths: frontend/tests/test_discovery_dashboard.py
 
     steps:
       - name: Checkout code

@@ -1,0 +1,76 @@
+<div class="space-y-4 p-4">
+    <div>
+        <p class="text-xs uppercase" style="color: var(--text-tertiary);">Search Runs</p>
+        {% if search_runs %}
+        <div class="divide-y mt-3" style="border-color: var(--border-default);">
+            {% for run in search_runs %}
+            <div class="py-3">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-medium" style="color: var(--text-primary);">{{ run.command_mode or 'unknown' }} run</p>
+                        <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+                            {{ run.started_at.strftime('%b %d %H:%M') if run.started_at else '—' }}
+                            {% if run.region_filter %} · {{ run.region_filter }}{% endif %}
+                            {% if run.profile_filter %} · {{ run.profile_filter }}{% endif %}
+                        </p>
+                    </div>
+                    <span class="text-[10px] px-2 py-1 rounded-full
+                        {% if run.status == 'completed' %}bg-green-500/20 text-green-400
+                        {% elif run.status == 'failed' %}bg-red-500/20 text-red-400
+                        {% else %}bg-yellow-500/20 text-yellow-400{% endif %}">
+                        {{ run.status or 'running' }}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-3 text-xs" style="color: var(--text-tertiary);">
+                    <div>Raw: {{ run.stats.raw_found if run.stats else 0 }}</div>
+                    <div>Hits: {{ run.stats.hits_upserted if run.stats else 0 }}</div>
+                    <div>Work Items: {{ run.stats.work_items_created if run.stats else 0 }}</div>
+                    <div>Legacy: {{ run.stats.legacy_handoffs_created if run.stats else 0 }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-1 py-4 text-sm" style="color: var(--text-tertiary);">No search runs recorded yet</div>
+        {% endif %}
+    </div>
+
+    <div>
+        <p class="text-xs uppercase" style="color: var(--text-tertiary);">Scrape Runs</p>
+        {% if scrape_runs %}
+        <div class="divide-y mt-3" style="border-color: var(--border-default);">
+            {% for run in scrape_runs %}
+            <div class="py-3">
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <p class="text-sm font-medium" style="color: var(--text-primary);">{{ run.worker_id or 'worker' }}</p>
+                        <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+                            {{ run.started_at.strftime('%b %d %H:%M') if run.started_at else '—' }}
+                            {% if run.trigger_mode %} · {{ run.trigger_mode }}{% endif %}
+                        </p>
+                    </div>
+                    <span class="text-[10px] px-2 py-1 rounded-full
+                        {% if run.status == 'completed' %}bg-green-500/20 text-green-400
+                        {% elif run.status == 'failed' %}bg-red-500/20 text-red-400
+                        {% else %}bg-yellow-500/20 text-yellow-400{% endif %}">
+                        {{ run.status or 'running' }}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-3 text-xs" style="color: var(--text-tertiary);">
+                    <div>Claimed: {{ run.stats.claimed if run.stats else 0 }}</div>
+                    <div>Scraped: {{ run.stats.scraped_success if run.stats else 0 }}</div>
+                    <div>Retries: {{ run.stats.retried if run.stats else 0 }}</div>
+                    <div>Deadletters: {{ run.stats.deadlettered if run.stats else 0 }}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2 text-xs" style="color: var(--text-tertiary);">
+                    <div>Level-1: {{ run.stats.level1_upserts if run.stats else 0 }}</div>
+                    <div>Scored JSONL: {{ run.stats.scored_jsonl_writes if run.stats else 0 }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-1 py-4 text-sm" style="color: var(--text-tertiary);">No scrape runs recorded yet</div>
+        {% endif %}
+    </div>
+</div>

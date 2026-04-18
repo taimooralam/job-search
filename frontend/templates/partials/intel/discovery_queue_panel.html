@@ -1,0 +1,57 @@
+<div class="space-y-4 p-4">
+    <div class="grid grid-cols-1 gap-3 text-sm">
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Native Queue</p>
+            <div class="grid grid-cols-2 gap-2 mt-3 text-xs" style="color: var(--text-secondary);">
+                <div>Pending: {{ queue.native.pending if queue.native else 0 }}</div>
+                <div>Leased: {{ queue.native.leased if queue.native else 0 }}</div>
+                <div>Done: {{ queue.native.done if queue.native else 0 }}</div>
+                <div>Total: {{ queue.native.total if queue.native else 0 }}</div>
+                <div>Failed: {{ queue.native.failed if queue.native else 0 }}</div>
+                <div>Deadletter: {{ queue.native.deadletter if queue.native else 0 }}</div>
+            </div>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Legacy Queue Ownership</p>
+            <div class="grid grid-cols-2 gap-2 mt-3 text-xs" style="color: var(--text-secondary);">
+                <div>Pending: {{ queue.legacy.pending if queue.legacy else 0 }}</div>
+                <div>Leased: {{ queue.legacy.leased if queue.legacy else 0 }}</div>
+                <div>Done: {{ queue.legacy.done if queue.legacy else 0 }}</div>
+                <div>Total: {{ queue.legacy.total if queue.legacy else 0 }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+        <p class="text-xs uppercase" style="color: var(--text-tertiary);">Recent Failures</p>
+        {% if failures %}
+        <div class="space-y-3 mt-3">
+            {% for item in failures %}
+            <div>
+                <p class="text-sm" style="color: var(--text-primary);">{{ item.scrape.status }} · {{ item.title or 'Unknown role' }}</p>
+                <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+                    {{ item.scrape.last_error.message if item.scrape and item.scrape.last_error else 'Unknown error' }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm mt-3" style="color: var(--text-tertiary);">No recent failures</p>
+        {% endif %}
+    </div>
+
+    <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+        <p class="text-xs uppercase" style="color: var(--text-tertiary);">Langfuse</p>
+        {% if langfuse.public_url %}
+        <a href="{{ langfuse.public_url }}" target="_blank" rel="noopener noreferrer"
+           class="inline-block mt-3 text-sm underline" style="color: var(--text-primary);">
+            Open Langfuse
+        </a>
+        {% else %}
+        <p class="text-sm mt-3" style="color: var(--text-tertiary);">No public Langfuse URL configured</p>
+        {% endif %}
+        <p class="text-xs mt-3" style="color: var(--text-secondary);">Latest search run: <code>{{ langfuse.latest_search_run_session_id or '—' }}</code></p>
+        <p class="text-xs mt-1" style="color: var(--text-secondary);">Latest scrape run: <code>{{ langfuse.latest_scrape_run_session_id or '—' }}</code></p>
+        <p class="text-xs mt-1" style="color: var(--text-secondary);">Latest hit session: <code>{{ langfuse.latest_hit_session_id or '—' }}</code></p>
+    </div>
+</div>

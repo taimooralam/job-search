@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Discovery Debug — LinkedIn Intelligence{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Discovery Debug</h1>
+            <p class="text-sm mt-1" style="color: var(--text-tertiary);">
+                Mongo-authoritative search runs, native scrape execution, selector handoff state, and optional Langfuse IDs
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/dashboard" class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+               style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                Dashboard
+            </a>
+            <a href="/dashboard/opportunities" class="px-3 py-1.5 text-sm rounded-lg transition-colors"
+               style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                Opportunities
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="rounded-lg p-4 border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+        <p class="text-sm text-red-400">Discovery dashboard unavailable: {{ error }}</p>
+    </div>
+    {% else %}
+
+    <div hx-get="/dashboard/discovery/stats" hx-trigger="load, every 60s" hx-swap="innerHTML" id="discovery-stats">
+        {% include "partials/intel/discovery_stat_cards.html" %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 rounded-xl border overflow-hidden"
+             style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--border-default);">
+                <div>
+                    <h2 class="font-semibold" style="color: var(--text-primary);">Recent Discovery Hits</h2>
+                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+                        Scraped means fetch/parse/score succeeded. Selector handoff means `scored.jsonl` plus `level-1` compatibility writes succeeded.
+                    </p>
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded-full"
+                      style="background-color: var(--bg-hover); color: var(--text-tertiary);">
+                    Iteration 2
+                </span>
+            </div>
+            <div id="discovery-rows" hx-get="/dashboard/discovery/rows" hx-trigger="load, every 90s" hx-swap="innerHTML">
+                {% include "partials/intel/discovery_table.html" %}
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="rounded-xl border"
+                style="background-color: var(--bg-card); border-color: var(--border-default);">
+                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
+                    <h2 class="font-semibold" style="color: var(--text-primary);">Recent Runs</h2>
+                </div>
+                <div hx-get="/dashboard/discovery/runs" hx-trigger="load, every 90s" hx-swap="innerHTML">
+                    {% include "partials/intel/discovery_run_list.html" %}
+                </div>
+            </div>
+
+            <div class="rounded-xl border"
+                 style="background-color: var(--bg-card); border-color: var(--border-default);">
+                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
+                    <h2 class="font-semibold" style="color: var(--text-primary);">Queue Snapshot</h2>
+                </div>
+                <div hx-get="/dashboard/discovery/queue" hx-trigger="load, every 60s" hx-swap="innerHTML">
+                    {% include "partials/intel/discovery_queue_panel.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<div id="discovery-detail-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+     onclick="if(event.target===this) this.classList.add('hidden')">
+    <div class="w-full max-w-3xl max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl mx-4"
+         style="background-color: var(--bg-card);" onclick="event.stopPropagation()">
+        <div class="sticky top-0 flex items-center justify-between px-4 py-3 border-b"
+             style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <h3 class="font-semibold" style="color: var(--text-primary);">Discovery Detail</h3>
+            <button onclick="document.getElementById('discovery-detail-modal').classList.add('hidden')"
+                    class="p-1 rounded-lg hover:bg-gray-700/50" style="color: var(--text-secondary);">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="discovery-detail-content" class="p-4"></div>
+    </div>
+</div>
+{% endblock %}

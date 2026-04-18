@@ -11,7 +11,6 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import requests
-from bson import ObjectId
 from flask import Blueprint, jsonify, render_template, request
 
 logger = logging.getLogger(__name__)
@@ -21,14 +20,29 @@ intel_bp = Blueprint("intel", __name__, url_prefix="/dashboard")
 
 def get_repo():
     """Lazy import to avoid startup failures if MONGODB_URI is not set."""
-    from repositories.intel_repository import IntelRepository
+    try:
+        from repositories.intel_repository import IntelRepository
+    except ImportError:
+        from frontend.repositories.intel_repository import IntelRepository
     return IntelRepository.get_instance()
 
 
 def get_job_repo():
     """Get Atlas job repository for pipeline pushes."""
-    from repositories.config import get_job_repository
+    try:
+        from repositories.config import get_job_repository
+    except ImportError:
+        from frontend.repositories.config import get_job_repository
     return get_job_repository()
+
+
+def get_discovery_repo():
+    """Get the discovery/debug repository with explicit Mongo precedence."""
+    try:
+        from repositories.discovery_repository import DiscoveryRepository
+    except ImportError:
+        from frontend.repositories.discovery_repository import DiscoveryRepository
+    return DiscoveryRepository.get_instance()
 
 
 # ------------------------------------------------------------------
@@ -312,6 +326,110 @@ def health():
         return render_template("partials/intel/health_panel.html", usage=usage, cookie=cookie)
     except Exception as e:
         return f'<div class="text-red-400">Health data unavailable: {e}</div>'
+
+
+# ------------------------------------------------------------------
+# Discovery
+# ------------------------------------------------------------------
+
+@intel_bp.route("/discovery")
+def discovery_dashboard():
+    """Full discovery/debug page for discovery plus native scrape state."""
+    try:
+        repo = get_discovery_repo()
+        since = datetime.now(timezone.utc) - timedelta(hours=24)
+        return render_template(
+            "intel_discovery.html",
+            stats=repo.get_stats(since),
+            hits=repo.get_hits(limit=50),
+            search_runs=repo.get_recent_search_runs(limit=8),
+            scrape_runs=repo.get_recent_scrape_runs(limit=8),
+            queue=repo.get_queue_snapshot(),
+            failures=repo.get_recent_failures(limit=5),
+            langfuse=repo.get_langfuse_panel(),
+        )
+    except Exception as e:
+        logger.error("Discovery dashboard error: %s", e)
+        return render_template(
+            "intel_discovery.html",
+            error=str(e),
+            stats=None,
+            hits=[],
+            search_runs=[],
+            scrape_runs=[],
+            queue={},
+            failures=[],
+            langfuse={},
+        )
+
+
+@intel_bp.route("/discovery/stats")
+def discovery_stats():
+    """HTMX partial: discovery stat cards."""
+    try:
+        repo = get_discovery_repo()
+        since = datetime.now(timezone.utc) - timedelta(hours=24)
+        return render_template(
+            "partials/intel/discovery_stat_cards.html",
+            stats=repo.get_stats(since),
+        )
+    except Exception as e:
+        return f'<div class="text-red-400 text-sm">Discovery stats unavailable: {e}</div>'
+
+
+@intel_bp.route("/discovery/rows")
+def discovery_rows():
+    """HTMX partial: discovery table rows."""
+    try:
+        repo = get_discovery_repo()
+        return render_template(
+            "partials/intel/discovery_table.html",
+            hits=repo.get_hits(limit=50),
+        )
+    except Exception as e:
+        return f'<div class="text-red-400 text-sm">Discovery rows unavailable: {e}</div>'
+
+
+@intel_bp.route("/discovery/runs")
+def discovery_runs():
+    """HTMX partial: recent search and scrape runs."""
+    try:
+        repo = get_discovery_repo()
+        return render_template(
+            "partials/intel/discovery_run_list.html",
+            search_runs=repo.get_recent_search_runs(limit=8),
+            scrape_runs=repo.get_recent_scrape_runs(limit=8),
+        )
+    except Exception as e:
+        return f'<div class="text-red-400 text-sm">Discovery runs unavailable: {e}</div>'
+
+
+@intel_bp.route("/discovery/<hit_id>")
+def discovery_detail(hit_id):
+    """HTMX partial: one discovery detail panel."""
+    try:
+        repo = get_discovery_repo()
+        hit = repo.get_hit_detail(hit_id)
+        if not hit:
+            return '<div class="text-red-400">Discovery hit not found</div>', 404
+        return render_template("partials/intel/discovery_detail.html", hit=hit)
+    except Exception as e:
+        return f'<div class="text-red-400">Discovery detail unavailable: {e}</div>'
+
+
+@intel_bp.route("/discovery/queue")
+def discovery_queue():
+    """HTMX partial: queue snapshot, failures, and Langfuse info."""
+    try:
+        repo = get_discovery_repo()
+        return render_template(
+            "partials/intel/discovery_queue_panel.html",
+            queue=repo.get_queue_snapshot(),
+            failures=repo.get_recent_failures(limit=5),
+            langfuse=repo.get_langfuse_panel(),
+        )
+    except Exception as e:
+        return f'<div class="text-red-400 text-sm">Discovery queue unavailable: {e}</div>'
 
 
 # ------------------------------------------------------------------
