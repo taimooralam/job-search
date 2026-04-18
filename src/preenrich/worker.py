@@ -50,11 +50,43 @@ def _count_in_flight(db: Any) -> int:
     return db["level-2"].count_documents({"lifecycle": "preenriching"})
 
 
+def _format_fallback_summary(fallback_counts: Dict[str, Any]) -> str:
+    """
+    Format per-stage fallback-rate metrics for the Telegram tick summary.
+
+    Example output:
+      jd_extraction: 12/12 success, 0 fallback
+      pain_points: 11/12 success, 1 fallback (error_schema)
+
+    Args:
+        fallback_counts: Aggregated {stage_name: {success, fallback, fallback_reason}} dict.
+
+    Returns:
+        Formatted multi-line string, or empty string if no data.
+    """
+    if not fallback_counts:
+        return ""
+
+    lines = []
+    for stage, counts in sorted(fallback_counts.items()):
+        total = counts.get("total", 0)
+        successes = counts.get("success", 0)
+        fallbacks = counts.get("fallback", 0)
+        reason = counts.get("last_fallback_reason")
+        fallback_str = f"{fallbacks} fallback"
+        if reason:
+            fallback_str += f" ({reason})"
+        lines.append(
+            f"  {stage}: {successes}/{total} success, {fallback_str}"
+        )
+    return "\n".join(lines)
+
+
 def _send_tick_summary(
     worker_id: str,
     tick_stats: Dict[str, Any],
 ) -> None:
-    """Best-effort Telegram tick summary."""
+    """Best-effort Telegram tick summary with per-stage fallback-rate metrics."""
     try:
         from src.common.telegram import send_telegram
 
@@ -65,6 +97,15 @@ def _send_tick_summary(
             f"failed={tick_stats.get('failed', 0)} "
             f"skipped={tick_stats.get('skipped', 0)}",
         ]
+
+        # Phase 2b: per-stage fallback rate
+        fallback_summary = _format_fallback_summary(
+            tick_stats.get("fallback_counts", {})
+        )
+        if fallback_summary:
+            lines.append("<b>Fallback rates:</b>")
+            lines.append(fallback_summary)
+
         send_telegram("\n".join(lines))
     except Exception:
         pass  # Best-effort — never block the worker
@@ -144,6 +185,7 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
             "completed": 0,
             "failed": 0,
             "skipped": 0,
+            "fallback_counts": {},  # {stage_name: {total, success, fallback, last_fallback_reason}}
         }
 
         try:
@@ -215,6 +257,18 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
             tick_stats["completed"] += len(summary.get("completed", []))
             tick_stats["failed"] += len(summary.get("failed", []))
             tick_stats["skipped"] += len(summary.get("skipped", []))
+
+            # Phase 2b: accumulate per-stage fallback metrics across jobs in the tick
+            for stage_name, counts in summary.get("fallback_counts", {}).items():
+                agg = tick_stats["fallback_counts"].setdefault(
+                    stage_name,
+                    {"total": 0, "success": 0, "fallback": 0, "last_fallback_reason": None},
+                )
+                agg["total"] += 1
+                agg["success"] += counts.get("success", 0)
+                agg["fallback"] += counts.get("fallback", 0)
+                if counts.get("fallback_reason"):
+                    agg["last_fallback_reason"] = counts["fallback_reason"]
 
             new_lifecycle = "ready" if not summary.get("failed") else "failed"
             release(db, job_id, worker_id, new_lifecycle)
