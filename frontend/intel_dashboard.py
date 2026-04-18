@@ -337,13 +337,15 @@ def discovery_dashboard():
     """Full discovery/debug page for discovery plus native scrape state."""
     try:
         repo = get_discovery_repo()
-        since = datetime.now(timezone.utc) - timedelta(hours=24)
+        filters = _parse_discovery_filters()
         return render_template(
             "intel_discovery.html",
-            stats=repo.get_stats(since),
-            hits=repo.get_hits(limit=50),
+            heartbeat=repo.get_pipeline_heartbeat(),
+            results=repo.search_hits_page(**filters),
+            filters=filters,
             search_runs=repo.get_recent_search_runs(limit=8),
             scrape_runs=repo.get_recent_scrape_runs(limit=8),
+            selector_runs=repo.get_recent_selector_runs(limit=8),
             queue=repo.get_queue_snapshot(),
             failures=repo.get_recent_failures(limit=5),
             langfuse=repo.get_langfuse_panel(),
@@ -353,41 +355,58 @@ def discovery_dashboard():
         return render_template(
             "intel_discovery.html",
             error=str(e),
-            stats=None,
-            hits=[],
+            heartbeat=None,
+            results={"hits": [], "page": {}, "filters": {}},
+            filters=_parse_discovery_filters(),
             search_runs=[],
             scrape_runs=[],
+            selector_runs=[],
             queue={},
             failures=[],
             langfuse={},
         )
 
 
+@intel_bp.route("/discovery/heartbeat")
 @intel_bp.route("/discovery/stats")
 def discovery_stats():
-    """HTMX partial: discovery stat cards."""
+    """HTMX partial: discovery heartbeat cards."""
     try:
         repo = get_discovery_repo()
-        since = datetime.now(timezone.utc) - timedelta(hours=24)
         return render_template(
             "partials/intel/discovery_stat_cards.html",
-            stats=repo.get_stats(since),
+            heartbeat=repo.get_pipeline_heartbeat(),
         )
     except Exception as e:
         return f'<div class="text-red-400 text-sm">Discovery stats unavailable: {e}</div>'
 
 
+@intel_bp.route("/discovery/results")
 @intel_bp.route("/discovery/rows")
 def discovery_rows():
-    """HTMX partial: discovery table rows."""
+    """HTMX partial: filtered discovery results."""
     try:
         repo = get_discovery_repo()
+        filters = _parse_discovery_filters()
         return render_template(
             "partials/intel/discovery_table.html",
-            hits=repo.get_hits(limit=50),
+            results=repo.search_hits_page(**filters),
         )
     except Exception as e:
         return f'<div class="text-red-400 text-sm">Discovery rows unavailable: {e}</div>'
+
+
+@intel_bp.route("/discovery/peek/<hit_id>")
+def discovery_peek(hit_id):
+    """HTMX partial: one discovery quick-peek panel."""
+    try:
+        repo = get_discovery_repo()
+        hit = repo.get_hit_peek(hit_id)
+        if not hit:
+            return '<div class="text-red-400">Discovery hit not found</div>', 404
+        return render_template("partials/intel/discovery_peek.html", hit=hit)
+    except Exception as e:
+        return f'<div class="text-red-400">Discovery peek unavailable: {e}</div>'
 
 
 @intel_bp.route("/discovery/runs")
@@ -399,6 +418,7 @@ def discovery_runs():
             "partials/intel/discovery_run_list.html",
             search_runs=repo.get_recent_search_runs(limit=8),
             scrape_runs=repo.get_recent_scrape_runs(limit=8),
+            selector_runs=repo.get_recent_selector_runs(limit=8),
         )
     except Exception as e:
         return f'<div class="text-red-400 text-sm">Discovery runs unavailable: {e}</div>'
@@ -451,6 +471,28 @@ def _parse_filters() -> dict:
         days = int(request.args["days"])
         filters["since"] = datetime.now(timezone.utc) - timedelta(days=days)
     return filters
+
+
+def _parse_discovery_filters() -> dict[str, object]:
+    """Parse discovery page filters from request args."""
+    failures_only = request.args.get("failures_only", "").lower() in {"1", "true", "yes", "on"}
+    limit = request.args.get("limit", "25")
+    try:
+        parsed_limit = int(limit)
+    except ValueError:
+        parsed_limit = 25
+    return {
+        "query_text": request.args.get("q", "").strip() or None,
+        "window": request.args.get("window", "24h"),
+        "profile": request.args.get("profile", "").strip() or None,
+        "region": request.args.get("region", "").strip() or None,
+        "scrape_status": request.args.get("scrape_status", "").strip() or None,
+        "main_decision": request.args.get("main_decision", "").strip() or None,
+        "pool_status": request.args.get("pool_status", "").strip() or None,
+        "failures_only": failures_only,
+        "cursor": request.args.get("cursor", "").strip() or None,
+        "limit": parsed_limit,
+    }
 
 
 def _trigger_runner(job_id: str) -> None:

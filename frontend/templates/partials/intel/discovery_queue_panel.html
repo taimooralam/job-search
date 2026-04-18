@@ -1,7 +1,7 @@
 <div class="space-y-4 p-4">
     <div class="grid grid-cols-1 gap-3 text-sm">
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Native Queue</p>
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Native Scrape Queue</p>
             <div class="grid grid-cols-2 gap-2 mt-3 text-xs" style="color: var(--text-secondary);">
                 <div>Pending: {{ queue.native.pending if queue.native else 0 }}</div>
                 <div>Leased: {{ queue.native.leased if queue.native else 0 }}</div>
@@ -20,6 +20,17 @@
                 <div>Total: {{ queue.legacy.total if queue.legacy else 0 }}</div>
             </div>
         </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Selector Queue</p>
+            <div class="grid grid-cols-2 gap-2 mt-3 text-xs" style="color: var(--text-secondary);">
+                <div>Pending: {{ queue.selector.pending if queue.selector else 0 }}</div>
+                <div>Leased: {{ queue.selector.leased if queue.selector else 0 }}</div>
+                <div>Done: {{ queue.selector.done if queue.selector else 0 }}</div>
+                <div>Total: {{ queue.selector.total if queue.selector else 0 }}</div>
+                <div>Failed: {{ queue.selector.failed if queue.selector else 0 }}</div>
+                <div>Deadletter: {{ queue.selector.deadletter if queue.selector else 0 }}</div>
+            </div>
+        </div>
     </div>
 
     <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
@@ -28,10 +39,29 @@
         <div class="space-y-3 mt-3">
             {% for item in failures %}
             <div>
+                {% if item.kind == 'selector' %}
+                <p class="text-sm" style="color: var(--text-primary);">
+                    {{ item.status }} · {{ item.run_kind }}{% if item.profile_name %} · {{ item.profile_name }}{% endif %}
+                </p>
+                <p class="text-xs mt-1" style="color: var(--text-tertiary);">{{ item.errors[0].message if item.errors else 'Unknown selector error' }}</p>
+                {% if item.langfuse_trace_url %}
+                <a href="{{ item.langfuse_trace_url }}" target="_blank" rel="noopener noreferrer"
+                   class="inline-block text-xs mt-1 underline" style="color: var(--text-primary);">
+                    Open trace
+                </a>
+                {% endif %}
+                {% else %}
                 <p class="text-sm" style="color: var(--text-primary);">{{ item.scrape.status }} · {{ item.title or 'Unknown role' }}</p>
                 <p class="text-xs mt-1" style="color: var(--text-tertiary);">
                     {{ item.scrape.last_error.message if item.scrape and item.scrape.last_error else 'Unknown error' }}
                 </p>
+                {% if item.langfuse_trace_url %}
+                <a href="{{ item.langfuse_trace_url }}" target="_blank" rel="noopener noreferrer"
+                   class="inline-block text-xs mt-1 underline" style="color: var(--text-primary);">
+                    Open trace
+                </a>
+                {% endif %}
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -51,7 +81,26 @@
         <p class="text-sm mt-3" style="color: var(--text-tertiary);">No public Langfuse URL configured</p>
         {% endif %}
         <p class="text-xs mt-3" style="color: var(--text-secondary);">Latest search run: <code>{{ langfuse.latest_search_run_session_id or '—' }}</code></p>
+        {% if langfuse.latest_search_trace_url %}
+        <a href="{{ langfuse.latest_search_trace_url }}" target="_blank" rel="noopener noreferrer"
+           class="block text-xs mt-1 underline" style="color: var(--text-primary);">
+            Open latest search trace
+        </a>
+        {% endif %}
         <p class="text-xs mt-1" style="color: var(--text-secondary);">Latest scrape run: <code>{{ langfuse.latest_scrape_run_session_id or '—' }}</code></p>
+        {% if langfuse.latest_scrape_trace_url %}
+        <a href="{{ langfuse.latest_scrape_trace_url }}" target="_blank" rel="noopener noreferrer"
+           class="block text-xs mt-1 underline" style="color: var(--text-primary);">
+            Open latest scrape trace
+        </a>
+        {% endif %}
+        <p class="text-xs mt-1" style="color: var(--text-secondary);">Latest selector run: <code>{{ langfuse.latest_selector_run_session_id or '—' }}</code></p>
+        {% if langfuse.latest_selector_trace_url %}
+        <a href="{{ langfuse.latest_selector_trace_url }}" target="_blank" rel="noopener noreferrer"
+           class="block text-xs mt-1 underline" style="color: var(--text-primary);">
+            Open latest selector trace
+        </a>
+        {% endif %}
         <p class="text-xs mt-1" style="color: var(--text-secondary);">Latest hit session: <code>{{ langfuse.latest_hit_session_id or '—' }}</code></p>
     </div>
 </div>

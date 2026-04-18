@@ -113,7 +113,7 @@ jobs:
           - name: layer5-null
             paths: tests/unit/test_layer5_null_handling.py
           - name: layer6-generators
-            paths: tests/unit/test_layer6_cv_generator.py tests/unit/test_layer6_cv_generator_v2.py tests/unit/test_layer6_markdown_cv_generator.py
+            paths: tests/unit/test_layer6_cv_generator_v2.py tests/unit/test_layer6_markdown_cv_generator.py
           - name: layer6-cover-letter
             paths: tests/unit/test_layer6_cover_letter_generator.py tests/unit/test_layer6_cover_letter_generator_v2.py tests/unit/test_layer6_cover_letter_improvements.py
           - name: layer6-outreach

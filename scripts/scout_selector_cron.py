@@ -44,6 +44,7 @@ from src.common.dedupe import generate_dedupe_key, consolidate_by_location
 from src.common.telegram import send_telegram
 from src.common.blacklist import filter_blacklisted
 from src.common.rule_scorer import is_non_english_jd
+from src.pipeline.selector_scheduler import SelectorFeatureFlags, SelectorScheduler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -451,6 +452,12 @@ def main():
         action="store_true",
         help="Enable debug logging",
     )
+    parser.add_argument(
+        "--scheduled-for",
+        type=str,
+        default=None,
+        help="Canonical schedule window ISO timestamp for native selector scheduling",
+    )
     args = parser.parse_args()
 
     if args.verbose:
@@ -459,6 +466,34 @@ def main():
     logger.info("=" * 60)
     logger.info(f"Scout Selector started at {datetime.now(timezone.utc).isoformat()}")
     logger.info("=" * 60)
+
+    selector_flags = SelectorFeatureFlags.from_env()
+    selector_flags.validate()
+    scheduled_for = (
+        datetime.fromisoformat(args.scheduled_for).astimezone(timezone.utc)
+        if args.scheduled_for
+        else datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    )
+    trigger_mode = "manual" if args.scheduled_for or args.dry_run else "timer"
+    if selector_flags.shadow_compare_main or selector_flags.enable_native_main:
+        scheduler = SelectorScheduler(get_db())
+        if selector_flags.shadow_compare_main:
+            scheduled = scheduler.schedule_main_run(
+                scheduled_for=scheduled_for,
+                trigger_mode="shadow_compare",
+            )
+            logger.info("Scheduled shadow main selector run: %s", scheduled["run"]["run_id"])
+        if selector_flags.enable_native_main:
+            scheduled = scheduler.schedule_main_run(
+                scheduled_for=scheduled_for,
+                trigger_mode=trigger_mode,
+            )
+            logger.info("Scheduled native main selector run: %s", scheduled["run"]["run_id"])
+            return
+
+    if not selector_flags.enable_legacy_main_jsonl:
+        logger.info("Legacy main selector disabled and native main selector not owning this window. Exiting.")
+        return
 
     # Step 0: Purge old discarded entries (>3 days) and stale pool entries (>48h)
     purged = _purge_old_discarded()

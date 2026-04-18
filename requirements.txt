@@ -27,7 +27,8 @@ gspread>=5.12.0
 python-dotenv>=1.0.0
 tenacity>=8.2.0
 json-repair>=0.30.0  # Fix malformed LLM JSON outputs
-importlib-metadata>=4.0.0,<5.0.0  # Backport for Python 3.9 compatibility
+importlib-metadata>=6.0.0; python_version < "3.10"  # Backport only for older runtimes
+langfuse>=3.0.0  # Search observability for runnerless pipeline rollout
 
 # Optional: Testing
 pytest>=8.0.0

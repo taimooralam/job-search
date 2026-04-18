@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Entry point for the shared legacy JSONL scraper."""
+"""CLI wrapper for the iteration-3 native selector worker."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-from src.pipeline.legacy_jsonl_scraper import main  # noqa: E402
+from src.pipeline.selector_worker import main
 
 
 if __name__ == "__main__":

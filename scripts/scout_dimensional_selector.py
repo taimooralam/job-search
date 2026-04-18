@@ -48,6 +48,7 @@ from src.common.blacklist import filter_blacklisted
 from src.common.rule_scorer import is_non_english_jd
 from src.common.dedupe import generate_dedupe_key, normalize_for_dedupe
 from src.common.telegram import send_telegram
+from src.pipeline.selector_scheduler import SelectorFeatureFlags, SelectorScheduler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -356,6 +357,12 @@ def main():
     parser.add_argument("--profile", required=True, help="Profile name from selector_profiles.yaml")
     parser.add_argument("--dry-run", action="store_true", help="Don't insert or trigger pipeline")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument(
+        "--scheduled-for",
+        type=str,
+        default=None,
+        help="Canonical schedule window ISO timestamp for native selector scheduling",
+    )
     args = parser.parse_args()
 
     if args.verbose:
@@ -373,6 +380,39 @@ def main():
     logger.info(f"  {profile.get('description', '')}")
     logger.info(f"  Quota: {quota}, Patterns: {len(patterns)}, Boosts: {boosts}")
     logger.info("=" * 60)
+
+    selector_flags = SelectorFeatureFlags.from_env()
+    selector_flags.validate()
+    scheduled_for = (
+        datetime.fromisoformat(args.scheduled_for).astimezone(timezone.utc)
+        if args.scheduled_for
+        else datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    )
+    trigger_mode = "manual" if args.scheduled_for or args.dry_run else "timer"
+    if selector_flags.shadow_compare_profiles or selector_flags.enable_native_profiles:
+        uri = os.getenv("MONGODB_URI")
+        if not uri:
+            raise RuntimeError("MONGODB_URI not set")
+        scheduler = SelectorScheduler(MongoClient(uri)["jobs"])
+        if selector_flags.shadow_compare_profiles:
+            scheduled = scheduler.schedule_profile_run(
+                profile_name=args.profile,
+                scheduled_for=scheduled_for,
+                trigger_mode="shadow_compare",
+            )
+            logger.info("Scheduled shadow profile selector run: %s", scheduled["run"]["run_id"])
+        if selector_flags.enable_native_profiles:
+            scheduled = scheduler.schedule_profile_run(
+                profile_name=args.profile,
+                scheduled_for=scheduled_for,
+                trigger_mode=trigger_mode,
+            )
+            logger.info("Scheduled native profile selector run: %s", scheduled["run"]["run_id"])
+            return
+
+    if not selector_flags.enable_legacy_profile_pool:
+        logger.info("Legacy profile selector disabled and native profile selector not owning this window. Exiting.")
+        return
 
     # Step 1: Read pool
     pool = read_pool()

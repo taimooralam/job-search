@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-19 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2, Keyword Front-Loading P1.3 NEW), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), Cover Letter Integration into CV Generation Partial Pipeline (NEW - 2025-12-13), Extraction Consolidation - Claude Code CLI as primary extractor (2025-12-19), 1700+ total tests passing
+**Last Updated**: 2026-04-19 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 3 with Mongo-native search, scrape, and selector-family execution, while preenrich still claims from `level-2`
 
 ---
 
@@ -18,6 +18,225 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
                    └──► LangGraph Pipeline
                         (10 nodes, 7 layers)
 ```
+
+---
+
+## Scout Pipeline Migration (2026-04-18)
+
+The scout ingestion path is mid-migration away from cron-to-JSONL orchestration and toward Mongo-backed host workers on the VPS.
+
+### Current Migration Slice
+
+```text
+search cron
+  -> search_runs
+  -> scout_search_hits
+  -> work_items(task_type=scrape.hit, consumer_mode=legacy_jsonl|native_scrape)
+
+native scrape worker (iteration 2)
+  -> claims work_items where consumer_mode=native_scrape
+  -> scrape_runs
+  -> scout_search_hits.scrape
+  -> scout_search_hits.scrape.selector_payload
+  -> selector-compatible scored.jsonl
+  -> selector-compatible level-1
+
+native selector family (iteration 3)
+  -> selector_runs
+  -> work_items(task_type=select.run.main|select.run.profile, consumer_mode=native_selector)
+  -> scout_search_hits.selection
+  -> level-1 / level-2 writes
+  -> level-2.lifecycle="selected"
+  -> existing preenrich lease claimant
+
+legacy rollback paths
+  -> iteration-1 legacy bridge
+  -> queue.jsonl
+  -> old scraper cron
+  -> legacy selector reads scored.jsonl
+  -> legacy profile selectors read scored_pool.jsonl
+```
+
+### Control-Plane Rule
+
+- `scout_search_hits` is authoritative for discovery plus scrape-phase state.
+- `work_items` is authoritative for queue ownership, leases, retries, and completion semantics.
+- `scrape_runs` is authoritative for native scrape worker tick visibility.
+- `selector_runs` is authoritative for native selector run visibility and replay.
+- `queue.jsonl`, `scored.jsonl`, and `scored_pool.jsonl` are rollback and diagnostic surfaces only. They are no longer the primary selector decision truth.
+
+### Operator UI Principles
+
+These are architecture constraints, not page-local preferences.
+
+- Operator and debugging surfaces must be search-first. A global query plus structured filters comes before drill-down browsing.
+- Stage heartbeat and current-state visibility must come before forensic detail. The first screen must answer whether the pipeline is alive now.
+- Heavy detail must be progressively disclosed. Lists do not preload raw payloads, full trace metadata, or large nested state.
+- State labels must remain semantically honest:
+  - scraped != selector eligible
+  - inserted_level2_only != selected_for_preenrich
+  - profile_selected != main-selector-selected
+  - selected_for_preenrich != preenrich completed
+- New operational pages must prefer the existing Flask/Jinja/HTMX architecture unless a stronger client-side layer is justified by a concrete limitation.
+
+### Observability Rules
+
+- Langfuse is the structured observability sink for native host-side stages. It is not the orchestration plane and it is not the universal stdout log backend.
+- Native search, scrape, and selector stages must emit run-level root traces when Langfuse is configured.
+- Cross-stage job correlation must be stable and persisted using the existing hit/job correlation identifiers.
+- Run-level traces and job-level correlation are both required:
+  - run traces explain one batch/tick/window
+  - job correlation explains one job across stages
+- Do not collapse the whole scout pipeline into a single job-scoped `session_id` model. Sessions may group traces, but run-level traces remain required for operational debugging.
+- Failure paths must be traceable from Mongo/UI state to Langfuse when Langfuse is enabled.
+
+### Operational Query Discipline
+
+- Every operator-facing Mongo query path must have an explicit query shape, projection, sort, and pagination strategy.
+- Hot operational list views must not rely on full collection scans or `find().sort(...)` over the full collection.
+- Projection is mandatory for list views. Full documents are reserved for detail/expand paths.
+- Lazy loading is mandatory for raw payloads, verbose nested state, and trace-heavy detail.
+- New hot query paths ship with supporting indexes in the same slice that introduces the query. Indexing is not a later cleanup step.
+- Cursor/keyset pagination is preferred for growing operational collections.
+
+### Selector Contract
+
+Iteration 3 migrates the selector family off file-authoritative inputs without changing the downstream preenrich claim contract.
+
+Native selector truth:
+
+- `scout_search_hits.scrape.selector_payload` is the selector-grade input record.
+- `scout_search_hits.selection.main` holds main-selector decisions.
+- `scout_search_hits.selection.pool` holds profile-pool availability and expiry.
+- `scout_search_hits.selection.profiles.<profile>` holds per-profile decisions.
+- `selector_runs` holds run-level state, stats, errors, and optional shadow diffs.
+
+Stable downstream boundary:
+
+- tier C+ main-selector outputs and all profile-selector outputs still land in `level-2`
+- `lifecycle="selected"` plus `selected_at` is still the only preenrich claim signal
+- `src/preenrich/lease.py` is unchanged in iteration 3
+
+### Compatibility Boundary
+
+Compatibility remains in place for safe cutover and rollback:
+
+- scrape can still write `scored.jsonl` via `SCOUT_SCRAPE_WRITE_SCORED_JSONL_COMPAT`
+- native main selector can still write `scored_pool.jsonl` via `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT`
+- legacy main selector can still own the scheduled window via `SCOUT_SELECTOR_ENABLE_LEGACY_MAIN_JSONL`
+- legacy profile selectors can still own profile windows via `SCOUT_SELECTOR_ENABLE_LEGACY_PROFILE_POOL`
+
+### Native Scrape Semantics
+
+For `work_items.task_type="scrape.hit"`:
+
+- `pending` = available for native scrape
+- `leased` = claimed by a worker
+- `done` = scrape succeeded and selector-compatible outputs succeeded
+- `failed` = retryable queue state
+- `deadletter` = retries exhausted or terminal failure
+
+For `scout_search_hits.scrape.status`:
+
+- `pending`
+- `leased`
+- `skipped_blacklist`
+- `skipped_title_filter`
+- `succeeded`
+- `retry_pending`
+- `deadletter`
+
+`scraped` is not the same as `selector_handoff_written`. The UI exposes those as separate concepts.
+
+### Native Selector Semantics
+
+For `work_items.task_type="select.run.main|select.run.profile"`:
+
+- `pending` = scheduled selector run not yet claimed
+- `leased` = one native selector worker owns the run
+- `done` = selector run completed and `selector_runs.status=completed`
+- `failed` = retryable run failure
+- `deadletter` = retries exhausted or run invalid
+
+For `scout_search_hits.selection.main.decision`:
+
+- `selected_for_preenrich`
+- `inserted_level2_only`
+- `inserted_level1`
+- `duplicate_db`
+- `duplicate_cross_location`
+- `filtered_blacklist`
+- `filtered_non_english`
+- `filtered_score`
+
+For `scout_search_hits.selection.pool.status`:
+
+- `available`
+- `consumed`
+- `expired`
+- `not_applicable`
+
+For `scout_search_hits.selection.profiles.<profile>.decision`:
+
+- `profile_selected`
+- `duplicate_db`
+- `filtered_location`
+- `filtered_non_english`
+- `filtered_score`
+- `discarded_quota`
+
+### Rollout Flags
+
+Search ownership:
+
+- `SCOUT_SEARCH_SCRAPE_CONSUMER_MODE=legacy_jsonl|native_scrape`
+- `SCOUT_DISABLE_ITERATION1_LEGACY_HANDOFF_BRIDGE`
+
+Native scrape worker:
+
+- `SCOUT_SCRAPE_ENABLE_NATIVE_WORKER`
+- `SCOUT_SCRAPE_USE_MONGO_WORK_ITEMS`
+- `SCOUT_SCRAPE_ENABLE_LEGACY_JSONL_CONSUMER`
+- `SCOUT_SCRAPE_WRITE_SCORED_JSONL`
+- `SCOUT_SCRAPE_WRITE_SCORED_JSONL_COMPAT`
+- `SCOUT_SCRAPE_WRITE_LEVEL1`
+- `SCOUT_SCRAPE_SELECTOR_COMPAT_MODE`
+- `SCOUT_SCRAPE_PERSIST_SELECTOR_PAYLOAD`
+
+Native selector family:
+
+- `SCOUT_SELECTOR_ENABLE_NATIVE_MAIN`
+- `SCOUT_SELECTOR_ENABLE_NATIVE_PROFILES`
+- `SCOUT_SELECTOR_USE_MONGO_INPUT`
+- `SCOUT_SELECTOR_ENABLE_LEGACY_MAIN_JSONL`
+- `SCOUT_SELECTOR_ENABLE_LEGACY_PROFILE_POOL`
+- `SCOUT_SELECTOR_SHADOW_COMPARE_MAIN`
+- `SCOUT_SELECTOR_SHADOW_COMPARE_PROFILES`
+- `SCOUT_SELECTOR_PREENRICH_HANDOFF_MODE=selected_lifecycle|legacy_runner`
+- `SCOUT_SELECTOR_DISABLE_RUNNER_POST`
+- `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT`
+
+Safe defaults keep legacy ownership on and native ownership off.
+
+### Rollback Rule
+
+If native selector causes parity or downstream problems:
+
+1. set `SCOUT_SELECTOR_ENABLE_NATIVE_MAIN=false`
+2. set `SCOUT_SELECTOR_ENABLE_NATIVE_PROFILES=false`
+3. set `SCOUT_SELECTOR_ENABLE_LEGACY_MAIN_JSONL=true`
+4. set `SCOUT_SELECTOR_ENABLE_LEGACY_PROFILE_POOL=true`
+5. keep `SCOUT_SCRAPE_WRITE_SCORED_JSONL_COMPAT=true`
+6. keep `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT=true`
+
+If native scrape also needs rollback:
+
+1. set `SCOUT_SEARCH_SCRAPE_CONSUMER_MODE=legacy_jsonl`
+2. set `SCOUT_DISABLE_ITERATION1_LEGACY_HANDOFF_BRIDGE=false`
+3. set `SCOUT_SCRAPE_ENABLE_NATIVE_WORKER=false`
+4. set `SCOUT_SCRAPE_ENABLE_LEGACY_JSONL_CONSUMER=true`
+
+This restores the iteration-1/2 legacy ownership chain without code changes.
 
 ---
 

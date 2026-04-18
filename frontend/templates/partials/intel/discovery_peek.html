@@ -1,0 +1,57 @@
+{% if hit %}
+{% set scrape = hit.scrape or {} %}
+{% set selection = hit.selection or {} %}
+{% set main = selection.main or {} %}
+{% set pool = selection.pool or {} %}
+{% set level2 = hit.level2_state or {} %}
+{% set trace_links = hit.trace_links or {} %}
+<div class="space-y-3">
+    <div>
+        <p class="text-sm font-medium" style="color: var(--text-primary);">{{ hit.title or 'Untitled role' }}</p>
+        <p class="text-xs mt-1" style="color: var(--text-tertiary);">{{ hit.company or 'Unknown company' }}{% if hit.location %} · {{ hit.location }}{% endif %}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Iteration 1</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ hit.search_profile or '—' }}</p>
+            <p class="mt-1" style="color: var(--text-secondary);">{{ hit.search_region or '—' }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">Seen {{ hit.times_seen or 0 }}x</p>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Iteration 2</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ scrape.status or 'not-started' }}</p>
+            <p class="mt-1" style="color: var(--text-secondary);">Score {{ scrape.score if scrape.score is not none else '—' }} · {{ scrape.tier or '—' }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">{{ scrape.detected_role or 'role unknown' }}</p>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Iteration 3</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ main.decision or 'pending' }}</p>
+            <p class="mt-1" style="color: var(--text-secondary);">Pool {{ pool.status or '—' }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">L2 {{ level2.lifecycle or 'not-linked' }}</p>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Traceability</p>
+            <p class="mt-2 break-all" style="color: var(--text-secondary);">{{ hit.correlation_id or '—' }}</p>
+            {% if trace_links.search_trace_url or trace_links.scrape_trace_url or trace_links.selector_trace_url %}
+            <div class="mt-2 space-y-1">
+                {% if trace_links.search_trace_url %}
+                <a href="{{ trace_links.search_trace_url }}" target="_blank" rel="noopener noreferrer" class="underline" style="color: var(--text-primary);">Search trace</a>
+                {% endif %}
+                {% if trace_links.scrape_trace_url %}
+                <a href="{{ trace_links.scrape_trace_url }}" target="_blank" rel="noopener noreferrer" class="block underline" style="color: var(--text-primary);">Scrape trace</a>
+                {% endif %}
+                {% if trace_links.selector_trace_url %}
+                <a href="{{ trace_links.selector_trace_url }}" target="_blank" rel="noopener noreferrer" class="block underline" style="color: var(--text-primary);">Selector trace</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="mt-1" style="color: var(--text-tertiary);">Trace URLs appear when Langfuse is configured.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-sm" style="color: var(--text-tertiary);">
+    Hover or click a result row to preview its stage state, queue position, and traceability.
+</div>
+{% endif %}

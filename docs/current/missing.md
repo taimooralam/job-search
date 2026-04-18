@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-01-11 (Annotation Suggestion System backend complete, Repository Migration phases 1,4-6 done)
+**Last Updated**: 2026-04-19 (Discovery dashboard search-first redesign, trace-link surfacing, and reusable architecture constraints documented)
 
 > **See also**: `docs/current/architecture.md` | `bugs.md`
 
@@ -17,6 +17,225 @@
 | **Total** | **93** (74 fixed/documented, 15 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2026-04-19): Discovery Dashboard Search-First Redesign
+
+**STATUS: IMPLEMENTED**
+
+**Scope**: Make the discovery dashboard operationally clear and scalable for the live iteration-1/2/3 scout pipeline while documenting the resulting UI, tracing, and indexing rules as durable architecture constraints.
+
+**Implemented**
+- Reworked the discovery page around a top heartbeat strip for:
+  - iteration 1 search/hit/work-item liveness
+  - iteration 2 native scrape liveness
+  - iteration 3 selector/lifecycle handoff liveness
+- Added a search-first toolbar with structured filters and server-side result fetching.
+- Replaced broad “latest hits” loading with filtered, projected result pages plus lazy “quick peek” and full detail views.
+- Added Langfuse trace URL surfacing on search/scrape/selector run panels and hit detail views.
+- Persisted Langfuse trace ids/URLs on run documents when available.
+- Added supporting Mongo indexes for hot operator-facing query paths on:
+  - `scout_search_hits`
+  - `work_items`
+  - `selector_runs`
+- Documented reusable architecture constraints in:
+  - `docs/current/architecture.md`
+  - `plans/runnerless-vps-mongo-skill-pipeline.md`
+
+**Open Follow-Up**
+- If discovery search volume grows enough that regex/text-search fallback becomes a measurable bottleneck, promote the search path further toward a dedicated Mongo text-search or Atlas Search implementation with benchmark-backed query plans.
+
+---
+
+### Today's Session (2026-04-18): Iteration 3 Mongo-Native Selector Family
+
+**STATUS: IMPLEMENTED**
+
+**Scope**: Migrate the selector family off file-authoritative inputs and onto Mongo-authoritative selector payload/state, without changing the existing preenrich claim contract.
+
+**Implemented**
+- Extended native scrape success writes so `scout_search_hits.scrape.selector_payload` now persists selector-grade input fields for each successful hit, including score, tier, detected role metadata, scoring breakdown, and `scored_at`.
+- Added selector-state scaffolding on `scout_search_hits.selection` for:
+  - main selector decisions
+  - profile pool availability and expiry
+  - per-profile selector decisions
+- Added `selector_runs` plus run-level `work_items` for:
+  - `select.run.main`
+  - `select.run.profile`
+- Added idempotent selector scheduling and stable run IDs keyed by schedule window and profile.
+- Added a Mongo-native selector worker in `src/pipeline/selector_worker.py` that:
+  - preserves batch/global selector semantics
+  - preserves level split behavior (`level-1` for low tier, `level-2` for C+)
+  - preserves top-N preenrich handoff via `level-2.lifecycle="selected"` plus `selected_at`
+  - keeps profile selectors consuming a durable Mongo pool instead of `scored_pool.jsonl`
+- Extracted shared selector behavior into `src/pipeline/selector_common.py` so native and parity flows reuse the same ranking, filtering, and dedupe semantics.
+- Added selector-stage Langfuse instrumentation in `src/pipeline/tracing.py` with per-run session IDs and stage spans for candidate query, filters, dedupe, write phases, and retry/deadletter transitions.
+- Added shadow-compare support for main and profile selectors with run-level diff persistence on `selector_runs`.
+- Upgraded the discovery/debug dashboard to expose:
+  - main selector decisions per hit
+  - profile selector decisions per hit
+  - pool availability state
+  - recent selector runs
+  - selector failures and deadletters
+  - linked `level-2` presence and lifecycle state
+  - selector Langfuse session visibility
+
+**Flags Added**
+- `SCOUT_SELECTOR_ENABLE_NATIVE_MAIN`
+- `SCOUT_SELECTOR_ENABLE_NATIVE_PROFILES`
+- `SCOUT_SELECTOR_USE_MONGO_INPUT`
+- `SCOUT_SELECTOR_ENABLE_LEGACY_MAIN_JSONL`
+- `SCOUT_SELECTOR_ENABLE_LEGACY_PROFILE_POOL`
+- `SCOUT_SELECTOR_SHADOW_COMPARE_MAIN`
+- `SCOUT_SELECTOR_SHADOW_COMPARE_PROFILES`
+- `SCOUT_SELECTOR_PREENRICH_HANDOFF_MODE`
+- `SCOUT_SELECTOR_DISABLE_RUNNER_POST`
+- `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT`
+- `SCOUT_SCRAPE_PERSIST_SELECTOR_PAYLOAD`
+- `SCOUT_SCRAPE_WRITE_SCORED_JSONL_COMPAT`
+
+**Behavior Guarantees**
+- `scored.jsonl`, `scored_pool.jsonl`, and discarded-file outputs are now compatibility/diagnostic surfaces, not the primary selector truth.
+- Native selector runs are owned at the run/window level, not per hit, so batch semantics are preserved.
+- Safe flag validation rejects configurations that would let native and legacy selector paths own the same scheduled window.
+- Preenrich is still isolated behind the existing `level-2.lifecycle="selected"` contract; `src/preenrich/lease.py` remains unchanged.
+
+**Targeted Verification**
+- Scrape payload persistence: `tests/unit/pipeline/test_scrape_iteration2.py`
+- Native selector worker / scheduler / parity coverage: `tests/unit/pipeline/test_selector_iteration3.py`
+- Discovery/debug selector UI coverage: `frontend/tests/test_discovery_dashboard.py`
+- Iteration-1 dashboard/discovery regression coverage: `tests/unit/pipeline/test_discovery_iteration1.py`
+
+**Operator Rollout Notes**
+- Keep legacy selector ownership enabled by default during initial deploy.
+- Enable `SCOUT_SCRAPE_PERSIST_SELECTOR_PAYLOAD=true` before enabling native selector ownership so newly scraped hits become selector-eligible in Mongo.
+- Cut over main and profile selectors independently using `SCOUT_SELECTOR_ENABLE_NATIVE_MAIN` and `SCOUT_SELECTOR_ENABLE_NATIVE_PROFILES`.
+- Use `SCOUT_SELECTOR_SHADOW_COMPARE_MAIN` and `SCOUT_SELECTOR_SHADOW_COMPARE_PROFILES` first on live schedule windows to inspect parity before allowing native writes.
+- Keep `SCOUT_SCRAPE_WRITE_SCORED_JSONL_COMPAT=true` and `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT=true` during early rollout for rollback safety.
+
+**Rollback Notes**
+- Disable native selector ownership:
+  - `SCOUT_SELECTOR_ENABLE_NATIVE_MAIN=false`
+  - `SCOUT_SELECTOR_ENABLE_NATIVE_PROFILES=false`
+- Re-enable legacy selector ownership:
+  - `SCOUT_SELECTOR_ENABLE_LEGACY_MAIN_JSONL=true`
+  - `SCOUT_SELECTOR_ENABLE_LEGACY_PROFILE_POOL=true`
+- Keep compatibility file writes on:
+  - `SCOUT_SCRAPE_WRITE_SCORED_JSONL_COMPAT=true`
+  - `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT=true`
+
+**Deferred To Iteration 4+**
+- Migrating preenrich onto `work_items`
+- Migrating CV generation, scoring/review/publish, or broader downstream stages
+- Removing all JSONL compatibility paths after parity is proven in production
+- Broader queue redesign outside selector needs
+
+---
+
+### Today's Session (2026-04-18): Iteration 1 Discovery Pipeline Foundation
+
+**STATUS: IMPLEMENTED**
+
+**Scope**: First safe production slice of the runnerless VPS Mongo skill pipeline, while preserving the live search -> legacy scraper handoff.
+
+**Implemented**
+- Added Mongo-backed discovery state under `search_runs`, `scout_search_hits`, and `work_items`.
+- Added minimal queue primitives in `src/pipeline/queue.py` for idempotent enqueue, lease-based claim, heartbeat, and done/failed/deadletter transitions.
+- Added temporary legacy compatibility bridge in `src/pipeline/legacy_scrape_handoff.py` that writes compatible entries into the existing `queue.jsonl` path using the current queue writer.
+- Refactored search orchestration into `src/pipeline/discovery/scout_search_pipeline.py`, with both `scripts/scout_linkedin_cron.py` and `n8n/skills/scout-jobs/scripts/scout_linkedin_cron.py` reduced to thin entrypoints.
+- Added optional search-side Langfuse integration points in `src/pipeline/tracing.py`; the UI remains functional without Langfuse.
+- Added a new Flask/HTMX discovery/debug dashboard:
+  - `GET /dashboard/discovery`
+  - `GET /dashboard/discovery/stats`
+  - `GET /dashboard/discovery/rows`
+  - `GET /dashboard/discovery/runs`
+  - `GET /dashboard/discovery/<hit_id>`
+  - `GET /dashboard/discovery/queue`
+- Added `frontend/repositories/discovery_repository.py` with explicit Mongo URI precedence:
+  - `DISCOVERY_MONGODB_URI`
+  - else `VPS_MONGODB_URI`
+  - else `MONGODB_URI`
+
+**Repo Structure Decision**
+- `src/pipeline/` is now the shared host-side control plane for the parent runnerless plan.
+- Search/discovery orchestration lives under `src/pipeline/discovery/`.
+- `scripts/` and `n8n/skills/.../scripts/` are moving toward thin operator entrypoints instead of carrying pipeline orchestration logic directly.
+- `n8n/skills/` remains the skill asset/integration surface, while queue/state transitions migrate into `src/pipeline/`.
+
+**Behavior Guarantees**
+- Iteration 1 keeps the current scraper alive by preserving the existing `queue.jsonl` contract through the bridge.
+- Work-item `done` for `scrape.hit` means “handed off to legacy queue”, not “scraped”.
+- Direct JSONL enqueue remains enabled by default for local safety.
+- Unsafe cutover flag combinations are rejected to avoid starving the current scraper.
+
+**Targeted Verification**
+- Backend queue/discovery tests: `tests/unit/pipeline/test_discovery_iteration1.py`
+- Frontend discovery route tests: `frontend/tests/test_discovery_dashboard.py`
+
+**Deferred To Iteration 2+**
+- Native scrape worker migration
+- Selector migration off `scored.jsonl`
+- Round-robin lane cursor / `queue_state`
+- Preenrich, CV, scoring, review, and publish host workers
+- Removal of `queue.jsonl`
+
+---
+
+### Today's Session (2026-04-18): Iteration 2 Mongo-Native Scrape Execution
+
+**STATUS: IMPLEMENTED**
+
+**Scope**: Replace the iteration-1 legacy scrape handoff as the primary scrape path with a Mongo-native worker while preserving the current selector boundary.
+
+**Implemented**
+- Added shared scrape parity logic in `src/pipeline/scrape_common.py` and moved the legacy JSONL scraper entrypoints onto a shared runner in `src/pipeline/legacy_jsonl_scraper.py`.
+- Synced root `src/services/linkedin_scraper.py` and `src/common/proxy_pool.py` with the current scout behavior used on the VPS so native and legacy paths parse the same LinkedIn signals and queue/proxy locations.
+- Extended `scout_search_hits` with an authoritative `scrape` subdocument and added `scrape_runs` for native worker visibility.
+- Extended `work_items` for iteration-2 result tracking, partial compatibility-write progress, and native scrape lease/claim lookups.
+- Added `src/pipeline/scrape_worker.py`:
+  - claims `scrape.hit` items with `consumer_mode=native_scrape`
+  - preserves blacklist/title-filter skips
+  - reuses the shared scrape-and-score logic
+  - writes authoritative scrape state to Mongo
+  - writes selector-compatible `scored.jsonl`
+  - upserts selector-compatible `level-1`
+  - retries transient failures and deadletters exhausted ones
+- Added native scrape Langfuse hooks in `src/pipeline/tracing.py`.
+- Upgraded the discovery dashboard repository/routes/templates so the page now shows:
+  - search runs
+  - scrape runs
+  - real scrape status
+  - selector handoff status
+  - score / tier / detected role
+  - retry/deadletter visibility
+
+**Flags Added**
+- `SCOUT_SCRAPE_ENABLE_NATIVE_WORKER`
+- `SCOUT_SCRAPE_USE_MONGO_WORK_ITEMS`
+- `SCOUT_SCRAPE_ENABLE_LEGACY_JSONL_CONSUMER`
+- `SCOUT_SCRAPE_WRITE_SCORED_JSONL`
+- `SCOUT_SCRAPE_WRITE_LEVEL1`
+- `SCOUT_SCRAPE_SELECTOR_COMPAT_MODE`
+- `SCOUT_SEARCH_SCRAPE_CONSUMER_MODE`
+- `SCOUT_DISABLE_ITERATION1_LEGACY_HANDOFF_BRIDGE`
+
+**Behavior Guarantees**
+- `work_items.status=done` for `scrape.hit` now means scrape succeeded and selector-compatible outputs succeeded.
+- `scraped` and `selector_handoff_written` are separate states in Mongo and the UI.
+- Native and legacy consumers are split by `consumer_mode` so they do not both own the same live work item.
+- Retries do not silently duplicate `level-1` upserts or `scored.jsonl` writes once the compatibility write has already been persisted in Mongo.
+
+**Targeted Verification**
+- Backend scrape worker tests: `tests/unit/pipeline/test_scrape_iteration2.py`
+- Frontend discovery route tests: `frontend/tests/test_discovery_dashboard.py`
+- Iteration-1 regression coverage: `tests/unit/pipeline/test_discovery_iteration1.py`
+
+**Deferred To Iteration 3+**
+- Selector migration off `scored.jsonl`
+- Removal of `scored.jsonl` and `scored_pool.jsonl`
+- Preenrich / CV / review / publish migration
+- Broader queue scheduling beyond the current scrape lane
 
 ---
 

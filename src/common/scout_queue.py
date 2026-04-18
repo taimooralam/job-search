@@ -21,7 +21,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +223,40 @@ def append_scored(jobs: List[Dict]) -> int:
 
     logger.info(f"Appended {len(jobs)} scored jobs to {scored_file}")
     return len(jobs)
+
+
+def scored_contains_job(job_id: str) -> bool:
+    """Check whether scored.jsonl already contains a job_id."""
+    queue_dir = get_queue_dir()
+    scored_file = queue_dir / "scored.jsonl"
+    with _file_lock(scored_file, exclusive=False):
+        for entry in _read_jsonl(scored_file):
+            if entry.get("job_id") == job_id:
+                return True
+    return False
+
+
+def append_scored_unique(jobs: List[Dict]) -> int:
+    """Append scored jobs only when their job_id is not already staged."""
+    if not jobs:
+        return 0
+
+    queue_dir = get_queue_dir()
+    scored_file = queue_dir / "scored.jsonl"
+
+    with _file_lock(scored_file, exclusive=True):
+        existing_ids = {
+            entry.get("job_id")
+            for entry in _read_jsonl(scored_file)
+            if entry.get("job_id")
+        }
+        new_jobs = [job for job in jobs if job.get("job_id") and job.get("job_id") not in existing_ids]
+        if new_jobs:
+            _append_jsonl(scored_file, new_jobs)
+
+    if new_jobs:
+        logger.info(f"Appended {len(new_jobs)} unique scored jobs to {scored_file}")
+    return len(new_jobs)
 
 
 def read_and_clear_scored() -> List[Dict]:
