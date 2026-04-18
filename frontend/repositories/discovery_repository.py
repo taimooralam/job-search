@@ -94,27 +94,16 @@ class DiscoveryRepository:
         """Ensure the discovery dashboard's hot query indexes exist.
 
         On the VPS/backend code path we reuse the pipeline stores. On Vercel we
-        cannot rely on importing the full backend package layout, so we create
-        the small subset of indexes needed by the dashboard directly.
+        cannot rely on importing the full backend package layout, so we skip
+        index management and rely on the authoritative backend/VPS workers to
+        own Mongo index creation.
         """
         if SearchDiscoveryStore and WorkItemQueue and SelectorStore:
             SearchDiscoveryStore(self.db).ensure_indexes()
             WorkItemQueue(self.db).ensure_indexes()
             SelectorStore(self.db).ensure_indexes()
             return
-
-        self.search_hits.create_index([("last_seen_at", DESCENDING)], name="discovery_last_seen_idx")
-        self.search_hits.create_index([("first_seen_at", DESCENDING)], name="discovery_first_seen_idx")
-        self.search_hits.create_index([("search_profile", 1), ("last_seen_at", DESCENDING)], name="discovery_profile_last_seen_idx")
-        self.search_hits.create_index([("search_region", 1), ("last_seen_at", DESCENDING)], name="discovery_region_last_seen_idx")
-        self.search_hits.create_index([("scrape.status", 1), ("last_seen_at", DESCENDING)], name="discovery_scrape_status_last_seen_idx")
-        self.search_hits.create_index([("selection.main.decision", 1), ("last_seen_at", DESCENDING)], name="discovery_main_decision_last_seen_idx")
-        self.search_hits.create_index([("selection.pool.status", 1), ("last_seen_at", DESCENDING)], name="discovery_pool_status_last_seen_idx")
-        self.work_items.create_index([("task_type", 1), ("consumer_mode", 1), ("status", 1), ("updated_at", DESCENDING)], name="dashboard_work_items_status_updated_idx")
-        self.work_items.create_index([("task_type", 1), ("consumer_mode", 1), ("created_at", DESCENDING)], name="dashboard_work_items_created_idx")
-        self.work_items.create_index([("lane", 1), ("consumer_mode", 1), ("status", 1), ("available_at", 1), ("priority", 1), ("created_at", 1)], name="dashboard_work_items_lane_claim_idx")
-        self.selector_runs.create_index([("scheduled_for", DESCENDING)], name="dashboard_selector_runs_scheduled_idx")
-        self.selector_runs.create_index([("status", 1), ("scheduled_for", DESCENDING)], name="dashboard_selector_runs_status_scheduled_idx")
+        logger.info("Skipping discovery dashboard index management in frontend-only runtime")
 
     def get_stats(self, since: datetime) -> dict[str, int]:
         """Return top-level stats for the discovery dashboard."""
