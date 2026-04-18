@@ -4,12 +4,15 @@ Tests for pain_points stage (T9).
 Quality-gate: patch shape unchanged vs pre-refactor output from full_extraction_service.
 Verifies:
 - Provider routing
+- Codex primary happy path: provider_used="codex", provider_attempts length 1
+- Codex subprocess-fail path: fallback triggered, provider_fallback_reason set
 - Patch shape matches full_extraction_service._persist_results() fields
 - Missing JD text raises ValueError
 - PainPointMiner exception propagates as ValueError
 """
 
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -65,11 +68,6 @@ class TestPainPointsStageProtocol:
 
 
 class TestPainPointsStageProviderRouting:
-    def test_codex_raises_not_implemented(self):
-        ctx = _make_ctx(provider="codex")
-        with pytest.raises(NotImplementedError, match="codex provider"):
-            PainPointsStage().run(ctx)
-
     def test_unknown_provider_raises_value_error(self):
         ctx = _make_ctx(provider="vertex")
         with pytest.raises(ValueError, match="Unsupported provider"):
@@ -151,3 +149,84 @@ class TestPainPointsStageErrorHandling:
         ctx = _make_ctx()
         with pytest.raises(ValueError, match="PainPointMiner failed"):
             PainPointsStage().run(ctx)
+
+
+# ---------------------------------------------------------------------------
+# Codex provider tests (Phase 2b)
+# ---------------------------------------------------------------------------
+
+
+def _make_codex_result_pp(success: bool, result=None, error=None):
+    @dataclass
+    class _CR:
+        success: bool
+        result: Optional[dict]
+        error: Optional[str]
+        model: str = "gpt-5.4"
+        input_tokens: Optional[int] = None
+        output_tokens: Optional[int] = None
+
+    return _CR(success=success, result=result, error=error)
+
+
+class TestPainPointsCodexProvider:
+    @patch("src.preenrich.stages.base.CodexCLI")
+    def test_codex_happy_path(self, mock_codex_cls):
+        """
+        Codex provider happy path:
+          - provider_used="codex"
+          - provider_attempts length 1
+          - patch contains pain_points, strategic_needs, risks_if_unfilled, success_metrics
+        """
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result_pp(
+            success=True,
+            result={
+                "pain_points": ["High infra cost"],
+                "strategic_needs": ["ML platform"],
+                "risks_if_unfilled": ["Slow delivery"],
+                "success_metrics": ["Reduce latency 50%"],
+            },
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        stage = PainPointsStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4"
+        ctx.config.fallback_model = "claude-sonnet-4-5"
+        result = stage.run(ctx)
+
+        assert result.provider_used == "codex"
+        assert len(result.provider_attempts) == 1
+        assert result.provider_attempts[0]["outcome"] == "success"
+        assert "pain_points" in result.output
+        assert result.provider_fallback_reason is None
+
+    @patch("src.preenrich.stages.pain_points._claude_run_pain_points")
+    @patch("src.preenrich.stages.base.CodexCLI")
+    def test_codex_subprocess_fail_triggers_fallback(self, mock_codex_cls, mock_claude_pp):
+        """
+        Codex fail → Claude fallback:
+          - provider_used="claude"
+          - provider_attempts length 2
+          - provider_fallback_reason="error_subprocess"
+        """
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result_pp(
+            success=False, error="codex failed"
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        mock_claude_pp.return_value = dict(_MOCK_PAIN_POINTS_OUTPUT)
+
+        stage = PainPointsStage()
+        ctx = _make_ctx(provider="codex")
+        ctx.config.primary_model = "gpt-5.4"
+        ctx.config.fallback_model = "claude-sonnet-4-5"
+        result = stage.run(ctx)
+
+        assert result.provider_used == "claude"
+        assert len(result.provider_attempts) == 2
+        assert result.provider_attempts[0]["outcome"] == "error_subprocess"
+        assert result.provider_attempts[1]["outcome"] == "success"
+        assert result.provider_fallback_reason == "error_subprocess"
