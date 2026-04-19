@@ -9,6 +9,7 @@ from typing import Any, Iterable, Optional
 
 from bson import ObjectId
 from pymongo import ASCENDING
+from pymongo.errors import DuplicateKeyError
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo import ReturnDocument
@@ -133,7 +134,13 @@ class WorkItemQueue:
             "created_at": current_time,
             "updated_at": current_time,
         }
-        inserted = self.collection.insert_one(document)
+        try:
+            inserted = self.collection.insert_one(document)
+        except DuplicateKeyError:
+            existing = self.collection.find_one({"idempotency_key": idempotency_key})
+            if existing is None:
+                raise
+            return EnqueueResult(created=False, document=existing)
         document["_id"] = inserted.inserted_id
         return EnqueueResult(created=True, document=document)
 

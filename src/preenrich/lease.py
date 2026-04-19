@@ -56,6 +56,7 @@ def claim_one(
     result = db["level-2"].find_one_and_update(
         {
             "lifecycle": {"$in": ["selected", "stale"]},
+            "pre_enrichment.orchestration": {"$ne": "dag"},
             "$or": [
                 {"lease_expires_at": {"$lt": now}},
                 {"lease_expires_at": None},

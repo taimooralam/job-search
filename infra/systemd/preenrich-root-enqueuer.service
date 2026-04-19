@@ -1,0 +1,11 @@
+[Unit]
+Description=Iteration 4 preenrich DAG root enqueuer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/scout-cron
+Environment=HOME=/root
+ExecStart=/root/scout-cron/.venv/bin/python -m src.preenrich.root_enqueuer --limit 25
+

@@ -1,0 +1,133 @@
+"""Tests for the iteration-4 preenrich root enqueuer."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+import mongomock
+import pytest
+from bson import ObjectId
+
+from src.preenrich.root_enqueuer import (
+    ROOT_STAGE,
+    DAG_VERSION,
+    RootEnqueuer,
+    build_stage_states,
+    canary_allows,
+    parse_canary_allowlist,
+)
+from src.preenrich.schema import input_snapshot_id
+
+
+@pytest.fixture
+def mock_db():
+    client = mongomock.MongoClient()
+    return client["jobs"]
+
+
+def _insert_selected_job(db, *, orchestration=None) -> ObjectId:
+    oid = ObjectId()
+    doc = {
+        "_id": oid,
+        "job_id": f"job-{oid}",
+        "lifecycle": "selected",
+        "selected_at": datetime(2026, 4, 19, 12, 0, tzinfo=timezone.utc),
+        "description": "Build and run AI platforms at scale",
+        "company": "Acme AI",
+    }
+    if orchestration is not None:
+        doc["pre_enrichment"] = {"orchestration": orchestration}
+    db["level-2"].insert_one(doc)
+    return oid
+
+
+def test_root_enqueuer_is_idempotent_for_same_job(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "100")
+
+    job_id = _insert_selected_job(mock_db)
+    enqueuer = RootEnqueuer(mock_db)
+    now = datetime(2026, 4, 19, 12, 5, tzinfo=timezone.utc)
+
+    first = enqueuer.enqueue_one(job_id, now=now)
+    second = enqueuer.enqueue_one(job_id, now=now)
+
+    assert first is True
+    assert second is False
+    assert mock_db["work_items"].count_documents({"lane": "preenrich"}) == 1
+
+    level2_doc = mock_db["level-2"].find_one({"_id": job_id})
+    assert level2_doc["lifecycle"] == "preenriching"
+    assert level2_doc["pre_enrichment"]["orchestration"] == "dag"
+    assert level2_doc["pre_enrichment"]["stage_states"][ROOT_STAGE]["status"] == "pending"
+
+
+def test_root_enqueuer_reclaims_legacy_selected_jobs_per_plan(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "100")
+
+    job_id = _insert_selected_job(mock_db, orchestration="legacy")
+    enqueuer = RootEnqueuer(mock_db)
+
+    assert enqueuer.enqueue_one(job_id) is True
+
+    level2_doc = mock_db["level-2"].find_one({"_id": job_id})
+    assert level2_doc["pre_enrichment"]["orchestration"] == "dag"
+    assert mock_db["work_items"].count_documents({"lane": "preenrich"}) == 1
+
+
+def test_root_enqueuer_honors_canary_allowlist(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    allowed = _insert_selected_job(mock_db)
+    skipped = _insert_selected_job(mock_db)
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_ALLOWLIST", str(allowed))
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "0")
+
+    enqueuer = RootEnqueuer(mock_db)
+    stats = enqueuer.enqueue_ready_roots(limit=10)
+
+    assert stats == {"claimed": 1, "enqueued": 1, "skipped": 1}
+    assert mock_db["work_items"].count_documents({"lane": "preenrich", "subject_id": str(allowed)}) == 1
+    assert mock_db["work_items"].count_documents({"lane": "preenrich", "subject_id": str(skipped)}) == 0
+
+
+def test_root_enqueuer_honors_canary_percentage(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_ALLOWLIST", "")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "0")
+    _insert_selected_job(mock_db)
+
+    enqueuer = RootEnqueuer(mock_db)
+    stats = enqueuer.enqueue_ready_roots(limit=10)
+
+    assert stats == {"claimed": 0, "enqueued": 0, "skipped": 1}
+    assert mock_db["work_items"].count_documents({"lane": "preenrich"}) == 0
+
+
+def test_root_enqueuer_initializes_stage_state_snapshot(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "100")
+
+    job_id = _insert_selected_job(mock_db)
+    enqueuer = RootEnqueuer(mock_db)
+    enqueuer.enqueue_one(job_id)
+
+    doc = mock_db["level-2"].find_one({"_id": job_id})
+    snapshot_id = input_snapshot_id(
+        doc["pre_enrichment"]["jd_checksum"],
+        doc["pre_enrichment"]["company_checksum"],
+        DAG_VERSION,
+    )
+    assert doc["pre_enrichment"]["input_snapshot_id"] == snapshot_id
+    expected = build_stage_states(snapshot_id)
+    expected[ROOT_STAGE]["work_item_id"] = doc["pre_enrichment"]["stage_states"][ROOT_STAGE]["work_item_id"]
+    assert doc["pre_enrichment"]["stage_states"] == expected
+
+
+def test_parse_canary_allowlist_ignores_empty_entries():
+    assert parse_canary_allowlist("a,, b, ,c") == {"a", "b", "c"}
+
+
+def test_canary_allowlist_takes_precedence_over_pct():
+    assert canary_allows("a", allowlist={"a"}, pct=0) is True
+    assert canary_allows("b", allowlist={"a"}, pct=100) is False

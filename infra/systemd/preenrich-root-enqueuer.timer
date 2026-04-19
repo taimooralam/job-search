@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the iteration 4 preenrich DAG root enqueuer every 30 seconds
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+Unit=preenrich-root-enqueuer.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

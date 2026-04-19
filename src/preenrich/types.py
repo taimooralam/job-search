@@ -8,11 +8,12 @@ Defines the core data structures used across the pre-enrichment worker:
 - attempt_token: deterministic idempotency key (excludes provider/model per §2.3)
 """
 
-import hashlib
 import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+from src.preenrich.schema import attempt_token as _schema_attempt_token
 
 
 class StageStatus(str, Enum):
@@ -210,5 +211,10 @@ def attempt_token(
     Returns:
         Hex-encoded SHA-256 of the concatenated inputs.
     """
-    raw = "|".join([job_id, stage, jd_checksum, prompt_version, str(attempt_number)])
-    return hashlib.sha256(raw.encode()).hexdigest()
+    return _schema_attempt_token(
+        job_id=job_id,
+        stage=stage,
+        jd_checksum=jd_checksum,
+        prompt_version=prompt_version,
+        attempt_number=attempt_number,
+    )
