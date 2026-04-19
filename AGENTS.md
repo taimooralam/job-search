@@ -1,14 +1,16 @@
+Note: Codex will review your output once you are done.
+
 # Repository Guidelines
 
 ## Skill Quick Reference
 
-| Skill | Use |
-|-------|-----|
-| `scout-jobs` | Search LinkedIn for AI/engineering roles, score, and inject into pipeline |
-| `inject-job` | Inject a recruiter job description into MongoDB + run batch pipeline |
-| `ingest-prep` | Ingest job (new or existing by _id), mark favorite, trigger pipeline, deep research + interview prep report in `../ai-engg/reports/` |
-| `cv-review` | Run bulk CV reviews locally via Codex CLI (gpt-5.2). Reviews generated CVs from a hiring manager's perspective. |
-| `top-jobs` | Query MongoDB for top jobs by tier, location, category, score, recency, and collection, with optional promotion and batch queueing. |
+| Skill         | Use                                                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `scout-jobs`  | Search LinkedIn for AI/engineering roles, score, and inject into pipeline                                                             |
+| `inject-job`  | Inject a recruiter job description into MongoDB + run batch pipeline                                                                  |
+| `ingest-prep` | Ingest job (new or existing by \_id), mark favorite, trigger pipeline, deep research + interview prep report in `../ai-engg/reports/` |
+| `cv-review`   | Run bulk CV reviews locally via Codex CLI (gpt-5.2). Reviews generated CVs from a hiring manager's perspective.                       |
+| `top-jobs`    | Query MongoDB for top jobs by tier, location, category, score, recency, and collection, with optional promotion and batch queueing.   |
 
 Project-local Codex skills are stored under `.codex/skills/`.
 
@@ -90,5 +92,6 @@ Project-local Codex skills are stored under `.codex/skills/`.
 ## CV Generation Reference
 
 Source of truth: **`docs/current/cv-generation-guide.md`**
+
 - Pipeline architecture → Part 2, Data structures → Part 3, Scoring → Part 4
 - Quality gates → Part 5, Role guidance → Part 6, ATS rules → Part 7

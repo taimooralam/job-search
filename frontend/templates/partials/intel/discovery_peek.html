@@ -1,3 +1,4 @@
+{% import "partials/intel/discovery_macros.html" as discovery %}
 {% if hit %}
 {% set scrape = hit.scrape or {} %}
 {% set selection = hit.selection or {} %}
@@ -5,6 +6,8 @@
 {% set pool = selection.pool or {} %}
 {% set level2 = hit.level2_state or {} %}
 {% set trace_links = hit.trace_links or {} %}
+{% set work_item = hit.related_work_item %}
+{% set legacy_hint = discovery.legacy_label(scrape, work_item) %}
 <div class="space-y-3">
     <div>
         <p class="text-sm font-medium" style="color: var(--text-primary);">{{ hit.title or 'Untitled role' }}</p>
@@ -12,22 +15,25 @@
     </div>
     <div class="grid grid-cols-2 gap-3 text-xs">
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="uppercase" style="color: var(--text-tertiary);">Iteration 1</p>
+            <p class="uppercase" style="color: var(--text-tertiary);">Search</p>
             <p class="mt-2" style="color: var(--text-primary);">{{ hit.search_profile or '—' }}</p>
             <p class="mt-1" style="color: var(--text-secondary);">{{ hit.search_region or '—' }}</p>
             <p class="mt-1" style="color: var(--text-tertiary);">Seen {{ hit.times_seen or 0 }}x</p>
         </div>
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="uppercase" style="color: var(--text-tertiary);">Iteration 2</p>
-            <p class="mt-2" style="color: var(--text-primary);">{{ scrape.status or 'not-started' }}</p>
+            <p class="uppercase" style="color: var(--text-tertiary);">Scrape</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ discovery.scrape_label(scrape) }}</p>
             <p class="mt-1" style="color: var(--text-secondary);">Score {{ scrape.score if scrape.score is not none else '—' }} · {{ scrape.tier or '—' }}</p>
             <p class="mt-1" style="color: var(--text-tertiary);">{{ scrape.detected_role or 'role unknown' }}</p>
         </div>
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="uppercase" style="color: var(--text-tertiary);">Iteration 3</p>
-            <p class="mt-2" style="color: var(--text-primary);">{{ main.decision or 'pending' }}</p>
-            <p class="mt-1" style="color: var(--text-secondary);">Pool {{ pool.status or '—' }}</p>
-            <p class="mt-1" style="color: var(--text-tertiary);">L2 {{ level2.lifecycle or 'not-linked' }}</p>
+            <p class="uppercase" style="color: var(--text-tertiary);">Select</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ discovery.select_label(main) }}</p>
+            <p class="mt-1" style="color: var(--text-secondary);">Pool {{ discovery.pool_label(pool) }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">L2 {{ discovery.level2_label(level2) }}</p>
+            {% if legacy_hint %}
+            <p class="mt-1" style="color: var(--text-tertiary);">{{ legacy_hint }}</p>
+            {% endif %}
         </div>
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
             <p class="uppercase" style="color: var(--text-tertiary);">Traceability</p>

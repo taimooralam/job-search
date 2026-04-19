@@ -1,0 +1,109 @@
+{% macro tone_class(tone) -%}
+{%- if tone == 'green' -%}bg-green-500/20 text-green-400
+{%- elif tone == 'yellow' -%}bg-yellow-500/20 text-yellow-400
+{%- elif tone == 'orange' -%}bg-orange-500/20 text-orange-300
+{%- elif tone == 'red' -%}bg-red-500/20 text-red-400
+{%- elif tone == 'blue' -%}bg-sky-500/20 text-sky-300
+{%- elif tone == 'cyan' -%}bg-cyan-500/20 text-cyan-300
+{%- elif tone == 'purple' -%}bg-purple-500/20 text-purple-300
+{%- else -%}bg-slate-500/20 text-slate-300
+{%- endif -%}
+{%- endmacro %}
+
+{% macro search_label(hit) -%}
+{{ hit.hit_status or 'discovered' }}
+{%- endmacro %}
+
+{% macro scrape_label(scrape) -%}
+{%- set status = scrape.status -%}
+{%- if status == 'succeeded' -%}Done
+{%- elif status == 'pending' -%}Queued
+{%- elif status == 'leased' -%}Working
+{%- elif status == 'retry_pending' -%}Retry
+{%- elif status == 'deadletter' or status == 'failed' -%}Failed
+{%- elif status == 'skipped_blacklist' -%}Blacklist
+{%- elif status == 'skipped_title_filter' -%}Title Filter
+{%- elif status -%}{{ status|replace('_', ' ')|title }}
+{%- else -%}Not Started
+{%- endif -%}
+{%- endmacro %}
+
+{% macro scrape_tone(scrape) -%}
+{%- set status = scrape.status -%}
+{%- if status == 'succeeded' -%}green
+{%- elif status in ['pending', 'leased'] -%}yellow
+{%- elif status == 'retry_pending' -%}orange
+{%- elif status in ['deadletter', 'failed'] -%}red
+{%- elif status in ['skipped_blacklist', 'skipped_title_filter'] -%}slate
+{%- else -%}slate
+{%- endif -%}
+{%- endmacro %}
+
+{% macro select_label(main) -%}
+{%- set decision = main.decision -%}
+{%- if decision == 'selected_for_preenrich' -%}Selected
+{%- elif decision == 'inserted_level2_only' -%}Level-2 Only
+{%- elif decision == 'inserted_level1' -%}Level-1 Only
+{%- elif decision == 'duplicate_db' -%}Duplicate DB
+{%- elif decision == 'duplicate_cross_location' -%}Duplicate Location
+{%- elif decision == 'filtered_blacklist' -%}Blacklist
+{%- elif decision == 'filtered_non_english' -%}Non-English
+{%- elif decision == 'filtered_score' -%}Low Score
+{%- elif decision == 'discarded_quota' -%}Quota
+{%- elif decision and decision != 'none' -%}{{ decision|replace('_', ' ')|title }}
+{%- else -%}Pending
+{%- endif -%}
+{%- endmacro %}
+
+{% macro select_tone(main) -%}
+{%- set decision = main.decision -%}
+{%- if decision == 'selected_for_preenrich' -%}green
+{%- elif decision == 'inserted_level2_only' -%}blue
+{%- elif decision == 'inserted_level1' -%}slate
+{%- elif decision in ['duplicate_db', 'duplicate_cross_location', 'filtered_blacklist', 'filtered_non_english', 'filtered_score', 'discarded_quota'] -%}slate
+{%- elif main.status == 'failed' -%}red
+{%- else -%}slate
+{%- endif -%}
+{%- endmacro %}
+
+{% macro pool_label(pool) -%}
+{%- set status = pool.status -%}
+{%- if status == 'available' -%}Ready
+{%- elif status == 'consumed' -%}Used
+{%- elif status == 'expired' -%}Expired
+{%- elif status == 'not_applicable' -%}N/A
+{%- elif status -%}{{ status|replace('_', ' ')|title }}
+{%- else -%}N/A
+{%- endif -%}
+{%- endmacro %}
+
+{% macro pool_tone(pool) -%}
+{%- set status = pool.status -%}
+{%- if status == 'available' -%}cyan
+{%- elif status == 'consumed' -%}green
+{%- elif status == 'expired' -%}red
+{%- else -%}slate
+{%- endif -%}
+{%- endmacro %}
+
+{% macro level2_label(level2) -%}
+{%- if level2.lifecycle == 'selected' -%}Selected
+{%- elif level2.lifecycle == 'preenriching' -%}Preenriching
+{%- elif level2.exists -%}Inserted
+{%- else -%}Not Linked
+{%- endif -%}
+{%- endmacro %}
+
+{% macro level2_tone(level2) -%}
+{%- if level2.lifecycle == 'selected' -%}green
+{%- elif level2.lifecycle == 'preenriching' -%}orange
+{%- elif level2.exists -%}blue
+{%- else -%}slate
+{%- endif -%}
+{%- endmacro %}
+
+{% macro legacy_label(scrape, work_item=None) -%}
+{%- if work_item and work_item.consumer_mode == 'legacy_jsonl' -%}Legacy (jsonl)
+{%- elif scrape.selector_handoff_status == 'written' -%}Compat (jsonl)
+{%- endif -%}
+{%- endmacro %}

@@ -1,10 +1,11 @@
+{% import "partials/intel/discovery_macros.html" as discovery %}
 {% set hits = results.hits if results else [] %}
 {% set page = results.page if results else {} %}
 {% set filters = results.filters if results else {} %}
 
 {% if hits %}
-<div class="space-y-4">
-    <div class="px-4 pt-4 flex items-center justify-between gap-3">
+<div class="space-y-3">
+    <div class="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
         <div>
             <p class="text-sm font-medium" style="color: var(--text-primary);">{{ hits|length }} result{{ '' if hits|length == 1 else 's' }}</p>
             <p class="text-xs mt-1" style="color: var(--text-tertiary);">
@@ -30,14 +31,13 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b" style="border-color: var(--border-default);">
-                    <th class="px-3 py-2 text-left text-xs font-medium uppercase" style="color: var(--text-tertiary);">Status</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium uppercase" style="color: var(--text-tertiary);">Role</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium uppercase hidden lg:table-cell" style="color: var(--text-tertiary);">Iteration View</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium uppercase" style="color: var(--text-tertiary);">Title / Company</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium uppercase hidden lg:table-cell" style="color: var(--text-tertiary);">Stages</th>
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase hidden md:table-cell" style="color: var(--text-tertiary);">Profile / Region</th>
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase hidden lg:table-cell" style="color: var(--text-tertiary);">Last Seen</th>
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase hidden lg:table-cell" style="color: var(--text-tertiary);">Score / Tier</th>
                     <th class="px-3 py-2 text-left text-xs font-medium uppercase hidden xl:table-cell" style="color: var(--text-tertiary);">Traceability</th>
-                    <th class="px-3 py-2 text-right text-xs font-medium uppercase" style="color: var(--text-tertiary);">Action</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium uppercase" style="color: var(--text-tertiary);">Action</th>
                 </tr>
             </thead>
             <tbody class="divide-y" style="border-color: var(--border-default);">
@@ -48,79 +48,39 @@
                 {% set pool = selection.pool or {} %}
                 {% set profiles = selection.profiles or {} %}
                 {% set level2 = hit.level2_state or {} %}
-                {% set display_status = hit.display_status or hit.hit_status or 'discovered' %}
-                <tr class="align-top">
-                    <td class="px-3 py-3">
-                        <span class="text-xs px-2 py-1 rounded-full
-                            {% if display_status in ['selected_for_preenrich', 'selector_handoff_written', 'succeeded', 'profile_selected'] %}bg-green-500/20 text-green-400
-                            {% elif display_status in ['pending', 'leased', 'queued_for_scrape', 'leased_for_scrape'] %}bg-yellow-500/20 text-yellow-400
-                            {% elif display_status in ['retry_pending', 'failed'] %}bg-orange-500/20 text-orange-300
-                            {% elif display_status in ['deadletter'] %}bg-red-500/20 text-red-400
-                            {% elif display_status in ['skipped_blacklist', 'skipped_title_filter', 'filtered_blacklist', 'filtered_non_english', 'filtered_score', 'duplicate_db', 'duplicate_cross_location'] %}bg-slate-500/20 text-slate-300
-                            {% else %}bg-sky-500/20 text-sky-300{% endif %}">
-                            {{ display_status }}
-                        </span>
-                    </td>
-                    <td class="px-3 py-3 min-w-[20rem]">
+                {% set work_item = hit.related_work_item %}
+                {% set legacy_hint = discovery.legacy_label(scrape, work_item) %}
+                <tr class="align-top hover:bg-white/5">
+                    <td class="px-4 py-3 min-w-[24rem]">
                         <button
                             hx-get="/dashboard/discovery/peek/{{ hit._id }}"
                             hx-target="#discovery-peek"
                             hx-swap="innerHTML"
+                            hx-indicator="#discovery-peek-loading"
                             hx-trigger="mouseenter delay:200ms, focus, click"
                             class="text-left w-full">
-                            <p class="font-medium" style="color: var(--text-primary);">{{ hit.title or 'Untitled role' }}</p>
+                            <p class="font-medium leading-snug" style="color: var(--text-primary);">{{ hit.title or 'Untitled role' }}</p>
                             <p class="text-xs mt-1" style="color: var(--text-tertiary);">{{ hit.company or 'Unknown company' }}{% if hit.location %} · {{ hit.location }}{% endif %}</p>
-                            {% if scrape.detected_role %}
-                            <p class="text-xs mt-2" style="color: var(--text-secondary);">{{ scrape.detected_role }}</p>
-                            {% endif %}
-                            {% if level2.lifecycle == 'selected' %}
-                            <p class="text-xs mt-2 text-emerald-400">Ready for preenrich claim</p>
-                            {% elif level2.preenrich_claimed %}
-                            <p class="text-xs mt-2 text-orange-300">Preenrich claimed</p>
-                            {% endif %}
+                            <div class="flex flex-wrap gap-1 mt-2 lg:hidden">
+                                <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class('blue') }}">Search</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.scrape_tone(scrape)) }}">Scrape: {{ discovery.scrape_label(scrape) }}</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.select_tone(main)) }}">Select: {{ discovery.select_label(main) }}</span>
+                            </div>
                         </button>
                     </td>
                     <td class="px-3 py-3 hidden lg:table-cell">
-                        <div class="flex flex-wrap gap-1">
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300">Discovery</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full
-                                {% if scrape.status == 'succeeded' %}bg-green-500/20 text-green-400
-                                {% elif scrape.status in ['leased', 'pending', 'retry_pending'] %}bg-yellow-500/20 text-yellow-400
-                                {% elif scrape.status in ['deadletter', 'failed'] %}bg-red-500/20 text-red-400
-                                {% else %}bg-gray-500/20 text-gray-400{% endif %}">
-                                Scrape: {{ scrape.status or 'not-started' }}
-                            </span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full
-                                {% if main.decision == 'selected_for_preenrich' %}bg-emerald-500/20 text-emerald-400
-                                {% elif main.decision == 'inserted_level2_only' %}bg-blue-500/20 text-blue-300
-                                {% elif main.decision == 'inserted_level1' %}bg-slate-500/20 text-slate-300
-                                {% elif main.decision and main.decision != 'none' %}bg-amber-500/20 text-amber-300
-                                {% else %}bg-gray-500/10 text-gray-500{% endif %}">
-                                Main: {{ main.decision or 'pending' }}
-                            </span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full
-                                {% if pool.status == 'available' %}bg-cyan-500/20 text-cyan-300
-                                {% elif pool.status == 'consumed' %}bg-green-500/20 text-green-400
-                                {% elif pool.status == 'expired' %}bg-red-500/20 text-red-400
-                                {% else %}bg-gray-500/10 text-gray-500{% endif %}">
-                                Pool: {{ pool.status or '—' }}
-                            </span>
-                            {% for profile_name, state in profiles.items() %}
-                            <span class="text-[10px] px-2 py-0.5 rounded-full
-                                {% if state.decision == 'profile_selected' %}bg-fuchsia-500/20 text-fuchsia-300
-                                {% elif state.decision and state.decision != 'none' %}bg-purple-500/20 text-purple-300
-                                {% else %}bg-gray-500/10 text-gray-500{% endif %}">
-                                {{ profile_name }}: {{ state.decision or 'pending' }}
-                            </span>
-                            {% endfor %}
-                            {% if level2.exists %}
-                            <span class="text-[10px] px-2 py-0.5 rounded-full
-                                {% if level2.lifecycle == 'selected' %}bg-emerald-500/20 text-emerald-400
-                                {% elif level2.lifecycle == 'preenriching' %}bg-orange-500/20 text-orange-300
-                                {% else %}bg-sky-500/20 text-sky-300{% endif %}">
-                                L2: {{ level2.lifecycle or 'inserted' }}
-                            </span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class('blue') }}">Search</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.scrape_tone(scrape)) }}">Scrape: {{ discovery.scrape_label(scrape) }}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.select_tone(main)) }}">Select: {{ discovery.select_label(main) }}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.pool_tone(pool)) }}">Pool: {{ discovery.pool_label(pool) }}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.level2_tone(level2)) }}">L2: {{ discovery.level2_label(level2) }}</span>
+                            {% if legacy_hint %}
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">{{ legacy_hint }}</span>
                             {% endif %}
+                            {% for profile_name, state in profiles.items() if state.decision == 'profile_selected' %}
+                            <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class('purple') }}">{{ profile_name }}</span>
+                            {% endfor %}
                         </div>
                     </td>
                     <td class="px-3 py-3 hidden md:table-cell text-xs" style="color: var(--text-secondary);">
@@ -141,15 +101,15 @@
                     <td class="px-3 py-3 hidden xl:table-cell">
                         <div class="space-y-1">
                             <code class="block text-[10px]" style="color: var(--text-tertiary);">{{ hit.correlation_id or '—' }}</code>
-                            <code class="block text-[10px]" style="color: var(--text-tertiary);">{{ hit.langfuse_session_id or '—' }}</code>
+                            <code class="block text-[10px]" style="color: var(--text-tertiary);">{{ hit.run_id or '—' }}</code>
                         </div>
                     </td>
-                    <td class="px-3 py-3 text-right">
+                    <td class="px-4 py-3 text-right">
                         <button hx-get="/dashboard/discovery/{{ hit._id }}"
                                 hx-target="#discovery-detail-content"
                                 hx-swap="innerHTML"
                                 onclick="document.getElementById('discovery-detail-modal').classList.remove('hidden')"
-                                class="px-2 py-1 text-xs rounded"
+                                class="px-2.5 py-1 text-xs rounded-lg"
                                 style="background-color: var(--bg-hover); color: var(--text-secondary);">
                             Detail
                         </button>

@@ -743,22 +743,30 @@ def score_pair(
     run_dir = build_debug_run_dir(category_id, jd_stem)
     log_stage(f"  debug: {run_dir}", verbose)
 
-    # resolve raw job authoritatively
-    raw_job = resolve_job_from_jd(category_id, jd_path)
-    resolved_id = str(raw_job.get("_id"))
-    if resolved_id != expected_job_id:
-        raise ValueError(
-            f"manifest job_id {expected_job_id} != jobs_all[{parse_jd_ordinal(jd_path)}]._id {resolved_id}"
-        )
+    # resolve raw job authoritatively unless pair opts out (calibration mode)
+    if pair.get("skip_jd_resolution"):
+        resolved_id = expected_job_id
+        raw_job = pair.get("raw_job_meta") or {
+            "title": pair.get("jd_title"), "company": pair.get("jd_company"),
+            "location": pair.get("jd_location"), "score": None, "status": None,
+        }
+    else:
+        raw_job = resolve_job_from_jd(category_id, jd_path)
+        resolved_id = str(raw_job.get("_id"))
+        if resolved_id != expected_job_id:
+            raise ValueError(
+                f"manifest job_id {expected_job_id} != jobs_all[{parse_jd_ordinal(jd_path)}]._id {resolved_id}"
+            )
 
     jd_text = jd_path.read_text()
     cv_text = cv_path.read_text()
 
-    header_issues = cross_check_job(jd_text, raw_job)
-    if header_issues:
-        raise ValueError(
-            f"jd/jobs_all header mismatch for {jd_path}: {header_issues}"
-        )
+    if not pair.get("skip_jd_resolution"):
+        header_issues = cross_check_job(jd_text, raw_job)
+        if header_issues:
+            raise ValueError(
+                f"jd/jobs_all header mismatch for {jd_path}: {header_issues}"
+            )
 
     rubric_path = RUBRIC_DIR / f"{category_id}_rubric.json"
     rubric = json.loads(rubric_path.read_text())
@@ -825,10 +833,26 @@ def score_pair(
                 print(f"    - {i}")
             continue
 
+        # Final attempt still has cross-check inconsistencies: auto-repair gates to match arrays
+        # and attach cross_check_warnings instead of failing the pair.
+        auto_repair_notes: List[str] = []
+        if cross_issues:
+            gates = repaired.setdefault("gate_outcomes", {})
+            if (repaired.get("missing_must_haves") or []) and gates.get("must_have_coverage_gate") is True:
+                gates["must_have_coverage_gate"] = False
+                auto_repair_notes.append("auto-flipped must_have_coverage_gate=false (non-empty missing_must_haves)")
+            if (repaired.get("unsupported_claims") or []) and gates.get("unsafe_claim_gate") is True:
+                gates["unsafe_claim_gate"] = False
+                auto_repair_notes.append("auto-flipped unsafe_claim_gate=false (non-empty unsupported_claims)")
+            if (repaired.get("persona_fit_notes") or []) and gates.get("persona_fit_gate") is True:
+                gates["persona_fit_gate"] = False
+                auto_repair_notes.append("auto-flipped persona_fit_gate=false (non-empty persona_fit_notes)")
+            repaired["cross_check_warnings"] = list(cross_issues)
+
         # finalize arithmetic + verdict
         repaired = dedupe_evidence_refs(repaired)
         repaired, verdict_notes = finalize_score_and_verdict(repaired)
-        all_notes = list(repair_notes) + list(verdict_notes) + list(cross_issues)
+        all_notes = list(repair_notes) + list(auto_repair_notes) + list(verdict_notes) + list(cross_issues)
         write_attempt_debug(run_dir, attempt, "accepted", prompt, resp, repaired, [], all_notes)
         return repaired
 
@@ -894,8 +918,9 @@ def render_scorecard_markdown(scorecard: Dict[str, Any], pair: Dict[str, Any]) -
 def write_scorecard_files(pair: Dict[str, Any], scorecard: Dict[str, Any]) -> Path:
     cat = scorecard["category_id"]
     stem = Path(pair["jd_path"]).stem
-    out_json = SCORECARD_DIR / cat / f"{stem}_scorecard.json"
-    out_md = SCORECARD_DIR / cat / f"{stem}_scorecard.md"
+    subdir = pair.get("output_subdir") or cat
+    out_json = SCORECARD_DIR / subdir / f"{stem}_scorecard.json"
+    out_md = SCORECARD_DIR / subdir / f"{stem}_scorecard.md"
     write_json_file(out_json, scorecard)
     out_md.parent.mkdir(parents=True, exist_ok=True)
     out_md.write_text(render_scorecard_markdown(scorecard, pair))
@@ -906,7 +931,7 @@ def iter_scorecards() -> Iterable[Tuple[Path, Dict[str, Any]]]:
     for p in sorted(SCORECARD_DIR.rglob("*_scorecard.json")):
         # skip debug artifacts — only top-level {category}/{stem}_scorecard.json
         rel = p.relative_to(SCORECARD_DIR)
-        if rel.parts[0] in ("debug", "batches"):
+        if rel.parts[0] in ("debug", "batches") or rel.parts[0].startswith("calibration_") or rel.parts[0].startswith("variance_") or rel.parts[0].startswith("scorecards_archive"):
             continue
         try:
             yield p, json.loads(p.read_text())
@@ -1040,6 +1065,7 @@ def load_batch(path: Path) -> List[Dict[str, Any]]:
         for k in ("category_id", "job_id", "jd_path", "cv_path"):
             if not p.get(k):
                 raise ValueError(f"pair missing '{k}': {p}")
+    # optional flags: skip_jd_resolution (bool), raw_job_meta (dict) — used by calibration mode
     return pairs
 
 

@@ -3,7 +3,7 @@
 {% block title %}Discovery Debug — LinkedIn Intelligence{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-4">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Discovery Debug</h1>
@@ -27,205 +27,293 @@
     <div class="rounded-lg p-4 border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
         <p class="text-sm text-red-400">Discovery dashboard unavailable: {{ error }}</p>
     </div>
-{% else %}
+    {% else %}
 
-    <div hx-get="/dashboard/discovery/heartbeat" hx-trigger="load, every 10s" hx-swap="innerHTML" id="discovery-stats">
+    <div hx-get="/dashboard/discovery/heartbeat"
+         hx-trigger="load, every 10s"
+         hx-swap="innerHTML"
+         hx-indicator="#discovery-heartbeat-loading"
+         id="discovery-stats">
+        <div class="flex items-center justify-end">
+            <div id="discovery-heartbeat-loading" class="htmx-indicator flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+                <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>Updating heartbeat</span>
+            </div>
+        </div>
         {% include "partials/intel/discovery_stat_cards.html" %}
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 rounded-xl border overflow-hidden"
-             style="background-color: var(--bg-card); border-color: var(--border-default);">
-            <div class="px-4 py-4 border-b space-y-4" style="border-color: var(--border-default);">
+    <div class="rounded-xl border overflow-hidden"
+         style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <div class="px-4 py-3 border-b space-y-3" style="border-color: var(--border-default);">
+            <div class="flex items-start justify-between gap-3">
                 <div>
                     <h2 class="font-semibold" style="color: var(--text-primary);">Search Discovery State</h2>
                     <p class="text-xs mt-1" style="color: var(--text-tertiary);">
-                        Search first. Filter aggressively. Scraped is not selector-eligible. `inserted_level2_only` is not `selected_for_preenrich`.
+                        Search first. Use Search, Scrape, and Select filters. Scraped is not selector-eligible. Level-2 only is not selected.
                     </p>
                 </div>
-                <form id="discovery-search-form" class="grid grid-cols-1 md:grid-cols-6 gap-3">
-                    <input type="hidden" name="cursor" value="">
-                    <input type="hidden" name="limit" value="{{ filters.limit if filters else 25 }}">
-                    <label class="md:col-span-2">
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Query</span>
-                        <input
-                            id="discovery-query"
-                            type="search"
-                            name="q"
-                            value="{{ filters.query_text if filters else '' }}"
-                            placeholder="Search by title, company, location, role, id..."
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="keyup changed delay:300ms, search"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                    </label>
-                    <label>
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Window</span>
-                        <select
-                            name="window"
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="change"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                            {% for option in ['15m', '1h', '6h', '24h', '7d'] %}
-                            <option value="{{ option }}" {% if filters and filters.window == option %}selected{% endif %}>{{ option }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Profile</span>
-                        <input
-                            type="text"
-                            name="profile"
-                            value="{{ filters.profile if filters else '' }}"
-                            placeholder="ai_core"
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="change, keyup changed delay:400ms"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                    </label>
-                    <label>
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Region</span>
-                        <input
-                            type="text"
-                            name="region"
-                            value="{{ filters.region if filters else '' }}"
-                            placeholder="de"
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="change, keyup changed delay:400ms"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                    </label>
-                    <label>
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Scrape</span>
-                        <select
-                            name="scrape_status"
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="change"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                            <option value="">Any</option>
-                            {% for option in ['pending', 'leased', 'succeeded', 'retry_pending', 'deadletter', 'skipped_blacklist', 'skipped_title_filter'] %}
-                            <option value="{{ option }}" {% if filters and filters.scrape_status == option %}selected{% endif %}>{{ option }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Main</span>
-                        <select
-                            name="main_decision"
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="change"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                            <option value="">Any</option>
-                            {% for option in ['selected_for_preenrich', 'inserted_level2_only', 'inserted_level1', 'duplicate_db', 'duplicate_cross_location', 'filtered_blacklist', 'filtered_non_english', 'filtered_score'] %}
-                            <option value="{{ option }}" {% if filters and filters.main_decision == option %}selected{% endif %}>{{ option }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>
-                        <span class="block text-xs uppercase mb-1" style="color: var(--text-tertiary);">Pool</span>
-                        <select
-                            name="pool_status"
-                            hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
-                            hx-trigger="change"
-                            class="w-full rounded-lg px-3 py-2 text-sm border"
-                            style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
-                        >
-                            <option value="">Any</option>
-                            {% for option in ['available', 'consumed', 'expired', 'not_applicable'] %}
-                            <option value="{{ option }}" {% if filters and filters.pool_status == option %}selected{% endif %}>{{ option }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label class="flex items-end gap-2">
+                <div id="discovery-results-loading" class="htmx-indicator flex items-center gap-2 text-xs shrink-0" style="color: var(--text-tertiary);">
+                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Loading</span>
+                </div>
+            </div>
+
+            <form id="discovery-search-form"
+                  class="grid grid-cols-1 md:grid-cols-8 gap-3"
+                  hx-target="#discovery-rows"
+                  hx-include="#discovery-search-form"
+                  hx-push-url="true"
+                  hx-indicator="#discovery-results-loading">
+                <input type="hidden" name="cursor" value="">
+                <input type="hidden" name="limit" value="{{ filters.limit if filters else 25 }}">
+
+                <label class="md:col-span-3">
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Search</span>
+                    <input
+                        id="discovery-query"
+                        type="search"
+                        name="q"
+                        value="{{ (filters.query_text if filters else '') or '' }}"
+                        placeholder="Title, company, location, role, id..."
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="keyup changed delay:300ms, search"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Window</span>
+                    <select
+                        name="window"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        {% for option in ['15m', '1h', '6h', '8h', '24h', '7d'] %}
+                        <option value="{{ option }}" {% if filters and filters.window == option %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Profile</span>
+                    <input
+                        type="text"
+                        name="profile"
+                        value="{{ (filters.profile if filters else '') or '' }}"
+                        placeholder="All"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change, keyup changed delay:400ms"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Region</span>
+                    <input
+                        type="text"
+                        name="region"
+                        value="{{ (filters.region if filters else '') or '' }}"
+                        placeholder="All"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change, keyup changed delay:400ms"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Scrape</span>
+                    <select
+                        name="scrape_status"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        <option value="">Any</option>
+                        {% for value, label in [('pending', 'Queued'), ('leased', 'Working'), ('succeeded', 'Done'), ('retry_pending', 'Retry'), ('deadletter', 'Failed'), ('skipped_blacklist', 'Blacklist'), ('skipped_title_filter', 'Title Filter')] %}
+                        <option value="{{ value }}" {% if filters and filters.scrape_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Select</span>
+                    <select
+                        name="main_decision"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        <option value="">Any</option>
+                        {% for value, label in [('selected_for_preenrich', 'Selected'), ('inserted_level2_only', 'Level-2 Only'), ('inserted_level1', 'Level-1 Only'), ('duplicate_db', 'Duplicate DB'), ('duplicate_cross_location', 'Duplicate Location'), ('filtered_blacklist', 'Blacklist'), ('filtered_non_english', 'Non-English'), ('filtered_score', 'Low Score')] %}
+                        <option value="{{ value }}" {% if filters and filters.main_decision == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Pool</span>
+                    <select
+                        name="pool_status"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        <option value="">Any</option>
+                        {% for value, label in [('available', 'Ready'), ('consumed', 'Used'), ('expired', 'Expired'), ('not_applicable', 'N/A')] %}
+                        <option value="{{ value }}" {% if filters and filters.pool_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <div class="md:col-span-8 flex flex-wrap items-center justify-between gap-3">
+                    <label class="inline-flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
                         <input
                             type="checkbox"
                             name="failures_only"
                             value="true"
                             {% if filters and filters.failures_only %}checked{% endif %}
                             hx-get="/dashboard/discovery/results"
-                            hx-target="#discovery-rows"
-                            hx-include="#discovery-search-form"
-                            hx-push-url="true"
                             hx-trigger="change"
                         >
-                        <span class="text-sm" style="color: var(--text-secondary);">Failures only</span>
+                        <span>Failures only</span>
                     </label>
-                    <div class="flex items-end justify-end">
+                    <div class="flex items-center gap-2">
+                        <button type="button"
+                                onclick="window.discoveryDashboard.applyFilters({window: '15m', q: '', cursor: '', scrape_status: '', main_decision: '', pool_status: '', profile: '', region: '', failures_only: false})"
+                                class="px-2.5 py-1.5 text-xs rounded-lg"
+                                style="background-color: var(--bg-hover); color: var(--text-secondary);">
+                            Latest 15m
+                        </button>
                         <a href="/dashboard/discovery"
-                           class="px-3 py-2 text-sm rounded-lg"
+                           class="px-3 py-1.5 text-sm rounded-lg"
                            style="background-color: var(--bg-hover); color: var(--text-secondary);">
                             Reset
                         </a>
                     </div>
-                </form>
+                </div>
+            </form>
+        </div>
+
+        <div id="discovery-rows">
+            {% include "partials/intel/discovery_table.html" %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div class="rounded-xl border"
+            style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <div class="px-4 py-3 border-b flex items-center justify-between gap-3" style="border-color: var(--border-default);">
+                <div>
+                    <h2 class="font-semibold" style="color: var(--text-primary);">Quick Peek</h2>
+                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">Hover a row to preview without opening detail.</p>
+                </div>
+                <div id="discovery-peek-loading" class="htmx-indicator flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Loading</span>
+                </div>
             </div>
-            <div id="discovery-rows">
-                {% include "partials/intel/discovery_table.html" %}
+            <div id="discovery-peek" class="p-4">
+                {% include "partials/intel/discovery_peek.html" %}
             </div>
         </div>
 
-        <div class="space-y-6">
-            <div class="rounded-xl border"
-                style="background-color: var(--bg-card); border-color: var(--border-default);">
-                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
-                    <h2 class="font-semibold" style="color: var(--text-primary);">Quick Peek</h2>
-                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">Hover or focus a result row to preview without opening the full detail.</p>
-                </div>
-                <div id="discovery-peek" class="p-4">
-                    {% include "partials/intel/discovery_peek.html" %}
-                </div>
-            </div>
-            <div class="rounded-xl border"
-                style="background-color: var(--bg-card); border-color: var(--border-default);">
-                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
-                    <h2 class="font-semibold" style="color: var(--text-primary);">Recent Runs</h2>
-                </div>
-                <div hx-get="/dashboard/discovery/runs" hx-trigger="load, every 30s" hx-swap="innerHTML">
-                    {% include "partials/intel/discovery_run_list.html" %}
+        <div class="rounded-xl border"
+            style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <div class="px-4 py-3 border-b flex items-center justify-between gap-3" style="border-color: var(--border-default);">
+                <h2 class="font-semibold" style="color: var(--text-primary);">Recent Runs</h2>
+                <div id="discovery-runs-loading" class="htmx-indicator flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Updating</span>
                 </div>
             </div>
+            <div hx-get="/dashboard/discovery/runs"
+                 hx-trigger="load, every 30s"
+                 hx-swap="innerHTML"
+                 hx-indicator="#discovery-runs-loading">
+                {% include "partials/intel/discovery_run_list.html" %}
+            </div>
+        </div>
 
-            <div class="rounded-xl border"
-                 style="background-color: var(--bg-card); border-color: var(--border-default);">
-                <div class="px-4 py-3 border-b" style="border-color: var(--border-default);">
-                    <h2 class="font-semibold" style="color: var(--text-primary);">Queue Snapshot</h2>
+        <div class="rounded-xl border"
+             style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <div class="px-4 py-3 border-b flex items-center justify-between gap-3" style="border-color: var(--border-default);">
+                <h2 class="font-semibold" style="color: var(--text-primary);">Queue & Failures</h2>
+                <div id="discovery-queue-loading" class="htmx-indicator flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+                    <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Updating</span>
                 </div>
-                <div hx-get="/dashboard/discovery/queue" hx-trigger="load, every 15s" hx-swap="innerHTML">
-                    {% include "partials/intel/discovery_queue_panel.html" %}
-                </div>
+            </div>
+            <div hx-get="/dashboard/discovery/queue"
+                 hx-trigger="load, every 15s"
+                 hx-swap="innerHTML"
+                 hx-indicator="#discovery-queue-loading">
+                {% include "partials/intel/discovery_queue_panel.html" %}
             </div>
         </div>
     </div>
+
+    <script>
+    window.discoveryDashboard = window.discoveryDashboard || {
+        applyFilters(patch) {
+            const form = document.getElementById('discovery-search-form');
+            if (!form) return;
+            Object.entries(patch || {}).forEach(([name, value]) => {
+                const field = form.elements.namedItem(name);
+                if (!field) return;
+                if (field.type === 'checkbox') {
+                    field.checked = Boolean(value);
+                } else {
+                    field.value = value ?? '';
+                }
+            });
+            const cursorField = form.elements.namedItem('cursor');
+            if (cursorField && !Object.prototype.hasOwnProperty.call(patch || {}, 'cursor')) {
+                cursorField.value = '';
+            }
+
+            const values = {};
+            Array.from(new FormData(form).entries()).forEach(([key, value]) => {
+                values[key] = value;
+            });
+            if (!form.elements.namedItem('failures_only')?.checked) {
+                delete values.failures_only;
+            }
+
+            const query = new URLSearchParams(values);
+            const url = '/dashboard/discovery' + (query.toString() ? `?${query.toString()}` : '');
+            history.replaceState({}, '', url);
+            htmx.ajax('GET', '/dashboard/discovery/results', {
+                source: form,
+                target: '#discovery-rows',
+                values,
+            });
+        }
+    };
+    </script>
 
     {% endif %}
 </div>

@@ -260,7 +260,8 @@ def test_discovery_dashboard_routes_render(client):
         assert rows.status_code == 200
         rows_html = rows.get_data(as_text=True)
         assert "Load Older" not in rows_html
-        assert "Main: selected_for_preenrich" in rows_html
+        assert "Stages" in rows_html
+        assert "Select: Selected" in rows_html
 
         runs = client.get("/dashboard/discovery/runs")
         assert runs.status_code == 200
@@ -280,12 +281,12 @@ def test_discovery_dashboard_routes_render(client):
         assert peek.status_code == 200
         peek_html = peek.get_data(as_text=True)
         assert "Traceability" in peek_html
-        assert "Iteration 3" in peek_html
+        assert "Select" in peek_html
 
         detail = client.get(f"/dashboard/discovery/{repo.get_hit_detail.return_value['_id']}")
         assert detail.status_code == 200
         detail_html = detail.get_data(as_text=True)
-        assert "Selector State" in detail_html
+        assert "Select" in detail_html
         assert "Level-2 / Preenrich" in detail_html
         assert "Open selector trace" in detail_html
 

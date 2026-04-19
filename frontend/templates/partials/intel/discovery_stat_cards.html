@@ -1,12 +1,12 @@
 {% if heartbeat %}
-<div class="space-y-4">
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+<div class="space-y-3">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-3">
         {% for card in heartbeat.cards %}
-        <div class="rounded-xl border p-4"
+        <div class="rounded-xl border p-3"
              style="background-color: var(--bg-card); border-color: var(--border-default);">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">{{ card.title }}</p>
+                    <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">{{ card.title }}</p>
                     <p class="text-sm mt-1" style="color: var(--text-secondary);">{{ card.subtitle }}</p>
                 </div>
                 <span class="text-[10px] px-2 py-1 rounded-full
@@ -16,49 +16,76 @@
                     {{ card.state }}
                 </span>
             </div>
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <div>
-                    <p class="text-2xl font-bold" style="color: var(--text-primary);">{{ card.primary_metric }}</p>
-                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">{{ card.primary_label }}</p>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold" style="color: var(--text-primary);">{{ card.secondary_metric }}</p>
-                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">{{ card.secondary_label }}</p>
-                </div>
-            </div>
-            <p class="text-xs mt-4" style="color: var(--text-tertiary);">{{ card.reason }}</p>
-            <p class="text-xs mt-1" style="color: var(--text-secondary);">
-                Last:
-                {% if card.last_seen_at %}
-                {{ card.last_seen_at.strftime('%b %d %H:%M UTC') }}
+
+            <div class="grid grid-cols-2 gap-2 mt-3">
+                {% if card.title == 'Iteration 1' %}
+                {% set primary_href = '/dashboard/discovery?window=15m' %}
+                {% set secondary_href = '/dashboard/discovery?window=15m' %}
+                {% elif card.title == 'Iteration 2' %}
+                {% set primary_href = '/dashboard/discovery?window=15m&scrape_status=succeeded' %}
+                {% set secondary_href = '/dashboard/discovery?scrape_status=pending&window=24h' %}
                 {% else %}
-                —
+                {% set primary_href = '/dashboard/discovery?window=8h' %}
+                {% set secondary_href = '/dashboard/discovery?window=8h&main_decision=selected_for_preenrich' %}
                 {% endif %}
-            </p>
-            {% if card.selected_lifecycle %}
-            <p class="text-xs mt-1" style="color: var(--text-secondary);">Latest selected lifecycle: {{ card.selected_lifecycle }}</p>
-            {% endif %}
+
+                <a href="{{ primary_href }}"
+                   class="rounded-lg border px-3 py-2 transition-colors hover:bg-white/5"
+                   style="border-color: var(--border-default);">
+                    <p class="text-2xl font-semibold leading-none" style="color: var(--text-primary);">{{ card.primary_metric }}</p>
+                    <p class="text-[11px] mt-1" style="color: var(--text-tertiary);">{{ card.primary_label }}</p>
+                </a>
+                <a href="{{ secondary_href }}"
+                   class="rounded-lg border px-3 py-2 transition-colors hover:bg-white/5"
+                   style="border-color: var(--border-default);">
+                    <p class="text-2xl font-semibold leading-none" style="color: var(--text-primary);">{{ card.secondary_metric }}</p>
+                    <p class="text-[11px] mt-1" style="color: var(--text-tertiary);">{{ card.secondary_label }}</p>
+                </a>
+            </div>
+
+            <p class="text-[11px] mt-3" style="color: var(--text-tertiary);">{{ card.reason }}</p>
+            <div class="flex items-center justify-between gap-2 mt-1">
+                <p class="text-[11px]" style="color: var(--text-secondary);">
+                    Last:
+                    {% if card.last_seen_at %}
+                    {{ card.last_seen_at.strftime('%b %d %H:%M UTC') }}
+                    {% else %}
+                    —
+                    {% endif %}
+                </p>
+                {% if card.selected_lifecycle %}
+                <p class="text-[11px]" style="color: var(--text-secondary);">Selected: {{ card.selected_lifecycle }}</p>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
 
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
-            <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Pending Scrapes</p>
-            <p class="text-2xl font-bold mt-1 text-yellow-400">{{ heartbeat.summary.pending_scrapes }}</p>
-        </div>
-        <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
-            <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Pool Available</p>
-            <p class="text-2xl font-bold mt-1 text-cyan-400">{{ heartbeat.summary.pool_available }}</p>
-        </div>
-        <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
-            <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Selected Ready</p>
-            <p class="text-2xl font-bold mt-1 text-emerald-400">{{ heartbeat.summary.selected_ready }}</p>
-        </div>
-        <div class="rounded-xl border p-4" style="background-color: var(--bg-card); border-color: var(--border-default);">
-            <p class="text-xs uppercase tracking-wide" style="color: var(--text-tertiary);">Failures</p>
-            <p class="text-2xl font-bold mt-1 text-red-400">{{ heartbeat.summary.failures }}</p>
-        </div>
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <a href="/dashboard/discovery?scrape_status=pending&window=24h"
+           class="rounded-xl border p-3 transition-colors hover:bg-white/5"
+           style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">Pending Scrapes</p>
+            <p class="text-2xl font-semibold mt-1 text-yellow-400">{{ heartbeat.summary.pending_scrapes }}</p>
+        </a>
+        <a href="/dashboard/discovery?pool_status=available&window=24h"
+           class="rounded-xl border p-3 transition-colors hover:bg-white/5"
+           style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">Pool Available</p>
+            <p class="text-2xl font-semibold mt-1 text-cyan-400">{{ heartbeat.summary.pool_available }}</p>
+        </a>
+        <a href="/dashboard/discovery?main_decision=selected_for_preenrich&window=24h"
+           class="rounded-xl border p-3 transition-colors hover:bg-white/5"
+           style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">Selected Ready</p>
+            <p class="text-2xl font-semibold mt-1 text-emerald-400">{{ heartbeat.summary.selected_ready }}</p>
+        </a>
+        <a href="/dashboard/discovery?failures_only=true&window=24h"
+           class="rounded-xl border p-3 transition-colors hover:bg-white/5"
+           style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">Failures</p>
+            <p class="text-2xl font-semibold mt-1 text-red-400">{{ heartbeat.summary.failures }}</p>
+        </a>
     </div>
 </div>
 {% else %}

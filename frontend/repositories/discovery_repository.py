@@ -722,6 +722,7 @@ def _parse_window(value: str) -> timedelta:
         "15m": timedelta(minutes=15),
         "1h": timedelta(hours=1),
         "6h": timedelta(hours=6),
+        "8h": timedelta(hours=8),
         "24h": timedelta(hours=24),
         "7d": timedelta(days=7),
     }

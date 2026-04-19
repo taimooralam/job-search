@@ -1,3 +1,4 @@
+{% import "partials/intel/discovery_macros.html" as discovery %}
 {% set work_item = hit.related_work_item %}
 {% set scrape = hit.scrape or {} %}
 {% set selection = hit.selection or {} %}
@@ -20,8 +21,8 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Discovery State</p>
-            <p class="mt-2" style="color: var(--text-primary);">{{ display_status }}</p>
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Search</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ hit.search_profile or '—' }}</p>
             {% if is_native_complete %}
             <p class="text-xs mt-2 text-green-400">Native scrape completed and selector compatibility writes succeeded.</p>
             {% elif is_legacy_handoff %}
@@ -39,13 +40,13 @@
             {% endif %}
         </div>
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Selector State</p>
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Select</p>
             <p class="mt-2" style="color: var(--text-primary);">
-                Main: {{ main.decision or 'pending' }}
+                {{ discovery.select_label(main) }}
             </p>
-            <p class="text-xs mt-2" style="color: var(--text-tertiary);">Main status: {{ main.status or '—' }}</p>
-            <p class="text-xs mt-1" style="color: var(--text-tertiary);">Main run: <code>{{ main.selector_run_id or '—' }}</code></p>
-            <p class="text-xs mt-1" style="color: var(--text-tertiary);">Pool: {{ pool.status or '—' }}</p>
+            <p class="text-xs mt-2" style="color: var(--text-tertiary);">Status: {{ main.status or '—' }}</p>
+            <p class="text-xs mt-1" style="color: var(--text-tertiary);">Run: <code>{{ main.selector_run_id or '—' }}</code></p>
+            <p class="text-xs mt-1" style="color: var(--text-tertiary);">Pool: {{ discovery.pool_label(pool) }}</p>
             <p class="text-xs mt-1" style="color: var(--text-tertiary);">Pool expires: {{ pool.expires_at or '—' }}</p>
             {% for profile_name, state in profiles.items() %}
             <p class="text-xs mt-1" style="color: var(--text-tertiary);">{{ profile_name }}: {{ state.decision or 'pending' }}</p>
@@ -55,9 +56,9 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
-            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Scrape State</p>
+            <p class="text-xs uppercase" style="color: var(--text-tertiary);">Scrape</p>
             <p class="mt-2" style="color: var(--text-primary);">
-                {% if is_legacy_handoff %}legacy handoff only{% else %}{{ scrape.status or 'not started' }}{% endif %}
+                {% if is_legacy_handoff %}Legacy handoff only{% else %}{{ discovery.scrape_label(scrape) }}{% endif %}
             </p>
             <p class="text-xs mt-2" style="color: var(--text-tertiary);">Score: {{ scrape.score if scrape.score is not none else '—' }}</p>
             <p class="text-xs mt-1" style="color: var(--text-tertiary);">Tier: {{ scrape.tier or '—' }}</p>
@@ -75,7 +76,7 @@
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
             <p class="text-xs uppercase" style="color: var(--text-tertiary);">Level-2 / Preenrich</p>
             <p class="mt-2" style="color: var(--text-primary);">
-                {% if level2.exists %}linked{% else %}not inserted{% endif %}
+                {{ discovery.level2_label(level2) }}
             </p>
             <p class="text-xs mt-2" style="color: var(--text-tertiary);">Level-2 id: <code>{{ level2.id or '—' }}</code></p>
             <p class="text-xs mt-1" style="color: var(--text-tertiary);">Lifecycle: {{ level2.lifecycle or '—' }}</p>
