@@ -1,0 +1,54 @@
+<div class="space-y-4">
+    {% if job.job_blueprint_guidance.title_guidance %}
+    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+        <h3 class="text-xs font-semibold uppercase text-emerald-700 mb-1">Title Guidance</h3>
+        <p class="text-sm text-gray-700">{{ job.job_blueprint_guidance.title_guidance }}</p>
+    </div>
+    {% endif %}
+
+    {% if job.job_blueprint_guidance.identity_guidance %}
+    <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
+        <h3 class="text-xs font-semibold uppercase text-blue-700 mb-1">Identity Guidance</h3>
+        <p class="text-sm text-gray-700">{{ job.job_blueprint_guidance.identity_guidance }}</p>
+    </div>
+    {% endif %}
+
+    {% if job.job_blueprint_guidance.bullet_guidance %}
+    <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+        <h3 class="text-xs font-semibold uppercase text-indigo-700 mb-2">Bullet Guidance</h3>
+        <ul class="space-y-1.5">
+            {% for bullet in job.job_blueprint_guidance.bullet_guidance %}
+            <li class="flex items-start text-sm text-gray-700">
+                <span class="text-indigo-500 mr-2">-</span>
+                {{ bullet }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if job.job_blueprint_guidance.ats_keywords %}
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <h3 class="text-xs font-semibold uppercase text-slate-700 mb-2">ATS Keywords</h3>
+        <div class="flex flex-wrap gap-1.5">
+            {% for keyword in job.job_blueprint_guidance.ats_keywords %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700">{{ keyword }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if job.job_blueprint_guidance.cover_letter_expectations %}
+    <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <h3 class="text-xs font-semibold uppercase text-amber-700 mb-2">Cover Letter Expectations</h3>
+        <ul class="space-y-1.5">
+            {% for expectation in job.job_blueprint_guidance.cover_letter_expectations %}
+            <li class="flex items-start text-sm text-gray-700">
+                <span class="text-amber-500 mr-2">-</span>
+                {{ expectation }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
