@@ -1,0 +1,179 @@
+version: "2026-04-19-v1"
+description: "Canonical Stage 1 taxonomy for role classification, search/selector interoperability, tone, and application-surface portal families."
+
+source_files:
+  - src/preenrich/stages/jd_extraction.py
+  - src/layer1_4/prompts.py
+  - n8n/skills/top-jobs/scripts/top_jobs.py
+  - .codex/skills/top-jobs/SKILL.md
+  - .codex/skills/scout-jobs/SKILL.md
+  - n8n/skills/scout-jobs/scripts/scout_linkedin_jobs.py
+  - .claude/skills/apply-jobs/modules/portal-detection.md
+  - data/portal-playbooks/
+
+design_rules:
+  - "primary_role_category answers what job this is."
+  - "tone_family answers how the role should be framed."
+  - "search_profiles and selector_profiles preserve compatibility with existing search and ranking workflows."
+  - "portal_family is part of application_surface, not role identity."
+  - "AI specialization is orthogonal to role seniority and management scope."
+
+primary_role_categories:
+  senior_engineer:
+    summary: "Senior IC role with ownership of systems or features and limited formal management scope."
+    maps_from:
+      preenrich_role_categories: [senior_engineer]
+      tone_families: [hands_on]
+      ideal_candidate_archetypes: [domain_expert, execution_driver]
+  tech_lead:
+    summary: "Hands-on player-coach role leading a small team or technical stream."
+    maps_from:
+      preenrich_role_categories: [tech_lead]
+      selector_profiles: [tech-lead]
+      tone_families: [player_coach]
+      ideal_candidate_archetypes: [hybrid_technical_leader, technical_architect]
+  staff_principal_engineer:
+    summary: "Staff or principal IC leadership through architecture, standards, and cross-team influence."
+    maps_from:
+      preenrich_role_categories: [staff_principal_engineer]
+      selector_profiles: [staff-principal, architect]
+      search_profiles: [ai_senior_ic, ai_architect]
+      tone_families: [architect]
+      ideal_candidate_archetypes: [technical_architect, domain_expert]
+  engineering_manager:
+    summary: "Direct people-management role for one team or a narrow engineering area."
+    maps_from:
+      preenrich_role_categories: [engineering_manager]
+      selector_profiles: [engineering-manager]
+      tone_families: [player_coach, executive]
+      ideal_candidate_archetypes: [people_leader, execution_driver]
+  director_of_engineering:
+    summary: "Manager-of-managers role balancing execution, org design, and delivery."
+    maps_from:
+      preenrich_role_categories: [director_of_engineering]
+      selector_profiles: [head-director]
+      search_profiles: [ai_leadership]
+      tone_families: [executive]
+      ideal_candidate_archetypes: [people_leader, process_champion]
+  head_of_engineering:
+    summary: "Function-building engineering leader, often close to the executive table."
+    maps_from:
+      preenrich_role_categories: [head_of_engineering]
+      selector_profiles: [head-director]
+      search_profiles: [ai_leadership]
+      tone_families: [executive]
+      ideal_candidate_archetypes: [builder_founder, strategic_visionary]
+  vp_engineering:
+    summary: "Executive engineering leader operating through directors and org-level systems."
+    maps_from:
+      preenrich_role_categories: [vp_engineering]
+      selector_profiles: [head-director]
+      search_profiles: [ai_leadership]
+      tone_families: [executive]
+      ideal_candidate_archetypes: [strategic_visionary, process_champion]
+  cto:
+    summary: "Top-level technology executive with external-facing and business-strategy responsibilities."
+    maps_from:
+      preenrich_role_categories: [cto]
+      selector_profiles: [head-director]
+      search_profiles: [ai_leadership]
+      tone_families: [executive]
+      ideal_candidate_archetypes: [strategic_visionary, technical_architect]
+
+search_profiles:
+  ai_core:
+    description: "Core AI IC search set."
+    likely_primary_role_categories: [senior_engineer, tech_lead]
+  ai_leadership:
+    description: "Head/Director/VP/manager AI leadership search set."
+    likely_primary_role_categories: [engineering_manager, director_of_engineering, head_of_engineering, vp_engineering, cto]
+  ai_senior_ic:
+    description: "Staff/principal/senior AI IC search set."
+    likely_primary_role_categories: [staff_principal_engineer, senior_engineer, tech_lead]
+  ai_architect:
+    description: "AI architect and systems architect search set."
+    likely_primary_role_categories: [staff_principal_engineer, tech_lead, cto]
+
+selector_profiles:
+  tech-lead:
+    description: "Lead engineer / technical lead / team lead family."
+    likely_primary_role_categories: [tech_lead]
+  architect:
+    description: "Architect family across software, cloud, data, enterprise, AI."
+    likely_primary_role_categories: [staff_principal_engineer, cto]
+  staff-principal:
+    description: "Staff, principal, distinguished, fellow."
+    likely_primary_role_categories: [staff_principal_engineer]
+  head-director:
+    description: "Head, director, VP, chief, CTO/CIO/CAIO."
+    likely_primary_role_categories: [director_of_engineering, head_of_engineering, vp_engineering, cto]
+  engineering-manager:
+    description: "Engineering manager family."
+    likely_primary_role_categories: [engineering_manager]
+
+tone_families:
+  hands_on:
+    description: "Execution-heavy IC framing."
+  player_coach:
+    description: "Hands-on leadership framing for small-team or hybrid roles."
+  architect:
+    description: "Systems, design, scale, and technical strategy framing."
+  executive:
+    description: "Org, business, and strategic leadership framing."
+
+ideal_candidate_archetypes:
+  technical_architect:
+    description: "Influences through system design and architecture decisions."
+  people_leader:
+    description: "Builds teams and develops talent."
+  execution_driver:
+    description: "Ships, unblocks, and delivers consistently."
+  strategic_visionary:
+    description: "Aligns technology direction with business outcomes."
+  domain_expert:
+    description: "Brings deep expertise in a specific technical domain."
+  builder_founder:
+    description: "Thrives in ambiguity and zero-to-one or scale-up conditions."
+  process_champion:
+    description: "Establishes engineering excellence and operating cadence."
+  hybrid_technical_leader:
+    description: "Balances code-level authority with leadership responsibility."
+
+portal_families:
+  greenhouse:
+    url_patterns: ["greenhouse.io", "boards.greenhouse.io"]
+  lever:
+    url_patterns: ["lever.co", "jobs.lever.co"]
+  workday:
+    url_patterns: ["myworkdayjobs.com", "workday.com"]
+  smartrecruiters:
+    url_patterns: ["smartrecruiters.com"]
+  ashby:
+    url_patterns: ["ashbyhq.com"]
+  bamboohr:
+    url_patterns: ["bamboohr.com"]
+  linkedin_easy_apply:
+    url_patterns: ["linkedin.com/jobs"]
+  indeed:
+    url_patterns: ["indeed.com"]
+  join:
+    url_patterns: ["join.com"]
+  personio:
+    url_patterns: ["personio.de", "jobs.personio"]
+  recruitee:
+    url_patterns: ["recruitee.com"]
+  breezy:
+    url_patterns: ["breezy.hr"]
+  teamtailor:
+    url_patterns: ["teamtailor.com"]
+  workable:
+    url_patterns: ["workable.com"]
+  applytojob:
+    url_patterns: ["applytojob.com"]
+  custom_unknown:
+    url_patterns: []
+
+notes:
+  - "apply-jobs contributes portal taxonomy and playbook behavior, not role archetypes."
+  - "top-jobs and scout-jobs can continue exposing their current profile names, but they should map through this file."
+  - "taxonomy_version should be derived from this file version or content hash."

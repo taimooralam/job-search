@@ -52,6 +52,58 @@ _STAGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "live_keys": ["synthesized_persona"],
         "default_model": "gpt-5.4",
     },
+    "jd_facts": {
+        "live_field": "pre_enrichment.outputs.jd_facts",
+        "live_keys": ["merged_view", "provenance", "deterministic"],
+        "default_model": "gpt-5.4-mini",
+    },
+    "classification": {
+        "live_field": "pre_enrichment.outputs.classification",
+        "live_keys": [
+            "primary_role_category",
+            "search_profiles",
+            "selector_profiles",
+            "tone_family",
+            "taxonomy_version",
+        ],
+        "default_model": "gpt-5.4-mini",
+    },
+    "research_enrichment": {
+        "live_field": "pre_enrichment.outputs.research_enrichment",
+        "live_keys": ["status", "company_profile", "capability_flags"],
+        "default_model": "gpt-5.4-mini",
+    },
+    "application_surface": {
+        "live_field": "pre_enrichment.outputs.application_surface",
+        "live_keys": ["status", "application_url", "portal_family", "is_direct_apply"],
+        "default_model": "gpt-5.4-mini",
+    },
+    "job_inference": {
+        "live_field": "pre_enrichment.outputs.job_inference",
+        "live_keys": ["semantic_role_model", "company_model", "qualifications", "application_surface"],
+        "default_model": "gpt-5.4",
+    },
+    "job_hypotheses": {
+        "live_field": "pre_enrichment.outputs.job_hypotheses",
+        "live_keys": ["status", "hypothesis_count"],
+        "default_model": "gpt-5.4-mini",
+    },
+    "cv_guidelines": {
+        "live_field": "pre_enrichment.outputs.cv_guidelines",
+        "live_keys": [
+            "title_guidance",
+            "identity_guidance",
+            "bullet_theme_guidance",
+            "ats_keyword_guidance",
+            "cover_letter_expectations",
+        ],
+        "default_model": "gpt-5.4",
+    },
+    "blueprint_assembly": {
+        "live_field": "pre_enrichment.outputs.blueprint_assembly",
+        "live_keys": ["job_blueprint_version", "snapshot", "compatibility_projection"],
+        "default_model": "none",
+    },
 }
 
 _SUPPORTED_STAGES = list(_STAGE_CONFIG.keys())
@@ -62,7 +114,12 @@ _SUPPORTED_STAGES = list(_STAGE_CONFIG.keys())
 def _get_live_value(job_doc: Dict[str, Any], stage: str) -> Optional[Any]:
     """Extract the live field value for the given stage."""
     cfg = _STAGE_CONFIG[stage]
-    return job_doc.get(cfg["live_field"])
+    value: Any = job_doc
+    for part in cfg["live_field"].split("."):
+        if not isinstance(value, dict):
+            return None
+        value = value.get(part)
+    return value
 
 
 def _check_schema(output: Dict[str, Any], stage: str) -> Tuple[bool, str]:
@@ -166,6 +223,30 @@ def _run_stage_codex(
         elif stage == "persona":
             from src.preenrich.stages.persona import PersonaStage
             stage_obj = PersonaStage()
+        elif stage == "jd_facts":
+            from src.preenrich.stages.jd_facts import JDFactsStage
+            stage_obj = JDFactsStage()
+        elif stage == "classification":
+            from src.preenrich.stages.classification import ClassificationStage
+            stage_obj = ClassificationStage()
+        elif stage == "research_enrichment":
+            from src.preenrich.stages.research_enrichment import ResearchEnrichmentStage
+            stage_obj = ResearchEnrichmentStage()
+        elif stage == "application_surface":
+            from src.preenrich.stages.application_surface import ApplicationSurfaceStage
+            stage_obj = ApplicationSurfaceStage()
+        elif stage == "job_inference":
+            from src.preenrich.stages.job_inference import JobInferenceStage
+            stage_obj = JobInferenceStage()
+        elif stage == "job_hypotheses":
+            from src.preenrich.stages.job_hypotheses import JobHypothesesStage
+            stage_obj = JobHypothesesStage()
+        elif stage == "cv_guidelines":
+            from src.preenrich.stages.cv_guidelines import CVGuidelinesStage
+            stage_obj = CVGuidelinesStage()
+        elif stage == "blueprint_assembly":
+            from src.preenrich.stages.blueprint_assembly import BlueprintAssemblyStage
+            stage_obj = BlueprintAssemblyStage()
         else:
             return False, None, f"Unknown stage: {stage}"
     except ImportError as exc:
@@ -191,7 +272,8 @@ def _run_stage_codex(
         t0 = time.monotonic()
         stage_result = stage_obj.run(ctx)
         elapsed_ms = int((time.monotonic() - t0) * 1000)
-        return True, stage_result.output, f"{elapsed_ms}ms"
+        output = stage_result.stage_output or stage_result.output
+        return True, output, f"{elapsed_ms}ms"
     except Exception as exc:
         return False, None, str(exc)
     finally:
@@ -222,6 +304,28 @@ def _get_historical_jobs(
 
     cursor = db["level-2"].find(query).limit(n)
     return list(cursor)
+
+
+def validate_stage_routing(stage: str | None = None) -> list[str]:
+    """Return routing config errors for the requested stage or all supported stages."""
+    from src.preenrich.types import get_stage_step_config
+
+    targets = [stage] if stage else _SUPPORTED_STAGES
+    errors: list[str] = []
+    for name in targets:
+        cfg = get_stage_step_config(name)
+        if cfg.provider != "none" and not cfg.primary_model:
+            errors.append(f"{name}: provider={cfg.provider} missing primary_model")
+        if name == "jd_facts":
+            if os.getenv("PREENRICH_JD_FACTS_V2_ENABLED", "false").strip().lower() == "true":
+                if cfg.provider == "none":
+                    errors.append("jd_facts: V2 enabled requires a real provider")
+                if (
+                    os.getenv("PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED", "true").strip().lower() == "true"
+                    and not os.getenv("PREENRICH_JD_FACTS_ESCALATION_MODEL", "").strip()
+                ):
+                    errors.append("jd_facts: escalation enabled requires PREENRICH_JD_FACTS_ESCALATION_MODEL")
+    return errors
 
 
 def run_preflight(
@@ -333,19 +437,21 @@ def main() -> None:
     )
     parser.add_argument(
         "--stage",
-        required=True,
         choices=_SUPPORTED_STAGES,
         help="Stage to test",
     )
     parser.add_argument(
         "--model",
-        required=True,
         help="Codex model identifier (e.g. gpt-5.4, gpt-5.4-mini)",
     )
     parser.add_argument(
         "--fallback-model",
-        required=True,
         help="Claude fallback model (for reference only — not called in preflight)",
+    )
+    parser.add_argument(
+        "--validate-routing",
+        action="store_true",
+        help="Validate provider/model routing for preenrich stages and exit",
     )
     parser.add_argument(
         "--n",
@@ -365,6 +471,19 @@ def main() -> None:
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
+
+    if args.validate_routing:
+        errors = validate_stage_routing(args.stage)
+        if errors:
+            for error in errors:
+                print(error, file=sys.stderr)
+            raise SystemExit(1)
+        target = args.stage or "all supported stages"
+        print(f"Routing validation OK for {target}")
+        return
+
+    if not args.stage or not args.model or not args.fallback_model:
+        parser.error("--stage, --model, and --fallback-model are required unless --validate-routing is used")
 
     results = run_preflight(
         stage=args.stage,

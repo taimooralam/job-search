@@ -39,6 +39,10 @@ class StageResult:
 
     # The Mongo patch to apply on completion (top-level legacy fields)
     output: Dict[str, Any] = field(default_factory=dict)
+    # Durable stage-local output stored under pre_enrichment.outputs.<stage>.
+    stage_output: Dict[str, Any] = field(default_factory=dict)
+    # Collection-backed artifact writes performed by StageWorker before Phase A.
+    artifact_writes: List["ArtifactWrite"] = field(default_factory=list)
 
     # Provenance metadata
     provider_used: Optional[str] = None
@@ -62,6 +66,16 @@ class StageResult:
     provider_attempts: List[Dict[str, Any]] = field(default_factory=list)
     # Outcome of the first non-success attempt when fallback was triggered
     provider_fallback_reason: Optional[str] = None
+
+
+@dataclass
+class ArtifactWrite:
+    """A collection-backed artifact to upsert during stage completion."""
+
+    collection: str
+    unique_filter: Dict[str, Any]
+    document: Dict[str, Any]
+    ref_name: str
 
 
 # Per-stage Codex-primary defaults.  Env overrides:
@@ -92,6 +106,58 @@ _STAGE_DEFAULTS: Dict[str, Dict[str, str]] = {
         "primary_model": "gpt-5.4",
         "fallback_provider": "claude",
         "fallback_model": "claude-sonnet-4-5",
+    },
+    "jd_facts": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4-mini",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-sonnet-4-6",
+    },
+    "classification": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4-mini",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-haiku-4-5",
+    },
+    "research_enrichment": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4-mini",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-haiku-4-5",
+    },
+    "application_surface": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4-mini",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-haiku-4-5",
+    },
+    "job_inference": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-sonnet-4-5",
+    },
+    "job_hypotheses": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4-mini",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-haiku-4-5",
+    },
+    "cv_guidelines": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-sonnet-4-5",
+    },
+    "persona_compat": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "claude",
+        "fallback_model": "claude-sonnet-4-5",
+    },
+    "blueprint_assembly": {
+        "provider": "none",
+        "fallback_provider": "none",
     },
 }
 
