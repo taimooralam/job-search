@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2026-04-19 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 3 with Mongo-native search, scrape, and selector-family execution, while preenrich still claims from `level-2`
+**Last Updated**: 2026-04-19 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 4 with Mongo-native search, scrape, selector-family execution, and preenrich DAG orchestration on `level-2`
 
 ---
 
@@ -47,7 +47,14 @@ native selector family (iteration 3)
   -> scout_search_hits.selection
   -> level-1 / level-2 writes
   -> level-2.lifecycle="selected"
-  -> existing preenrich lease claimant
+  -> preenrich root enqueuer
+
+native preenrich DAG (iteration 4)
+  -> level-2.pre_enrichment.orchestration="dag"
+  -> work_items(task_type=preenrich.<stage>, lane=preenrich)
+  -> preenrich_stage_runs / preenrich_job_runs
+  -> level-2.pre_enrichment.stage_states
+  -> level-2.lifecycle="cv_ready"
 
 legacy rollback paths
   -> iteration-1 legacy bridge
@@ -55,6 +62,7 @@ legacy rollback paths
   -> old scraper cron
   -> legacy selector reads scored.jsonl
   -> legacy profile selectors read scored_pool.jsonl
+  -> legacy preenrich lease + Redis outbox (flag-gated during cutover only)
 ```
 
 ### Control-Plane Rule
@@ -116,6 +124,63 @@ Stable downstream boundary:
 - tier C+ main-selector outputs and all profile-selector outputs still land in `level-2`
 - `lifecycle="selected"` plus `selected_at` is still the only preenrich claim signal
 - `src/preenrich/lease.py` is unchanged in iteration 3
+
+### Preenrich DAG Contract
+
+Iteration 4 replaces monolithic preenrich ownership with stage-level Mongo work items while keeping `level-2` authoritative.
+
+Control-plane truth:
+
+- `level-2` remains the authoritative downstream collection.
+- `level-2.pre_enrichment.orchestration` is the ownership marker:
+  - `dag`
+  - `legacy`
+- `work_items` is the authoritative lease surface for DAG-owned preenrich stages.
+- `level-2.pre_enrichment.stage_states.<stage>` is the durable per-stage status and output envelope.
+- `preenrich_stage_runs` and `preenrich_job_runs` are the audit surfaces for per-stage execution and per-job progression.
+
+Lifecycle contract:
+
+- selector handoff remains `level-2.lifecycle="selected"` plus `selected_at`
+- DAG-owned in-flight jobs expose derived `lifecycle="preenriching"`
+- DAG terminal success writes only `lifecycle="cv_ready"`
+- DAG terminal failure writes `failed` or `deadletter`
+- historical `ready`, `ready_for_cv`, `queued`, and `running` are legacy-only compatibility states and must render under a dedicated legacy bucket in dashboards
+
+Queue and idempotency rules:
+
+- each stage uses `task_type="preenrich.<stage>"` with `lane="preenrich"`
+- `work_items.idempotency_key` is pinned to `preenrich.<stage>:<level2_id>:<input_snapshot_id>`
+- `attempt_token` is pinned to `sha256(job_id|stage|jd_checksum|prompt_version|attempt_number)` and must not include provider or model
+- stage success plus downstream enqueue uses the stage-outbox pattern:
+  - Phase A writes stage output and `pending_next_stages` on `level-2`
+  - Phase B inserts downstream work items inline or via sweeper
+- unbounded multi-document transactions are not part of the design
+
+Observability rules:
+
+- Langfuse preenrich session ids are pinned to `job:<level2_object_id>`
+- root and stage traces must carry:
+  - `job_id`
+  - `level2_job_id`
+  - `stage_name`
+  - `attempt_count`
+  - `attempt_token`
+  - `input_snapshot_id`
+  - `jd_checksum`
+  - `work_item_id`
+- prompt bodies are excluded by default and only captured when `LANGFUSE_CAPTURE_FULL_PROMPTS=true`
+
+Operational topology:
+
+- `preenrich-root-enqueuer.service` + timer own DAG entry from selector handoff
+- one `scout-preenrich-worker@<stage>.service` instance runs per registered stage
+- sweepers own:
+  - next-stage enqueue recovery
+  - expired lease recovery
+  - `cv_ready` finalization
+  - snapshot invalidation
+- `src/preenrich/outbox.py` remains in-tree only as a guarded legacy compatibility surface until post-cutover removal
 
 ### Compatibility Boundary
 
@@ -215,6 +280,23 @@ Native selector family:
 - `SCOUT_SELECTOR_PREENRICH_HANDOFF_MODE=selected_lifecycle|legacy_runner`
 - `SCOUT_SELECTOR_DISABLE_RUNNER_POST`
 - `SCOUT_SELECTOR_WRITE_SCORED_POOL_COMPAT`
+
+Preenrich DAG:
+
+- `PREENRICH_STAGE_DAG_ENABLED`
+- `PREENRICH_DAG_CANARY_ALLOWLIST`
+- `PREENRICH_DAG_CANARY_PCT`
+- `PREENRICH_LEGACY_SEQUENCE_ENABLED`
+- `PREENRICH_WRITE_CV_READY`
+- `PREENRICH_ACCEPT_READY_COMPAT`
+- `PREENRICH_DISABLE_REDIS_OUTBOX`
+- `PREENRICH_STAGE_ALLOWLIST`
+- `PREENRICH_STAGE_LEASE_SECONDS`
+- `PREENRICH_STAGE_HEARTBEAT_SECONDS`
+- `PREENRICH_SNAPSHOT_REVALIDATE_WINDOW_SECONDS`
+- `PREENRICH_ALERT_MAX_PER_HOUR`
+- `LANGFUSE_PREENRICH_TRACING_ENABLED`
+- `LANGFUSE_CAPTURE_FULL_PROMPTS`
 
 Safe defaults keep legacy ownership on and native ownership off.
 

@@ -8,6 +8,7 @@
 {% set trace_links = hit.trace_links or {} %}
 {% set work_item = hit.related_work_item %}
 {% set legacy_hint = discovery.legacy_label(scrape, work_item) %}
+{% set preenrich = hit.preenrich_matrix %}
 <div class="space-y-3">
     <div>
         <p class="text-sm font-medium" style="color: var(--text-primary);">{{ hit.title or 'Untitled role' }}</p>
@@ -33,6 +34,16 @@
             <p class="mt-1" style="color: var(--text-tertiary);">L2 {{ discovery.level2_label(level2) }}</p>
             {% if legacy_hint %}
             <p class="mt-1" style="color: var(--text-tertiary);">{{ legacy_hint }}</p>
+            {% endif %}
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Preenrich</p>
+            {% if preenrich %}
+            <p class="mt-2" style="color: var(--text-primary);">{{ preenrich.lifecycle_bucket|replace('_', ' ')|title if preenrich.lifecycle_bucket else '—' }}</p>
+            <p class="mt-1" style="color: var(--text-secondary);">Snapshot {{ preenrich.input_snapshot_id or '—' }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">{{ preenrich.orchestration or '—' }} · {{ preenrich.langfuse_session_id or 'no session' }}</p>
+            {% else %}
+            <p class="mt-2" style="color: var(--text-tertiary);">No DAG state linked yet.</p>
             {% endif %}
         </div>
         <div class="rounded-lg border p-3" style="border-color: var(--border-default);">

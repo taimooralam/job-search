@@ -17,7 +17,7 @@ from bson import ObjectId
 from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
-from src.pipeline.tracing import emit_standalone_event
+from src.pipeline.tracing import PreenrichTracingSession
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import DAG_VERSION, SCHEMA_VERSION
 from src.preenrich.schema import attempt_token, idempotency_key, input_snapshot_id
@@ -193,17 +193,60 @@ class StageWorker:
             self._cancel_work_item(work_item, reason="job_missing", now=current_time)
             return {"status": "cancelled", "reason": "job_missing", "work_item_id": work_item["_id"]}
 
-        current_snapshot = self._current_snapshot(job_doc, payload=work_item.get("payload") or {})
         payload = work_item.get("payload") or {}
+        current_snapshot = self._current_snapshot(job_doc, payload=payload)
+        stage_state = (((job_doc.get("pre_enrichment") or {}).get("stage_states") or {}).get(self.stage_name) or {})
+        attempt_number = int(work_item.get("attempt_count", stage_state.get("attempt_count", 1)))
+        tracer = PreenrichTracingSession(
+            run_id=f"preenrich:{self.stage_name}:{work_item['_id']}",
+            session_id=payload.get("langfuse_session_id") or work_item["correlation_id"],
+            metadata=self._trace_metadata(
+                job_doc=job_doc,
+                work_item=work_item,
+                input_snapshot_id=current_snapshot,
+                jd_checksum=str((job_doc.get("pre_enrichment") or {}).get("jd_checksum") or jd_checksum(job_doc.get("description", ""))),
+                attempt_count=attempt_number,
+                lifecycle_before=str(job_doc.get("lifecycle") or "selected"),
+                lifecycle_after=str(job_doc.get("lifecycle") or "selected"),
+            ),
+        )
+        tracer.record_event(
+            "scout.preenrich.claim",
+            self._trace_metadata(
+                job_doc=job_doc,
+                work_item=work_item,
+                input_snapshot_id=current_snapshot,
+                jd_checksum=str((job_doc.get("pre_enrichment") or {}).get("jd_checksum") or jd_checksum(job_doc.get("description", ""))),
+                attempt_count=attempt_number,
+                lifecycle_before=str(job_doc.get("lifecycle") or "selected"),
+                lifecycle_after=str(job_doc.get("lifecycle") or "selected"),
+            ),
+        )
+
         payload_snapshot = payload.get("input_snapshot_id")
         if payload_snapshot != current_snapshot:
             self._cancel_for_snapshot_change(work_item, job_doc, current_snapshot=current_snapshot, now=current_time)
-            return {
+            cancelled = {
                 "status": "cancelled",
                 "reason": "snapshot_changed",
                 "work_item_id": work_item["_id"],
                 "job_id": str(level2_id),
             }
+            tracer.record_event(
+                "scout.preenrich.retry",
+                self._trace_metadata(
+                    job_doc=job_doc,
+                    work_item=work_item,
+                    input_snapshot_id=current_snapshot,
+                    jd_checksum=str((job_doc.get("pre_enrichment") or {}).get("jd_checksum") or jd_checksum(job_doc.get("description", ""))),
+                    attempt_count=attempt_number,
+                    lifecycle_before=str(job_doc.get("lifecycle") or "preenriching"),
+                    lifecycle_after=str(job_doc.get("lifecycle") or "preenriching"),
+                    extra={"reason": "snapshot_changed"},
+                ),
+            )
+            tracer.complete(output=cancelled)
+            return cancelled
 
         prereq_missing = self._missing_prerequisites(job_doc, current_snapshot)
         if prereq_missing:
@@ -214,27 +257,29 @@ class StageWorker:
                 error_message=f"Missing prerequisites: {', '.join(prereq_missing)}",
                 now=current_time,
             )
-            emit_standalone_event(
-                name="scout.preenrich.retry",
-                session_id=payload.get("langfuse_session_id") or work_item["correlation_id"],
-                metadata={
-                    "reason": "prerequisite_not_ready",
-                    "stage_name": self.stage_name,
-                    "work_item_id": str(work_item["_id"]),
-                    "level2_job_id": str(level2_id),
-                    "missing_prerequisites": prereq_missing,
-                },
-            )
-            return {
+            retry_result = {
                 "status": "retry_pending",
                 "reason": "prerequisite_not_ready",
                 "missing_prerequisites": prereq_missing,
                 "work_item_id": work_item["_id"],
             }
+            tracer.record_event(
+                "scout.preenrich.retry",
+                self._trace_metadata(
+                    job_doc=job_doc,
+                    work_item=work_item,
+                    input_snapshot_id=current_snapshot,
+                    jd_checksum=str((job_doc.get("pre_enrichment") or {}).get("jd_checksum") or jd_checksum(job_doc.get("description", ""))),
+                    attempt_count=attempt_number,
+                    lifecycle_before=str(job_doc.get("lifecycle") or "preenriching"),
+                    lifecycle_after=str(job_doc.get("lifecycle") or "preenriching"),
+                    extra={"reason": "prerequisite_not_ready", "missing_prerequisites": prereq_missing},
+                ),
+            )
+            tracer.complete(output=retry_result)
+            return retry_result
 
         stage = self._make_stage()
-        stage_state = (((job_doc.get("pre_enrichment") or {}).get("stage_states") or {}).get(self.stage_name) or {})
-        attempt_number = int(work_item.get("attempt_count", stage_state.get("attempt_count", 1)))
         ctx = StageContext(
             job_doc=job_doc,
             jd_checksum=str((job_doc.get("pre_enrichment") or {}).get("jd_checksum") or jd_checksum(job_doc.get("description", ""))),
@@ -252,10 +297,30 @@ class StageWorker:
             attempt_number=attempt_number,
         )
 
-        run_id = self._insert_stage_run(job_doc, work_item, attempt_number, current_time)
+        run_id = self._insert_stage_run(
+            job_doc,
+            work_item,
+            attempt_number,
+            current_time,
+            trace_id=tracer.trace_id,
+            trace_url=tracer.trace_url,
+        )
         result = None
         error: Optional[Exception] = None
         start_monotonic = time.monotonic()
+        stage_span = tracer.start_stage_span(
+            self.stage_name,
+            self._trace_metadata(
+                job_doc=job_doc,
+                work_item=work_item,
+                input_snapshot_id=current_snapshot,
+                jd_checksum=ctx.jd_checksum,
+                attempt_count=attempt_number,
+                attempt_token=token,
+                lifecycle_before=str(job_doc.get("lifecycle") or "preenriching"),
+                lifecycle_after=str(job_doc.get("lifecycle") or "preenriching"),
+            ),
+        )
         with self._heartbeat_loop(work_item["_id"], level2_id):
             try:
                 result = stage.run(ctx)
@@ -265,9 +330,10 @@ class StageWorker:
         finished_at = utc_now()
         duration_ms = int((time.monotonic() - start_monotonic) * 1000)
         if error is not None:
+            tracer.end_span(stage_span, output={"status": "failed", "error_class": classify_error(error)})
             error_class = classify_error(error)
             self._finish_stage_run(run_id, status="failed", duration_ms=duration_ms, error=error)
-            return self._handle_stage_failure(
+            failure_result = self._handle_stage_failure(
                 work_item,
                 job_doc,
                 ctx=ctx,
@@ -276,8 +342,35 @@ class StageWorker:
                 error_class=error_class,
                 now=finished_at,
             )
+            tracer.record_event(
+                "scout.preenrich.deadletter" if failure_result["status"] == "deadletter" else "scout.preenrich.retry",
+                self._trace_metadata(
+                    job_doc=job_doc,
+                    work_item=work_item,
+                    input_snapshot_id=current_snapshot,
+                    jd_checksum=ctx.jd_checksum,
+                    attempt_count=attempt_number,
+                    attempt_token=token,
+                    lifecycle_before=str(job_doc.get("lifecycle") or "preenriching"),
+                    lifecycle_after="deadletter" if failure_result["status"] == "deadletter" else "preenriching",
+                    extra={"error_class": error_class, "status": failure_result["status"]},
+                ),
+            )
+            tracer.complete(output=failure_result)
+            return failure_result
 
         assert result is not None
+        tracer.end_span(
+            stage_span,
+            output={
+                "status": "completed",
+                "provider": result.provider_used,
+                "model": result.model_used,
+                "tokens_input": result.tokens_input,
+                "tokens_output": result.tokens_output,
+                "cost_usd": result.cost_usd,
+            },
+        )
         next_stage_entries = self._build_next_stage_entries(
             job_doc=job_doc,
             snapshot_id=current_snapshot,
@@ -299,6 +392,20 @@ class StageWorker:
 
         try:
             self._inline_phase_b_enqueue(level2_id=job_doc["_id"], now=finished_at)
+            tracer.record_event(
+                "scout.preenrich.enqueue_next",
+                self._trace_metadata(
+                    job_doc=job_doc,
+                    work_item=work_item,
+                    input_snapshot_id=current_snapshot,
+                    jd_checksum=ctx.jd_checksum,
+                    attempt_count=attempt_number,
+                    attempt_token=token,
+                    lifecycle_before=str(job_doc.get("lifecycle") or "preenriching"),
+                    lifecycle_after="preenriching",
+                    extra={"next_stage_count": len(next_stage_entries)},
+                ),
+            )
         except Exception as exc:  # pragma: no cover - defensive; sweeper covers this path
             logger.warning("inline next-stage enqueue failed for %s/%s: %s", level2_id, self.stage_name, exc)
 
@@ -313,14 +420,30 @@ class StageWorker:
             },
             now=finished_at,
         )
-        finalize_cv_ready(self.db, level2_id=level2_id, now=finished_at)
-        return {
+        finalized = finalize_cv_ready(self.db, level2_id=level2_id, now=finished_at)
+        tracer.record_event(
+            "scout.preenrich.finalize_cv_ready",
+            self._trace_metadata(
+                job_doc=job_doc,
+                work_item=work_item,
+                input_snapshot_id=current_snapshot,
+                jd_checksum=ctx.jd_checksum,
+                attempt_count=attempt_number,
+                attempt_token=token,
+                lifecycle_before=str(job_doc.get("lifecycle") or "preenriching"),
+                lifecycle_after="cv_ready" if finalized else "preenriching",
+                extra={"finalized": finalized},
+            ),
+        )
+        success_result = {
             "status": "completed",
             "stage_name": self.stage_name,
             "work_item_id": work_item["_id"],
             "job_id": str(level2_id),
             "next_stage_count": len(next_stage_entries),
         }
+        tracer.complete(output=success_result | {"cv_ready_finalized": finalized})
+        return success_result
 
     def _persist_stage_success_phase_a(
         self,
@@ -556,6 +679,27 @@ class StageWorker:
                 }
             },
         )
+        self.job_runs.update_one(
+            {"level2_job_id": str(job_doc["_id"])},
+            {
+                "$set": {
+                    "status": lifecycle,
+                    "updated_at": now,
+                    "last_error": {
+                        "stage": self.stage_name,
+                        "class": error_class,
+                        "message": error_message,
+                        "at": now,
+                    },
+                }
+            },
+        )
+        self._send_deadletter_alert_if_allowed(
+            job_doc,
+            error_class=error_class,
+            error_message=error_message,
+            now=now,
+        )
         self.work_items.update_many(
             {
                 "lane": "preenrich",
@@ -577,6 +721,43 @@ class StageWorker:
                 }
             },
         )
+
+    def _send_deadletter_alert_if_allowed(
+        self,
+        job_doc: dict[str, Any],
+        *,
+        error_class: str,
+        error_message: str,
+        now: datetime,
+    ) -> None:
+        """Send a rate-limited deadletter Telegram alert."""
+        limit = int(os.getenv("PREENRICH_ALERT_MAX_PER_HOUR", "10") or "10")
+        bucket = now.strftime("%Y%m%d%H")
+        alerts = self.db["preenrich_alerts"]
+        current = alerts.find_one({"bucket": bucket}) or {"count": 0}
+        if int(current.get("count", 0)) >= limit:
+            return
+        alerts.update_one(
+            {"bucket": bucket},
+            {"$inc": {"count": 1}, "$setOnInsert": {"created_at": now}},
+            upsert=True,
+        )
+        try:
+            from src.common.telegram import send_telegram
+
+            send_telegram(
+                "\n".join(
+                    [
+                        "&#10060; <b>Preenrich Deadletter</b>",
+                        f"<b>{job_doc.get('company', 'Unknown company')}</b> — {job_doc.get('title', 'Untitled role')}",
+                        f"Stage: <code>{self.stage_name}</code>",
+                        f"Job: <code>{job_doc.get('job_id') or job_doc['_id']}</code>",
+                        f"Error: <code>{error_class}: {error_message[:180]}</code>",
+                    ]
+                )
+            )
+        except Exception:  # pragma: no cover - best effort
+            logger.warning("Deadletter alert failed for %s/%s", job_doc.get("_id"), self.stage_name)
 
     def _is_terminal_error(self, error_class: str) -> bool:
         """Return whether the classified error should deadletter immediately."""
@@ -607,17 +788,6 @@ class StageWorker:
                     },
                     "updated_at": now,
                 }
-            },
-        )
-        emit_standalone_event(
-            name="scout.preenrich.retry",
-            session_id=(work_item.get("payload") or {}).get("langfuse_session_id") or work_item["correlation_id"],
-            metadata={
-                "reason": "snapshot_changed",
-                "stage_name": self.stage_name,
-                "work_item_id": str(work_item["_id"]),
-                "level2_job_id": str(job_doc["_id"]),
-                "current_snapshot_id": current_snapshot,
             },
         )
 
@@ -709,7 +879,16 @@ class StageWorker:
             stop_event.set()
             thread.join(timeout=1)
 
-    def _insert_stage_run(self, job_doc: dict[str, Any], work_item: dict[str, Any], attempt_number: int, started_at: datetime) -> ObjectId:
+    def _insert_stage_run(
+        self,
+        job_doc: dict[str, Any],
+        work_item: dict[str, Any],
+        attempt_number: int,
+        started_at: datetime,
+        *,
+        trace_id: Optional[str] = None,
+        trace_url: Optional[str] = None,
+    ) -> ObjectId:
         """Persist one stage run audit document."""
         document = {
             "job_id": str(job_doc.get("job_id") or job_doc["_id"]),
@@ -722,6 +901,8 @@ class StageWorker:
             "started_at": started_at,
             "updated_at": started_at,
             "langfuse_session_id": (work_item.get("payload") or {}).get("langfuse_session_id") or work_item["correlation_id"],
+            "langfuse_trace_id": trace_id,
+            "langfuse_trace_url": trace_url,
         }
         inserted = self.stage_runs.insert_one(document)
         self.job_runs.update_one(
@@ -732,7 +913,13 @@ class StageWorker:
                     "level2_job_id": str(job_doc["_id"]),
                     "started_at": started_at,
                 },
-                "$set": {"status": "running", "updated_at": started_at},
+                "$set": {
+                    "status": "running",
+                    "updated_at": started_at,
+                    "langfuse_session_id": (work_item.get("payload") or {}).get("langfuse_session_id") or work_item["correlation_id"],
+                    "langfuse_trace_id": trace_id,
+                    "langfuse_trace_url": trace_url,
+                },
             },
             upsert=True,
         )
@@ -759,6 +946,42 @@ class StageWorker:
         if error is not None:
             update["error"] = {"class": classify_error(error), "message": str(error)}
         self.stage_runs.update_one({"_id": run_id}, {"$set": update})
+
+    def _trace_metadata(
+        self,
+        *,
+        job_doc: dict[str, Any],
+        work_item: dict[str, Any],
+        input_snapshot_id: str,
+        jd_checksum: str,
+        attempt_count: int,
+        lifecycle_before: str,
+        lifecycle_after: str,
+        attempt_token: Optional[str] = None,
+        extra: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """Build the canonical preenrich correlation payload for Langfuse."""
+        payload = work_item.get("payload") or {}
+        metadata = {
+            "job_id": str(job_doc.get("job_id") or job_doc["_id"]),
+            "level2_job_id": str(job_doc["_id"]),
+            "correlation_id": work_item["correlation_id"],
+            "langfuse_session_id": payload.get("langfuse_session_id") or work_item["correlation_id"],
+            "run_id": f"preenrich:{self.stage_name}:{work_item['_id']}",
+            "worker_id": self.worker_id,
+            "task_type": work_item["task_type"],
+            "stage_name": self.stage_name,
+            "attempt_count": attempt_count,
+            "attempt_token": attempt_token,
+            "input_snapshot_id": input_snapshot_id,
+            "jd_checksum": jd_checksum,
+            "lifecycle_before": lifecycle_before,
+            "lifecycle_after": lifecycle_after,
+            "work_item_id": str(work_item["_id"]),
+        }
+        if extra:
+            metadata.update(extra)
+        return metadata
 
 
 def retry_delay_seconds(attempt_count: int) -> int:

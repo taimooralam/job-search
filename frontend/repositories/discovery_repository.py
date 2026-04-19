@@ -1,10 +1,11 @@
-"""Repository for discovery and native scrape pipeline visibility."""
+"""Repository for discovery, selector, and preenrich pipeline visibility."""
 
 from __future__ import annotations
 
 import logging
 import os
 import re
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -45,11 +46,30 @@ except ImportError:
     WorkItemQueue = None
     SelectorStore = None
 
+try:
+    from src.preenrich.stage_registry import iter_stage_definitions
+except ImportError:
+    def iter_stage_definitions() -> tuple[Any, ...]:
+        return tuple(
+            type("StageDefinition", (), {"name": name, "task_type": f"preenrich.{name}"})()
+            for name in (
+                "jd_structure",
+                "jd_extraction",
+                "ai_classification",
+                "pain_points",
+                "annotations",
+                "persona",
+                "company_research",
+                "role_research",
+            )
+        )
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_WINDOW_HOURS = 24
 DEFAULT_RESULTS_LIMIT = 25
 MAX_RESULTS_LIMIT = 100
+LEGACY_PREENRICH_LIFECYCLES = {"ready", "queued", "running", "ready_for_cv"}
 
 
 class DiscoveryRepository:
@@ -66,6 +86,8 @@ class DiscoveryRepository:
         self.selector_runs = self.db["selector_runs"]
         self.work_items = self.db["work_items"]
         self.level2 = self.db["level-2"]
+        self.preenrich_stage_runs = self.db["preenrich_stage_runs"]
+        self.preenrich_job_runs = self.db["preenrich_job_runs"]
         self._ensure_indexes()
 
     @classmethod
@@ -124,7 +146,7 @@ class DiscoveryRepository:
         now: Optional[datetime] = None,
         activity_window_minutes: int = 15,
     ) -> dict[str, Any]:
-        """Return stage-level heartbeat cards for iterations 1/2/3."""
+        """Return stage-level heartbeat cards for iterations 1/2/3/4."""
         current_time = now or datetime.now(timezone.utc)
         activity_since = current_time - timedelta(minutes=activity_window_minutes)
         selector_since = current_time - timedelta(hours=8)
@@ -214,8 +236,24 @@ class DiscoveryRepository:
             primary_label=iteration_3["primary_label"],
         )
 
+        preenrich_snapshot = self.preenrich_stage_snapshot()
+        preenrich_reason = self._preenrich_heartbeat_reason(preenrich_snapshot)
+        iteration_4 = {
+            "title": "Iteration 4",
+            "subtitle": "Preenrich DAG -> cv_ready",
+            "last_seen_at": preenrich_snapshot.get("latest_activity_at"),
+            "primary_metric": preenrich_snapshot.get("cv_ready_24h", 0),
+            "primary_label": "cv_ready in 24h",
+            "secondary_metric": preenrich_snapshot.get("active_backlog", 0),
+            "secondary_label": "pending + leased stage tasks",
+            "alert_metric": preenrich_snapshot.get("deadletter_total", 0),
+            "alert_label": "deadletter",
+            "state": preenrich_reason["state"],
+            "reason": preenrich_reason["reason"],
+        }
+
         return {
-            "cards": [iteration_1, iteration_2, iteration_3],
+            "cards": [iteration_1, iteration_2, iteration_3, iteration_4],
             "summary": {
                 "pending_scrapes": self.search_hits.count_documents(
                     {"scrape.status": {"$in": ["pending", "leased", "retry_pending"]}}
@@ -224,7 +262,10 @@ class DiscoveryRepository:
                 "selected_ready": self.level2.count_documents({"lifecycle": "selected"}),
                 "failures": self.search_hits.count_documents(
                     {"scrape.status": {"$in": ["retry_pending", "deadletter"]}}
-                ) + self.selector_runs.count_documents({"status": {"$in": ["failed", "deadletter"]}}),
+                ) + self.selector_runs.count_documents({"status": {"$in": ["failed", "deadletter"]}})
+                + preenrich_snapshot.get("deadletter_total", 0),
+                "cv_ready": preenrich_snapshot.get("cv_ready_24h", 0),
+                "legacy_preenrich": preenrich_snapshot.get("legacy_bucket_total", 0),
             },
         }
 
@@ -252,6 +293,9 @@ class DiscoveryRepository:
         scrape_status: Optional[str] = None,
         main_decision: Optional[str] = None,
         pool_status: Optional[str] = None,
+        lifecycle: Optional[str] = None,
+        stage_status: Optional[str] = None,
+        stage_name: Optional[str] = None,
         failures_only: bool = False,
         cursor: Optional[str] = None,
         limit: int = DEFAULT_RESULTS_LIMIT,
@@ -266,6 +310,9 @@ class DiscoveryRepository:
             scrape_status=scrape_status,
             main_decision=main_decision,
             pool_status=pool_status,
+            lifecycle=lifecycle,
+            stage_status=stage_status,
+            stage_name=stage_name,
             failures_only=failures_only,
             cursor=cursor,
         )
@@ -316,8 +363,248 @@ class DiscoveryRepository:
                 "scrape_status": scrape_status or "",
                 "main_decision": main_decision or "",
                 "pool_status": pool_status or "",
+                "lifecycle": lifecycle or "",
+                "stage_status": stage_status or "",
+                "stage_name": stage_name or "",
                 "failures_only": failures_only,
             },
+        }
+
+    def preenrich_stage_snapshot(self) -> dict[str, Any]:
+        """Return backlog, throughput, runtime, and lifecycle visibility for iteration 4."""
+        stage_names = _stage_names()
+        stage_backlog = {
+            stage_name: {
+                "stage_name": stage_name,
+                "pending": 0,
+                "leased": 0,
+                "retry_pending": 0,
+                "failed": 0,
+                "deadletter": 0,
+                "cancelled": 0,
+                "done": 0,
+                "throughput_24h": 0,
+                "p50_ms": None,
+                "p95_ms": None,
+            }
+            for stage_name in stage_names
+        }
+
+        backlog_pipeline = [
+            {"$match": {"lane": "preenrich"}},
+            {
+                "$project": {
+                    "stage_name": "$payload.stage_name",
+                    "normalized_status": {
+                        "$switch": {
+                            "branches": [
+                                {
+                                    "case": {
+                                        "$and": [
+                                            {"$eq": ["$status", "pending"]},
+                                            {"$gt": ["$available_at", "$$NOW"]},
+                                        ]
+                                    },
+                                    "then": "retry_pending",
+                                },
+                                {
+                                    "case": {
+                                        "$and": [
+                                            {"$eq": ["$status", "pending"]},
+                                            {"$lte": ["$available_at", "$$NOW"]},
+                                        ]
+                                    },
+                                    "then": "pending",
+                                },
+                            ],
+                            "default": "$status",
+                        }
+                    },
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"stage_name": "$stage_name", "status": "$normalized_status"},
+                    "count": {"$sum": 1},
+                }
+            },
+        ]
+        for row in self.work_items.aggregate(backlog_pipeline):
+            stage_name = row["_id"].get("stage_name")
+            status = row["_id"].get("status")
+            if stage_name in stage_backlog and status in stage_backlog[stage_name]:
+                stage_backlog[stage_name][status] = int(row["count"])
+
+        runtime_rows = list(
+            self.preenrich_stage_runs.aggregate(
+                [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$gte": [
+                                    "$started_at",
+                                    {
+                                        "$dateSubtract": {
+                                            "startDate": "$$NOW",
+                                            "unit": "hour",
+                                            "amount": 24,
+                                        }
+                                    },
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "$project": {
+                            "stage": 1,
+                            "status": 1,
+                            "duration_ms": 1,
+                            "updated_at": 1,
+                        }
+                    },
+                ]
+            )
+        )
+        runtime_buckets: dict[str, list[int]] = defaultdict(list)
+        latest_activity_at: Optional[datetime] = None
+        for row in runtime_rows:
+            stage_name = row.get("stage")
+            if stage_name not in stage_backlog:
+                continue
+            if row.get("status") == "completed":
+                stage_backlog[stage_name]["throughput_24h"] += 1
+                duration_ms = row.get("duration_ms")
+                if isinstance(duration_ms, (int, float)):
+                    runtime_buckets[stage_name].append(int(duration_ms))
+            updated_at = _coerce_utc(row.get("updated_at"))
+            if updated_at and (latest_activity_at is None or updated_at > latest_activity_at):
+                latest_activity_at = updated_at
+
+        for stage_name, durations in runtime_buckets.items():
+            stage_backlog[stage_name]["p50_ms"] = _percentile_ms(durations, 50)
+            stage_backlog[stage_name]["p95_ms"] = _percentile_ms(durations, 95)
+
+        lifecycle_summary = self._preenrich_lifecycle_summary()
+        cards = list(stage_backlog.values())
+        return {
+            "stages": cards,
+            "lifecycle_summary": lifecycle_summary,
+            "cv_ready_24h": lifecycle_summary["cv_ready_24h"],
+            "active_backlog": sum(stage["pending"] + stage["leased"] for stage in cards),
+            "deadletter_total": sum(stage["deadletter"] for stage in cards),
+            "legacy_bucket_total": lifecycle_summary["legacy"],
+            "latest_activity_at": latest_activity_at,
+        }
+
+    def preenrich_job_stage_matrix(self, level2_id: str) -> Optional[dict[str, Any]]:
+        """Return the full stage matrix and linked work state for one level-2 job."""
+        job = self.level2.find_one(
+            {"_id": ObjectId(level2_id)},
+            {
+                "job_id": 1,
+                "title": 1,
+                "company": 1,
+                "lifecycle": 1,
+                "selected_at": 1,
+                "updated_at": 1,
+                "observability.langfuse_session_id": 1,
+                "pre_enrichment": 1,
+            },
+        )
+        if job is None:
+            return None
+
+        pre = job.get("pre_enrichment") or {}
+        stage_states = pre.get("stage_states") or {}
+        work_items = list(
+            self.work_items.find(
+                {"lane": "preenrich", "subject_id": str(job["_id"])},
+                {
+                    "_id": 1,
+                    "task_type": 1,
+                    "status": 1,
+                    "attempt_count": 1,
+                    "lease_owner": 1,
+                    "lease_expires_at": 1,
+                    "available_at": 1,
+                    "updated_at": 1,
+                    "last_error": 1,
+                    "payload.stage_name": 1,
+                },
+            )
+        )
+        active_work_item_by_stage: dict[str, dict[str, Any]] = {}
+        for item in work_items:
+            stage_name = ((item.get("payload") or {}).get("stage_name")) or _task_type_to_stage_name(item.get("task_type"))
+            if not stage_name:
+                continue
+            existing = active_work_item_by_stage.get(stage_name)
+            if existing is None or _coerce_utc(item.get("updated_at")) > _coerce_utc(existing.get("updated_at")):
+                active_work_item_by_stage[stage_name] = item
+
+        run_rows = list(
+            self.preenrich_stage_runs.find(
+                {"level2_job_id": str(job["_id"])},
+                {
+                    "stage": 1,
+                    "status": 1,
+                    "attempt_count": 1,
+                    "duration_ms": 1,
+                    "worker_id": 1,
+                    "started_at": 1,
+                    "updated_at": 1,
+                    "error": 1,
+                    "langfuse_session_id": 1,
+                },
+            ).sort([("started_at", DESCENDING)])
+        )
+        latest_run_by_stage: dict[str, dict[str, Any]] = {}
+        for row in run_rows:
+            latest_run_by_stage.setdefault(str(row.get("stage")), row)
+
+        matrix = []
+        for stage in iter_stage_definitions():
+            state = stage_states.get(stage.name) or {}
+            work_item = active_work_item_by_stage.get(stage.name)
+            latest_run = latest_run_by_stage.get(stage.name)
+            matrix.append(
+                {
+                    "stage_name": stage.name,
+                    "required_for_cv_ready": getattr(stage, "required_for_cv_ready", True),
+                    "status": _normalize_stage_status(state.get("status")),
+                    "attempt_count": state.get("attempt_count", 0),
+                    "input_snapshot_id": state.get("input_snapshot_id"),
+                    "started_at": state.get("started_at"),
+                    "completed_at": state.get("completed_at"),
+                    "lease_owner": state.get("lease_owner"),
+                    "lease_expires_at": state.get("lease_expires_at"),
+                    "attempt_token": state.get("attempt_token"),
+                    "output_ref": state.get("output_ref"),
+                    "last_error": state.get("last_error"),
+                    "work_item": work_item,
+                    "latest_run": latest_run,
+                }
+            )
+
+        return {
+            "job_id": str(job.get("job_id") or job["_id"]),
+            "level2_id": str(job["_id"]),
+            "title": job.get("title"),
+            "company": job.get("company"),
+            "lifecycle": job.get("lifecycle"),
+            "lifecycle_bucket": _preenrich_lifecycle_bucket(job.get("lifecycle")),
+            "selected_at": job.get("selected_at"),
+            "updated_at": job.get("updated_at"),
+            "input_snapshot_id": pre.get("input_snapshot_id"),
+            "orchestration": pre.get("orchestration"),
+            "dag_version": pre.get("dag_version"),
+            "schema_version": pre.get("schema_version"),
+            "cv_ready_at": pre.get("cv_ready_at"),
+            "last_error": pre.get("last_error"),
+            "deadletter_reason": pre.get("deadletter_reason"),
+            "pending_next_stages": pre.get("pending_next_stages") or [],
+            "langfuse_session_id": ((job.get("observability") or {}).get("langfuse_session_id")),
+            "stages": matrix,
         }
 
     def get_recent_search_runs(self, limit: int = 8) -> list[dict[str, Any]]:
@@ -456,6 +743,8 @@ class DiscoveryRepository:
         document["display_status"] = self._compute_display_status(document)
         document["trace_links"] = self.get_trace_links_for_hit(document)
         document["run_links"] = self.get_run_links_for_hit(document)
+        if document["level2_state"].get("id"):
+            document["preenrich_matrix"] = self.preenrich_job_stage_matrix(document["level2_state"]["id"])
         return document
 
     def get_hit_peek(self, hit_id: str) -> Optional[dict[str, Any]]:
@@ -466,6 +755,8 @@ class DiscoveryRepository:
         document["level2_state"] = self.get_level2_state(document)
         document["display_status"] = self._compute_display_status(document)
         document["trace_links"] = self.get_trace_links_for_hit(document)
+        if document["level2_state"].get("id"):
+            document["preenrich_matrix"] = self.preenrich_job_stage_matrix(document["level2_state"]["id"])
         return document
 
     def get_related_work_item(self, hit_id: str) -> Optional[dict[str, Any]]:
@@ -516,6 +807,7 @@ class DiscoveryRepository:
             "exists": level2_doc is not None,
             "id": str(level2_doc["_id"]) if level2_doc is not None else None,
             "lifecycle": level2_doc.get("lifecycle") if level2_doc else None,
+            "lifecycle_bucket": _preenrich_lifecycle_bucket(level2_doc.get("lifecycle")) if level2_doc else None,
             "status": level2_doc.get("status") if level2_doc else None,
             "selected_at": level2_doc.get("selected_at") if level2_doc else None,
             "preenrich_claimed": bool(level2_doc and level2_doc.get("lifecycle") == "preenriching"),
@@ -603,13 +895,16 @@ class DiscoveryRepository:
         scrape_status: Optional[str],
         main_decision: Optional[str],
         pool_status: Optional[str],
+        lifecycle: Optional[str],
+        stage_status: Optional[str],
+        stage_name: Optional[str],
         failures_only: bool,
         cursor: Optional[str],
     ) -> dict[str, Any]:
         current_time = datetime.now(timezone.utc)
-        query: dict[str, Any] = {
-            "last_seen_at": {"$gte": current_time - _parse_window(window)},
-        }
+        query: dict[str, Any] = {}
+        query["$and"] = query.get("$and", [])
+        query["$and"].append({"$expr": _window_expr("last_seen_at", window)})
         if profile:
             query["search_profile"] = profile
         if region:
@@ -620,13 +915,23 @@ class DiscoveryRepository:
             query["selection.main.decision"] = main_decision
         if pool_status:
             query["selection.pool.status"] = pool_status
+        if lifecycle or stage_status or stage_name:
+            matching_level2_ids = self._matching_level2_ids(
+                lifecycle=lifecycle,
+                stage_status=stage_status,
+                stage_name=stage_name,
+            )
+            if not matching_level2_ids:
+                query["$and"].append({"_id": {"$exists": False}})
+            else:
+                query["$and"].append({"selection.main.level2_job_id": {"$in": matching_level2_ids}})
         if failures_only:
-            query["$and"] = query.get("$and", [])
             query["$and"].append(
                 {
                     "$or": [
                         {"scrape.status": {"$in": ["retry_pending", "deadletter"]}},
                         {"selection.main.status": "failed"},
+                        {"selection.main.decision": "selected_for_preenrich"},
                     ]
                 }
             )
@@ -635,15 +940,12 @@ class DiscoveryRepository:
         if search_value:
             exact_match = self._build_exact_match_query(search_value)
             if exact_match:
-                query["$and"] = query.get("$and", [])
                 query["$and"].append(exact_match)
             else:
-                query["$and"] = query.get("$and", [])
                 query["$and"].append({"$text": {"$search": search_value}})
 
         cursor_filter = _decode_cursor(cursor)
         if cursor_filter is not None:
-            query["$and"] = query.get("$and", [])
             query["$and"].append(
                 {
                     "$or": [
@@ -655,7 +957,162 @@ class DiscoveryRepository:
                     ]
                 }
             )
+        if not query["$and"]:
+            query.pop("$and")
         return query
+
+    def _matching_level2_ids(
+        self,
+        *,
+        lifecycle: Optional[str],
+        stage_status: Optional[str],
+        stage_name: Optional[str],
+        limit: int = 5000,
+    ) -> list[str]:
+        """Return linked level-2 ids that satisfy lifecycle/stage filters."""
+        query: dict[str, Any] = {}
+        and_clauses: list[dict[str, Any]] = []
+        if lifecycle:
+            if lifecycle == "legacy":
+                query["lifecycle"] = {"$in": sorted(LEGACY_PREENRICH_LIFECYCLES)}
+            else:
+                query["lifecycle"] = lifecycle
+
+        normalized_stage_status = _normalize_stage_status(stage_status)
+        if normalized_stage_status:
+            if stage_name:
+                query[f"pre_enrichment.stage_states.{stage_name}.status"] = {
+                    "$in": _stage_status_aliases(normalized_stage_status)
+                }
+            else:
+                and_clauses.append(
+                    {
+                        "$or": [
+                            {
+                                f"pre_enrichment.stage_states.{candidate}.status": {
+                                    "$in": _stage_status_aliases(normalized_stage_status)
+                                }
+                            }
+                            for candidate in _stage_names()
+                        ]
+                    }
+                )
+        elif stage_name:
+            query[f"pre_enrichment.stage_states.{stage_name}"] = {"$exists": True}
+
+        if and_clauses:
+            query["$and"] = and_clauses
+
+        return [
+            str(document["_id"])
+            for document in self.level2.find(query, {"_id": 1}).limit(limit)
+        ]
+
+    def _preenrich_lifecycle_summary(self) -> dict[str, int]:
+        """Return lifecycle counts for the preenrich path, including legacy values."""
+        rows = list(
+            self.level2.aggregate(
+                [
+                    {
+                        "$project": {
+                            "bucket": {
+                                "$switch": {
+                                    "branches": [
+                                        {
+                                            "case": {"$in": ["$lifecycle", sorted(LEGACY_PREENRICH_LIFECYCLES)]},
+                                            "then": "legacy",
+                                        }
+                                    ],
+                                    "default": "$lifecycle",
+                                }
+                            },
+                            "cv_ready_recent": {
+                                "$cond": [
+                                    {
+                                        "$and": [
+                                            {"$eq": ["$lifecycle", "cv_ready"]},
+                                            {
+                                                "$gte": [
+                                                    "$pre_enrichment.cv_ready_at",
+                                                    {
+                                                        "$dateSubtract": {
+                                                            "startDate": "$$NOW",
+                                                            "unit": "hour",
+                                                            "amount": 24,
+                                                        }
+                                                    },
+                                                ]
+                                            },
+                                        ]
+                                    },
+                                    1,
+                                    0,
+                                ]
+                            },
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": "$bucket",
+                            "count": {"$sum": 1},
+                            "cv_ready_recent": {"$sum": "$cv_ready_recent"},
+                        }
+                    },
+                ]
+            )
+        )
+        summary = {
+            "selected": 0,
+            "preenriching": 0,
+            "cv_ready": 0,
+            "failed": 0,
+            "deadletter": 0,
+            "legacy": 0,
+            "cv_ready_24h": 0,
+        }
+        for row in rows:
+            bucket = row["_id"]
+            if bucket in summary:
+                summary[bucket] = int(row["count"])
+            summary["cv_ready_24h"] += int(row.get("cv_ready_recent", 0))
+        return summary
+
+    def _preenrich_heartbeat_reason(self, snapshot: dict[str, Any]) -> dict[str, str]:
+        """Compute the iteration-4 heartbeat state and reason per the plan thresholds."""
+        stages = snapshot.get("stages", [])
+        if not stages:
+            return {"state": "red", "reason": "No preenrich stage activity recorded yet"}
+
+        red_stage = next(
+            (
+                stage for stage in stages
+                if stage["pending"] > 200 or stage["deadletter"] > 5
+            ),
+            None,
+        )
+        if red_stage is not None:
+            return {
+                "state": "red",
+                "reason": f"{red_stage['stage_name']} is driving risk: pending {red_stage['pending']}, deadletter {red_stage['deadletter']}",
+            }
+
+        yellow_stage = next(
+            (
+                stage for stage in stages
+                if 50 <= stage["pending"] <= 200 or 1 <= stage["deadletter"] <= 5
+            ),
+            None,
+        )
+        if yellow_stage is not None:
+            return {
+                "state": "yellow",
+                "reason": f"{yellow_stage['stage_name']} needs attention: pending {yellow_stage['pending']}, deadletter {yellow_stage['deadletter']}",
+            }
+
+        return {
+            "state": "green",
+            "reason": f"{snapshot.get('cv_ready_24h', 0)} cv_ready in 24h; active backlog {snapshot.get('active_backlog', 0)}",
+        }
 
     def _build_exact_match_query(self, query_text: str) -> Optional[dict[str, Any]]:
         if query_text.startswith(("hit:", "searchrun:", "scraperun:", "selectorrun:")):
@@ -706,6 +1163,10 @@ def _results_projection() -> dict[str, int]:
         "external_job_id": 1,
         "scrape": 1,
         "selection": 1,
+        "first_seen_at": 1,
+        "last_queued_at": 1,
+        "job_url": 1,
+        "canonical_url": 1,
     }
 
 
@@ -727,6 +1188,50 @@ def _parse_window(value: str) -> timedelta:
         "7d": timedelta(days=7),
     }
     return mapping.get(normalized, timedelta(hours=DEFAULT_WINDOW_HOURS))
+
+
+def _window_expr(field_name: str, window: str) -> dict[str, Any]:
+    delta = _parse_window(window)
+    if delta.days:
+        return {
+            "$gte": [
+                f"${field_name}",
+                {"$dateSubtract": {"startDate": "$$NOW", "unit": "day", "amount": delta.days}},
+            ]
+        }
+    minutes = int(delta.total_seconds() // 60)
+    if minutes % (24 * 60) == 0:
+        return {
+            "$gte": [
+                f"${field_name}",
+                {
+                    "$dateSubtract": {
+                        "startDate": "$$NOW",
+                        "unit": "day",
+                        "amount": minutes // (24 * 60),
+                    }
+                },
+            ]
+        }
+    if minutes % 60 == 0:
+        return {
+            "$gte": [
+                f"${field_name}",
+                {
+                    "$dateSubtract": {
+                        "startDate": "$$NOW",
+                        "unit": "hour",
+                        "amount": minutes // 60,
+                    }
+                },
+            ]
+        }
+    return {
+        "$gte": [
+            f"${field_name}",
+            {"$dateSubtract": {"startDate": "$$NOW", "unit": "minute", "amount": minutes}},
+        ]
+    }
 
 
 def _encode_cursor(last_seen_at: Optional[datetime], hit_id: ObjectId) -> Optional[str]:
@@ -812,3 +1317,51 @@ def _coerce_utc(value: Optional[datetime]) -> Optional[datetime]:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
+
+
+def _stage_names() -> tuple[str, ...]:
+    return tuple(stage.name for stage in iter_stage_definitions())
+
+
+def _task_type_to_stage_name(task_type: Optional[str]) -> Optional[str]:
+    if not task_type or "." not in task_type:
+        return None
+    return str(task_type).split(".", 1)[1]
+
+
+def _normalize_stage_status(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    if value == "failed_terminal":
+        return "deadletter"
+    return value
+
+
+def _stage_status_aliases(value: str) -> list[str]:
+    if value == "deadletter":
+        return ["deadletter", "failed_terminal"]
+    return [value]
+
+
+def _preenrich_lifecycle_bucket(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return value
+    if value in LEGACY_PREENRICH_LIFECYCLES:
+        return "legacy"
+    return value
+
+
+def _percentile_ms(values: list[int], percentile: int) -> Optional[int]:
+    if not values:
+        return None
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    index = (len(ordered) - 1) * (percentile / 100)
+    lower = int(index)
+    upper = min(lower + 1, len(ordered) - 1)
+    if lower == upper:
+        return ordered[lower]
+    fraction = index - lower
+    interpolated = ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
+    return int(round(interpolated))

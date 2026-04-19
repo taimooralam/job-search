@@ -4,6 +4,16 @@
 
 ---
 
+## Upstream Boundary
+
+CV generation consumes jobs from `level-2` after preenrichment is complete.
+
+- Canonical upstream ready state is `lifecycle="cv_ready"`.
+- Historical `ready` and `ready_for_cv` values are legacy compatibility states during the iteration-4 migration only.
+- New preenrich writers must not emit `ready`, `ready_for_cv`, `queued`, or `running`.
+
+---
+
 ## Quick Reference Card
 
 ### Pipeline Overview (6 Phases)
@@ -946,10 +956,43 @@ TIER_THRESHOLDS = {
 
 ---
 
+## Appendix: What Hiring Managers Want To See (Writing Guidance)
+
+Relocated from an earlier brainstorming draft. This is writing guidance for section generation prompts, not architecture. Architecture-level concerns live in `plans/brainstorming-new-cv-v2.md`.
+
+### Title
+- A recognizable title, seniority made unambiguous, alignment bounded by evidence.
+- Avoid inflated titles unsupported by prior roles.
+
+### Bullets
+- Relevant achievements with metrics, business or technical context, and evidence that the candidate solved problems similar to the target role.
+- Avoid task lists, generic responsibilities, and buzzwords without outcomes.
+
+### Identity Statement & Tagline
+- Fast answer to "who is this person and why are they relevant to this role?"
+- Evidence-bounded identity, short value proposition, proof ladder from identity → capability → outcome.
+
+### ATS Keywords
+- Exact relevant terminology from the JD, standard section headings, parseable formatting.
+- Place keywords naturally and truthfully; do not chase coverage at the cost of grounding.
+
+### Hard Skills, Soft Skills, AI Skills, Architecture Skills
+- Tools and platforms, architecture and systems depth, leadership and collaboration signals.
+- AI capability only where evidence exists.
+
+### Challenges Solved
+- Strongest bullets typically map to: scale, reliability, architecture evolution, platformization, delivery speed, cost reduction, AI adoption, stakeholder alignment.
+
+### Visa, Location, Salary
+- Mention only when explicitly requested, when it materially reduces recruiter friction, and when it can be stated cleanly and truthfully.
+
+---
+
 ## Changelog
 
 | Date | Change |
 |------|--------|
+| 2026-04-19 | Absorbed §16 "What Hiring Managers Want To See" from an earlier brainstorming draft as writing guidance; architecture-level material moved to brainstorming-new-cv-v2.md |
 | 2025-12-31 | Initial creation - consolidated from exploration of layer6_v2 codebase |
 
 ---

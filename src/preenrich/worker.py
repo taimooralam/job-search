@@ -276,7 +276,6 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
         except Exception as exc:
             logger.exception("Unexpected error in worker tick: %s", exc)
 
-        _send_tick_summary(worker_id, tick_stats)
         time.sleep(tick_seconds)
 
     logger.info("Pre-enrichment worker shut down cleanly.")

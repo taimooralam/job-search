@@ -102,6 +102,9 @@
                         <div class="space-y-1">
                             <code class="block text-[10px]" style="color: var(--text-tertiary);">{{ hit.correlation_id or '—' }}</code>
                             <code class="block text-[10px]" style="color: var(--text-tertiary);">{{ hit.run_id or '—' }}</code>
+                            {% if level2.id %}
+                            <code class="block text-[10px]" style="color: var(--text-tertiary);">l2:{{ level2.id }}</code>
+                            {% endif %}
                         </div>
                     </td>
                     <td class="px-4 py-3 text-right">

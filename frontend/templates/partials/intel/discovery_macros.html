@@ -89,6 +89,10 @@
 {% macro level2_label(level2) -%}
 {%- if level2.lifecycle == 'selected' -%}Selected
 {%- elif level2.lifecycle == 'preenriching' -%}Preenriching
+{%- elif level2.lifecycle == 'cv_ready' -%}CV Ready
+{%- elif level2.lifecycle == 'failed' -%}Failed
+{%- elif level2.lifecycle == 'deadletter' -%}Deadletter
+{%- elif level2.lifecycle_bucket == 'legacy' -%}Legacy
 {%- elif level2.exists -%}Inserted
 {%- else -%}Not Linked
 {%- endif -%}
@@ -97,6 +101,9 @@
 {% macro level2_tone(level2) -%}
 {%- if level2.lifecycle == 'selected' -%}green
 {%- elif level2.lifecycle == 'preenriching' -%}orange
+{%- elif level2.lifecycle == 'cv_ready' -%}cyan
+{%- elif level2.lifecycle in ['failed', 'deadletter'] -%}red
+{%- elif level2.lifecycle_bucket == 'legacy' -%}yellow
 {%- elif level2.exists -%}blue
 {%- else -%}slate
 {%- endif -%}
@@ -105,5 +112,46 @@
 {% macro legacy_label(scrape, work_item=None) -%}
 {%- if work_item and work_item.consumer_mode == 'legacy_jsonl' -%}Legacy (jsonl)
 {%- elif scrape.selector_handoff_status == 'written' -%}Compat (jsonl)
+{%- endif -%}
+{%- endmacro %}
+
+{% macro stage_status_label(status) -%}
+{%- if status == 'retry_pending' -%}Retry Pending
+{%- elif status == 'deadletter' -%}Deadletter
+{%- elif status == 'failed_terminal' -%}Deadletter
+{%- elif status -%}{{ status|replace('_', ' ')|title }}
+{%- else -%}Pending
+{%- endif -%}
+{%- endmacro %}
+
+{% macro stage_status_tone(status) -%}
+{%- if status == 'completed' -%}green
+{%- elif status == 'leased' -%}yellow
+{%- elif status == 'retry_pending' -%}orange
+{%- elif status in ['failed', 'deadletter', 'failed_terminal'] -%}red
+{%- elif status == 'cancelled' -%}slate
+{%- else -%}blue
+{%- endif -%}
+{%- endmacro %}
+
+{% macro duration_label(duration_ms) -%}
+{%- if duration_ms is none -%}—
+{%- elif duration_ms >= 60000 -%}{{ '%.1f'|format(duration_ms / 60000) }}m
+{%- elif duration_ms >= 1000 -%}{{ '%.1f'|format(duration_ms / 1000) }}s
+{%- else -%}{{ duration_ms }}ms
+{%- endif -%}
+{%- endmacro %}
+
+{% macro stage_name_label(stage_name) -%}
+{%- if stage_name == 'jd_structure' -%}JD Structure
+{%- elif stage_name == 'jd_extraction' -%}JD Extraction
+{%- elif stage_name == 'ai_classification' -%}AI Classification
+{%- elif stage_name == 'pain_points' -%}Pain Points
+{%- elif stage_name == 'annotations' -%}Annotations
+{%- elif stage_name == 'persona' -%}Persona
+{%- elif stage_name == 'company_research' -%}Company Research
+{%- elif stage_name == 'role_research' -%}Role Research
+{%- elif stage_name -%}{{ stage_name|replace('_', ' ')|title }}
+{%- else -%}—
 {%- endif -%}
 {%- endmacro %}

@@ -2,7 +2,7 @@ services:
   runner:
     build:
       context: .
-      dockerfile: Dockerfile.runner
+      dockerfile: infra/docker/legacy/runner/Dockerfile.runner
     image: job-search-runner:latest
     container_name: job-runner-local
     env_file:

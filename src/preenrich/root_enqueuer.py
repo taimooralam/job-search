@@ -192,7 +192,7 @@ class RootEnqueuer:
                 {"$set": {f"pre_enrichment.stage_states.{ROOT_STAGE}.work_item_id": work_item_id}},
             )
 
-        emit_standalone_event(
+        trace_refs = emit_standalone_event(
             name="scout.preenrich.enqueue_root",
             session_id=session_id,
             metadata={
@@ -205,6 +205,16 @@ class RootEnqueuer:
                 "lifecycle_after": "preenriching",
             },
         )
+        if trace_refs.get("trace_id") or trace_refs.get("trace_url"):
+            self.level2.update_one(
+                {"_id": claimed["_id"]},
+                {
+                    "$set": {
+                        "observability.preenrich_trace_id": trace_refs.get("trace_id"),
+                        "observability.preenrich_trace_url": trace_refs.get("trace_url"),
+                    }
+                },
+            )
         return True
 
 

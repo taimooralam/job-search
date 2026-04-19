@@ -66,7 +66,7 @@
             </div>
 
             <form id="discovery-search-form"
-                  class="grid grid-cols-1 md:grid-cols-8 gap-3"
+                  class="grid grid-cols-1 md:grid-cols-10 gap-3"
                   hx-target="#discovery-rows"
                   hx-include="#discovery-search-form"
                   hx-push-url="true"
@@ -74,7 +74,7 @@
                 <input type="hidden" name="cursor" value="">
                 <input type="hidden" name="limit" value="{{ filters.limit if filters else 25 }}">
 
-                <label class="md:col-span-3">
+                <label class="md:col-span-4">
                     <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Search</span>
                     <input
                         id="discovery-query"
@@ -89,7 +89,7 @@
                     >
                 </label>
 
-                <label>
+                <label class="md:col-span-2">
                     <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Window</span>
                     <select
                         name="window"
@@ -104,7 +104,7 @@
                     </select>
                 </label>
 
-                <label>
+                <label class="md:col-span-2">
                     <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Profile</span>
                     <input
                         type="text"
@@ -118,7 +118,7 @@
                     >
                 </label>
 
-                <label>
+                <label class="md:col-span-2">
                     <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Region</span>
                     <input
                         type="text"
@@ -180,7 +180,55 @@
                     </select>
                 </label>
 
-                <div class="md:col-span-8 flex flex-wrap items-center justify-between gap-3">
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Lifecycle</span>
+                    <select
+                        name="lifecycle"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        <option value="">Any</option>
+                        {% for value, label in [('selected', 'Selected'), ('preenriching', 'Preenriching'), ('cv_ready', 'CV Ready'), ('failed', 'Failed'), ('deadletter', 'Deadletter'), ('legacy', 'Legacy')] %}
+                        <option value="{{ value }}" {% if filters and filters.lifecycle == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Stage</span>
+                    <select
+                        name="stage_name"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        <option value="">Any</option>
+                        {% for value, label in [('jd_structure', 'JD Structure'), ('jd_extraction', 'JD Extraction'), ('ai_classification', 'AI Classification'), ('pain_points', 'Pain Points'), ('annotations', 'Annotations'), ('persona', 'Persona'), ('company_research', 'Company Research'), ('role_research', 'Role Research')] %}
+                        <option value="{{ value }}" {% if filters and filters.stage_name == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label>
+                    <span class="block text-[11px] uppercase mb-1" style="color: var(--text-tertiary);">Stage Status</span>
+                    <select
+                        name="stage_status"
+                        hx-get="/dashboard/discovery/results"
+                        hx-trigger="change"
+                        class="w-full rounded-lg px-3 py-2 text-sm border"
+                        style="background-color: var(--bg-hover); border-color: var(--border-default); color: var(--text-primary);"
+                    >
+                        <option value="">Any</option>
+                        {% for value, label in [('pending', 'Pending'), ('leased', 'Leased'), ('completed', 'Completed'), ('retry_pending', 'Retry Pending'), ('failed', 'Failed'), ('deadletter', 'Deadletter'), ('cancelled', 'Cancelled')] %}
+                        <option value="{{ value }}" {% if filters and filters.stage_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <div class="md:col-span-10 flex flex-wrap items-center justify-between gap-3">
                     <label class="inline-flex items-center gap-2 text-sm" style="color: var(--text-secondary);">
                         <input
                             type="checkbox"
@@ -194,7 +242,7 @@
                     </label>
                     <div class="flex items-center gap-2">
                         <button type="button"
-                                onclick="window.discoveryDashboard.applyFilters({window: '15m', q: '', cursor: '', scrape_status: '', main_decision: '', pool_status: '', profile: '', region: '', failures_only: false})"
+                                onclick="window.discoveryDashboard.applyFilters({window: '15m', q: '', cursor: '', scrape_status: '', main_decision: '', pool_status: '', lifecycle: '', stage_name: '', stage_status: '', profile: '', region: '', failures_only: false})"
                                 class="px-2.5 py-1.5 text-xs rounded-lg"
                                 style="background-color: var(--bg-hover); color: var(--text-secondary);">
                             Latest 15m
@@ -273,6 +321,31 @@
                  hx-indicator="#discovery-queue-loading">
                 {% include "partials/intel/discovery_queue_panel.html" %}
             </div>
+        </div>
+    </div>
+
+    <div class="rounded-xl border"
+         style="background-color: var(--bg-card); border-color: var(--border-default);">
+        <div class="px-4 py-3 border-b flex items-center justify-between gap-3" style="border-color: var(--border-default);">
+            <div>
+                <h2 class="font-semibold" style="color: var(--text-primary);">Iteration 4 Preenrich DAG</h2>
+                <p class="text-xs mt-1" style="color: var(--text-tertiary);">
+                    Stage backlog, throughput, runtime percentiles, and lifecycle buckets including legacy states.
+                </p>
+            </div>
+            <div id="discovery-preenrich-loading" class="htmx-indicator flex items-center gap-2 text-xs" style="color: var(--text-tertiary);">
+                <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span>Updating</span>
+            </div>
+        </div>
+        <div hx-get="/dashboard/discovery/preenrich"
+             hx-trigger="load, every 30s"
+             hx-swap="innerHTML"
+             hx-indicator="#discovery-preenrich-loading">
+            {% include "partials/intel/discovery_preenrich_cards.html" %}
         </div>
     </div>
 

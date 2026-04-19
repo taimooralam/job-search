@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2026-04-19 (Discovery dashboard search-first redesign, trace-link surfacing, and reusable architecture constraints documented)
+**Last Updated**: 2026-04-19 (Iteration-4 preenrich DAG checkpoint: stage workers, sweepers, dashboard visibility, tracing, and migration tooling implemented locally)
 
 > **See also**: `docs/current/architecture.md` | `bugs.md`
 
@@ -17,6 +17,56 @@
 | **Total** | **93** (74 fixed/documented, 15 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2026-04-19): Iteration 4 Preenrich DAG Checkpoint
+
+**STATUS: IMPLEMENTED LOCALLY, PRE-CUTOVER**
+
+**Scope**: Replace the monolithic preenrich lease loop with a stage-level DAG on Mongo work items, stop the new downstream writer boundary at `cv_ready`, add dashboard visibility, and stage the migration/cutover tooling without flipping production flags.
+
+**Implemented**
+- Added the stage DAG registry, schema helpers, and iteration-4 index migration including:
+  - unique `work_items.idempotency_key`
+  - preenrich hot-path indexes
+  - stage/job run indexes
+- Added DAG root ownership and stage execution primitives:
+  - `src/preenrich/root_enqueuer.py`
+  - `src/preenrich/stage_worker.py`
+  - `src/preenrich/sweepers.py`
+- Added durable preenrich state on `level-2.pre_enrichment` for:
+  - `orchestration`
+  - `stage_states`
+  - `pending_next_stages`
+  - `cv_ready_at`
+- Added preenrich audit collections:
+  - `preenrich_stage_runs`
+  - `preenrich_job_runs`
+- Added discovery dashboard visibility for iteration 4:
+  - Iteration 4 heartbeat card
+  - stage backlog / throughput / p50 / p95 view
+  - per-job stage matrix
+  - lifecycle, stage-name, and stage-status filters
+  - explicit legacy lifecycle bucketing
+- Added Langfuse preenrich tracing with stable session ids `job:<level2_object_id>`, stage/run trace refs, and prompt payload redaction by default.
+- Added cutover tooling:
+  - `scripts/backfill-preenrich-states.py`
+  - `scripts/drain-preenrich-outbox.py`
+  - `scripts/rollback-preenrich-dag.py`
+  - `infra/scripts/verify-preenrich-cutover.sh`
+  - `scripts/ops/verify_langfuse_retention.py`
+- Added infra assets for stage workers, sweepers, and heartbeat aggregation under `infra/systemd/`, `infra/env/`, `infra/compose/legacy/runner/`, and `infra/docker/legacy/runner/`.
+- Guarded `src/preenrich/outbox.py` behind `PREENRICH_DISABLE_REDIS_OUTBOX=true` and removed tick-summary Telegram spam from the new stage-worker path in favor of heartbeat aggregation plus rate-limited deadletter alerts.
+
+**Open Follow-Up**
+- Production cutover is still pending:
+  - deploy Phase 0 indexes first
+  - run backfill dry-run then real run
+  - drain Redis outbox
+  - enable DAG canary
+  - run `infra/scripts/verify-preenrich-cutover.sh`
+- Root references that assumed top-level runner compose assets were updated, but any external operator docs that still point at `docker-compose.runner.yml` or `Dockerfile.runner` need a follow-up cleanup pass outside this checkpoint.
 
 ---
 

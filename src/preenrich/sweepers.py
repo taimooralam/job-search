@@ -132,7 +132,13 @@ def finalize_cv_ready(
             }
         },
     )
-    return result.modified_count == 1
+    if result.modified_count == 1:
+        db["preenrich_job_runs"].update_one(
+            {"level2_job_id": str(doc["_id"]), "status": {"$ne": "completed"}},
+            {"$set": {"status": "completed", "updated_at": current_time, "completed_at": current_time}},
+        )
+        return True
+    return False
 
 
 def release_expired_stage_leases(

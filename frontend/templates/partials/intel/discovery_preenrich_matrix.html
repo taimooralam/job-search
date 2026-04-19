@@ -1,0 +1,100 @@
+{% import "partials/intel/discovery_macros.html" as discovery %}
+{% if matrix %}
+<div class="space-y-3">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Lifecycle</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ matrix.lifecycle_bucket|replace('_', ' ')|title if matrix.lifecycle_bucket else '—' }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">{{ matrix.lifecycle or '—' }}</p>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Snapshot</p>
+            <p class="mt-2 break-all" style="color: var(--text-primary);">{{ matrix.input_snapshot_id or '—' }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">{{ matrix.orchestration or '—' }} · {{ matrix.dag_version or '—' }}</p>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Pending Next</p>
+            <p class="mt-2" style="color: var(--text-primary);">{{ matrix.pending_next_stages|length }}</p>
+            <p class="mt-1" style="color: var(--text-tertiary);">{{ matrix.cv_ready_at or 'cv_ready not set' }}</p>
+        </div>
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <p class="uppercase" style="color: var(--text-tertiary);">Trace</p>
+            <p class="mt-2 break-all" style="color: var(--text-primary);">{{ matrix.langfuse_session_id or '—' }}</p>
+            {% if matrix.last_error %}
+            <p class="mt-1 text-red-400">{{ matrix.last_error.message }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+            <thead>
+                <tr class="border-b" style="border-color: var(--border-default);">
+                    <th class="px-3 py-2 text-left uppercase" style="color: var(--text-tertiary);">Stage</th>
+                    <th class="px-3 py-2 text-left uppercase" style="color: var(--text-tertiary);">Status</th>
+                    <th class="px-3 py-2 text-left uppercase" style="color: var(--text-tertiary);">Attempt</th>
+                    <th class="px-3 py-2 text-left uppercase" style="color: var(--text-tertiary);">Lease</th>
+                    <th class="px-3 py-2 text-left uppercase" style="color: var(--text-tertiary);">Latest Run</th>
+                    <th class="px-3 py-2 text-left uppercase" style="color: var(--text-tertiary);">Output / Error</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y" style="border-color: var(--border-default);">
+                {% for stage in matrix.stages %}
+                <tr class="align-top">
+                    <td class="px-3 py-2">
+                        <p class="font-medium" style="color: var(--text-primary);">{{ discovery.stage_name_label(stage.stage_name) }}</p>
+                        <p class="mt-1" style="color: var(--text-tertiary);">
+                            {{ 'required' if stage.required_for_cv_ready else 'optional' }}
+                        </p>
+                    </td>
+                    <td class="px-3 py-2">
+                        <span class="text-[10px] px-2 py-0.5 rounded-full {{ discovery.tone_class(discovery.stage_status_tone(stage.status)) }}">
+                            {{ discovery.stage_status_label(stage.status) }}
+                        </span>
+                        {% if stage.input_snapshot_id %}
+                        <p class="mt-1 break-all" style="color: var(--text-tertiary);">{{ stage.input_snapshot_id }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2" style="color: var(--text-secondary);">
+                        {{ stage.attempt_count or 0 }}
+                        {% if stage.attempt_token %}
+                        <p class="mt-1 break-all" style="color: var(--text-tertiary);">{{ stage.attempt_token }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2" style="color: var(--text-secondary);">
+                        <p>{{ stage.lease_owner or '—' }}</p>
+                        <p class="mt-1" style="color: var(--text-tertiary);">{{ stage.lease_expires_at or '—' }}</p>
+                        {% if stage.work_item %}
+                        <p class="mt-1" style="color: var(--text-tertiary);">{{ stage.work_item.status }} · {{ stage.work_item._id }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2" style="color: var(--text-secondary);">
+                        {% if stage.latest_run %}
+                        <p>{{ stage.latest_run.status }} · {{ discovery.duration_label(stage.latest_run.duration_ms) }}</p>
+                        <p class="mt-1" style="color: var(--text-tertiary);">{{ stage.latest_run.started_at or '—' }}</p>
+                        <p class="mt-1 break-all" style="color: var(--text-tertiary);">{{ stage.latest_run.worker_id or '—' }}</p>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-2" style="color: var(--text-secondary);">
+                        {% if stage.output_ref %}
+                        <p>{{ stage.output_ref.path }}</p>
+                        {% else %}
+                        <p>—</p>
+                        {% endif %}
+                        {% if stage.last_error %}
+                        <p class="mt-1 text-red-400">{{ stage.last_error.message }}</p>
+                        {% elif stage.latest_run and stage.latest_run.error %}
+                        <p class="mt-1 text-red-400">{{ stage.latest_run.error.message }}</p>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="text-sm" style="color: var(--text-tertiary);">No preenrich DAG state linked to this job yet.</div>
+{% endif %}

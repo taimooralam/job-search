@@ -3,29 +3,27 @@ version: "3.9"
 services:
   runner:
     build:
-      context: .
-      dockerfile: Dockerfile.runner
+      context: ../../../../
+      dockerfile: infra/docker/legacy/runner/Dockerfile.runner
     container_name: job-runner-local
     env_file:
-      - .env
+      - ../../../../.env
     environment:
       - MAX_CONCURRENCY=3
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
       - REDIS_URL=redis://redis:6379/0
-      # CORS for local frontend (port 5001 is Flask dev server)
       - CORS_ORIGINS=http://localhost:5001,http://127.0.0.1:5001,http://localhost:5000,http://127.0.0.1:5000
-      # Claude Code CLI (optional - set in .env)
       - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      - ./applications:/app/applications
-      - ./credentials:/app/credentials:ro
-      - ./data/master-cv:/app/data/master-cv:ro
-      - ~/.claude:/home/runner/.claude:ro  # Claude Code CLI auth (optional)
+      - ../../../../applications:/app/applications
+      - ../../../../credentials:/app/credentials:ro
+      - ../../../../data/master-cv:/app/data/master-cv:ro
+      - ~/.claude:/home/runner/.claude:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -60,7 +58,7 @@ services:
 
   pdf-service:
     build:
-      context: .
+      context: ../../../../
       dockerfile: Dockerfile.pdf-service
     container_name: job-pdf-local
     environment:

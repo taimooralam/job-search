@@ -396,6 +396,35 @@ def discovery_rows():
         return f'<div class="text-red-400 text-sm">Discovery rows unavailable: {e}</div>'
 
 
+@intel_bp.route("/discovery/preenrich")
+def discovery_preenrich():
+    """HTMX partial: iteration-4 stage backlog and lifecycle visibility."""
+    try:
+        repo = get_discovery_repo()
+        return render_template(
+            "partials/intel/discovery_preenrich_cards.html",
+            snapshot=repo.preenrich_stage_snapshot(),
+        )
+    except Exception as e:
+        return f'<div class="text-red-400 text-sm">Preenrich dashboard unavailable: {e}</div>'
+
+
+@intel_bp.route("/discovery/preenrich/<level2_id>")
+def discovery_preenrich_job(level2_id):
+    """HTMX partial: one job's iteration-4 stage matrix."""
+    try:
+        repo = get_discovery_repo()
+        matrix = repo.preenrich_job_stage_matrix(level2_id)
+        if not matrix:
+            return '<div class="text-red-400">Preenrich job not found</div>', 404
+        return render_template(
+            "partials/intel/discovery_preenrich_matrix.html",
+            matrix=matrix,
+        )
+    except Exception as e:
+        return f'<div class="text-red-400 text-sm">Preenrich stage matrix unavailable: {e}</div>'
+
+
 @intel_bp.route("/discovery/peek/<hit_id>")
 def discovery_peek(hit_id):
     """HTMX partial: one discovery quick-peek panel."""
@@ -489,6 +518,9 @@ def _parse_discovery_filters() -> dict[str, object]:
         "scrape_status": request.args.get("scrape_status", "").strip() or None,
         "main_decision": request.args.get("main_decision", "").strip() or None,
         "pool_status": request.args.get("pool_status", "").strip() or None,
+        "lifecycle": request.args.get("lifecycle", "").strip() or None,
+        "stage_status": request.args.get("stage_status", "").strip() or None,
+        "stage_name": request.args.get("stage_name", "").strip() or None,
         "failures_only": failures_only,
         "cursor": request.args.get("cursor", "").strip() or None,
         "limit": parsed_limit,

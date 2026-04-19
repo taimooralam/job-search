@@ -4,23 +4,18 @@ services:
   runner:
     image: ${RUNNER_IMAGE:-ghcr.io/taimooralam/job-search/runner:latest}
     build:
-      context: .
-      dockerfile: Dockerfile.runner
+      context: ../../../../
+      dockerfile: infra/docker/legacy/runner/Dockerfile.runner
     env_file:
-      - .env
+      - ../../../../.env
     environment:
       - MAX_CONCURRENCY=1
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
-      # CORS: Allow direct browser → runner communication for log polling
-      # Multiple origins: Vercel production, localhost dev, custom domain
       - CORS_ORIGINS=https://job-search-inky-sigma.vercel.app,http://localhost:5001,http://127.0.0.1:5001,https://jobs.uqab.digital
-      # Claude Code CLI OAuth token (Max subscription - set in .env file on server)
-      # Use `claude setup-token` to generate a long-lived token (valid 1 year)
       - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-sonnet-4-5-20250929}
-    # Scaling: 3 runners × 1 concurrent each = 3 jobs in parallel
     deploy:
       replicas: 3
       resources:
@@ -28,50 +23,34 @@ services:
           memory: 4G
         reservations:
           memory: 512M
-    # Traefik handles load balancing across replicas via HTTPS
-    # No direct port - use https://runner.uqab.digital
     labels:
-      # Enable Traefik for this service
       - "traefik.enable=true"
-      # Tell Traefik which Docker network to use for routing
       - "traefik.docker.network=n8n-prod_default"
-      # HTTP Router - redirects to HTTPS
       - "traefik.http.routers.runner-http.rule=Host(`runner.uqab.digital`)"
       - "traefik.http.routers.runner-http.entrypoints=web"
       - "traefik.http.routers.runner-http.middlewares=redirect-to-https"
-      # HTTPS Router - main entry point with SSL
       - "traefik.http.routers.runner.rule=Host(`runner.uqab.digital`)"
       - "traefik.http.routers.runner.entrypoints=websecure"
       - "traefik.http.routers.runner.tls=true"
       - "traefik.http.routers.runner.tls.certresolver=mytlschallenge"
-      # Service configuration - point to container port 8000
       - "traefik.http.services.runner.loadbalancer.server.port=8000"
-      # WebSocket support - disable response buffering and extend timeouts
       - "traefik.http.services.runner.loadbalancer.responseforwarding.flushinterval=100ms"
       - "traefik.http.services.runner.loadbalancer.passhostheader=true"
-      # Middleware for WebSocket timeouts (10 minutes for long operations like CV generation)
       - "traefik.http.middlewares.runner-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      # Apply headers middleware to router
       - "traefik.http.routers.runner.middlewares=runner-headers"
-      # Redirect middleware
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
     volumes:
-      # Pipeline artifacts
-      - ./applications:/app/applications
-      # Google credentials (if using Drive/Sheets)
-      - ./credentials:/app/credentials:ro
-      # Master CV data directory (file fallback for MongoDB)
-      - ./data/master-cv:/app/data/master-cv:ro
-      # Codex CLI auth (ChatGPT Plus OAuth for CV review)
-      - ./credentials/codex-auth.json:/home/runner/.codex/auth.json:ro
+      - ../../../../applications:/app/applications
+      - ../../../../credentials:/app/credentials:ro
+      - ../../../../data/master-cv:/app/data/master-cv:ro
+      - ../../../../credentials/codex-auth.json:/home/runner/.codex/auth.json:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-    # Use tini as PID 1 to reap zombie child processes (Playwright/Chrome)
     init: true
     restart: unless-stopped
     depends_on:
@@ -80,12 +59,11 @@ services:
     networks:
       - job-pipeline
       - n8n-prod_default
-      # - mongodb-network  # For internal MongoDB access after migration (VPS uses Atlas)
 
   pdf-service:
     image: ${PDF_SERVICE_IMAGE:-ghcr.io/taimooralam/job-search/pdf-service:latest}
     build:
-      context: .
+      context: ../../../../
       dockerfile: Dockerfile.pdf-service
     environment:
       - PYTHONUNBUFFERED=1
@@ -93,7 +71,6 @@ services:
       - PLAYWRIGHT_TIMEOUT=30000
       - MAX_CONCURRENT_PDFS=5
       - LOG_LEVEL=INFO
-    # No external port exposure - internal Docker network only
     expose:
       - "8001"
     healthcheck:
@@ -102,22 +79,14 @@ services:
       timeout: 15s
       retries: 5
       start_period: 90s
-    # Use tini as PID 1 to reap zombie child processes (Playwright/Chrome)
     init: true
     restart: unless-stopped
     networks:
       - job-pipeline
-      - n8n-prod_default  # Allows OpenClaw to reach pdf-service
+      - n8n-prod_default
 
 networks:
   job-pipeline:
     driver: bridge
   n8n-prod_default:
     external: true
-    # For local testing without n8n, comment out 'external: true' and uncomment below:
-    # driver: bridge
-  # mongodb-network:
-  #   external: true
-  #   name: mongodb-network
-  #   # Note: This network is created by docker-compose.mongodb.yml
-  #   # For local dev without VPS MongoDB, comment out 'external: true' and 'name:'

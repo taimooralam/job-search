@@ -23,10 +23,17 @@ Dedupe lifecycle (§2.4):
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+if os.getenv("PREENRICH_DISABLE_REDIS_OUTBOX", "false").lower() == "true":
+    raise RuntimeError(
+        "src.preenrich.outbox is disabled when PREENRICH_DISABLE_REDIS_OUTBOX=true; "
+        "use the iteration-4 DAG path instead."
+    )
 
 # Stream and consumer-group constants
 STREAM_KEY = "preenrich:enqueue_outbox"

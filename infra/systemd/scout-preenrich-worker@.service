@@ -1,0 +1,19 @@
+[Unit]
+Description=Scout Preenrich Stage Worker (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/scout-cron
+EnvironmentFile=/root/scout-cron/.env
+Environment=PREENRICH_STAGE_ALLOWLIST=%i
+ExecStart=/root/scout-cron/.venv/bin/python -m src.preenrich.stage_worker
+Restart=on-failure
+RestartSec=5
+MemoryMax=1G
+CPUQuota=60%
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

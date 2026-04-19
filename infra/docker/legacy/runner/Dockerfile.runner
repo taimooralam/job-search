@@ -5,12 +5,8 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# SentenceTransformer disabled: loads PyTorch (~1.5GB) which OOMs 2GB containers.
-# Keyword priors provide sufficient annotation matching. See annotation_suggester.py.
-
 WORKDIR /app
 
-# System deps for Playwright/Chromium + Node.js for Claude Code CLI
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
@@ -32,18 +28,12 @@ RUN apt-get update \
         fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 20.x for Claude Code CLI
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Claude Code CLI globally
-# Uses Max subscription auth via CLAUDE_CODE_OAUTH_TOKEN env var
-# Generate token with: claude setup-token (valid for 1 year)
 RUN npm install -g @anthropic-ai/claude-code @openai/codex firecrawl-cli
 
-# Create non-root user for Claude CLI + Codex CLI security
-# Claude CLI refuses --dangerously-skip-permissions when running as root
 RUN useradd -m -u 1000 runner \
     && mkdir -p /home/runner/.claude \
     && mkdir -p /home/runner/.codex \
@@ -51,17 +41,14 @@ RUN useradd -m -u 1000 runner \
 
 COPY requirements.txt ./
 
-# Install core requirements (no ML/PyTorch — disabled to avoid OOM in 2GB containers)
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir playwright \
     && python -m playwright install --with-deps chromium
 
 COPY . .
 
-# Set ownership for app directory so runner user can write logs/artifacts
 RUN chown -R runner:runner /app
 
-# Switch to non-root user for Claude CLI compatibility
 USER runner
 
 EXPOSE 8000

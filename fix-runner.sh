@@ -2,12 +2,13 @@
 # Fix runner service - expose port and restart
 
 cd /root/job-runner
+COMPOSE_FILE="infra/compose/legacy/runner/docker-compose.yml"
 
 # Backup current config
-cp docker-compose.runner.yml docker-compose.runner.yml.backup
+cp "$COMPOSE_FILE" "${COMPOSE_FILE}.backup"
 
 # Write new config with proper indentation
-cat > docker-compose.runner.yml << 'EOF'
+cat > "$COMPOSE_FILE" << 'EOF'
 version: "3.9"
 
 services:
@@ -15,7 +16,7 @@ services:
     image: ${RUNNER_IMAGE:-ghcr.io/taimooralam/job-search/runner:latest}
     build:
       context: .
-      dockerfile: Dockerfile.runner
+      dockerfile: infra/docker/legacy/runner/Dockerfile.runner
     env_file:
       - .env
     environment:
@@ -28,7 +29,7 @@ services:
     volumes:
       - ./applications:/app/applications
       - ./credentials:/app/credentials:ro
-      - ./master-cv.md:/app/master-cv.md:ro
+      - ./data/master-cv:/app/data/master-cv:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -76,8 +77,8 @@ EOF
 echo "Config updated. Restarting services..."
 
 # Restart services
-docker compose -f docker-compose.runner.yml down
-docker compose -f docker-compose.runner.yml up -d
+docker compose -f "$COMPOSE_FILE" down
+docker compose -f "$COMPOSE_FILE" up -d
 
 # Wait for startup
 echo "Waiting for services to start..."

@@ -1,0 +1,54 @@
+{% import "partials/intel/discovery_macros.html" as discovery %}
+{% if snapshot %}
+<div class="space-y-4 p-4">
+    <div class="grid grid-cols-2 xl:grid-cols-6 gap-3">
+        {% for key, label, tone in [('selected', 'Selected', 'green'), ('preenriching', 'Preenriching', 'orange'), ('cv_ready', 'CV Ready', 'cyan'), ('failed', 'Failed', 'red'), ('deadletter', 'Deadletter', 'red'), ('legacy', 'Legacy', 'yellow')] %}
+        <a href="/dashboard/discovery?lifecycle={{ key }}&window=24h"
+           class="rounded-lg border p-3 transition-colors hover:bg-white/5"
+           style="border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">{{ label }}</p>
+            <p class="text-2xl font-semibold mt-1
+                {% if tone == 'green' %}text-green-400
+                {% elif tone == 'orange' %}text-orange-300
+                {% elif tone == 'cyan' %}text-cyan-300
+                {% elif tone == 'red' %}text-red-400
+                {% elif tone == 'yellow' %}text-amber-300
+                {% else %}text-slate-300{% endif %}">
+                {{ snapshot.lifecycle_summary[key] }}
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-3">
+        {% for stage in snapshot.stages %}
+        <div class="rounded-lg border p-3" style="border-color: var(--border-default);">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm font-medium" style="color: var(--text-primary);">{{ discovery.stage_name_label(stage.stage_name) }}</p>
+                    <p class="text-[11px] mt-1" style="color: var(--text-tertiary);">
+                        {{ stage.throughput_24h }} completed in 24h · p50 {{ discovery.duration_label(stage.p50_ms) }} · p95 {{ discovery.duration_label(stage.p95_ms) }}
+                    </p>
+                </div>
+                <a href="/dashboard/discovery?window=24h&stage_name={{ stage.stage_name }}"
+                   class="text-[10px] px-2 py-1 rounded-full {{ discovery.tone_class('blue') }}">
+                    Filter
+                </a>
+            </div>
+            <div class="grid grid-cols-5 gap-2 mt-3 text-center">
+                {% for status, label in [('pending', 'Pending'), ('leased', 'Leased'), ('retry_pending', 'Retry'), ('failed', 'Failed'), ('deadletter', 'Dead')] %}
+                <a href="/dashboard/discovery?window=24h&stage_name={{ stage.stage_name }}&stage_status={{ status }}"
+                   class="rounded-lg border px-2 py-2 transition-colors hover:bg-white/5"
+                   style="border-color: var(--border-default);">
+                    <p class="text-base font-semibold" style="color: var(--text-primary);">{{ stage[status] }}</p>
+                    <p class="text-[10px] mt-1" style="color: var(--text-tertiary);">{{ label }}</p>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="p-4 text-sm" style="color: var(--text-tertiary);">Preenrich stage visibility is loading.</div>
+{% endif %}

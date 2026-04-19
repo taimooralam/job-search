@@ -345,21 +345,145 @@ class SelectorTracingSession:
             logger.warning("Langfuse selector trace finalize failed: %s", exc)
 
 
+class PreenrichTracingSession:
+    """Optional Langfuse wrapper for iteration-4 preenrich traces."""
+
+    def __init__(
+        self,
+        *,
+        run_id: str,
+        session_id: str,
+        metadata: dict[str, Any],
+    ) -> None:
+        self.enabled = False
+        self.run_id = run_id
+        self.session_id = session_id
+        self.trace = None
+        self.trace_id = None
+        self.trace_url = None
+        self._client = None
+        self._metadata = _sanitize_langfuse_payload(metadata)
+
+        if Langfuse is None:
+            return
+
+        config = _langfuse_config()
+        if config is None:
+            return
+
+        try:
+            self._client = Langfuse(
+                host=config["host"],
+                public_key=config["public_key"],
+                secret_key=config["secret_key"],
+            )
+            self.trace_id = self._client.create_trace_id(seed=run_id)
+            self.trace = self._client.start_observation(
+                trace_context={"trace_id": self.trace_id},
+                name="scout.preenrich.run",
+                as_type="span",
+                input=self._metadata,
+                metadata=self._metadata,
+            )
+            if hasattr(self.trace, "update_trace"):
+                self.trace.update_trace(
+                    name="scout.preenrich.run",
+                    session_id=session_id,
+                    input=self._metadata,
+                    metadata=self._metadata,
+                )
+            self.trace_url = _resolve_trace_url(self._client, self.trace_id)
+            self.enabled = True
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Langfuse disabled for preenrich run %s: %s", run_id, exc)
+
+    def start_claim_span(self, metadata: dict[str, Any]):
+        """Start the canonical claim span."""
+        return self._start_span("scout.preenrich.claim", metadata)
+
+    def start_stage_span(self, stage_name: str, metadata: dict[str, Any]):
+        """Start the stage execution span for one preenrich stage."""
+        return self._start_span(f"scout.preenrich.{stage_name}", metadata)
+
+    def record_event(self, name: str, metadata: dict[str, Any]) -> None:
+        """Record one preenrich orchestration event."""
+        if not self.trace:
+            return
+        payload = _sanitize_langfuse_payload(metadata)
+        try:
+            if self._client is not None and self.trace_id is not None:
+                self._client.create_event(
+                    trace_context={"trace_id": self.trace_id},
+                    name=name,
+                    input=payload,
+                    output=payload,
+                    metadata=payload,
+                )
+                return
+            span = self.trace.start_observation(name=name, as_type="span", input=payload, metadata=payload)
+            span.update(output=payload)
+            span.end()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Langfuse preenrich event %s failed: %s", name, exc)
+
+    def end_span(self, span: Any, *, output: Optional[dict[str, Any]] = None) -> None:
+        """End a previously started preenrich span."""
+        if span is None:
+            return
+        try:
+            if output is not None:
+                span.update(output=_sanitize_langfuse_payload(output))
+            span.end()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Langfuse preenrich span end failed: %s", exc)
+
+    def complete(self, *, output: Optional[dict[str, Any]] = None) -> None:
+        """Finalize the preenrich trace."""
+        if not self.trace:
+            return
+        try:
+            safe_output = _sanitize_langfuse_payload(output or {})
+            self.trace.update(output=safe_output)
+            if hasattr(self.trace, "update_trace"):
+                self.trace.update_trace(output=safe_output)
+            self.trace.end()
+            if self._client is not None:
+                self._client.flush()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Langfuse preenrich trace finalize failed: %s", exc)
+
+    def _start_span(self, name: str, metadata: dict[str, Any]):
+        if not self.trace:
+            return None
+        payload = _sanitize_langfuse_payload(metadata)
+        try:
+            return self.trace.start_observation(
+                name=name,
+                as_type="span",
+                input=payload,
+                metadata=payload,
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Langfuse preenrich span %s failed: %s", name, exc)
+            return None
+
+
 def emit_standalone_event(
     *,
     name: str,
     session_id: str,
     metadata: dict[str, Any],
-) -> None:
+) -> dict[str, Optional[str]]:
     """Emit a standalone trace event when no parent search run is active."""
     if Langfuse is None:
-        return
+        return {"trace_id": None, "trace_url": None}
 
     config = _langfuse_config()
     if config is None:
-        return
+        return {"trace_id": None, "trace_url": None}
 
     trace_seed = f"{name}:{session_id}:{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}:{uuid4().hex[:8]}"
+    payload = _sanitize_langfuse_payload(metadata)
     try:
         client = Langfuse(
             host=config["host"],
@@ -368,24 +492,27 @@ def emit_standalone_event(
         )
         trace_id = client.create_trace_id(seed=trace_seed)
         trace = client.start_observation(
-            trace_context={"trace_id": client.create_trace_id(seed=trace_seed)},
+            trace_context={"trace_id": trace_id},
             name=name,
             as_type="span",
-            input=metadata,
-            metadata=metadata,
+            input=payload,
+            metadata=payload,
         )
-        trace.update(output=metadata)
+        trace.update(output=payload)
         trace.end()
         client.create_event(
             trace_context={"trace_id": trace_id},
             name=name,
-            input=metadata,
-            output=metadata,
-            metadata=metadata,
+            input=payload,
+            output=payload,
+            metadata=payload,
         )
+        trace_url = _resolve_trace_url(client, trace_id)
         client.flush()
+        return {"trace_id": trace_id, "trace_url": trace_url}
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.warning("Langfuse standalone event %s failed: %s", name, exc)
+        return {"trace_id": None, "trace_url": None}
 
 
 def _langfuse_config() -> Optional[dict[str, str]]:
@@ -410,3 +537,37 @@ def _resolve_trace_url(client: Any, trace_id: Optional[str]) -> Optional[str]:
         return client.get_trace_url(trace_id=trace_id)
     except Exception:  # pragma: no cover - best effort
         return None
+
+
+def _sanitize_langfuse_payload(payload: Optional[dict[str, Any]]) -> dict[str, Any]:
+    """Keep Langfuse payloads metadata-first unless full prompt capture is enabled."""
+    if not payload:
+        return {}
+    if os.getenv("LANGFUSE_CAPTURE_FULL_PROMPTS", "false").lower() == "true":
+        return payload
+
+    sanitized: dict[str, Any] = {}
+    for key, value in payload.items():
+        if _is_prompt_key(key):
+            sanitized[key] = _prompt_preview(value)
+        elif isinstance(value, dict):
+            sanitized[key] = _sanitize_langfuse_payload(value)
+        elif isinstance(value, list):
+            sanitized[key] = [_sanitize_langfuse_payload(item) if isinstance(item, dict) else item for item in value]
+        else:
+            sanitized[key] = value
+    return sanitized
+
+
+def _is_prompt_key(key: str) -> bool:
+    normalized = key.lower()
+    return "prompt" in normalized
+
+
+def _prompt_preview(value: Any) -> dict[str, Any]:
+    text = "" if value is None else str(value)
+    return {
+        "captured": False,
+        "preview": text[:160],
+        "length": len(text),
+    }

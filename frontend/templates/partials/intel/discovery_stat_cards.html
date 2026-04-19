@@ -1,6 +1,6 @@
 {% if heartbeat %}
 <div class="space-y-3">
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-3">
+    <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-3">
         {% for card in heartbeat.cards %}
         <div class="rounded-xl border p-3"
              style="background-color: var(--bg-card); border-color: var(--border-default);">
@@ -24,9 +24,12 @@
                 {% elif card.title == 'Iteration 2' %}
                 {% set primary_href = '/dashboard/discovery?window=15m&scrape_status=succeeded' %}
                 {% set secondary_href = '/dashboard/discovery?scrape_status=pending&window=24h' %}
-                {% else %}
+                {% elif card.title == 'Iteration 3' %}
                 {% set primary_href = '/dashboard/discovery?window=8h' %}
                 {% set secondary_href = '/dashboard/discovery?window=8h&main_decision=selected_for_preenrich' %}
+                {% else %}
+                {% set primary_href = '/dashboard/discovery?window=24h&lifecycle=cv_ready' %}
+                {% set secondary_href = '/dashboard/discovery?window=24h&lifecycle=preenriching' %}
                 {% endif %}
 
                 <a href="{{ primary_href }}"
@@ -53,7 +56,9 @@
                     —
                     {% endif %}
                 </p>
-                {% if card.selected_lifecycle %}
+                {% if card.alert_label %}
+                <p class="text-[11px]" style="color: var(--text-secondary);">{{ card.alert_label }}: {{ card.alert_metric }}</p>
+                {% elif card.selected_lifecycle %}
                 <p class="text-[11px]" style="color: var(--text-secondary);">Selected: {{ card.selected_lifecycle }}</p>
                 {% endif %}
             </div>
@@ -61,7 +66,7 @@
         {% endfor %}
     </div>
 
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+    <div class="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-3">
         <a href="/dashboard/discovery?scrape_status=pending&window=24h"
            class="rounded-xl border p-3 transition-colors hover:bg-white/5"
            style="background-color: var(--bg-card); border-color: var(--border-default);">
@@ -79,6 +84,18 @@
            style="background-color: var(--bg-card); border-color: var(--border-default);">
             <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">Selected Ready</p>
             <p class="text-2xl font-semibold mt-1 text-emerald-400">{{ heartbeat.summary.selected_ready }}</p>
+        </a>
+        <a href="/dashboard/discovery?lifecycle=cv_ready&window=24h"
+           class="rounded-xl border p-3 transition-colors hover:bg-white/5"
+           style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">CV Ready</p>
+            <p class="text-2xl font-semibold mt-1 text-sky-300">{{ heartbeat.summary.cv_ready }}</p>
+        </a>
+        <a href="/dashboard/discovery?lifecycle=legacy&window=24h"
+           class="rounded-xl border p-3 transition-colors hover:bg-white/5"
+           style="background-color: var(--bg-card); border-color: var(--border-default);">
+            <p class="text-[11px] uppercase tracking-wide" style="color: var(--text-tertiary);">Legacy Preenrich</p>
+            <p class="text-2xl font-semibold mt-1 text-amber-300">{{ heartbeat.summary.legacy_preenrich }}</p>
         </a>
         <a href="/dashboard/discovery?failures_only=true&window=24h"
            class="rounded-xl border p-3 transition-colors hover:bg-white/5"
