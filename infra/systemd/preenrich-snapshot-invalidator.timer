@@ -1,0 +1,11 @@
+[Unit]
+Description=Run iteration 4 preenrich snapshot invalidator every 5 minutes
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=5m
+AccuracySec=10s
+Unit=preenrich-snapshot-invalidator.service
+
+[Install]
+WantedBy=timers.target

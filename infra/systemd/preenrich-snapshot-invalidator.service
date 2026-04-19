@@ -1,0 +1,9 @@
+[Unit]
+Description=Iteration 4 Preenrich Snapshot Invalidator
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/scout-cron
+EnvironmentFile=/root/scout-cron/.env
+ExecStart=/root/scout-cron/.venv/bin/python -m src.preenrich.sweepers snapshot --limit 100

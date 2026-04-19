@@ -1,0 +1,11 @@
+[Unit]
+Description=Run iteration 4 preenrich cv-ready finalizer every 60 seconds
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=preenrich-cv-ready-sweeper.service
+
+[Install]
+WantedBy=timers.target
