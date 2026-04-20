@@ -1,0 +1,204 @@
+{
+  "title": "AI Engineering Leader | Remote (Spain) | Global Fintech",
+  "company": "Oliver Bernard",
+  "location": "Spain",
+  "remote_policy": "fully_remote",
+  "role_category": "tech_lead",
+  "seniority_level": "senior",
+  "competency_weights": {
+    "delivery": 30,
+    "process": 15,
+    "architecture": 35,
+    "leadership": 20
+  },
+  "responsibilities": [
+    "Deliver applied ML solutions into production",
+    "Build and ship LLM and NLP use cases",
+    "Develop with advanced Python and modern ML frameworks",
+    "Design and work within microservices architecture and systems integration constraints",
+    "Integrate third-party AI tools and APIs",
+    "Lead teams and set technical direction",
+    "Communicate effectively in English with stakeholders and collaborators"
+  ],
+  "qualifications": [
+    "Strong experience delivering applied ML solutions into production",
+    "Hands-on expertise with LLMs and NLP use cases",
+    "Advanced Python skills",
+    "Experience with modern ML frameworks",
+    "Solid experience with AWS",
+    "Background in microservices architecture and systems integration",
+    "Experience integrating third-party AI tools and APIs",
+    "Degree in Computer Science (or related field) required",
+    "Strong communication skills in English"
+  ],
+  "nice_to_haves": [
+    "GCP experience (beneficial)",
+    "Payments or fintech experience (advantageous)"
+  ],
+  "technical_skills": [
+    "Python",
+    "AWS",
+    "GCP",
+    "Applied machine learning (production)",
+    "LLMs",
+    "NLP",
+    "Microservices architecture",
+    "Systems integration",
+    "Third-party AI tools",
+    "APIs",
+    "Modern ML frameworks"
+  ],
+  "soft_skills": [
+    "Technical leadership",
+    "Leading teams",
+    "Setting technical direction",
+    "Communication in English"
+  ],
+  "implied_pain_points": [
+    "Scaling AI capability with heavy investment in automation and intelligence",
+    "Need to productionize applied ML solutions",
+    "Need to deliver LLM/NLP use cases",
+    "Integration complexity across microservices and systems",
+    "Need to integrate third-party AI tools and APIs",
+    "Operating within a global fintech/payments context"
+  ],
+  "success_metrics": [
+    "Applied ML solutions delivered into production reliably",
+    "LLM and NLP use cases shipped and operating in production",
+    "Third-party AI tools/APIs successfully integrated",
+    "Microservices and systems integrations implemented without breaking platform reliability",
+    "Technical direction established and followed by the team",
+    "Clear, effective communication in English across collaboration points"
+  ],
+  "top_keywords": [
+    "Python",
+    "AWS",
+    "GCP",
+    "LLMs",
+    "NLP",
+    "Applied Machine Learning",
+    "Microservices Architecture",
+    "Systems Integration",
+    "Third-party AI APIs",
+    "Modern ML Frameworks",
+    "AI Engineering Leader",
+    "AI Engineering Lead",
+    "FinTech",
+    "Payments",
+    "Cross-border Payments"
+  ],
+  "industry_background": "FinTech",
+  "years_experience_required": null,
+  "education_requirements": "Degree in Computer Science (or related field) required",
+  "ideal_candidate_profile": {
+    "identity_statement": "A hands-on AI engineering leader who can deliver applied ML into production and drive LLM/NLP use cases, while leading teams and setting technical direction in a global fintech environment.",
+    "archetype": "hybrid_technical_leader",
+    "key_traits": [
+      "hands-on with LLMs and NLP use cases",
+      "production-minded applied ML delivery",
+      "microservices and systems integration focus",
+      "comfortable leading teams and setting technical direction",
+      "clear communicator in English"
+    ],
+    "experience_profile": "Strong experience delivering applied ML solutions into production; hands-on expertise with LLMs/NLP; advanced Python; AWS; microservices and integrations.",
+    "culture_signals": [
+      "investing heavily in automation and intelligence",
+      "scaling AI capability",
+      "global fintech operating context"
+    ]
+  },
+  "salary_range": null,
+  "application_url": null,
+  "remote_location_detail": {
+    "remote_anywhere": false,
+    "remote_regions": [],
+    "timezone_expectations": [],
+    "travel_expectation": null,
+    "onsite_expectation": null,
+    "location_constraints": [
+      "Must be based in Spain"
+    ],
+    "relocation_support": null,
+    "primary_locations": [
+      "Spain"
+    ],
+    "secondary_locations": [],
+    "geo_scope": "country",
+    "work_authorization_notes": null
+  },
+  "expectations": {
+    "explicit_outcomes": [
+      "Deliver applied ML solutions into production",
+      "Build LLM and NLP use cases"
+    ],
+    "delivery_expectations": [
+      "Ship applied ML solutions into production",
+      "Integrate third-party AI tools and APIs"
+    ],
+    "leadership_expectations": [
+      "Lead teams",
+      "Set technical direction"
+    ],
+    "communication_expectations": [
+      "Strong communication skills in English"
+    ],
+    "collaboration_expectations": [],
+    "first_90_day_expectations": []
+  },
+  "identity_signals": {
+    "primary_identity": null,
+    "alternate_identities": [],
+    "identity_evidence": [],
+    "career_stage_signals": []
+  },
+  "skill_dimension_profile": {
+    "communication_skills": [],
+    "leadership_skills": [],
+    "delivery_skills": [],
+    "architecture_skills": [],
+    "process_skills": [],
+    "stakeholder_skills": []
+  },
+  "team_context": {
+    "team_size": null,
+    "reporting_to": null,
+    "org_scope": "AI capability / AI engineering",
+    "management_scope": null
+  },
+  "weighting_profiles": {
+    "expectation_weights": null,
+    "operating_style_weights": null
+  },
+  "operating_signals": [
+    "100% Remote",
+    "Must be based in Spain",
+    "3 stage interview process",
+    "Scaling AI capability",
+    "Investing heavily in automation, intelligence, and next-generation solutions"
+  ],
+  "ambiguity_signals": [
+    "Role category ambiguity: title includes 'Leader' and mentions 'leading teams', but JD does not explicitly state people-management scope (e.g., hiring, performance reviews, direct reports).",
+    "Remote policy vs location constraint: described as '100% Remote' but explicitly restricted to Spain."
+  ],
+  "language_requirements": {
+    "required_languages": [
+      "English"
+    ],
+    "preferred_languages": [],
+    "fluency_expectations": [
+      "Strong communication skills in English"
+    ],
+    "language_notes": null
+  },
+  "analysis_metadata": {
+    "overall_confidence": null,
+    "field_confidence": null,
+    "inferred_fields": [],
+    "ambiguities": [],
+    "source_coverage": null,
+    "quality_checks": null
+  },
+  "company_description": "An international fintech powering cross-border payments for global merchants across high-growth markets. The business is scaling its AI capability and investing heavily in automation, intelligence, and next-generation solutions.",
+  "role_description": "AI Engineering Leader role focused on delivering applied ML solutions into production, building LLM and NLP use cases, working with microservices architecture and systems integration, and integrating third-party AI tools and APIs. 100% remote role but must be based in Spain; strong communication skills in English required.",
+  "residual_context": "100% Remote – Must be based in Spain! 3 stage interview process."
+}

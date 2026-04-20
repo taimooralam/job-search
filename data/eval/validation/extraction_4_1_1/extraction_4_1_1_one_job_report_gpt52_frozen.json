@@ -1,0 +1,86 @@
+{
+  "summary": {
+    "count": 1,
+    "schema_validity_pass_rate": 1.0,
+    "remote_policy_match_rate": 1.0,
+    "responsibilities_item_f1_mean": 0.8571428571428571,
+    "qualifications_item_f1_mean": 0.5,
+    "technical_skills_item_f1_mean": 0.56,
+    "implied_pain_points_item_f1_mean": 0.0,
+    "success_metrics_item_f1_mean": 0.8,
+    "keyword_precision_at_10": 0.3,
+    "keyword_recall_at_10": 0.3,
+    "ideal_candidate_archetype_match_rate": 1.0,
+    "thresholds": {
+      "schema_validity_pass_rate": 1.0,
+      "remote_policy_match_rate": 0.95,
+      "responsibilities_item_f1_mean": 0.55,
+      "qualifications_item_f1_mean": 0.6,
+      "technical_skills_item_f1_mean": 0.65,
+      "success_metrics_item_f1_mean": 0.4,
+      "keyword_precision_at_10": 0.6,
+      "keyword_recall_at_10": 0.6,
+      "ideal_candidate_archetype_match_rate": 0.8
+    },
+    "passes_thresholds": false
+  },
+  "report": [
+    {
+      "job_id": "69a7bd28243c445ec2e17f33",
+      "title": "AI Engineering Leader | Remote (Spain) | Global Fintech",
+      "company": "Oliver Bernard",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": false,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 0,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.8571428571428571,
+          "qualifications": 0.5,
+          "technical_skills": 0.56,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.8
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.3,
+          "recall_at_10": 0.3
+        }
+      },
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "title": "AI Engineering Leader",
+  "company": "Oliver Bernard",
+  "location": "Spain",
+  "remote_policy": "fully_remote",
+  "role_category": "engineering_manager",
+  "seniority_level": "senior",
+  "competency_weights": {
+    "delivery": 30,
+    "process": 15,
+    "architecture": 35,
+    "leadership": 20
+  },
+  "responsibilities": [
+    "Lead AI engineering team and set technical direction",
+    "Deliver applied ML solutions into production environments",
+    "Design and implement LLM and NLP use cases for business applications",
+    "Architect microservices and systems integration for AI capabilities",
+    "Integrate third-party AI tools and APIs into existing infrastructure",
+    "Scale AI capability across the organization",
+    "Build automation and intelligence solutions for cross-border payments",
+    "Drive next-generation AI solutions for global fintech operations"
+  ],
+  "qualifications": [
+    "Degree in Computer Science or related field",
+    "Strong experience delivering applied ML solutions into production",
+    "Hands-on expertise with LLMs and NLP use cases",
+    "Advanced Python skills",
+    "Experience with modern ML frameworks",
+    "Solid experience with AWS",
+    "Background in microservices architecture and systems integration",
+    "Experience integrating third-party AI tools and APIs"
+  ],
+  "nice_to_haves": [
+    "GCP experience",
+    "Payments or fintech experience"
+  ],
+  "technical_skills": [
+    "Python",
+    "LLMs",
+    "NLP",
+    "AWS",
+    "GCP",
+    "Machine Learning",
+    "ML Frameworks",
+    "Microservices",
+    "API Integration",
+    "Systems Integration",
+    "AI Tools",
+    "Cross-border Payments Systems",
+    "Automation",
+    "Production ML"
+  ],
+  "soft_skills": [
+    "Leadership",
+    "Communication",
+    "Technical Direction Setting",
+    "Team Leadership",
+    "English Proficiency"
+  ],
+  "implied_pain_points": [
+    "Need to build and scale AI capability from limited foundation",
+    "Lack of dedicated ML engineering leadership",
+    "ML solutions stuck in research, not reaching production",
+    "Integration complexity between AI tools and existing payment systems",
+    "Automation gaps in cross-border payment operations"
+  ],
+  "success_metrics": [
+    "ML solutions successfully deployed to production",
+    "AI capability scaled across the organization",
+    "Team growth and technical development",
+    "Third-party AI tools effectively integrated",
+    "Automation and intelligence solutions operational",
+    "Measurable improvements in payment processing efficiency"
+  ],
+  "top_keywords": [
+    "AI Engineering",
+    "LLM",
+    "Python",
+    "AWS",
+    "Machine Learning",
+    "NLP",
+    "Microservices",
+    "Fintech",
+    "ML Production",
+    "Engineering Leader",
+    "Technical Direction",
+    "API Integration",
+    "ML Frameworks",
+    "Systems Integration",
+    "Cross-border Payments"
+  ],
+  "industry_background": "FinTech",
+  "years_experience_required": null,
+  "education_requirements": "Degree in Computer Science or related field required",
+  "ideal_candidate_profile": {
+    "identity_statement": "A hands-on AI/ML technical leader who ships production ML solutions while setting technical direction for a growing team, comfortable navigating the complexity of integrating AI into fintech payment systems at scale.",
+    "archetype": "hybrid_technical_leader",
+    "key_traits": [
+      "production-focused ML practitioner",
+      "systems integration mindset",
+      "balances hands-on coding with team leadership",
+      "comfortable with third-party tool integration complexity",
+      "fintech domain adaptable"
+    ],
+    "experience_profile": "Strong ML/AI engineering experience with proven production deployments and team leadership",
+    "culture_signals": [
+      "fast-scaling international company",
+      "heavy AI investment",
+      "remote-first",
+      "high-growth markets focus"
+    ]
+  }
+}
