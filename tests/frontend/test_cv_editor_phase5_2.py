@@ -400,9 +400,12 @@ class TestPhase52Integration:
     def test_save_indicator_still_works(self):
         """Save indicator (Phase 1) should still update."""
         with open('frontend/static/js/cv-editor.js', 'r') as f:
-            content = f.read()
-            assert 'updateSaveIndicator' in content
-            assert 'cv-save-indicator' in content
+            js_content = f.read()
+            assert 'updateSaveIndicator' in js_content
+
+        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+            html_content = f.read()
+            assert 'cv-save-indicator' in html_content
 
     def test_toolbar_formatting_buttons_still_exist(self):
         """Toolbar formatting buttons (Phase 1-2) should still exist."""

@@ -492,8 +492,8 @@ class TestEdgeCases:
         # Arrange
         job_id = str(sample_job["_id"])
 
-        # Simulate database error by mocking get_db to raise
-        mocker.patch("app.get_db", side_effect=Exception("Database connection lost"))
+        # Simulate repository error on the current `_get_repo()` code path
+        mock_db.find_one.side_effect = Exception("Database connection lost")
 
         # Act
         # The error will be unhandled, so we expect it to propagate

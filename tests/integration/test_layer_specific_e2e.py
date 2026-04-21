@@ -10,9 +10,13 @@ Phase 7: Layers 2-3-4-5 (+ People Mapper)
 Phase 8: Cover Letter Validator + CV Generator Integration
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+import json
 from typing import Dict, Any
+from unittest.mock import patch
+
+import pytest
+
+from src.common.unified_llm import LLMResult
 
 
 # ============================================================================
@@ -116,22 +120,22 @@ def mock_llm_response_role_research():
 class TestPhase5E2E:
     """Phase 5 E2E tests: Pain Points + Company/Role Research."""
 
-    @patch('src.layer2.pain_point_miner.ChatOpenAI')
+    @patch('src.layer2.pain_point_miner.PainPointMiner._call_llm')
     def test_pain_point_extraction_schema_compliance(
-        self, mock_chat, mock_job_state, mock_llm_response_pain_points
+        self, mock_call_llm, mock_job_state, mock_llm_response_pain_points
     ):
         """Validates pain point extraction produces compliant schema."""
         from src.layer2.pain_point_miner import PainPointMiner
-        import json
 
-        # Setup mock
-        mock_instance = MagicMock()
-        mock_instance.invoke.return_value = MagicMock(
-            content=json.dumps(mock_llm_response_pain_points)
+        mock_call_llm.return_value = LLMResult(
+            content=json.dumps(mock_llm_response_pain_points),
+            backend="test",
+            model="test-model",
+            tier="middle",
+            duration_ms=1,
+            success=True,
         )
-        mock_chat.return_value = mock_instance
 
-        # Run
         miner = PainPointMiner()
         result = miner.extract_pain_points(mock_job_state)
 
@@ -147,55 +151,35 @@ class TestPhase5E2E:
         assert len(result['risks_if_unfilled']) >= 2
         assert len(result['success_metrics']) >= 3
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
-    @patch('src.layer3.company_researcher.FirecrawlApp')
+    @patch('src.layer3.company_researcher.CompanyResearcher._research_company_with_claude_api')
     def test_company_research_signals_extraction(
-        self, mock_firecrawl, mock_chat, mock_job_state, mock_llm_response_company_research
+        self, mock_research_company, mock_job_state, mock_llm_response_company_research
     ):
         """Validates company research extracts signals."""
         from src.layer3.company_researcher import CompanyResearcher
-        import json
 
-        # Setup mocks
-        mock_chat_instance = MagicMock()
-        mock_chat_instance.invoke.return_value = MagicMock(
-            content=json.dumps(mock_llm_response_company_research)
-        )
-        mock_chat.return_value = mock_chat_instance
+        mock_research_company.return_value = {
+            "company_research": mock_llm_response_company_research,
+            "company_summary": mock_llm_response_company_research["summary"],
+            "company_url": None,
+        }
 
-        mock_fc_instance = MagicMock()
-        mock_fc_instance.scrape_url.return_value = MagicMock(
-            markdown="TechCorp is a growing company."
-        )
-        mock_fc_instance.search.return_value = MagicMock(web=[])
-        mock_firecrawl.return_value = mock_fc_instance
-
-        # Run
         researcher = CompanyResearcher()
         result = researcher.research_company(mock_job_state)
 
-        # Assert signals extracted
-        assert 'company_research' in result or 'company_summary' in result
+        assert "company_research" in result
+        assert len(result["company_research"]["signals"]) == 3
 
-    @patch('src.layer3.role_researcher.ChatOpenAI')
-    @patch('src.layer3.role_researcher.FirecrawlApp')
+    @patch('src.layer3.role_researcher.RoleResearcher._research_role_with_claude_api')
     def test_role_research_why_now_extraction(
-        self, mock_firecrawl, mock_chat, mock_job_state, mock_llm_response_role_research
+        self, mock_research_role, mock_job_state, mock_llm_response_role_research
     ):
         """Validates role research extracts 'why now' context."""
         from src.layer3.role_researcher import RoleResearcher
-        import json
 
-        # Setup mocks
-        mock_chat_instance = MagicMock()
-        mock_chat_instance.invoke.return_value = MagicMock(
-            content=json.dumps(mock_llm_response_role_research)
-        )
-        mock_chat.return_value = mock_chat_instance
-
-        mock_fc_instance = MagicMock()
-        mock_fc_instance.search.return_value = MagicMock(web=[])
-        mock_firecrawl.return_value = mock_fc_instance
+        mock_research_role.return_value = {
+            "role_research": mock_llm_response_role_research,
+        }
 
         # Add company research to state
         mock_job_state['company_research'] = {
@@ -221,13 +205,12 @@ class TestPhase5E2E:
 class TestPhase6E2E:
     """Phase 6 E2E tests: Opportunity Mapper with fit scoring."""
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.OpportunityMapper._analyze_fit')
     def test_opportunity_mapper_fit_score_and_category(
-        self, mock_chat, mock_job_state
+        self, mock_analyze_fit, mock_job_state
     ):
         """Validates opportunity mapper produces fit score and category."""
         from src.layer4.opportunity_mapper import OpportunityMapper
-        import json
 
         # Setup state with pain points
         mock_job_state['pain_points'] = [
@@ -254,18 +237,14 @@ class TestPhase6E2E:
             }
         ]
 
-        # Mock LLM response
-        mock_response = {
-            "score": 85,
-            "rationale": "Strong alignment with STAR #1 (CloudScale Inc) - achieved 75% incident reduction and 10x scaling. Directly addresses infrastructure scaling and incident response pain points."
-        }
-        mock_instance = MagicMock()
-        mock_instance.invoke.return_value = MagicMock(
-            content=json.dumps(mock_response)
+        mock_analyze_fit.return_value = (
+            85,
+            "Strong alignment with STAR #1 (CloudScale Inc) - achieved 75% incident reduction and 10x scaling. Directly addresses infrastructure scaling and incident response pain points.",
+            "strong",
+            "test",
+            "test-model",
         )
-        mock_chat.return_value = mock_instance
 
-        # Run
         mapper = OpportunityMapper()
         result = mapper.map_opportunity(mock_job_state)
 
@@ -299,14 +278,12 @@ class TestPhase6E2E:
 class TestPhase7E2E:
     """Phase 7 E2E tests: People Mapper with outreach."""
 
-    @patch('src.layer5.people_mapper.ChatOpenAI')
     @patch('src.layer5.people_mapper.FirecrawlApp')
     def test_people_mapper_primary_secondary_contacts(
-        self, mock_firecrawl, mock_chat, mock_job_state
+        self, mock_firecrawl, mock_job_state
     ):
         """Validates people mapper produces primary and secondary contacts."""
         from src.layer5.people_mapper import PeopleMapper
-        import json
 
         # Setup state
         mock_job_state['pain_points'] = ["Infrastructure scaling"]
@@ -322,43 +299,8 @@ class TestPhase7E2E:
         mock_job_state['selected_stars'] = []
         mock_job_state['fit_score'] = 80
 
-        # Mock FireCrawl
-        mock_fc_instance = MagicMock()
-        mock_fc_instance.scrape_url.return_value = MagicMock(markdown="Team page content")
-        mock_fc_instance.search.return_value = MagicMock(web=[
-            MagicMock(url="https://linkedin.com/in/john-doe", title="John Doe - VP Engineering")
-        ])
-        mock_firecrawl.return_value = mock_fc_instance
+        mapper = PeopleMapper(use_claude_api=False)
 
-        # Mock LLM for classification
-        classification_response = {
-            "primary_contacts": [
-                {
-                    "name": "John Doe",
-                    "role": "VP Engineering",
-                    "linkedin_url": "https://linkedin.com/in/john-doe",
-                    "why_relevant": "Direct hiring manager for SRE team, oversees infrastructure initiatives"
-                }
-            ],
-            "secondary_contacts": [
-                {
-                    "name": "Jane Smith",
-                    "role": "Director of Product",
-                    "linkedin_url": "https://linkedin.com/in/jane-smith",
-                    "why_relevant": "Cross-functional stakeholder for platform reliability"
-                }
-            ]
-        }
-        mock_chat_instance = MagicMock()
-        mock_chat_instance.invoke.return_value = MagicMock(
-            content=json.dumps(classification_response)
-        )
-        mock_chat.return_value = mock_chat_instance
-
-        # Run (simplified - just test classification)
-        mapper = PeopleMapper()
-
-        # Assert mapper can be instantiated and has required methods
         assert hasattr(mapper, 'map_people')
         assert hasattr(mapper, '_classify_contacts')
 
@@ -443,18 +385,33 @@ I have applied for this role. Calendly: https://calendly.com/taimooralam/15min""
 
         assert "specific" in str(exc_info.value).lower()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_cv_generator_with_master_cv_fallback(self, mock_chat, mock_job_state):
+    @patch('src.layer6.generator.MarkdownCVGenerator._qa_final_bullets', return_value=[])
+    @patch('src.layer6.generator.MarkdownCVGenerator._call_llm')
+    def test_cv_generator_with_master_cv_fallback(self, mock_call_llm, _mock_qa_final_bullets, mock_job_state):
         """Validates CV generator works with master-CV when STAR selector disabled."""
         from src.layer6.generator import MarkdownCVGenerator
-        import json
 
         # Ensure we're using master-CV fallback
         mock_job_state['selected_stars'] = []  # No STAR selection
         mock_job_state['pain_points'] = ["Infrastructure scaling"]
         mock_job_state['company_research'] = {"signals": []}
 
-        # Mock LLM response for CV generation
+        evidence_response = """{
+  "roles": [
+    {
+      "role": "Senior DevOps Engineer — CloudScale Inc",
+      "bullets": [
+        {
+          "situation": "Infrastructure growth",
+          "action": "Led platform scaling",
+          "result": "Improved reliability",
+          "metric": "10x scale, 75% faster incident response",
+          "pain_point_hit": "Infrastructure scaling"
+        }
+      ]
+    }
+  ]
+}"""
         cv_response = """# Taimoor Alam
 taimooralam@example.com | https://linkedin.com/in/taimooralam
 
@@ -470,20 +427,14 @@ Senior infrastructure engineer with 5+ years of experience scaling cloud platfor
 ---
 Integrity Check: All information verified against master-cv.md
 """
-        mock_instance = MagicMock()
-        mock_instance.invoke.return_value = MagicMock(content=cv_response)
-        mock_chat.return_value = mock_instance
+        mock_call_llm.side_effect = [evidence_response, cv_response]
 
-        # Run
         generator = MarkdownCVGenerator()
-        # generate_cv returns Tuple[str, str] = (cv_path, cv_reasoning)
         cv_path, cv_reasoning = generator.generate_cv(mock_job_state)
 
-        # Assert CV generated
         assert cv_path is not None
         assert len(cv_path) > 0
         assert 'CV.md' in cv_path or 'applications/' in cv_path
-        # Reasoning should reference integrity/verification
         assert len(cv_reasoning) > 0
 
 

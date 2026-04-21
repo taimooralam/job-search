@@ -115,15 +115,15 @@ class TestScreenReaderSupport:
         with open('frontend/static/js/cv-editor.js', 'r') as f:
             js_content = f.read()
 
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r') as f:
             html_content = f.read()
 
         # Act & Assert
         # aria-live should be on save indicator
         has_aria_live = 'aria-live' in js_content or 'aria-live' in html_content
 
-        # If not present, should at least have save indicator element
-        assert 'cv-save-indicator' in js_content or 'save-indicator' in html_content
+        assert has_aria_live
+        assert 'cv-save-indicator' in html_content
 
     def test_announce_to_screen_reader_function_exists(self):
         """Function to announce messages to screen readers should exist."""

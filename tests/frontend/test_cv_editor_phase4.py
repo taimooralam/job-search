@@ -57,13 +57,19 @@ class TestPDFGenerationEndpoint:
         assert response.status_code in [401, 302]
 
     def test_pdf_generation_validates_job_exists(self, authenticated_client, mock_db):
-        """PDF generation should return 404 if job not found."""
+        """PDF generation should forward runner 404 responses."""
         # Arrange
         job_id = str(ObjectId())
-        mock_db.find_one.return_value = None  # Job not found
 
-        # Act
-        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+        with patch("app.requests.post") as mock_post:
+            mock_post.return_value = Mock(
+                status_code=404,
+                json=lambda: {"detail": "Job not found"},
+                headers={},
+            )
+
+            # Act
+            response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
 
         # Assert
         assert response.status_code == 404
@@ -72,15 +78,22 @@ class TestPDFGenerationEndpoint:
         assert "not found" in data["error"].lower()
 
     def test_pdf_generation_validates_invalid_job_id(self, authenticated_client, mock_db):
-        """PDF generation should return error for invalid job ID format."""
+        """PDF generation should forward runner validation errors."""
         # Arrange
         invalid_job_id = "invalid-id-format"
 
-        # Act
-        response = authenticated_client.post(f"/api/jobs/{invalid_job_id}/cv-editor/pdf")
+        with patch("app.requests.post") as mock_post:
+            mock_post.return_value = Mock(
+                status_code=400,
+                json=lambda: {"detail": "Invalid job ID format"},
+                headers={},
+            )
 
-        # Assert - invalid ObjectId causes 500 (exception caught), 400, or 404
-        assert response.status_code in [400, 404, 500]
+            # Act
+            response = authenticated_client.post(f"/api/jobs/{invalid_job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 400
 
     @patch('app.requests.post')
     def test_pdf_generation_calls_runner_service(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):

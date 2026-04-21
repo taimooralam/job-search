@@ -11,8 +11,10 @@ Designed to run against 5 diverse test jobs to ensure quality across different s
 
 import pytest
 import re
-from unittest.mock import patch, MagicMock
+import json
+from unittest.mock import patch
 
+from src.common.unified_llm import LLMResult
 from src.layer2.pain_point_miner import pain_point_miner_node
 
 
@@ -337,19 +339,16 @@ def validate_no_hallucinated_facts(updates: dict, job_description: str):
     "test_job_4_product",
     "test_job_5_security"
 ])
-@patch('src.layer2.pain_point_miner.ChatOpenAI')
-def test_quality_gate_no_generic_boilerplate(mock_llm_class, job_fixture_name, request):
+@patch('src.layer2.pain_point_miner.PainPointMiner._call_llm')
+def test_quality_gate_no_generic_boilerplate(mock_call_llm, job_fixture_name, request):
     """Quality Gate: Pain points must be specific, not generic boilerplate."""
     # Get the fixture by name
     job_state = request.getfixturevalue(job_fixture_name)
 
     # Mock LLM to return realistic output (this would be real API in full integration test)
-    mock_llm_instance = MagicMock()
-    mock_response = MagicMock()
-
     # Generate realistic response based on job description
     if "SRE" in job_state["title"]:
-        mock_response.content = """{
+        response_content = """{
   "pain_points": [
     "Manual scaling causes frequent outages during traffic spikes",
     "Migrate monolithic architecture to microservices for 50+ services",
@@ -372,7 +371,7 @@ def test_quality_gate_no_generic_boilerplate(mock_llm_class, job_fixture_name, r
 }"""
     else:
         # Default realistic response
-        mock_response.content = """{
+        response_content = """{
   "pain_points": [
     "Current process creates measurable bottleneck",
     "Technical debt from legacy systems",
@@ -394,8 +393,14 @@ def test_quality_gate_no_generic_boilerplate(mock_llm_class, job_fixture_name, r
   ]
 }"""
 
-    mock_llm_instance.invoke.return_value = mock_response
-    mock_llm_class.return_value = mock_llm_instance
+    mock_call_llm.return_value = LLMResult(
+        content=response_content,
+        backend="test",
+        model="test-model",
+        tier="middle",
+        duration_ms=1,
+        success=True,
+    )
 
     # Run pain point miner
     updates = pain_point_miner_node(job_state)
@@ -417,15 +422,12 @@ def test_quality_gate_no_generic_boilerplate(mock_llm_class, job_fixture_name, r
     "test_job_4_product",
     "test_job_5_security"
 ])
-@patch('src.layer2.pain_point_miner.ChatOpenAI')
-def test_quality_gate_specific_metrics(mock_llm_class, job_fixture_name, request):
+@patch('src.layer2.pain_point_miner.PainPointMiner._call_llm')
+def test_quality_gate_specific_metrics(mock_call_llm, job_fixture_name, request):
     """Quality Gate: Outputs must contain specific numbers/metrics."""
     job_state = request.getfixturevalue(job_fixture_name)
 
-    mock_llm_instance = MagicMock()
-    mock_response = MagicMock()
-    # Use response with metrics
-    mock_response.content = """{
+    response_content = """{
   "pain_points": [
     "Reduce incident response from 2 hours to 15 minutes",
     "Scale to 10M daily active users",
@@ -447,8 +449,14 @@ def test_quality_gate_specific_metrics(mock_llm_class, job_fixture_name, request
   ]
 }"""
 
-    mock_llm_instance.invoke.return_value = mock_response
-    mock_llm_class.return_value = mock_llm_instance
+    mock_call_llm.return_value = LLMResult(
+        content=response_content,
+        backend="test",
+        model="test-model",
+        tier="middle",
+        duration_ms=1,
+        success=True,
+    )
 
     updates = pain_point_miner_node(job_state)
 
@@ -469,15 +477,12 @@ def test_quality_gate_specific_metrics(mock_llm_class, job_fixture_name, request
     "test_job_4_product",
     "test_job_5_security"
 ])
-@patch('src.layer2.pain_point_miner.ChatOpenAI')
-def test_quality_gate_no_hallucinations(mock_llm_class, job_fixture_name, request):
+@patch('src.layer2.pain_point_miner.PainPointMiner._call_llm')
+def test_quality_gate_no_hallucinations(mock_call_llm, job_fixture_name, request):
     """Quality Gate: No hallucinated company facts not in job description."""
     job_state = request.getfixturevalue(job_fixture_name)
 
-    mock_llm_instance = MagicMock()
-    mock_response = MagicMock()
-    # Response should NOT include facts not in JD
-    mock_response.content = """{
+    response_content = """{
   "pain_points": [
     "Technical challenge mentioned in JD",
     "Operational bottleneck from description",
@@ -499,8 +504,14 @@ def test_quality_gate_no_hallucinations(mock_llm_class, job_fixture_name, reques
   ]
 }"""
 
-    mock_llm_instance.invoke.return_value = mock_response
-    mock_llm_class.return_value = mock_llm_instance
+    mock_call_llm.return_value = LLMResult(
+        content=response_content,
+        backend="test",
+        model="test-model",
+        tier="middle",
+        duration_ms=1,
+        success=True,
+    )
 
     updates = pain_point_miner_node(job_state)
 

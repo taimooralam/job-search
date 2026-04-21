@@ -328,19 +328,19 @@ class TestResetPopoverFormIntegration:
     """Tests for resetPopoverForm() integration with delete button."""
 
     def test_reset_form_hides_delete_button(self):
-        """resetPopoverForm() should hide the delete button."""
+        """Delete-button visibility should be controlled by showAnnotationPopover()."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Function should hide delete button
-        # Find the actual resetPopoverForm method definition (not just the call)
-        reset_form_start = js_content.find('resetPopoverForm() {')
-        reset_form_section = js_content[reset_form_start:reset_form_start+2000]
+        # Assert - Current implementation toggles the button in showAnnotationPopover()
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation = null) {')
+        show_popover_section = js_content[show_popover_start:show_popover_start+1200]
 
-        assert 'popover-delete-btn' in reset_form_section
-        assert 'classList.add' in reset_form_section
-        assert 'hidden' in reset_form_section
+        assert 'popover-delete-btn' in show_popover_section
+        assert 'classList.remove' in show_popover_section
+        assert 'classList.add' in show_popover_section
+        assert 'hidden' in show_popover_section
 
     def test_reset_form_clears_editing_state(self):
         """resetPopoverForm() should clear editingAnnotationId."""
@@ -367,8 +367,8 @@ class TestDeleteAnnotationMethod:
             js_content = f.read()
 
         # Assert - Should use splice to remove
-        delete_annotation_start = js_content.find('deleteAnnotation(annotationId)')
-        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1000]
+        delete_annotation_start = js_content.find('deleteAnnotation(annotationId, skipHistory = false) {')
+        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1800]
 
         assert 'splice(' in delete_annotation_section
         assert 'this.annotations' in delete_annotation_section
@@ -380,11 +380,11 @@ class TestDeleteAnnotationMethod:
             js_content = f.read()
 
         # Assert - Should call render methods
-        delete_annotation_start = js_content.find('deleteAnnotation(annotationId)')
-        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1000]
+        delete_annotation_start = js_content.find('deleteAnnotation(annotationId, skipHistory = false) {')
+        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1800]
 
         assert 'renderAnnotations()' in delete_annotation_section
-        assert 'applyHighlights()' in delete_annotation_section
+        assert 'applyHighlights({ force: true })' in delete_annotation_section
 
     def test_delete_annotation_updates_stats(self):
         """deleteAnnotation() should update statistics."""
@@ -393,8 +393,8 @@ class TestDeleteAnnotationMethod:
             js_content = f.read()
 
         # Assert - Should call updateStats
-        delete_annotation_start = js_content.find('deleteAnnotation(annotationId)')
-        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1000]
+        delete_annotation_start = js_content.find('deleteAnnotation(annotationId, skipHistory = false) {')
+        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1400]
 
         assert 'updateStats()' in delete_annotation_section
 
@@ -405,8 +405,8 @@ class TestDeleteAnnotationMethod:
             js_content = f.read()
 
         # Assert - Should call scheduleSave
-        delete_annotation_start = js_content.find('deleteAnnotation(annotationId)')
-        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1000]
+        delete_annotation_start = js_content.find('deleteAnnotation(annotationId, skipHistory = false) {')
+        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1800]
 
         assert 'scheduleSave()' in delete_annotation_section
 
@@ -494,8 +494,8 @@ class TestEdgeCases:
             js_content = f.read()
 
         # Assert - deleteAnnotation uses findIndex which returns -1 if not found
-        delete_annotation_start = js_content.find('deleteAnnotation(annotationId)')
-        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1000]
+        delete_annotation_start = js_content.find('deleteAnnotation(annotationId, skipHistory = false) {')
+        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1800]
 
         assert 'findIndex' in delete_annotation_section
         assert 'index !== -1' in delete_annotation_section or \
@@ -579,7 +579,7 @@ class TestIntegrationFlow:
             js_content = f.read()
 
         # Assert - Should find and pass annotation
-        edit_from_highlight_start = js_content.find('editAnnotationFromHighlight(annotationId')
+        edit_from_highlight_start = js_content.find('editAnnotationFromHighlight(annotationId, highlightEl) {')
         edit_from_highlight_section = js_content[edit_from_highlight_start:edit_from_highlight_start+2000]
 
         assert 'find(a => a.id === annotationId)' in edit_from_highlight_section or \
@@ -593,8 +593,8 @@ class TestIntegrationFlow:
             js_content = f.read()
 
         # Assert - deleteAnnotation should call all update methods
-        delete_annotation_start = js_content.find('deleteAnnotation(annotationId)')
-        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1000]
+        delete_annotation_start = js_content.find('deleteAnnotation(annotationId, skipHistory = false) {')
+        delete_annotation_section = js_content[delete_annotation_start:delete_annotation_start+1800]
 
         # Should update all UI components
         assert 'renderAnnotations' in delete_annotation_section
