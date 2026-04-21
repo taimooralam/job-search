@@ -48,10 +48,15 @@ class JDStructureStage:
         sections_data = [
             {
                 "section_type": s.section_type.value,
-                "title": s.title,
+                # Keep `title` as a compatibility alias for older consumers,
+                # but source it from the actual JDSection field name.
+                "title": s.header,
+                "header": s.header,
                 "content": s.content,
+                "items": list(s.items),
                 "char_start": s.char_start,
                 "char_end": s.char_end,
+                "index": s.index,
             }
             for s in processed_jd.sections
         ]
@@ -63,7 +68,11 @@ class JDStructureStage:
         )
 
         return StageResult(
-            output={"processed_jd_sections": sections_data},
+            output={
+                "processed_jd_sections": sections_data,
+                "jd_annotations.processed_jd_sections": sections_data,
+            },
+            stage_output={"processed_jd_sections": sections_data},
             provider_used=llm_metadata.backend,
             model_used=llm_metadata.model,
             prompt_version=PROMPT_VERSION,

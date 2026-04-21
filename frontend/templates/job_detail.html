@@ -277,6 +277,85 @@
         </div>
     </div>
 
+    <div class="job-detail-card">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="job-detail-card-title mb-2">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+                    </svg>
+                    Job Detail Summary
+                </h2>
+                <p class="text-sm text-gray-500">
+                    Snapshot-first when available. Legacy fields remain as fallback during migration.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ 'bg-emerald-100 text-emerald-700' if job.job_detail_summary.source == 'blueprint_snapshot' else 'bg-slate-100 text-slate-700' }}">
+                    {{ 'Blueprint snapshot' if job.job_detail_summary.source == 'blueprint_snapshot' else 'Legacy fallback' }}
+                </span>
+                {% if job.job_detail_summary.blueprint_status %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    Blueprint: {{ job.job_detail_summary.blueprint_status }}
+                </span>
+                {% endif %}
+                {% if job.job_detail_summary.orchestration %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700">
+                    Orchestration: {{ job.job_detail_summary.orchestration }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div class="text-xs font-semibold uppercase text-slate-500 mb-1">Lifecycle</div>
+                <div class="text-sm font-medium text-slate-800">{{ job.job_detail_summary.lifecycle or 'unknown' }}</div>
+                {% if job.job_detail_summary.blueprint_version %}
+                <div class="mt-1 text-xs text-slate-500">Version: {{ job.job_detail_summary.blueprint_version }}</div>
+                {% endif %}
+            </div>
+            <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <div class="text-xs font-semibold uppercase text-blue-600 mb-1">Apply Surface</div>
+                <div class="text-sm font-medium text-slate-800">
+                    {{ job.job_detail_summary.application_surface_status or 'legacy / unknown' }}
+                </div>
+                {% if job.job_detail_summary.portal_family %}
+                <div class="mt-1 text-xs text-slate-500">Portal: {{ job.job_detail_summary.portal_family | replace('_', ' ') }}</div>
+                {% endif %}
+                {% if job.job_detail_summary.is_direct_apply is not none %}
+                <div class="mt-1 text-xs text-slate-500">{{ 'Direct apply' if job.job_detail_summary.is_direct_apply else 'Redirect / ambiguous' }}</div>
+                {% endif %}
+            </div>
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div class="text-xs font-semibold uppercase text-amber-600 mb-1">Stage Health</div>
+                <div class="text-sm font-medium text-slate-800">
+                    {{ job.job_detail_summary.stage_counts.completed }} completed
+                </div>
+                <div class="mt-1 text-xs text-slate-500">
+                    {{ job.job_detail_summary.stage_counts.in_flight }} in flight · {{ job.job_detail_summary.stage_counts.terminal }} terminal
+                </div>
+            </div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <div class="text-xs font-semibold uppercase text-emerald-600 mb-1">Traceability</div>
+                <div class="text-sm font-medium text-slate-800 break-all">
+                    {{ job.job_detail_summary.langfuse_session_id or 'No Langfuse session' }}
+                </div>
+                {% if job.job_detail_summary.blueprint_updated_at %}
+                <div class="mt-1 text-xs text-slate-500">Updated: {{ job.job_detail_summary.blueprint_updated_at }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% if job.job_detail_summary.friction_signals %}
+        <div class="mt-3 flex flex-wrap gap-1.5">
+            {% for signal in job.job_detail_summary.friction_signals %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                {{ signal | replace('_', ' ') }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
     <!-- ========== STREAMLINED ACTIONS BAR (v2 Redesign) ========== -->
     <div class="job-detail-actions-bar" x-data="{ advancedOpen: localStorage.getItem('job_detail_advanced_open') === 'true' }">
         <div class="actions-bar-primary">
@@ -1380,6 +1459,28 @@
                     {% else %}
                     <span class="field-value text-gray-400 text-xs">Not set</span>
                     {% endif %}
+                    {% if job.blueprint_application_surface %}
+                    <div class="mt-2 space-y-1 text-[11px] text-gray-500">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                                Apply Surface: {{ job.blueprint_application_surface.status or 'unknown' }}
+                            </span>
+                            {% if job.blueprint_application_surface.portal_family %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                                {{ job.blueprint_application_surface.portal_family | replace('_', ' ') }}
+                            </span>
+                            {% endif %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded {{ 'bg-green-100 text-green-700' if job.blueprint_application_surface.is_direct_apply else 'bg-amber-100 text-amber-700' }}">
+                                {{ 'Direct apply' if job.blueprint_application_surface.is_direct_apply else 'Redirect / ambiguous' }}
+                            </span>
+                        </div>
+                        {% if job.blueprint_application_surface.friction_signals %}
+                        <div>
+                            Friction: {{ job.blueprint_application_surface.friction_signals | join(', ') }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                     <input type="url" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ app_url or '' }}">
                 </div>
                 <!-- Dedupe Key (read-only) -->
@@ -1800,100 +1901,65 @@
         <!-- Company & Role Research Section -->
         {% if (job.company_research is defined and job.company_research) or (job.role_research is defined and job.role_research) %}
         <div class="job-detail-card" id="research-section">
-            <h2 class="job-detail-card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-                Company & Role Research
-            </h2>
-            <div class="space-y-4">
-                <!-- Company Research -->
-                {% if job.company_research is defined and job.company_research %}
-                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                    <h3 class="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase mb-3 flex items-center">
-                        Company Intelligence
-                        {% if job.company_research.company_type %}
-                        <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full
-                            {% if job.company_research.company_type == 'recruitment_agency' %}bg-purple-100 text-purple-700
-                            {% elif job.company_research.company_type == 'employer' %}bg-green-100 text-green-700
-                            {% else %}bg-gray-100 text-gray-700{% endif %}">
-                            {{ job.company_research.company_type | replace('_', ' ') | title }}
-                        </span>
-                        {% endif %}
-                    </h3>
-
-                    {% if job.company_research.summary %}
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">{{ job.company_research.summary }}</p>
-                    {% endif %}
-
-                    {% if job.company_research.url %}
-                    <a href="{{ job.company_research.url }}" target="_blank" class="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 mb-3">
-                        <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                        {{ job.company_research.url | truncate(50) }}
-                    </a>
-                    {% endif %}
-
-                    {% if job.company_research.signals and job.company_research.signals|length > 0 %}
-                    <div class="border-t border-blue-200 dark:border-blue-700 pt-3">
-                        <h4 class="text-xs font-medium text-gray-600 mb-2">Business Signals ({{ job.company_research.signals|length }})</h4>
-                        <ul class="space-y-2">
-                            {% for signal in job.company_research.signals %}
-                            <li class="text-xs flex items-start">
-                                <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded mr-2 flex-shrink-0
-                                    {% if signal.type == 'funding' %}bg-green-100 text-green-800
-                                    {% elif signal.type == 'acquisition' %}bg-purple-100 text-purple-800
-                                    {% elif signal.type == 'leadership_change' %}bg-yellow-100 text-yellow-800
-                                    {% elif signal.type == 'product_launch' %}bg-blue-100 text-blue-800
-                                    {% elif signal.type == 'partnership' %}bg-indigo-100 text-indigo-800
-                                    {% elif signal.type == 'growth' %}bg-teal-100 text-teal-800
-                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                    {{ signal.type | replace('_', ' ') | title }}
-                                </span>
-                                <span class="text-gray-700">{{ signal.description }}</span>
-                                {% if signal.date and signal.date != 'unknown' %}
-                                <span class="text-gray-400 ml-1">({{ signal.date }})</span>
-                                {% endif %}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h2 class="job-detail-card-title mb-0">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Company & Role Research
+                </h2>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                    Lazy loaded
+                </span>
+            </div>
+            <div
+                id="job-detail-research-panel"
+                hx-get="/job/{{ job._id }}/partials/research"
+                hx-trigger="load"
+                hx-swap="innerHTML"
+                hx-indicator="#job-detail-research-loading">
+                <div id="job-detail-research-loading" class="htmx-indicator flex items-center gap-2 text-sm text-gray-500">
+                    <svg class="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading research snapshot…
                 </div>
-                {% endif %}
+            </div>
+        </div>
+        {% endif %}
 
-                <!-- Role Research -->
-                {% if job.role_research is defined and job.role_research %}
-                <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
-                    <h3 class="text-xs font-semibold text-indigo-700 dark:text-indigo-400 uppercase mb-3">Role Intelligence</h3>
-
-                    {% if job.role_research.summary %}
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">{{ job.role_research.summary }}</p>
+        {% if job.job_blueprint_guidance %}
+        <div class="job-detail-card" id="blueprint-guidance-section">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h2 class="job-detail-card-title mb-0">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+                    </svg>
+                    Job Blueprint & CV Guidance
+                    {% if job.job_blueprint_active %}
+                    <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                        Snapshot
+                    </span>
                     {% endif %}
-
-                    {% if job.role_research.business_impact and job.role_research.business_impact|length > 0 %}
-                    <div class="mb-3">
-                        <h4 class="text-xs font-medium text-gray-600 mb-2">Business Impact</h4>
-                        <ul class="space-y-1.5">
-                            {% for impact in job.role_research.business_impact %}
-                            <li class="flex items-start text-sm text-gray-700">
-                                <span class="text-green-500 mr-2">-</span>
-                                {{ impact }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    {% if job.role_research.why_now %}
-                    <div class="bg-indigo-100 dark:bg-indigo-900/40 rounded-lg p-3 border border-indigo-200">
-                        <h4 class="text-xs font-medium text-indigo-700 mb-1">Why Now?</h4>
-                        <p class="text-sm text-gray-700">{{ job.role_research.why_now }}</p>
-                    </div>
-                    {% endif %}
+                </h2>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                    Lazy loaded
+                </span>
+            </div>
+            <div
+                id="job-detail-guidance-panel"
+                hx-get="/job/{{ job._id }}/partials/guidance"
+                hx-trigger="load"
+                hx-swap="innerHTML"
+                hx-indicator="#job-detail-guidance-loading">
+                <div id="job-detail-guidance-loading" class="htmx-indicator flex items-center gap-2 text-sm text-gray-500">
+                    <svg class="h-4 w-4 animate-spin text-emerald-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading blueprint guidance…
                 </div>
-                {% endif %}
             </div>
         </div>
         {% endif %}
@@ -2803,16 +2869,33 @@
 
         <!-- Raw Data (Expandable) -->
         <div class="job-detail-card">
-            <button onclick="toggleRawData()"
-                    class="flex items-center text-sm text-gray-500 hover:text-gray-700">
-                <svg id="raw-data-chevron" class="h-4 w-4 mr-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-                View Raw Data
-            </button>
-            <div id="raw-data-container" class="hidden mt-3">
-                <pre class="p-4 bg-gray-800 text-gray-100 rounded-lg overflow-x-auto text-xs">{{ job | tojson(indent=2) }}</pre>
-            </div>
+            <details class="group">
+                <summary class="cursor-pointer list-none flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <svg class="h-4 w-4 mr-1 transform transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                    View Operator Debug Layers
+                </summary>
+                <div class="mt-3">
+                    <div
+                        id="job-detail-debug-panel"
+                        hx-get="/job/{{ job._id }}/partials/debug"
+                        hx-trigger="toggle once from:closest details"
+                        hx-swap="innerHTML"
+                        hx-indicator="#job-detail-debug-loading">
+                        <div id="job-detail-debug-loading" class="htmx-indicator flex items-center gap-2 text-sm text-gray-500">
+                            <svg class="h-4 w-4 animate-spin text-violet-500" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading operator debug payload and hypotheses…
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            Open this panel to load the operator payload and blueprint hypotheses by reference.
+                        </div>
+                    </div>
+                </div>
+            </details>
         </div>
     </main>
 

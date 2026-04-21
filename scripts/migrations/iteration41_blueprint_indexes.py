@@ -71,12 +71,42 @@ def build_index_plan() -> dict[str, list[dict[str, Any]]]:
         ],
         "research_enrichment": [
             {
-                "keys": [
-                    ("jd_facts_id", ASCENDING),
-                    ("research_input_hash", ASCENDING),
-                    ("prompt_version", ASCENDING),
-                ],
+                "keys": [("job_id", ASCENDING), ("input_snapshot_id", ASCENDING), ("research_version", ASCENDING)],
                 "kwargs": {"name": "research_enrichment_unique", "unique": True},
+            },
+            {
+                "keys": [("job_id", ASCENDING), ("created_at", DESCENDING)],
+                "kwargs": {"name": "research_enrichment_job_recent"},
+            },
+            {
+                "keys": [("jd_facts_id", ASCENDING), ("classification_id", ASCENDING), ("application_surface_id", ASCENDING)],
+                "kwargs": {"name": "research_enrichment_refs"},
+            },
+            {
+                "keys": [("status", ASCENDING), ("updated_at", DESCENDING)],
+                "kwargs": {"name": "research_enrichment_status_updated"},
+            },
+            {
+                "keys": [("company_profile.canonical_domain", ASCENDING), ("status", ASCENDING)],
+                "kwargs": {"name": "research_enrichment_company_domain_status"},
+            }
+        ],
+        "research_company_cache": [
+            {
+                "keys": [("cache_key", ASCENDING)],
+                "kwargs": {"name": "research_company_cache_key", "unique": True},
+            }
+        ],
+        "research_application_cache": [
+            {
+                "keys": [("cache_key", ASCENDING)],
+                "kwargs": {"name": "research_application_cache_key", "unique": True},
+            }
+        ],
+        "research_stakeholder_cache": [
+            {
+                "keys": [("cache_key", ASCENDING)],
+                "kwargs": {"name": "research_stakeholder_cache_key", "unique": True},
             }
         ],
         "cv_guidelines": [

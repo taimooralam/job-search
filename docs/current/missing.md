@@ -20,6 +20,94 @@
 
 ---
 
+### Today's Session (2026-04-21): Iteration 4.1.3.1 Planning for Live Codex Hard Cutover
+
+**STATUS: IMPLEMENTED**
+
+**Scope**: Use the latest local live Codex-only run to define the corrective follow-up slice after 4.1.3, with explicit model routing, schema strategy, fail-open application handling, and a hard migration path away from long-lived compatibility debt.
+
+**Key Findings Captured**
+- `jd_facts` on `gpt-5.2` performed materially better than earlier `gpt-5.4-mini` extraction attempts and is now the intended fixed extraction model.
+- `classification` succeeded on `gpt-5.4-mini`; escalation to `gpt-5.2` remains useful only as an ambiguity/error path.
+- `application_surface` found a useful verified employer jobs portal (`https://www.robsonbale.com/jobs/`) but discarded it because the live Codex payload drifted from the current strict schema.
+- `research_enrichment` produced grounded company / role / application / stakeholder outputs, but those were repeatedly rejected because the validator expected thinner scalar-only structures than the prompts naturally induced.
+
+**Implemented in 4.1.3.1 (richer-first posture)**
+- Added a two-layer validation model:
+  - permissive ingress normalization on shape (aliases, wrappers, list/scalar/dict coercion, null-to-literal)
+  - strict persisted validation on truth (no fabricated URLs/identities, no cross-company links, no protected-trait or private-contact leakage)
+- Adopted **richer canonical, compact projections** for research output:
+  - company and role profiles now retain richer companion detail fields alongside compact aliases
+  - `application_profile` now preserves merge/debug context without making it snapshot-authoritative
+  - stakeholder alias drift is normalized into canonical fields instead of being dropped
+- Rewrote `application_surface` into an **always-find-something** stage:
+  - verified employer jobs portals survive as `partial` results
+  - benign live shape drift is normalized instead of discarded
+  - unresolved output remains evidenced rather than empty
+  - default routing moved to `gpt-5.2` for live application resolution
+- Updated prompt contracts so live Codex research is explicitly allowed to emit richer companion fields and partial employer-portal success.
+- Updated runtime/config/env/preflight defaults:
+  - `jd_facts`: `gpt-5.2`, no fallback, escalation disabled by default
+  - `classification`: `gpt-5.4-mini` primary, `gpt-5.2` escalation, no fallback
+  - `application_surface`: `gpt-5.2`, no fallback
+- Added replay-style unit/integration coverage for the observed Robson Bale drift classes and richer-shape acceptance.
+
+**Remaining Follow-Up**
+- Benchmark `gpt-5.3` vs `gpt-5.2` vs `gpt-5.4-mini` for `research_enrichment` before fixing the long-term research model default.
+- Extend more downstream consumers away from compat projections toward direct rich canonical reads.
+
+---
+
+### Today's Session (2026-04-20): Iteration 4.1.3 Unified Research Enrichment
+
+**STATUS: IMPLEMENTED LOCALLY, HARD-CUTOVER CODE PATH READY**
+
+**Scope**: Promote `research_enrichment` from a thin wrapper into the canonical external-intelligence artifact while keeping the 4.1 stage-DAG intact and preserving legacy compatibility projections when V2 is disabled.
+
+**Implemented**
+- Added a canonical `research_enrichment` contract with:
+  - `company_profile`
+  - `role_profile`
+  - merged `application_profile`
+  - optional `stakeholder_intelligence`
+  - prompt metadata, transport metadata, cache refs, confidence, sources, and evidence
+- Upgraded `application_surface` to produce richer deterministic resolution metadata:
+  - canonical URL vs compat alias
+  - portal family / ATS vendor
+  - redirect-chain placeholder
+  - stale / closed / duplicate signals
+  - UI actionability
+- Updated the blueprint DAG so:
+  - `application_surface` runs before `research_enrichment`
+  - `research_enrichment` depends on `jd_facts`, `classification`, and `application_surface`
+  - `job_inference` remains downstream synthesis
+- Added V2 gating and rollout flags for shadow mode, live compat writes, expanded snapshot reads, provider/transport selection, stakeholder/outreach toggles, source-attribution enforcement, and cache TTLs.
+- Replaced the planned Claude fallback on the 4.x preenrich path with Codex-only routing defaults:
+  - `fallback_provider=none`
+  - `PREENRICH_RESEARCH_TRANSPORT=codex_web_search`
+  - `PREENRICH_RESEARCH_FALLBACK_PROVIDER=none`
+  - `PREENRICH_RESEARCH_FALLBACK_TRANSPORT=none`
+- Added a new stage-native Codex research transport for 4.1.3 instead of reusing the runner-era Claude web-research helper directly.
+- Wired `application_surface` to attempt live Codex application-URL resolution when deterministic candidates are unresolved or aggregator-only.
+- Wired `research_enrichment` V2 to attempt live Codex company, role, stakeholder, and outreach-guidance research, degrading to partial/unresolved rather than falling back to Claude.
+- Pinned `jd_facts` to `gpt-5.2` as the default iteration-4.1 extraction model in runtime routing, preflight defaults, and env examples so local/prod runs stop drifting across Codex model variants.
+- Added shared cache index/migration coverage for:
+  - `research_company_cache`
+  - `research_application_cache`
+  - `research_stakeholder_cache`
+- Kept snapshot mirroring compact:
+  - compact research summaries/signals
+  - application portal/canonical URL
+  - compact stakeholder summary only
+- Added benchmark harness and fixture corpus:
+  - `scripts/benchmark_research_enrichment_4_1_3.py`
+
+**Open Follow-Up**
+- The code path is now Codex-only, but the actual deployed worker environment still has to be updated so the hard-cutover flags are active in `/root/scout-cron/.env` and the preenrich systemd units are restarted.
+- A local live-job run with hard-cutover flags enabled entered the Codex execution path, but from this workstation I have not yet completed the VPS-side deploy/restart needed to make that the authoritative production behavior.
+
+---
+
 ### Today's Session (2026-04-19): Iteration 4 Preenrich DAG Checkpoint
 
 **STATUS: IMPLEMENTED LOCALLY, PRE-CUTOVER**

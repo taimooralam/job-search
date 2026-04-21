@@ -8,6 +8,8 @@ import mongomock
 import pytest
 from bson import ObjectId
 
+from src.preenrich.blueprint_config import current_input_snapshot_id
+from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import (
     ROOT_STAGE,
     DAG_VERSION,
@@ -122,6 +124,92 @@ def test_root_enqueuer_initializes_stage_state_snapshot(monkeypatch, mock_db):
     expected = build_stage_states(snapshot_id)
     expected[ROOT_STAGE]["work_item_id"] = doc["pre_enrichment"]["stage_states"][ROOT_STAGE]["work_item_id"]
     assert doc["pre_enrichment"]["stage_states"] == expected
+
+
+def test_root_enqueuer_uses_shared_checksums_for_blueprint_snapshot(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "100")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_SNAPSHOT_WRITE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_UI_READ_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_COMPAT_PROJECTIONS_ENABLED", "true")
+
+    job_id = _insert_selected_job(mock_db)
+    mock_db["level-2"].update_one(
+        {"_id": job_id},
+        {
+            "$set": {
+                "description": "  Build and RUN AI   Platforms\n\nAt Scale  ",
+                "company": "  Acme AI  ",
+                "company_domain": "ACME.example.com ",
+            }
+        },
+    )
+
+    enqueuer = RootEnqueuer(mock_db)
+    assert enqueuer.enqueue_one(job_id) is True
+
+    doc = mock_db["level-2"].find_one({"_id": job_id})
+    expected_jd_checksum = jd_checksum("  Build and RUN AI   Platforms\n\nAt Scale  ")
+    expected_company_checksum = company_checksum("  Acme AI  ", "ACME.example.com ")
+    expected_snapshot = current_input_snapshot_id(
+        expected_jd_checksum,
+        expected_company_checksum,
+        dag_version="iteration4.1.v1",
+    )
+
+    assert doc["pre_enrichment"]["jd_checksum"] == expected_jd_checksum
+    assert doc["pre_enrichment"]["company_checksum"] == expected_company_checksum
+    assert doc["pre_enrichment"]["input_snapshot_id"] == expected_snapshot
+    assert doc["pre_enrichment"]["stage_states"][ROOT_STAGE]["input_snapshot_id"] == expected_snapshot
+
+    work_item = mock_db["work_items"].find_one({"subject_id": str(job_id)})
+    assert work_item["payload"]["input_snapshot_id"] == expected_snapshot
+    assert work_item["payload"]["jd_checksum"] == expected_jd_checksum
+    assert work_item["payload"]["company_checksum"] == expected_company_checksum
+
+
+def test_root_enqueuer_revives_terminal_root_work_item_for_same_snapshot(monkeypatch, mock_db):
+    monkeypatch.setenv("PREENRICH_STAGE_DAG_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_DAG_CANARY_PCT", "100")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_SNAPSHOT_WRITE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_UI_READ_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_COMPAT_PROJECTIONS_ENABLED", "true")
+
+    job_id = _insert_selected_job(mock_db)
+    enqueuer = RootEnqueuer(mock_db)
+    now = datetime(2026, 4, 19, 12, 5, tzinfo=timezone.utc)
+    assert enqueuer.enqueue_one(job_id, now=now) is True
+
+    work_item = mock_db["work_items"].find_one({"subject_id": str(job_id)})
+    mock_db["work_items"].update_one(
+        {"_id": work_item["_id"]},
+        {
+            "$set": {
+                "status": "deadletter",
+                "attempt_count": 2,
+                "last_error": {"message": "boom", "type": "deadletter"},
+            }
+        },
+    )
+    mock_db["level-2"].update_one(
+        {"_id": job_id},
+        {
+            "$set": {
+                "lifecycle": "selected",
+                "pre_enrichment.orchestration": "legacy",
+            }
+        },
+    )
+
+    assert enqueuer.enqueue_one(job_id, now=now) is True
+
+    revived = mock_db["work_items"].find_one({"_id": work_item["_id"]})
+    assert revived["status"] == "pending"
+    assert revived["attempt_count"] == 0
+    assert revived["last_error"] is None
+    assert mock_db["work_items"].count_documents({"subject_id": str(job_id)}) == 1
 
 
 def test_parse_canary_allowlist_ignores_empty_entries():

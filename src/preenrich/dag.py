@@ -1,15 +1,8 @@
-"""
-Pre-enrichment stage DAG definition and transitive invalidation.
-
-Defines the authoritative stage execution order and the dependency graph
-used for transitive staleness propagation (§2.6).
-
-When an input changes (JD text, company info, priors version), the
-invalidate() function returns the full set of stages that must be re-run.
-"""
+"""Pre-enrichment stage DAG definition and transitive invalidation."""
 
 from typing import Dict, List, Set
 
+from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled
 
 # Canonical execution order — dispatcher iterates in this order.
 # fit_signal is dropped from Phase 2 scope (no live consumer in BatchPipelineService
@@ -23,6 +16,20 @@ STAGE_ORDER: List[str] = [
     "persona",
     "company_research",
     "role_research",
+]
+
+BLUEPRINT_STAGE_ORDER: List[str] = [
+    "jd_structure",
+    "jd_facts",
+    "classification",
+    "application_surface",
+    "research_enrichment",
+    "job_inference",
+    "job_hypotheses",
+    "annotations",
+    "persona_compat",
+    "cv_guidelines",
+    "blueprint_assembly",
 ]
 
 # Direct dependencies: stage -> stages it depends on
@@ -39,6 +46,20 @@ _DEPENDENCIES: Dict[str, List[str]] = {
     # fit_signal deferred to Phase 5 — will be re-added when consumer is wired
 }
 
+_BLUEPRINT_DEPENDENCIES: Dict[str, List[str]] = {
+    "jd_structure": [],
+    "jd_facts": ["jd_structure"],
+    "classification": ["jd_facts"],
+    "application_surface": ["jd_facts"],
+    "research_enrichment": ["jd_facts", "classification", "application_surface"],
+    "job_inference": ["jd_facts", "classification", "research_enrichment", "application_surface"],
+    "job_hypotheses": ["jd_facts", "classification", "research_enrichment", "application_surface"],
+    "annotations": ["jd_structure"],
+    "persona_compat": ["annotations"],
+    "cv_guidelines": ["jd_facts", "job_inference", "research_enrichment"],
+    "blueprint_assembly": ["jd_facts", "job_inference", "cv_guidelines", "application_surface", "annotations", "persona_compat"],
+}
+
 # Inputs that affect which stages are invalidated
 # Each input maps to the set of stages DIRECTLY affected by it
 _INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
@@ -48,6 +69,13 @@ _INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
     "company": {"company_research"},
     # Priors version change: directly invalidates annotation-dependent stages
     "priors": {"annotations"},
+}
+
+_BLUEPRINT_INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
+    "jd": {"jd_structure", "jd_facts", "classification", "research_enrichment", "application_surface", "job_inference", "job_hypotheses", "cv_guidelines", "blueprint_assembly", "annotations"},
+    "company": {"research_enrichment", "application_surface"},
+    "priors": {"annotations"},
+    "taxonomy": {"classification"},
 }
 
 
@@ -61,6 +89,28 @@ def _build_reverse_deps() -> Dict[str, Set[str]]:
 
 
 _REVERSE_DEPS: Dict[str, Set[str]] = _build_reverse_deps()
+
+
+def current_stage_order() -> List[str]:
+    order = BLUEPRINT_STAGE_ORDER if blueprint_enabled() else STAGE_ORDER
+    if blueprint_enabled() and not persona_compat_enabled():
+        return [stage for stage in order if stage != "persona_compat"]
+    return list(order)
+
+
+def _current_dependencies() -> Dict[str, List[str]]:
+    deps = _BLUEPRINT_DEPENDENCIES if blueprint_enabled() else _DEPENDENCIES
+    if blueprint_enabled() and not persona_compat_enabled():
+        trimmed = {stage: [dep for dep in prereqs if dep != "persona_compat"] for stage, prereqs in deps.items() if stage != "persona_compat"}
+        return trimmed
+    return deps
+
+
+def _current_input_invalidations() -> Dict[str, Set[str]]:
+    mapping = _BLUEPRINT_INPUT_DIRECT_INVALIDATIONS if blueprint_enabled() else _INPUT_DIRECT_INVALIDATIONS
+    if blueprint_enabled() and not persona_compat_enabled():
+        return {key: {stage for stage in value if stage != "persona_compat"} for key, value in mapping.items()}
+    return mapping
 
 
 def _transitive_closure(initial: Set[str]) -> Set[str]:
@@ -114,8 +164,25 @@ def invalidate(changed_inputs: Set[str]) -> Set[str]:
         >>> invalidate({"company"})
         {'company_research', 'role_research'}
     """
+    deps = _current_dependencies()
+    direct_invalidations = _current_input_invalidations()
+    reverse_deps: Dict[str, Set[str]] = {stage: set() for stage in deps}
+    for stage, prereqs in deps.items():
+        for prereq in prereqs:
+            reverse_deps.setdefault(prereq, set()).add(stage)
+
     directly_affected: Set[str] = set()
     for inp in changed_inputs:
-        directly_affected |= _INPUT_DIRECT_INVALIDATIONS.get(inp, set())
+        directly_affected |= direct_invalidations.get(inp, set())
 
-    return _transitive_closure(directly_affected)
+    result: Set[str] = set(directly_affected)
+    frontier = set(directly_affected)
+    while frontier:
+        next_frontier: Set[str] = set()
+        for stage in frontier:
+            for dependent in reverse_deps.get(stage, set()):
+                if dependent not in result:
+                    result.add(dependent)
+                    next_frontier.add(dependent)
+        frontier = next_frontier
+    return result

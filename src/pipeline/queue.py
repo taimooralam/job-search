@@ -96,6 +96,7 @@ class WorkItemQueue:
         correlation_id: str,
         payload: dict[str, Any],
         result_ref: Optional[dict[str, Any]] = None,
+        revive_statuses: Optional[Iterable[str]] = None,
         now: Optional[datetime] = None,
     ) -> EnqueueResult:
         """Idempotently enqueue one work item."""
@@ -103,6 +104,47 @@ class WorkItemQueue:
         subject_value = str(subject_id)
         existing = self.collection.find_one({"idempotency_key": idempotency_key})
         if existing is not None:
+            revivable = set(revive_statuses or ())
+            if existing.get("status") in revivable:
+                default_result_ref = result_ref or {
+                    "legacy_queue_written": False,
+                    "legacy_queue_written_at": None,
+                    "scrape_status": None,
+                    "scored_jsonl_written": False,
+                    "scored_jsonl_written_at": None,
+                    "level1_upserted": False,
+                    "level1_upserted_at": None,
+                }
+                revived = self.collection.find_one_and_update(
+                    {
+                        "_id": existing["_id"],
+                        "status": existing.get("status"),
+                    },
+                    {
+                        "$set": {
+                            "task_type": task_type,
+                            "lane": lane,
+                            "consumer_mode": consumer_mode,
+                            "subject_type": subject_type,
+                            "subject_id": subject_value,
+                            "status": "pending",
+                            "priority": priority,
+                            "available_at": available_at or current_time,
+                            "lease_owner": None,
+                            "lease_expires_at": None,
+                            "attempt_count": 0,
+                            "max_attempts": max_attempts,
+                            "correlation_id": correlation_id,
+                            "payload": payload,
+                            "result_ref": default_result_ref,
+                            "last_error": None,
+                            "updated_at": current_time,
+                        }
+                    },
+                    return_document=ReturnDocument.AFTER,
+                )
+                if revived is not None:
+                    return EnqueueResult(created=False, document=revived)
             return EnqueueResult(created=False, document=existing)
 
         document = {

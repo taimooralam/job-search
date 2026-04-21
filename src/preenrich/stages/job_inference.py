@@ -24,10 +24,15 @@ class JobInferenceStage:
         app_surface = outputs.get("application_surface") or {}
         merged = jd_facts.get("merged_view") or {}
         primary = classification.get("primary_role_category") or "senior_engineer"
+        role_profile = (research.get("role_profile") or {})
+        company_profile = (research.get("company_profile") or {})
+        application_profile = (research.get("application_profile") or {})
 
         semantic_role_model = {
-            "role_mandate": f"Lead delivery for {merged.get('title') or ctx.job_doc.get('title')}.",
-            "expected_success_metrics": list(merged.get("must_haves") or [])[:3],
+            "role_mandate": role_profile.get("summary")
+            or role_profile.get("role_summary")
+            or f"Lead delivery for {merged.get('title') or ctx.job_doc.get('title')}.",
+            "expected_success_metrics": list(role_profile.get("success_metrics") or merged.get("must_haves") or [])[:3],
             "likely_screening_themes": list(merged.get("top_keywords") or [])[:5],
             "ideal_candidate_archetypes": ideal_archetypes_for_primary(primary),
         }
@@ -55,11 +60,14 @@ class JobInferenceStage:
             tone_family=classification.get("tone_family") or "hands_on",
             semantic_role_model=semantic_role_model,
             company_model={
-                "company_summary": ((research.get("company_profile") or {}).get("summary")),
-                "company_type": ((research.get("company_profile") or {}).get("company_type")),
+                "company_summary": company_profile.get("summary"),
+                "company_type": company_profile.get("company_type"),
+                "canonical_domain": company_profile.get("canonical_domain"),
             },
             qualifications=qualifications,
-            application_surface=ApplicationSurfaceDoc.model_validate(app_surface or {"status": "unresolved"}),
+            application_surface=ApplicationSurfaceDoc.model_validate(
+                application_profile or app_surface or {"status": "unresolved"}
+            ),
             inferences=inferences,
         )
         return StageResult(

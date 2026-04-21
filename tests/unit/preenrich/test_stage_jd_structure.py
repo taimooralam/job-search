@@ -32,10 +32,12 @@ class _FakeLLMMetadata:
 @dataclass
 class _FakeSection:
     section_type: Any
-    title: str
+    header: str
     content: str
+    items: list[str]
     char_start: int
     char_end: int
+    index: int
 
 
 class _FakeSectionType:
@@ -53,17 +55,21 @@ def _mock_process_jd_sync(description: str, use_llm: bool = False):
     sections = [
         _FakeSection(
             section_type=_FakeSectionType("responsibilities"),
-            title="Responsibilities",
+            header="Responsibilities",
             content="Build ML models",
+            items=["Build ML models"],
             char_start=0,
             char_end=20,
+            index=0,
         ),
         _FakeSection(
             section_type=_FakeSectionType("requirements"),
-            title="Requirements",
+            header="Requirements",
             content="5+ years Python",
+            items=["5+ years Python"],
             char_start=21,
             char_end=40,
+            index=1,
         ),
     ]
     return _FakeProcessedJD(sections=sections), _FakeLLMMetadata()
@@ -113,9 +119,12 @@ def test_jd_structure_section_shape(mock_fn):
     for s in sections:
         assert "section_type" in s
         assert "title" in s
+        assert "header" in s
         assert "content" in s
+        assert "items" in s
         assert "char_start" in s
         assert "char_end" in s
+        assert "index" in s
 
 
 @patch("src.layer1_4.jd_processor.process_jd_sync", side_effect=_mock_process_jd_sync)

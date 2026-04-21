@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import logging
 import os
 import socket
@@ -18,6 +19,8 @@ from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
 from src.pipeline.tracing import PreenrichTracingSession
+from src.preenrich.blueprint_config import current_dag_version, current_input_snapshot_id, validate_blueprint_feature_flags
+from src.preenrich.blueprint_store import artifact_ref, upsert_artifact
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import DAG_VERSION, SCHEMA_VERSION
 from src.preenrich.schema import attempt_token, idempotency_key, input_snapshot_id
@@ -44,21 +47,38 @@ def stage_factory_map() -> dict[str, Callable[[], Any]]:
     """Return the concrete implementation factory for every registered stage."""
     from src.preenrich.stages.ai_classification import AIClassificationStage
     from src.preenrich.stages.annotations import AnnotationsStage
+    from src.preenrich.stages.application_surface import ApplicationSurfaceStage
+    from src.preenrich.stages.blueprint_assembly import BlueprintAssemblyStage
+    from src.preenrich.stages.classification import ClassificationStage
     from src.preenrich.stages.company_research import CompanyResearchStage
+    from src.preenrich.stages.cv_guidelines import CVGuidelinesStage
+    from src.preenrich.stages.jd_facts import JDFactsStage
     from src.preenrich.stages.jd_extraction import JDExtractionStage
     from src.preenrich.stages.jd_structure import JDStructureStage
+    from src.preenrich.stages.job_hypotheses import JobHypothesesStage
+    from src.preenrich.stages.job_inference import JobInferenceStage
     from src.preenrich.stages.pain_points import PainPointsStage
     from src.preenrich.stages.persona import PersonaStage
+    from src.preenrich.stages.research_enrichment import ResearchEnrichmentStage
     from src.preenrich.stages.role_research import RoleResearchStage
 
     return {
         "jd_structure": JDStructureStage,
         "jd_extraction": JDExtractionStage,
+        "jd_facts": JDFactsStage,
         "ai_classification": AIClassificationStage,
+        "classification": ClassificationStage,
         "pain_points": PainPointsStage,
         "annotations": AnnotationsStage,
         "persona": PersonaStage,
+        "persona_compat": PersonaStage,
         "company_research": CompanyResearchStage,
+        "research_enrichment": ResearchEnrichmentStage,
+        "application_surface": ApplicationSurfaceStage,
+        "job_inference": JobInferenceStage,
+        "job_hypotheses": JobHypothesesStage,
+        "cv_guidelines": CVGuidelinesStage,
+        "blueprint_assembly": BlueprintAssemblyStage,
         "role_research": RoleResearchStage,
     }
 
@@ -174,6 +194,7 @@ class StageWorker:
 
     def process_one(self, *, now: Optional[datetime] = None) -> dict[str, Any]:
         """Claim and process a single stage work item."""
+        validate_blueprint_feature_flags()
         work_item = self.claim_next_work_item(now=now)
         if work_item is None:
             return {"status": "idle", "stage_name": self.stage_name}
@@ -371,6 +392,7 @@ class StageWorker:
                 "cost_usd": result.cost_usd,
             },
         )
+        artifact_refs = self._upsert_stage_artifacts(job_doc, result, now=finished_at)
         next_stage_entries = self._build_next_stage_entries(
             job_doc=job_doc,
             snapshot_id=current_snapshot,
@@ -384,6 +406,7 @@ class StageWorker:
             result=result,
             ctx=ctx,
             token=token,
+            artifact_refs=artifact_refs,
             next_stage_entries=next_stage_entries,
             now=finished_at,
             duration_ms=duration_ms,
@@ -453,13 +476,27 @@ class StageWorker:
         result: Any,
         ctx: StageContext,
         token: str,
+        artifact_refs: dict[str, Any],
         next_stage_entries: list[dict[str, Any]],
         now: datetime,
         duration_ms: int,
     ) -> None:
         """Phase A single-document write for stage success."""
+        stage_output = self._resolve_placeholders(
+            dict(result.stage_output or {}),
+            refs={**self._known_artifact_refs(job_doc), **artifact_refs},
+            now=now,
+        )
+        if not stage_output and not result.artifact_writes:
+            stage_output = self._resolve_placeholders(
+                dict(result.output),
+                refs={**self._known_artifact_refs(job_doc), **artifact_refs},
+                now=now,
+            )
+        if artifact_refs:
+            stage_output["artifact_refs"] = artifact_refs
         set_doc: dict[str, Any] = {
-            f"pre_enrichment.outputs.{self.stage_name}": result.output,
+            f"pre_enrichment.outputs.{self.stage_name}": stage_output,
             f"pre_enrichment.stage_states.{self.stage_name}.status": "completed",
             f"pre_enrichment.stage_states.{self.stage_name}.completed_at": now,
             f"pre_enrichment.stage_states.{self.stage_name}.attempt_token": token,
@@ -470,6 +507,7 @@ class StageWorker:
             f"pre_enrichment.stage_states.{self.stage_name}.prompt_version": result.prompt_version or ctx.config.prompt_version,
             f"pre_enrichment.stage_states.{self.stage_name}.output_ref": {
                 "path": f"pre_enrichment.outputs.{self.stage_name}",
+                "artifacts": artifact_refs,
             },
             f"pre_enrichment.stage_states.{self.stage_name}.last_error": None,
             f"pre_enrichment.stage_states.{self.stage_name}.tokens_input": result.tokens_input,
@@ -481,7 +519,13 @@ class StageWorker:
             f"pre_enrichment.stage_states.{self.stage_name}.work_item_id": work_item["_id"],
             "updated_at": now,
         }
-        set_doc.update(result.output)
+        set_doc.update(
+            self._resolve_placeholders(
+                dict(result.output),
+                refs={**self._known_artifact_refs(job_doc), **artifact_refs},
+                now=now,
+            )
+        )
 
         update = {"$set": set_doc}
         if next_stage_entries:
@@ -520,6 +564,7 @@ class StageWorker:
         for stage in iter_stage_definitions():
             if self.stage_name not in stage.prerequisites:
                 continue
+            dag_version = str(((job_doc.get("pre_enrichment") or {}).get("dag_version")) or current_dag_version())
             entries.append(
                 {
                     "idempotency_key": idempotency_key(stage.name, str(job_doc["_id"]), snapshot_id),
@@ -532,7 +577,7 @@ class StageWorker:
                         "input_snapshot_id": snapshot_id,
                         "jd_checksum": jd_cs,
                         "company_checksum": company_cs,
-                        "dag_version": DAG_VERSION,
+                        "dag_version": dag_version,
                         "schema_version": SCHEMA_VERSION,
                         "langfuse_session_id": session_id,
                     },
@@ -837,6 +882,8 @@ class StageWorker:
         dag_version = str(payload.get("dag_version") or pre.get("dag_version") or DAG_VERSION)
         current_jd_checksum = jd_checksum(job_doc.get("description", "") or job_doc.get("job_description", "") or "")
         current_company_checksum = company_checksum(job_doc.get("company"), job_doc.get("company_domain"))
+        if dag_version == current_dag_version():
+            return current_input_snapshot_id(current_jd_checksum, current_company_checksum, dag_version=dag_version)
         return input_snapshot_id(current_jd_checksum, current_company_checksum, dag_version)
 
     def _renew_leases(self, work_item_id: ObjectId, level2_id: ObjectId) -> None:
@@ -982,6 +1029,52 @@ class StageWorker:
         if extra:
             metadata.update(extra)
         return metadata
+
+    def _upsert_stage_artifacts(self, job_doc: dict[str, Any], result: Any, *, now: datetime) -> dict[str, Any]:
+        """Persist any collection-backed artifacts and return ref metadata."""
+        refs: dict[str, Any] = {}
+        known_refs = self._known_artifact_refs(job_doc)
+        for artifact in getattr(result, "artifact_writes", []) or []:
+            stored = upsert_artifact(
+                self.db,
+                collection=artifact.collection,
+                unique_filter=self._resolve_placeholders(copy.deepcopy(artifact.unique_filter), refs=known_refs, now=now),
+                document=self._resolve_placeholders(copy.deepcopy(artifact.document), refs=known_refs, now=now),
+                now=now,
+            )
+            refs[artifact.ref_name] = artifact_ref(stored, collection=artifact.collection)
+        return refs
+
+    def _known_artifact_refs(self, job_doc: dict[str, Any]) -> dict[str, Any]:
+        refs: dict[str, Any] = {}
+        outputs = ((job_doc.get("pre_enrichment") or {}).get("outputs") or {})
+        for stage_output in outputs.values():
+            for key, value in (stage_output.get("artifact_refs") or {}).items():
+                refs[key] = value
+        refs.update(((job_doc.get("pre_enrichment") or {}).get("job_blueprint_refs") or {}))
+        return refs
+
+    def _resolve_placeholders(self, value: Any, *, refs: dict[str, Any], now: datetime) -> Any:
+        if isinstance(value, dict):
+            return {key: self._resolve_placeholders(inner, refs=refs, now=now) for key, inner in value.items()}
+        if isinstance(value, list):
+            return [self._resolve_placeholders(item, refs=refs, now=now) for item in value]
+        if isinstance(value, str):
+            if value == "__now__":
+                return now
+            if value.startswith("__ref__:"):
+                path = value.split(":", 1)[1]
+                parts = path.split(".")
+                current: Any = refs
+                for part in parts:
+                    current = current[part]
+                return current
+            if value.startswith("__artifact__:"):
+                key = value.split(":", 1)[1]
+                current = refs.get(key)
+                if isinstance(current, dict) and "id" in current:
+                    return current["id"]
+        return value
 
 
 def retry_delay_seconds(attempt_count: int) -> int:

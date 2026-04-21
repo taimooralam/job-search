@@ -467,6 +467,26 @@ class OutreachGenerationService(OperationService):
             contacts = job.get("secondary_contacts") or []
 
         if not contacts:
+            research = (((job.get("pre_enrichment") or {}).get("outputs") or {}).get("research_enrichment") or {})
+            stakeholders = list(research.get("stakeholder_intelligence") or [])
+            artifact_contacts = []
+            for stakeholder in stakeholders:
+                confidence = (stakeholder.get("identity_confidence") or {}) if isinstance(stakeholder, dict) else {}
+                if not isinstance(stakeholder, dict) or confidence.get("band") not in {"medium", "high"}:
+                    continue
+                artifact_contacts.append(
+                    {
+                        "name": stakeholder.get("name"),
+                        "role": stakeholder.get("current_title"),
+                        "company": stakeholder.get("current_company") or job.get("company"),
+                        "why_relevant": stakeholder.get("evidence_basis") or stakeholder.get("identity_basis"),
+                        "linkedin_url": stakeholder.get("profile_url"),
+                        "contact_type": stakeholder.get("stakeholder_type") or "peer",
+                    }
+                )
+            contacts = artifact_contacts
+
+        if not contacts:
             logger.warning(f"No {contact_type}_contacts found in job")
             return None
 
@@ -510,6 +530,9 @@ class OutreachGenerationService(OperationService):
 
         # Get company signals
         company_research = job.get("company_research") or {}
+        if not company_research:
+            research = (((job.get("pre_enrichment") or {}).get("outputs") or {}).get("research_enrichment") or {})
+            company_research = research.get("company_profile") or {}
         signals = company_research.get("signals") or []
         company_signals = []
         for signal in signals[:3]:  # Take top 3 signals

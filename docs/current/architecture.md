@@ -182,6 +182,41 @@ Operational topology:
   - snapshot invalidation
 - `src/preenrich/outbox.py` remains in-tree only as a guarded legacy compatibility surface until post-cutover removal
 
+### Iteration 4.1.3 Research Contract
+
+Iteration 4.1.3 keeps the 4.1 collection-backed pattern but upgrades external intelligence ownership:
+
+- `application_surface` remains a separate execution stage for deterministic URL normalization, portal detection, and stale/closed handling.
+- `research_enrichment` is now the canonical external-intelligence artifact and absorbs `application_surface` into `application_profile`.
+- `job_inference` remains a downstream synthesis consumer. It should read role/company/application context from `research_enrichment`, not recreate runner-era web research itself.
+- `jd_facts` is pinned to `gpt-5.2` as the canonical Codex model for iteration-4.1 extraction. This is an intentional stability choice for the structured extractor path and should not drift per run unless an explicit override is set.
+- Top-level `application_url`, `company_research`, and `role_research` remain compatibility projections while V2 is gated.
+- Snapshot mirrors stay compact by design:
+  - summary fields
+  - compact signals
+  - compact application metadata
+  - compact stakeholder summary only
+  - full sources/evidence/outreach guidance stay collection-backed
+
+### Iteration 4.1.3.1 Hardening Direction
+
+Iteration 4.1.3.1 is the schema-alignment and hard-cutover-prep slice for the Codex-only research path. Its bias is explicit: **richer grounded output is preferred**, shape validation is loose, truth validation is strict, and `application_surface` always produces a useful artifact.
+
+- `application_surface` stays a separate stage, and its job is to **always produce a useful artifact** — resolved, partial, negative, or unresolved-evidenced. `unresolved` is never `empty`; it carries evidence and intermediate conclusions. The stage fails closed only on falsehood (fabricated URLs, cross-company links, guessed ATS deep links), never on incompleteness.
+- `application_surface` now normalizes richer live Codex shapes before strict canonical validation. Verified employer-portal entrypoints are preserved as `partial` results when an exact job-specific deep link is not directly observed.
+- `research_enrichment` keeps canonical ownership with a **richer-canonical, compact-projection** schema strategy:
+  - the rich evidence-bearing shape is the canonical persisted artifact (company signals as rich objects, role fields with status/confidence/evidence, stakeholder entries with sources and confidence)
+  - compact scalar aliases are derived projections written alongside for readers that have not yet migrated, not the source of truth
+  - permissive ingress normalization absorbs live Codex wrapper/alias drift and preserves grounded extras under named companion slots
+  - persisted truth validation remains strict on safety and factuality
+  - when a richer shape proves stable across live runs, the canonical schema evolves toward it rather than forcing flattening
+- Model-routing defaults for the hard-cutover-prep slice are now:
+  - `jd_facts`: `gpt-5.2`, no fallback, escalation disabled by default
+  - `classification`: `gpt-5.4-mini` primary, `gpt-5.2` escalation, no fallback
+  - `application_surface`: `gpt-5.2`, Codex web search, no fallback
+- Compatibility projections are temporary migration surfaces. Where compat and canonical truth tension, canonical truth wins.
+- Direct canonical consumption by downstream readers is the intended end state; later phases migrate readers to the rich canonical `research_enrichment` artifact rather than extending top-level `company_research` / `role_research` scalar debt.
+
 ### Compatibility Boundary
 
 Compatibility remains in place for safe cutover and rollback:

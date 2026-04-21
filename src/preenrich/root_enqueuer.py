@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import logging
 import os
 from datetime import datetime, timezone
@@ -14,7 +13,9 @@ from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
 from src.pipeline.tracing import emit_standalone_event
-from src.preenrich.schema import idempotency_key, input_snapshot_id
+from src.preenrich.blueprint_config import current_dag_version, current_input_snapshot_id, taxonomy_version, validate_blueprint_feature_flags
+from src.preenrich.checksums import company_checksum, jd_checksum
+from src.preenrich.schema import idempotency_key
 from src.preenrich.stage_registry import get_stage_definition, iter_stage_definitions
 
 logger = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ class RootEnqueuer:
         current_time = now or utc_now()
         if not is_stage_dag_enabled():
             return {"claimed": 0, "enqueued": 0, "skipped": 0}
+        validate_blueprint_feature_flags()
 
         allowlist = parse_canary_allowlist(os.getenv("PREENRICH_DAG_CANARY_ALLOWLIST", ""))
         pct = int(os.getenv("PREENRICH_DAG_CANARY_PCT", "0") or "0")
@@ -126,12 +128,16 @@ class RootEnqueuer:
         if document is None:
             return False
 
-        jd_checksum = str(((document.get("pre_enrichment") or {}).get("jd_checksum")) or _checksum_or_empty(document.get("description", "")))
-        company_checksum = str(
-            ((document.get("pre_enrichment") or {}).get("company_checksum"))
-            or _checksum_or_empty(document.get("company", ""))
+        normalized_jd_checksum = str(
+            ((document.get("pre_enrichment") or {}).get("jd_checksum"))
+            or jd_checksum(document.get("description", "") or document.get("job_description", "") or "")
         )
-        snapshot_id = input_snapshot_id(jd_checksum, company_checksum, DAG_VERSION)
+        normalized_company_checksum = str(
+            ((document.get("pre_enrichment") or {}).get("company_checksum"))
+            or company_checksum(document.get("company"), document.get("company_domain"))
+        )
+        dag_version = current_dag_version()
+        snapshot_id = current_input_snapshot_id(normalized_jd_checksum, normalized_company_checksum, dag_version=dag_version)
         session_id = f"job:{document['_id']}"
 
         claimed = self.level2.find_one_and_update(
@@ -144,10 +150,11 @@ class RootEnqueuer:
                 "$set": {
                     "lifecycle": "preenriching",
                     "pre_enrichment.schema_version": SCHEMA_VERSION,
-                    "pre_enrichment.dag_version": DAG_VERSION,
+                    "pre_enrichment.dag_version": dag_version,
                     "pre_enrichment.input_snapshot_id": snapshot_id,
-                    "pre_enrichment.jd_checksum": jd_checksum,
-                    "pre_enrichment.company_checksum": company_checksum,
+                    "pre_enrichment.jd_checksum": normalized_jd_checksum,
+                    "pre_enrichment.company_checksum": normalized_company_checksum,
+                    "pre_enrichment.taxonomy_version": taxonomy_version() if dag_version != DAG_VERSION else None,
                     "pre_enrichment.orchestration": "dag",
                     "pre_enrichment.stage_states": build_stage_states(snapshot_id),
                     "pre_enrichment.pending_next_stages": [],
@@ -178,12 +185,13 @@ class RootEnqueuer:
             payload={
                 "stage_name": ROOT_STAGE,
                 "input_snapshot_id": snapshot_id,
-                "jd_checksum": jd_checksum,
-                "company_checksum": company_checksum,
-                "dag_version": DAG_VERSION,
+                "jd_checksum": normalized_jd_checksum,
+                "company_checksum": normalized_company_checksum,
+                "dag_version": dag_version,
                 "schema_version": SCHEMA_VERSION,
                 "langfuse_session_id": session_id,
             },
+            revive_statuses=("cancelled", "deadletter"),
         )
         work_item_id = enqueue_result.document.get("_id")
         if work_item_id is not None:
@@ -242,12 +250,6 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     stats = run_once(_get_db(), limit=args.limit)
     logger.info("preenrich root enqueuer stats=%s", stats)
-
-
-def _checksum_or_empty(value: str) -> str:
-    raw = value or ""
-    return f"sha256:{hashlib.sha256(raw.encode('utf-8')).hexdigest()}"
-
 
 def _coerce_object_id(value: ObjectId | str) -> ObjectId:
     if isinstance(value, ObjectId):

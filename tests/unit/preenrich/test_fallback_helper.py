@@ -253,6 +253,30 @@ class TestCallLlmWithFallbackBothFail:
                 job_id="test-job-both-fail",
                 schema=None,
                 claude_invoker=claude_invoker,
+                )
+
+
+class TestCallLlmWithFallbackDisabledFallback:
+    @patch("src.preenrich.stages.base.CodexCLI")
+    def test_primary_failure_raises_when_no_fallback_is_configured(self, mock_codex_cls):
+        from src.preenrich.stages.base import _call_llm_with_fallback
+
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result(
+            success=False, error="codex down"
+        )
+        mock_codex_cls.return_value = mock_cli
+
+        with pytest.raises(RuntimeError, match="no fallback is configured"):
+            _call_llm_with_fallback(
+                primary_provider="codex",
+                primary_model="gpt-5.4",
+                fallback_provider="none",
+                fallback_model=None,
+                prompt="test prompt",
+                job_id="test-job-no-fallback",
+                schema=None,
+                claude_invoker=_make_claude_invoker({"value": "unused", "count": 1}),
             )
 
 

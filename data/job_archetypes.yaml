@@ -1,8 +1,9 @@
-version: "2026-04-19-v1"
-description: "Canonical Stage 1 taxonomy for role classification, search/selector interoperability, tone, and application-surface portal families."
+version: "2026-04-20-v2"
+description: "Canonical Stage 1 taxonomy for role classification, search/selector interoperability, tone, AI taxonomy, and application-surface portal families."
 
 source_files:
-  - src/preenrich/stages/jd_extraction.py
+  - src/preenrich/stages/classification.py
+  - src/preenrich/stages/jd_facts.py
   - src/layer1_4/prompts.py
   - n8n/skills/top-jobs/scripts/top_jobs.py
   - .codex/skills/top-jobs/SKILL.md
@@ -12,11 +13,27 @@ source_files:
   - data/portal-playbooks/
 
 design_rules:
-  - "primary_role_category answers what job this is."
+  - "primary_role_category answers what engineering role this is."
   - "tone_family answers how the role should be framed."
   - "search_profiles and selector_profiles preserve compatibility with existing search and ranking workflows."
   - "portal_family is part of application_surface, not role identity."
   - "AI specialization is orthogonal to role seniority and management scope."
+  - "classification owns taxonomy artifacts; extracted_jd.role_category remains a compatibility projection."
+
+classification_engine:
+  score_weights:
+    title: 3.0
+    jd_facts_role_category: 2.8
+    responsibilities: 2.0
+    qualifications: 1.5
+    keywords: 1.2
+    competency: 1.4
+    archetype: 1.0
+    seniority: 1.0
+  thresholds:
+    high_confidence: 0.6
+    short_circuit_margin: 0.2
+    disambiguation_margin: 0.15
 
 primary_role_categories:
   senior_engineer:
@@ -25,6 +42,61 @@ primary_role_categories:
       preenrich_role_categories: [senior_engineer]
       tone_families: [hands_on]
       ideal_candidate_archetypes: [domain_expert, execution_driver]
+    title_signals:
+      - senior engineer
+      - senior software engineer
+      - senior backend engineer
+      - senior frontend engineer
+      - senior full stack engineer
+      - senior platform engineer
+      - software engineer
+      - backend engineer
+      - frontend engineer
+      - full stack engineer
+      - ai engineer
+      - ml engineer
+    title_negatives:
+      - manager
+      - director
+      - vice president
+      - vp
+      - chief
+      - cto
+      - head of
+      - principal
+      - staff
+      - architect
+      - lead
+      - leader
+    responsibility_signals:
+      - build features
+      - ship production systems
+      - own services
+      - implement backend systems
+      - write production code
+      - improve reliability
+      - optimize performance
+    qualification_signals:
+      - software engineering experience
+      - strong coding skills
+      - experience building distributed systems
+      - experience with production systems
+    keyword_signals:
+      - python
+      - java
+      - typescript
+      - go
+      - aws
+      - kubernetes
+      - distributed systems
+    competency_anchors:
+      delivery: 38
+      process: 20
+      architecture: 27
+      leadership: 15
+    archetype_signals: [domain_expert, execution_driver]
+    seniority_signals: [senior]
+
   tech_lead:
     summary: "Hands-on player-coach role leading a small team or technical stream."
     maps_from:
@@ -32,6 +104,54 @@ primary_role_categories:
       selector_profiles: [tech-lead]
       tone_families: [player_coach]
       ideal_candidate_archetypes: [hybrid_technical_leader, technical_architect]
+    title_signals:
+      - tech lead
+      - technical lead
+      - engineering lead
+      - team lead
+      - lead engineer
+      - lead software engineer
+      - lead ml engineer
+      - lead ai engineer
+      - engineering leader
+      - ai engineering leader
+    title_negatives:
+      - director
+      - vice president
+      - vp
+      - chief
+      - cto
+      - head of
+      - engineering manager
+    responsibility_signals:
+      - lead technical direction
+      - mentor engineers
+      - drive architecture decisions
+      - remain hands on
+      - lead delivery
+      - code reviews
+      - partner with product
+      - unblock engineers
+    qualification_signals:
+      - player coach
+      - hands on leadership
+      - technical leadership experience
+      - mentoring engineers
+    keyword_signals:
+      - architecture
+      - technical direction
+      - delivery leadership
+      - mentoring
+      - player coach
+      - system design
+    competency_anchors:
+      delivery: 30
+      process: 15
+      architecture: 30
+      leadership: 25
+    archetype_signals: [hybrid_technical_leader, technical_architect]
+    seniority_signals: [senior, staff]
+
   staff_principal_engineer:
     summary: "Staff or principal IC leadership through architecture, standards, and cross-team influence."
     maps_from:
@@ -40,6 +160,54 @@ primary_role_categories:
       search_profiles: [ai_senior_ic, ai_architect]
       tone_families: [architect]
       ideal_candidate_archetypes: [technical_architect, domain_expert]
+    title_signals:
+      - staff engineer
+      - principal engineer
+      - distinguished engineer
+      - fellow engineer
+      - architect
+      - software architect
+      - ai architect
+      - ml architect
+      - principal ai engineer
+      - staff ai engineer
+    title_negatives:
+      - engineering manager
+      - director
+      - vice president
+      - vp
+      - chief
+      - cto
+      - head of
+    responsibility_signals:
+      - define standards
+      - architect systems
+      - influence across teams
+      - technical strategy
+      - lead architecture
+      - drive platform direction
+      - review designs
+    qualification_signals:
+      - principal level
+      - staff level
+      - architecture experience
+      - cross functional influence
+      - experience setting technical standards
+    keyword_signals:
+      - architecture
+      - standards
+      - platform strategy
+      - principal
+      - staff
+      - cross team
+    competency_anchors:
+      delivery: 22
+      process: 18
+      architecture: 42
+      leadership: 18
+    archetype_signals: [technical_architect, domain_expert]
+    seniority_signals: [staff, principal]
+
   engineering_manager:
     summary: "Direct people-management role for one team or a narrow engineering area."
     maps_from:
@@ -47,6 +215,49 @@ primary_role_categories:
       selector_profiles: [engineering-manager]
       tone_families: [player_coach, executive]
       ideal_candidate_archetypes: [people_leader, execution_driver]
+    title_signals:
+      - engineering manager
+      - software engineering manager
+      - ai engineering manager
+      - ml engineering manager
+      - engineering leader
+      - ai engineering leader
+    title_negatives:
+      - director
+      - vice president
+      - vp
+      - chief
+      - cto
+      - head of
+    responsibility_signals:
+      - manage engineers
+      - hire engineers
+      - conduct performance reviews
+      - lead a team
+      - run delivery for the team
+      - coach engineers
+      - build team culture
+    qualification_signals:
+      - management experience
+      - people management
+      - hiring experience
+      - performance management
+      - leadership experience
+    keyword_signals:
+      - people management
+      - hiring
+      - performance reviews
+      - coaching
+      - roadmap delivery
+      - team leadership
+    competency_anchors:
+      delivery: 25
+      process: 23
+      architecture: 15
+      leadership: 37
+    archetype_signals: [people_leader, execution_driver]
+    seniority_signals: [senior, director]
+
   director_of_engineering:
     summary: "Manager-of-managers role balancing execution, org design, and delivery."
     maps_from:
@@ -55,6 +266,44 @@ primary_role_categories:
       search_profiles: [ai_leadership]
       tone_families: [executive]
       ideal_candidate_archetypes: [people_leader, process_champion]
+    title_signals:
+      - director of engineering
+      - engineering director
+      - director engineering
+      - director of ai engineering
+      - director of platform engineering
+    title_negatives:
+      - vice president
+      - vp
+      - chief
+      - cto
+      - head of engineering
+    responsibility_signals:
+      - manage managers
+      - org design
+      - operate across multiple teams
+      - align engineering delivery
+      - budgeting
+      - engineering strategy across teams
+    qualification_signals:
+      - experience managing managers
+      - director level leadership
+      - leading multiple teams
+      - org design
+    keyword_signals:
+      - director
+      - org design
+      - portfolio delivery
+      - multi team
+      - budget
+    competency_anchors:
+      delivery: 22
+      process: 25
+      architecture: 13
+      leadership: 40
+    archetype_signals: [people_leader, process_champion]
+    seniority_signals: [director]
+
   head_of_engineering:
     summary: "Function-building engineering leader, often close to the executive table."
     maps_from:
@@ -63,6 +312,42 @@ primary_role_categories:
       search_profiles: [ai_leadership]
       tone_families: [executive]
       ideal_candidate_archetypes: [builder_founder, strategic_visionary]
+    title_signals:
+      - head of engineering
+      - head engineering
+      - head of ai engineering
+      - head of platform engineering
+    title_negatives:
+      - vice president
+      - vp
+      - chief
+      - cto
+    responsibility_signals:
+      - build the engineering function
+      - own engineering strategy
+      - partner with leadership
+      - set engineering culture
+      - lead engineering organization
+      - own hiring bar
+    qualification_signals:
+      - building engineering organizations
+      - scaling teams
+      - leadership team partner
+      - startup leadership
+    keyword_signals:
+      - function building
+      - strategy
+      - engineering culture
+      - leadership team
+      - hiring bar
+    competency_anchors:
+      delivery: 20
+      process: 20
+      architecture: 15
+      leadership: 45
+    archetype_signals: [builder_founder, strategic_visionary]
+    seniority_signals: [director, vp]
+
   vp_engineering:
     summary: "Executive engineering leader operating through directors and org-level systems."
     maps_from:
@@ -71,6 +356,41 @@ primary_role_categories:
       search_profiles: [ai_leadership]
       tone_families: [executive]
       ideal_candidate_archetypes: [strategic_visionary, process_champion]
+    title_signals:
+      - vp engineering
+      - vice president engineering
+      - vp of engineering
+      - svp engineering
+      - vice president of ai engineering
+    title_negatives:
+      - chief
+      - cto
+    responsibility_signals:
+      - operate through directors
+      - executive leadership
+      - org level strategy
+      - budget ownership
+      - board communication
+      - multi org leadership
+    qualification_signals:
+      - vice president
+      - executive engineering leadership
+      - leading directors
+      - operating at scale
+    keyword_signals:
+      - executive leadership
+      - org strategy
+      - director leadership
+      - board
+      - portfolio
+    competency_anchors:
+      delivery: 18
+      process: 22
+      architecture: 10
+      leadership: 50
+    archetype_signals: [strategic_visionary, process_champion]
+    seniority_signals: [vp]
+
   cto:
     summary: "Top-level technology executive with external-facing and business-strategy responsibilities."
     maps_from:
@@ -79,6 +399,74 @@ primary_role_categories:
       search_profiles: [ai_leadership]
       tone_families: [executive]
       ideal_candidate_archetypes: [strategic_visionary, technical_architect]
+    title_signals:
+      - cto
+      - chief technology officer
+      - chief ai officer
+      - chief technology and product officer
+    title_negatives: []
+    responsibility_signals:
+      - define technology vision
+      - executive team
+      - investor communication
+      - board communication
+      - technology strategy
+      - company strategy
+      - external representation
+    qualification_signals:
+      - executive leadership
+      - c level
+      - founder level leadership
+      - technology vision
+    keyword_signals:
+      - board
+      - investor
+      - strategy
+      - executive
+      - technology vision
+    competency_anchors:
+      delivery: 15
+      process: 15
+      architecture: 20
+      leadership: 50
+    archetype_signals: [strategic_visionary, technical_architect]
+    seniority_signals: [c_level]
+
+disambiguation_rules:
+  - id: tech_lead_vs_engineering_manager
+    pair: [tech_lead, engineering_manager]
+    when_any:
+      responsibility_signals:
+        engineering_manager:
+          - manage engineers
+          - performance reviews
+          - hiring
+          - people management
+      qualification_signals:
+        engineering_manager:
+          - people management
+          - management experience
+    prefer: engineering_manager
+  - id: tech_lead_vs_staff_principal
+    pair: [tech_lead, staff_principal_engineer]
+    when_any:
+      qualification_signals:
+        staff_principal_engineer:
+          - principal level
+          - staff level
+      seniority_signals:
+        staff_principal_engineer: [staff, principal]
+    prefer: staff_principal_engineer
+  - id: director_head_vp_title_priority
+    pair: [director_of_engineering, head_of_engineering, vp_engineering]
+    title_priority:
+      vp_engineering: [vp engineering, vice president engineering, vp of engineering, svp engineering]
+      head_of_engineering: [head of engineering, head engineering]
+      director_of_engineering: [director of engineering, engineering director]
+  - id: cto_title_priority
+    pair: [cto, vp_engineering, head_of_engineering]
+    title_priority:
+      cto: [cto, chief technology officer, chief ai officer]
 
 search_profiles:
   ai_core:
@@ -138,6 +526,62 @@ ideal_candidate_archetypes:
     description: "Establishes engineering excellence and operating cadence."
   hybrid_technical_leader:
     description: "Balances code-level authority with leadership responsibility."
+
+ai_taxonomy:
+  specializations:
+    none:
+      description: "No AI/ML specialization signaled."
+      title_signals: []
+      responsibility_signals: []
+      keyword_signals: []
+      legacy_categories: []
+      scope_tags: []
+    ai_core:
+      description: "Applied ML / AI core IC work."
+      title_signals: [ai engineer, ml engineer, applied scientist, machine learning engineer]
+      responsibility_signals: [train models, fine tune models, build rag systems, model evaluation, deploy ml systems]
+      keyword_signals: [pytorch, tensorflow, huggingface, transformers, llm, rag, inference]
+      legacy_categories: [ai_general]
+      scope_tags: [applied_ai]
+    genai_llm:
+      description: "GenAI / LLM product or application work."
+      title_signals: [genai engineer, llm engineer, ai application engineer]
+      responsibility_signals: [build genai products, prompt engineering, evaluations, guardrails, agent workflows]
+      keyword_signals: [llm, genai, rag, prompt engineering, agentic, guardrails, evaluations]
+      legacy_categories: [ai_general, genai_llm]
+      scope_tags: [genai_product, agentic_systems, rag]
+    mlops_llmops:
+      description: "ML/LLM platform and operations."
+      title_signals: [mlops engineer, llmops engineer, ai platform engineer]
+      responsibility_signals: [model serving, inference platform, feature store, vector store, model platform]
+      keyword_signals: [mlops, llmops, model serving, inference platform, vector store, feature store]
+      legacy_categories: [ai_general, mlops_llmops]
+      scope_tags: [model_platform, mlops_llmops]
+    ai_leadership:
+      description: "AI-focused engineering leadership."
+      title_signals: [head of ai, director of ai, vp of ai, chief ai officer, ai engineering leader]
+      responsibility_signals: [lead ai strategy, build ai teams, own ai roadmap, govern ai platform]
+      keyword_signals: [ai strategy, ai platform, ai governance]
+      legacy_categories: [ai_general]
+      scope_tags: [ai_leadership, ai_governance]
+    ai_architect:
+      description: "AI-focused staff/principal or architect IC."
+      title_signals: [ai architect, ml architect, principal ai engineer, staff ai engineer]
+      responsibility_signals: [design ai architecture, define ai platform standards, architect rag systems]
+      keyword_signals: [ai architecture, rag, llm platform, agentic systems]
+      legacy_categories: [ai_general]
+      scope_tags: [ai_architecture, agentic_systems, rag]
+  intensity_levels: [none, adjacent, significant, core]
+  scope_tags:
+    - applied_ai
+    - genai_product
+    - agentic_systems
+    - rag
+    - model_platform
+    - mlops_llmops
+    - ai_architecture
+    - ai_leadership
+    - ai_governance
 
 portal_families:
   greenhouse:

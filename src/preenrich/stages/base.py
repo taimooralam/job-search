@@ -35,7 +35,7 @@ def _call_llm_with_fallback(
     claude_invoker: Callable[..., Any],
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """
-    Invoke the primary provider (Codex) and fall back to Claude on failure.
+    Invoke the primary provider (Codex) and optionally fall back on failure.
 
     Primary transport: CodexCLI.invoke() from src/common/codex_cli.py.
     Fallback transport: claude_invoker callable (caller-supplied Claude path).
@@ -145,7 +145,13 @@ def _call_llm_with_fallback(
     if codex_outcome == "success" and codex_result_dict is not None:
         return codex_result_dict, attempts
 
-    # ── Fallback (Claude) ──────────────────────────────────────────────────────
+    if fallback_provider in {"", "none"} or not fallback_model:
+        raise RuntimeError(
+            f"Primary provider ({primary_provider}/{primary_model}) failed for job {job_id} "
+            f"and no fallback is configured. Primary error: {codex_error}"
+        )
+
+    # ── Fallback ───────────────────────────────────────────────────────────────
     logger.info(
         "_call_llm_with_fallback: falling back to %s/%s for job %s (primary outcome: %s)",
         fallback_provider, fallback_model, job_id, codex_outcome,

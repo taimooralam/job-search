@@ -13,9 +13,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from bson import ObjectId
+from dotenv import load_dotenv
 from pymongo import DESCENDING, MongoClient
 
 logger = logging.getLogger(__name__)
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(REPO_ROOT, ".env"), override=True)
 
 class IntelRepository:
     """Access linkedin_intel, linkedin_sessions, draft_content, and related collections on VPS MongoDB."""

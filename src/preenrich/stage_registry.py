@@ -1,9 +1,11 @@
-"""Canonical preenrich DAG registry for iteration 4."""
+"""Canonical preenrich DAG registry for iteration 4 and 4.1."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Mapping
+
+from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled
 
 
 @dataclass(frozen=True)
@@ -55,12 +57,12 @@ RETRYABLE_LOCAL_ERRORS = ("mongo_transient", "transient_io")
 TERMINAL_LOCAL_ERRORS = ("missing_required_input", "unsupported_provider", "schema_validation")
 
 
-STAGE_REGISTRY: dict[str, StageDefinition] = {
+LEGACY_STAGE_REGISTRY: dict[str, StageDefinition] = {
     "jd_structure": StageDefinition(
         name="jd_structure",
         task_type="preenrich.jd_structure",
         prerequisites=(),
-        produces_fields=("processed_jd_sections",),
+        produces_fields=("processed_jd_sections", "jd_annotations"),
         required_for_cv_ready=True,
         max_attempts=3,
         default_priority=DEFAULT_PRIORITY,
@@ -161,21 +163,160 @@ STAGE_REGISTRY: dict[str, StageDefinition] = {
     ),
 }
 
-# Reserved for later iterations once their consumers exist:
-# - fit_signal
-# - competency_eval
 
+def _blueprint_registry() -> dict[str, StageDefinition]:
+    persona_required = persona_compat_enabled()
+    blueprint_assembly_prereqs = (
+        "jd_facts",
+        "job_inference",
+        "cv_guidelines",
+        "application_surface",
+        "annotations",
+    ) + (("persona_compat",) if persona_required else ())
 
-def get_stage_definition(stage_name: str) -> StageDefinition:
-    """Return one registered stage or raise KeyError for unknown names."""
-    return STAGE_REGISTRY[stage_name]
-
-
-def iter_stage_definitions() -> tuple[StageDefinition, ...]:
-    """Return the registry entries in topological order."""
-    return tuple(STAGE_REGISTRY.values())
+    return {
+        "jd_structure": StageDefinition(
+            name="jd_structure",
+            task_type="preenrich.jd_structure",
+            prerequisites=(),
+            produces_fields=("processed_jd_sections", "jd_annotations"),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LOCAL_ERRORS,
+            terminal_error_tags=TERMINAL_LOCAL_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "jd_facts": StageDefinition(
+            name="jd_facts",
+            task_type="preenrich.jd_facts",
+            prerequisites=("jd_structure",),
+            produces_fields=("jd_facts", "extracted_jd"),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "classification": StageDefinition(
+            name="classification",
+            task_type="preenrich.classification",
+            prerequisites=("jd_facts",),
+            produces_fields=("classification", "ai_classification", "is_ai_job", "ai_categories"),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "application_surface": StageDefinition(
+            name="application_surface",
+            task_type="preenrich.application_surface",
+            prerequisites=("jd_facts",),
+            produces_fields=("application_surface", "application_url"),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "research_enrichment": StageDefinition(
+            name="research_enrichment",
+            task_type="preenrich.research_enrichment",
+            prerequisites=("jd_facts", "classification", "application_surface"),
+            produces_fields=("research_enrichment",),
+            required_for_cv_ready=True,
+            max_attempts=5,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_RESEARCH_ERRORS,
+            terminal_error_tags=TERMINAL_RESEARCH_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "job_inference": StageDefinition(
+            name="job_inference",
+            task_type="preenrich.job_inference",
+            prerequisites=("jd_facts", "classification", "research_enrichment", "application_surface"),
+            produces_fields=("job_inference",),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "job_hypotheses": StageDefinition(
+            name="job_hypotheses",
+            task_type="preenrich.job_hypotheses",
+            prerequisites=("jd_facts", "classification", "research_enrichment", "application_surface"),
+            produces_fields=("job_hypotheses",),
+            required_for_cv_ready=False,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "annotations": StageDefinition(
+            name="annotations",
+            task_type="preenrich.annotations",
+            prerequisites=("jd_structure",),
+            produces_fields=("jd_annotations",),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LOCAL_ERRORS,
+            terminal_error_tags=TERMINAL_LOCAL_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "persona_compat": StageDefinition(
+            name="persona_compat",
+            task_type="preenrich.persona_compat",
+            prerequisites=("annotations",),
+            produces_fields=("jd_annotations",),
+            required_for_cv_ready=persona_required,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "cv_guidelines": StageDefinition(
+            name="cv_guidelines",
+            task_type="preenrich.cv_guidelines",
+            prerequisites=("jd_facts", "job_inference", "research_enrichment"),
+            produces_fields=("cv_guidelines",),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "blueprint_assembly": StageDefinition(
+            name="blueprint_assembly",
+            task_type="preenrich.blueprint_assembly",
+            prerequisites=blueprint_assembly_prereqs,
+            produces_fields=("job_blueprint", "job_blueprint_snapshot"),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LOCAL_ERRORS,
+            terminal_error_tags=TERMINAL_LOCAL_ERRORS,
+            job_fail_policy="fail",
+        ),
+    }
 
 
 def stage_registry() -> Mapping[str, StageDefinition]:
-    """Read-only registry accessor for callers that only need lookup."""
-    return STAGE_REGISTRY
+    return _blueprint_registry() if blueprint_enabled() else LEGACY_STAGE_REGISTRY
+
+
+def get_stage_definition(stage_name: str) -> StageDefinition:
+    return dict(stage_registry())[stage_name]
+
+
+def iter_stage_definitions() -> tuple[StageDefinition, ...]:
+    return tuple(stage_registry().values())

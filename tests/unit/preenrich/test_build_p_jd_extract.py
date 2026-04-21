@@ -39,6 +39,18 @@ def test_build_p_jd_extract_contains_runner_taxonomy_contract():
         assert slug in prompt
     assert "Return ONLY valid JSON" in prompt
     assert "No markdown fences" in prompt
+    assert "taxonomy_version=2026-04-19-v1" in prompt
+    assert "application_url" in prompt
+    assert "salary_range" in prompt
+    assert "language_requirements" in prompt
+    assert "remote_location_detail" in prompt
+    assert "weighting_profiles" in prompt
+    assert "analysis_metadata" in prompt
+    assert "Extraction workflow:" in prompt
+    assert "extract application_url, salary_range, and language_requirements from the JD text whenever they are present" in prompt
+    assert "Strict nested-shape rules" in prompt
+    assert "Anti-pattern bans" in prompt
+    assert "do not return expectations as a flat list" in prompt
 
 
 def test_build_p_jd_extract_rejects_hypothesis_payload():
@@ -50,6 +62,20 @@ def test_build_p_jd_extract_rejects_hypothesis_payload():
             structured_sections={},
             raw_jd_excerpt="Job description",
         )
+
+
+def test_build_p_jd_extract_uses_taxonomy_context_not_parallel_hardcoding():
+    prompt = build_p_jd_extract(
+        title="Head of Engineering",
+        company="Acme",
+        deterministic_hints={},
+        structured_sections={},
+        raw_jd_excerpt="English required. Apply here https://example.com/apply",
+    )
+    assert '"role_categories"' in prompt
+    assert '"ideal_candidate_archetypes"' in prompt
+    assert '"likely_archetypes"' in prompt
+    assert "Use the runner-era extraction contract as the quality baseline, then add the richer 4.1.1 contract as first-class output." in prompt
 
 
 def test_compact_raw_jd_preserves_tail_signal():

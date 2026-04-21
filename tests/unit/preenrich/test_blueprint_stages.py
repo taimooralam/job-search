@@ -7,6 +7,7 @@ import pytest
 
 from src.preenrich.blueprint_models import GuidelineBlock
 from src.preenrich.blueprint_prompts import build_p_cv_guidelines
+from src.preenrich.research_transport import ResearchTransportResult
 from src.preenrich.stages.application_surface import ApplicationSurfaceStage
 from src.preenrich.stages.blueprint_assembly import BlueprintAssemblyStage
 from src.preenrich.stages.classification import ClassificationStage
@@ -48,8 +49,9 @@ def _context(*, title: str = "Head of Engineering", company: str = "Acme", descr
         config=StepConfig(
             provider="codex",
             primary_model="gpt-5.4-mini",
-            fallback_provider="claude",
-            fallback_model="claude-haiku-4-5",
+            fallback_provider="none",
+            fallback_model=None,
+            transport="codex_web_search",
         ),
     )
 
@@ -111,8 +113,134 @@ def test_application_surface_is_deterministic_first():
     ctx.job_doc["jobUrl"] = "boards.greenhouse.io/acme/jobs/12345"
     result = ApplicationSurfaceStage().run(ctx)
     assert result.stage_output["application_url"] == "https://boards.greenhouse.io/acme/jobs/12345"
+    assert result.stage_output["canonical_application_url"] == "https://boards.greenhouse.io/acme/jobs/12345"
     assert result.stage_output["portal_family"] == "greenhouse"
     assert "multi_step_likely" in result.stage_output["friction_signals"]
+
+
+def test_application_surface_uses_live_codex_resolution_for_aggregator_only_jobs(monkeypatch):
+    monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
+    ctx = _context()
+    ctx.job_doc["jobUrl"] = "https://linkedin.com/jobs/view/123456"
+    ctx.job_doc["application_url"] = "https://linkedin.com/jobs/view/123456"
+
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+        payload = {
+            "status": "resolved",
+            "job_url": "https://linkedin.com/jobs/view/123456",
+            "canonical_application_url": "https://jobs.acme.example.com/openings/123456",
+            "redirect_chain": [
+                "https://linkedin.com/jobs/view/123456",
+                "https://jobs.acme.example.com/openings/123456",
+            ],
+            "last_verified_at": "2026-04-20T00:00:00+00:00",
+            "final_http_status": 200,
+            "resolution_method": "codex_verified_search",
+            "resolution_status": "resolved",
+            "resolution_note": "Verified official application URL through live Codex research.",
+            "ui_actionability": "ready",
+            "portal_family": "custom_unknown",
+            "ats_vendor": "unknown",
+            "is_direct_apply": True,
+            "account_creation_likely": False,
+            "multi_step_likely": False,
+            "form_fetch_status": "not_attempted",
+            "stale_signal": "active",
+            "closed_signal": "open",
+            "duplicate_signal": {"canonical": "https://jobs.acme.example.com/openings/123456", "duplicates": ["https://linkedin.com/jobs/view/123456"]},
+            "geo_normalization": {"country": "EU"},
+            "apply_instructions": "Use the official careers URL.",
+            "apply_caveats": [],
+            "sources": [{
+                "source_id": "s_official_posting",
+                "url": "https://jobs.acme.example.com/openings/123456",
+                "source_type": "official_job_posting",
+                "fetched_at": "2026-04-20T00:00:00+00:00",
+                "trust_tier": "primary",
+                "domain": "jobs.acme.example.com",
+            }],
+            "evidence": [{
+                "claim": "Official application URL was directly observed in live Codex research.",
+                "source_ids": ["s_official_posting"],
+                "basis": "verified_search_result",
+            }],
+            "confidence": {"score": 0.88, "band": "high", "basis": "verified official posting"},
+            "candidates": ["https://linkedin.com/jobs/view/123456", "https://jobs.acme.example.com/openings/123456"],
+            "friction_signals": [],
+            "notes": ["Live Codex research resolved the official apply URL."],
+        }
+        return ResearchTransportResult(
+            success=True,
+            payload=validator(payload) if validator else payload,
+            attempts=[{"provider": "codex", "outcome": "success"}],
+            provider_used="codex",
+            model_used="gpt-5.2",
+            transport_used="codex_web_search",
+        )
+
+    monkeypatch.setattr("src.preenrich.research_transport.CodexResearchTransport.invoke_json", _fake_invoke)
+    result = ApplicationSurfaceStage().run(ctx)
+    assert result.stage_output["canonical_application_url"] == "https://jobs.acme.example.com/openings/123456"
+    assert result.stage_output["application_url"] == "https://jobs.acme.example.com/openings/123456"
+    assert result.provider_used == "codex"
+
+
+def test_application_surface_fail_opens_on_verified_partial_employer_portal(monkeypatch):
+    monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
+    ctx = _context()
+    ctx.job_doc["jobUrl"] = "https://linkedin.com/jobs/view/4401620360"
+    ctx.job_doc["application_url"] = "https://linkedin.com/jobs/view/4401620360"
+    ctx.job_doc["company"] = "Robson Bale"
+    ctx.job_doc["company_url"] = "https://www.robsonbale.com"
+
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+        payload = {
+            "job_url": "https://linkedin.com/jobs/view/4401620360",
+            "canonical_application_url": "https://www.robsonbale.com/jobs/",
+            "final_http_status": 200,
+            "resolution_status": "partial",
+            "resolution_note": "Verified employer jobs portal found; exact job page was not directly exposed.",
+            "ui_actionability": "applyable",
+            "form_fetch_status": "unavailable",
+            "stale_signal": None,
+            "closed_signal": None,
+            "duplicate_signal": None,
+            "geo_normalization": "London Area, United Kingdom",
+            "apply_instructions": ["Use the employer jobs portal.", "Search by role title if needed."],
+            "sources": [{
+                "source_id": "s_employer_jobs",
+                "url": "https://www.robsonbale.com/jobs/",
+                "source_type": "official_company_site",
+                "fetched_at": "2026-04-21T00:00:00+00:00",
+                "trust_tier": "primary",
+                "domain": "robsonbale.com",
+            }],
+            "evidence": [{
+                "claim": "Employer jobs portal was directly observed.",
+                "source_ids": ["s_employer_jobs"],
+                "basis": "official_company_site",
+            }],
+            "confidence": {"score": 0.73, "band": "medium", "basis": "verified employer jobs portal"},
+        }
+        return ResearchTransportResult(
+            success=True,
+            payload=validator(payload) if validator else payload,
+            attempts=[{"provider": "codex", "outcome": "success"}],
+            provider_used="codex",
+            model_used="gpt-5.2",
+            transport_used="codex_web_search",
+        )
+
+    monkeypatch.setattr("src.preenrich.research_transport.CodexResearchTransport.invoke_json", _fake_invoke)
+    result = ApplicationSurfaceStage().run(ctx)
+    assert result.stage_output["status"] == "partial"
+    assert result.stage_output["resolution_status"] == "partial"
+    assert result.stage_output["canonical_application_url"] == "https://www.robsonbale.com/jobs/"
+    assert result.stage_output["ui_actionability"] == "ready"
+    assert result.stage_output["apply_instruction_lines"] == [
+        "Use the employer jobs portal.",
+        "Search by role title if needed.",
+    ]
 
 
 def test_job_inference_builds_evidence_backed_semantic_model():

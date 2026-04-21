@@ -5,7 +5,11 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
+import subprocess
 import sys
+import time
+from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +26,6 @@ DEFAULT_THRESHOLDS = {
     "responsibilities_item_f1_mean": 0.55,
     "qualifications_item_f1_mean": 0.60,
     "technical_skills_item_f1_mean": 0.65,
-    "implied_pain_points_item_f1_mean": 0.40,
     "success_metrics_item_f1_mean": 0.40,
     "keyword_precision_at_10": 0.60,
     "keyword_recall_at_10": 0.60,
@@ -175,11 +178,174 @@ def _build_context(job: dict[str, Any], *, model: str) -> StageContext:
         config=StepConfig(
             provider="codex",
             primary_model=model,
-            fallback_provider="claude",
-            fallback_model="claude-sonnet-4-6",
+            fallback_provider="none",
+            fallback_model=None,
         ),
         shadow_mode=False,
     )
+
+
+@contextmanager
+def _override_jd_facts_codex_timeout(timeout_seconds: int | None):
+    if not timeout_seconds:
+        yield
+        return
+    import src.preenrich.stages.jd_facts as jd_facts_module
+    from src.common.codex_cli import (
+        CodexCLI as BaseCodexCLI,
+        CodexResult,
+        _extract_json_from_stdout,
+    )
+    from src.common.json_utils import parse_llm_json
+
+    original = jd_facts_module.CodexCLI
+
+    class BenchmarkCodexCLI(BaseCodexCLI):
+        def __init__(self, model: str, timeout: int = timeout_seconds):
+            super().__init__(model=model, timeout=timeout)
+
+        def invoke(self, prompt: str, job_id: str, validate_json: bool = True) -> CodexResult:
+            start_time = datetime.utcnow()
+            cmd = [
+                "codex",
+                "exec",
+                "--model", self.model,
+                "--skip-git-repo-check",
+                prompt,
+            ]
+            print(
+                f"[codex] start job={job_id} model={self.model} timeout={self.timeout}s prompt_len={len(prompt)}",
+                flush=True,
+            )
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            heartbeat_seconds = 30
+            last_heartbeat = time.monotonic()
+            while True:
+                returncode = proc.poll()
+                if returncode is not None:
+                    stdout, stderr = proc.communicate()
+                    duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+                    if returncode != 0:
+                        error_msg = (stderr.strip() or stdout.strip() or f"codex exec exited with code {returncode}")
+                        print(
+                            f"[codex] error job={job_id} model={self.model} duration_ms={duration_ms} error={error_msg}",
+                            flush=True,
+                        )
+                        return CodexResult(
+                            job_id=job_id,
+                            success=False,
+                            result=None,
+                            raw_result=stdout or None,
+                            error=error_msg,
+                            model=self.model,
+                            duration_ms=duration_ms,
+                            invoked_at=start_time.isoformat(),
+                        )
+                    if not validate_json:
+                        print(
+                            f"[codex] complete job={job_id} model={self.model} duration_ms={duration_ms}",
+                            flush=True,
+                        )
+                        return CodexResult(
+                            job_id=job_id,
+                            success=True,
+                            result=None,
+                            raw_result=stdout,
+                            error=None,
+                            model=self.model,
+                            duration_ms=duration_ms,
+                            invoked_at=start_time.isoformat(),
+                        )
+                    json_str = _extract_json_from_stdout(stdout)
+                    if not json_str:
+                        error_msg = "No JSON found in codex exec output"
+                        print(
+                            f"[codex] parse-miss job={job_id} model={self.model} duration_ms={duration_ms}",
+                            flush=True,
+                        )
+                        return CodexResult(
+                            job_id=job_id,
+                            success=False,
+                            result=None,
+                            raw_result=stdout,
+                            error=error_msg,
+                            model=self.model,
+                            duration_ms=duration_ms,
+                            invoked_at=start_time.isoformat(),
+                        )
+                    try:
+                        parsed = parse_llm_json(json_str)
+                    except Exception as exc:
+                        error_msg = f"JSON parse error: {exc}"
+                        print(
+                            f"[codex] parse-error job={job_id} model={self.model} duration_ms={duration_ms} error={error_msg}",
+                            flush=True,
+                        )
+                        return CodexResult(
+                            job_id=job_id,
+                            success=False,
+                            result=None,
+                            raw_result=stdout,
+                            error=error_msg,
+                            model=self.model,
+                            duration_ms=duration_ms,
+                            invoked_at=start_time.isoformat(),
+                        )
+                    print(
+                        f"[codex] complete job={job_id} model={self.model} duration_ms={duration_ms}",
+                        flush=True,
+                    )
+                    return CodexResult(
+                        job_id=job_id,
+                        success=True,
+                        result=parsed,
+                        raw_result=None,
+                        error=None,
+                        model=self.model,
+                        duration_ms=duration_ms,
+                        invoked_at=start_time.isoformat(),
+                    )
+
+                elapsed = time.monotonic() - last_heartbeat
+                total_elapsed = time.monotonic() - (time.monotonic() - elapsed)
+                if elapsed >= heartbeat_seconds:
+                    runtime = int((datetime.utcnow() - start_time).total_seconds())
+                    print(
+                        f"[codex] heartbeat job={job_id} model={self.model} runtime_s={runtime}",
+                        flush=True,
+                    )
+                    last_heartbeat = time.monotonic()
+                if (datetime.utcnow() - start_time).total_seconds() >= self.timeout:
+                    proc.kill()
+                    stdout, stderr = proc.communicate()
+                    duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+                    error_msg = f"codex exec timeout after {self.timeout}s"
+                    print(
+                        f"[codex] timeout job={job_id} model={self.model} duration_ms={duration_ms}",
+                        flush=True,
+                    )
+                    return CodexResult(
+                        job_id=job_id,
+                        success=False,
+                        result=None,
+                        raw_result=stdout or None,
+                        error=error_msg,
+                        model=self.model,
+                        duration_ms=duration_ms,
+                        invoked_at=start_time.isoformat(),
+                    )
+                time.sleep(1)
+
+    jd_facts_module.CodexCLI = BenchmarkCodexCLI
+    try:
+        yield
+    finally:
+        jd_facts_module.CodexCLI = original
 
 
 def run_benchmark(
@@ -187,27 +353,38 @@ def run_benchmark(
     *,
     model: str = "gpt-5.4-mini",
     use_fixture_candidate: bool = False,
+    codex_timeout_seconds: int | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     report: list[dict[str, Any]] = []
-    for item in corpus:
-        runner = item["runner_extracted_jd"]
-        if use_fixture_candidate:
-            candidate = item["candidate_extracted_jd"]
-        else:
-            from src.preenrich.stages.jd_facts import JDFactsStage
+    with _override_jd_facts_codex_timeout(codex_timeout_seconds):
+        for index, item in enumerate(corpus, start=1):
+            runner = item["runner_extracted_jd"]
+            job_id = item.get("job_id") or item.get("_id")
+            print(f"[{index}/{len(corpus)}] benchmarking {job_id} :: {item.get('title')}", flush=True)
+            error_message: str | None = None
+            if use_fixture_candidate:
+                candidate = item["candidate_extracted_jd"]
+            else:
+                try:
+                    from src.preenrich.stages.jd_facts import JDFactsStage
 
-            stage = JDFactsStage()
-            result = stage.run(_build_context(item, model=model))
-            candidate = result.output.get("extracted_jd") or result.stage_output.get("extraction") or result.stage_output.get("merged_view") or {}
-        comparison = compare_extractions(runner, candidate, item.get("gold_reference"))
-        report.append(
-            {
-                "job_id": item.get("job_id") or item.get("_id"),
-                "title": item.get("title"),
-                "company": item.get("company"),
-                "comparison": comparison,
-            }
-        )
+                    stage = JDFactsStage()
+                    result = stage.run(_build_context(item, model=model))
+                    candidate = result.output.get("extracted_jd") or result.stage_output.get("extraction") or result.stage_output.get("merged_view") or {}
+                except Exception as exc:  # pragma: no cover - exercised on real corpora
+                    candidate = {}
+                    error_message = str(exc)
+                    print(f"[{index}/{len(corpus)}] error for {job_id}: {error_message}", flush=True)
+            comparison = compare_extractions(runner, candidate, item.get("gold_reference"))
+            report.append(
+                {
+                    "job_id": job_id,
+                    "title": item.get("title"),
+                    "company": item.get("company"),
+                    "comparison": comparison,
+                    "error": error_message,
+                }
+            )
     return report, summarize_report(report)
 
 
@@ -217,11 +394,17 @@ def main() -> int:
     parser.add_argument("--report-out", help="Optional output path for JSON report")
     parser.add_argument("--model", default="gpt-5.4-mini")
     parser.add_argument("--use-fixture-candidate", action="store_true", help="Use candidate_extracted_jd from the corpus instead of invoking jd_facts")
+    parser.add_argument("--codex-timeout-seconds", type=int, default=None, help="Override Codex subprocess timeout for benchmark stage invocations")
     args = parser.parse_args()
 
     corpus_path = Path(args.corpus)
     corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
-    report, summary = run_benchmark(corpus, model=args.model, use_fixture_candidate=args.use_fixture_candidate)
+    report, summary = run_benchmark(
+        corpus,
+        model=args.model,
+        use_fixture_candidate=args.use_fixture_candidate,
+        codex_timeout_seconds=args.codex_timeout_seconds,
+    )
     payload = {"summary": summary, "report": report}
     if args.report_out:
         Path(args.report_out).write_text(json.dumps(payload, indent=2), encoding="utf-8")

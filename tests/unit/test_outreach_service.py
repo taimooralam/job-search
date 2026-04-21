@@ -270,6 +270,36 @@ class TestOutreachGenerationServiceGetContact:
 
         assert contact is None
 
+    def test_falls_back_to_research_enrichment_stakeholders(self, sample_job_id):
+        """Should use artifact-backed stakeholder intelligence when legacy contacts are absent."""
+        job = {
+            "_id": ObjectId(sample_job_id),
+            "company": "TechCorp",
+            "pre_enrichment": {
+                "outputs": {
+                    "research_enrichment": {
+                        "stakeholder_intelligence": [
+                            {
+                                "name": "Jordan Smith",
+                                "current_title": "Engineering Manager",
+                                "current_company": "TechCorp",
+                                "profile_url": "https://linkedin.com/in/jordan-smith",
+                                "stakeholder_type": "hiring_manager",
+                                "identity_basis": "Matched public profile and function",
+                                "identity_confidence": {"band": "medium"},
+                            }
+                        ]
+                    }
+                }
+            },
+        }
+        service = OutreachGenerationService()
+        contact = service._get_contact(job, "primary", 0)
+
+        assert contact is not None
+        assert contact["name"] == "Jordan Smith"
+        assert contact["contact_type"] == "hiring_manager"
+
 
 # =============================================================================
 # Test _build_outreach_context Method
@@ -331,6 +361,26 @@ class TestOutreachGenerationServiceBuildContext:
 
         assert "company_signals" in context
         assert context["company_signals"] == "No recent signals available"
+
+    def test_uses_research_enrichment_company_profile_when_legacy_company_research_missing(self, sample_job_document, sample_contact):
+        job = {**sample_job_document}
+        del job["company_research"]
+        job["pre_enrichment"] = {
+            "outputs": {
+                "research_enrichment": {
+                    "company_profile": {
+                        "signals": [
+                            {"type": "growth", "description": "Hiring platform engineers", "date": "2026-04"}
+                        ]
+                    }
+                }
+            }
+        }
+
+        service = OutreachGenerationService()
+        context = service._build_outreach_context(job, sample_contact)
+
+        assert "Hiring platform engineers" in context["company_signals"]
 
 
 # =============================================================================

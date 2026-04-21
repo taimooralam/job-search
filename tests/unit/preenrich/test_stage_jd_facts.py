@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from bson import ObjectId
+import pytest
 
 from src.layer1_4.claude_jd_extractor import ExtractedJDModel
 from src.preenrich.stages.blueprint_assembly import BlueprintAssemblyStage
@@ -65,6 +66,97 @@ def _sample_extracted_jd() -> dict:
         },
         "salary_range": "$180k - $220k",
         "application_url": "https://boards.greenhouse.io/acme/jobs/12345",
+        "remote_location_detail": {
+            "remote_anywhere": False,
+            "remote_regions": ["EU"],
+            "timezone_expectations": ["Overlap with CET"],
+            "travel_expectation": "Quarterly travel",
+            "onsite_expectation": None,
+            "location_constraints": ["EU only"],
+            "relocation_support": None,
+            "primary_locations": ["Remote (EU)"],
+            "secondary_locations": [],
+            "geo_scope": "region",
+            "work_authorization_notes": "Must be eligible to work in the EU",
+        },
+        "expectations": {
+            "explicit_outcomes": ["Build the engineering team from scratch"],
+            "delivery_expectations": ["Ship the roadmap"],
+            "leadership_expectations": ["Hire and mentor engineers"],
+            "communication_expectations": ["Partner with CEO on product strategy"],
+            "collaboration_expectations": ["Work with product leadership"],
+            "first_90_day_expectations": ["Assess team gaps"],
+        },
+        "identity_signals": {
+            "primary_identity": "builder-founder engineering leader",
+            "alternate_identities": ["player-coach"],
+            "identity_evidence": ["Build the engineering team from scratch"],
+            "career_stage_signals": ["0 to 1 leadership"],
+        },
+        "skill_dimension_profile": {
+            "communication_skills": ["Executive communication"],
+            "leadership_skills": ["Team building", "Mentoring"],
+            "delivery_skills": ["Roadmap execution"],
+            "architecture_skills": ["Scalable system design"],
+            "process_skills": ["CI/CD"],
+            "stakeholder_skills": ["CEO partnership"],
+        },
+        "team_context": {
+            "team_size": "0 to 10 engineers",
+            "reporting_to": "CEO",
+            "org_scope": "Engineering",
+            "management_scope": "Direct manager of engineers",
+        },
+        "weighting_profiles": {
+            "expectation_weights": {
+                "delivery": 30,
+                "communication": 15,
+                "leadership": 30,
+                "collaboration": 10,
+                "strategic_scope": 15,
+            },
+            "operating_style_weights": {
+                "autonomy": 25,
+                "ambiguity": 20,
+                "pace": 20,
+                "process_rigor": 15,
+                "stakeholder_exposure": 20,
+            },
+        },
+        "operating_signals": ["fast-paced startup", "high ownership"],
+        "ambiguity_signals": ["Remote EU scope is implied by title and location"],
+        "language_requirements": {
+            "required_languages": ["English"],
+            "preferred_languages": [],
+            "fluency_expectations": ["Professional fluency in English"],
+            "language_notes": None,
+        },
+        "company_description": "Growth-stage B2B SaaS company.",
+        "role_description": "Own the engineering function and system architecture.",
+        "residual_context": "Remote-first hiring with strong execution expectations.",
+        "analysis_metadata": {
+            "overall_confidence": "high",
+            "field_confidence": {
+                "role_category": "high",
+                "seniority_level": "high",
+                "ideal_candidate_profile": "high",
+                "rich_contract": "medium",
+            },
+            "inferred_fields": ["ideal_candidate_profile"],
+            "ambiguities": ["Team size inferred from build-from-scratch wording"],
+            "source_coverage": {
+                "used_structured_sections": True,
+                "used_raw_excerpt": True,
+                "tail_coverage": "full",
+                "truncation_risk": "low",
+            },
+            "quality_checks": {
+                "competency_weights_sum_100": True,
+                "weighting_profile_sums_valid": True,
+                "top_keywords_ranked": True,
+                "duplicate_list_items_removed": True,
+            },
+        },
     }
 
 
@@ -134,19 +226,21 @@ def test_jd_facts_v2_emits_runner_parity_compat_projection(monkeypatch):
     assert compat["salary"] == "$180k - $220k"
     assert result.output["salary_range"] == "$180k - $220k"
     assert result.stage_output["extraction"]["company"] == "Acme"
+    assert result.stage_output["extraction"]["language_requirements"]["required_languages"] == ["English"]
+    assert result.stage_output["extraction"]["analysis_metadata"]["overall_confidence"] == "high"
 
 
 def test_jd_facts_v2_escalates_to_stronger_model_on_schema_failure(monkeypatch):
     monkeypatch.setenv("PREENRICH_JD_FACTS_V2_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_JD_FACTS_V2_LIVE_COMPAT_WRITE_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED", "true")
-    monkeypatch.setenv("PREENRICH_JD_FACTS_ESCALATION_MODEL", "gpt-5.4")
+    monkeypatch.setenv("PREENRICH_JD_FACTS_ESCALATION_MODELS", "gpt-5.3,gpt-5.4")
     sample = _sample_extracted_jd()
     calls: list[str] = []
 
     def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
         calls.append(model)
-        if len(calls) == 1:
+        if len(calls) < 3:
             bad = dict(sample)
             bad.pop("role_category")
             return bad, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
@@ -156,9 +250,24 @@ def test_jd_facts_v2_escalates_to_stronger_model_on_schema_failure(monkeypatch):
 
     result = JDFactsStage().run(_context())
 
-    assert calls == ["gpt-5.4-mini", "gpt-5.4"]
+    assert calls == ["gpt-5.4-mini", "gpt-5.3", "gpt-5.4"]
     assert result.model_used == "gpt-5.4"
     assert result.output["extracted_jd"]["role_category"] == "head_of_engineering"
+
+
+def test_jd_facts_v2_respects_codex_only_mode(monkeypatch):
+    monkeypatch.setenv("PREENRICH_JD_FACTS_V2_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED", "true")
+    ctx = _context()
+    ctx.config.fallback_provider = "none"
+
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+        return None, {"provider": "codex", "model": model, "outcome": "error_subprocess", "error": "timeout", "duration_ms": 10}
+
+    monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
+
+    with pytest.raises(RuntimeError, match="codex-only extraction failed"):
+        JDFactsStage().run(ctx)
 
 
 def test_jd_facts_v2_uses_processed_sections_without_changing_schema(monkeypatch):
@@ -174,6 +283,101 @@ def test_jd_facts_v2_uses_processed_sections_without_changing_schema(monkeypatch
     result = JDFactsStage().run(_context())
     assert "Responsibilities" in captured["prompt"] or "responsibilities" in captured["prompt"]
     assert result.stage_output["confirmations"]["used_processed_jd_sections"] is True
+    assert "taxonomy_version=" in captured["prompt"]
+
+
+def test_jd_facts_v2_normalizes_rich_contract_shape_mismatches(monkeypatch):
+    monkeypatch.setenv("PREENRICH_JD_FACTS_V2_ENABLED", "true")
+    sample = _sample_extracted_jd()
+    sample["remote_location_detail"] = "100% remote; must be based in Spain"
+    sample["expectations"] = ["Ship ML into production"]
+    sample["team_context"] = "International fintech team"
+    sample["language_requirements"] = ["Strong communication skills in English"]
+    sample["residual_context"] = ["Global fintech", "Multiple hires"]
+    sample["weighting_profiles"] = {
+        "expectation_weights": {
+            "production_ml_delivery": 40,
+            "executive_communication": 10,
+            "people_leadership": 20,
+            "cross_functional_collaboration": 20,
+            "fintech_domain_context": 10,
+        },
+        "operating_style_weights": {
+            "remote_autonomy": 20,
+            "hands_on_building": 20,
+            "hands_on_execution": 25,
+            "technical_quality_rigor": 20,
+            "remote_communication": 15,
+        },
+    }
+
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+        return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
+
+    monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
+    result = JDFactsStage().run(_context())
+
+    extraction = result.stage_output["extraction"]
+    assert extraction["remote_location_detail"]["location_constraints"] == ["100% remote; must be based in Spain"]
+    assert extraction["expectations"]["explicit_outcomes"] == ["Ship ML into production"]
+    assert extraction["team_context"]["org_scope"] == "International fintech team"
+    assert extraction["language_requirements"]["fluency_expectations"] == ["Strong communication skills in English"]
+    assert extraction["residual_context"] == "Global fintech Multiple hires"
+    assert extraction["weighting_profiles"]["expectation_weights"]["delivery"] == 40
+    assert extraction["weighting_profiles"]["operating_style_weights"]["stakeholder_exposure"] == 15
+
+
+def test_jd_facts_v2_literalizes_responsibilities_and_success_metrics_for_engineering_leader(monkeypatch):
+    monkeypatch.setenv("PREENRICH_JD_FACTS_V2_ENABLED", "true")
+    sample = _sample_extracted_jd()
+    sample["role_category"] = "tech_lead"
+    sample["responsibilities"] = ["Lead teams and set technical direction"]
+    sample["success_metrics"] = ["Ship AI work"]
+    ctx = _context(
+        description=(
+            "AI Engineering Leader – Remote (Spain) | Fintech\n"
+            "A global fintech powering cross-border payments and scaling AI capability.\n"
+            "Strong experience delivering applied ML solutions into production.\n"
+            "Practical experience with LLMs and NLP.\n"
+            "Microservices architecture and systems integration experience.\n"
+            "Experience integrating third-party AI tools and APIs.\n"
+            "Proven leadership / team mentoring experience.\n"
+            "Investing heavily in automation, intelligence, and next-generation solutions.\n"
+        )
+    )
+
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+        return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
+
+    monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
+    result = JDFactsStage().run(ctx)
+    extraction = result.stage_output["extraction"]
+
+    assert extraction["role_category"] == "engineering_manager"
+    assert extraction["responsibilities"][0] == "Lead AI engineering team and set technical direction"
+    assert "Deliver applied ML solutions into production environments" in extraction["responsibilities"]
+    assert extraction["success_metrics"] == [
+        "Applied ML solutions successfully deployed to production",
+        "AI capability scaled across the organization",
+        "Team growth and technical development",
+        "Third-party AI tools effectively integrated",
+        "Automation and intelligence solutions operational",
+        "Measurable improvements in payment processing efficiency",
+    ]
+
+
+def test_jd_facts_v2_preserves_model_keyword_order_with_dedup_only(monkeypatch):
+    monkeypatch.setenv("PREENRICH_JD_FACTS_V2_ENABLED", "true")
+    sample = _sample_extracted_jd()
+    sample["top_keywords"] = ["Python", "AWS", "Python", "LLMs", "FinTech"]
+
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+        return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
+
+    monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
+    result = JDFactsStage().run(_context())
+    extraction = result.stage_output["extraction"]
+    assert extraction["top_keywords"] == ["Python", "AWS", "LLMs", "FinTech"]
 
 
 def test_classification_no_longer_overwrites_extracted_jd_role_category():

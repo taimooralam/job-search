@@ -8,15 +8,20 @@ NOTE: This is a simplified copy for frontend/Vercel deployment.
 Keep in sync with src/common/repositories/config.py
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from dotenv import load_dotenv
+
 from .base import JobRepositoryInterface
 
 logger = logging.getLogger(__name__)
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(REPO_ROOT, ".env"), override=True)
 
 
 class SyncMode(str, Enum):

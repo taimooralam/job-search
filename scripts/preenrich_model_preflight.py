@@ -55,7 +55,7 @@ _STAGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "jd_facts": {
         "live_field": "pre_enrichment.outputs.jd_facts",
         "live_keys": ["merged_view", "provenance", "deterministic"],
-        "default_model": "gpt-5.4-mini",
+        "default_model": "gpt-5.2",
     },
     "classification": {
         "live_field": "pre_enrichment.outputs.classification",
@@ -65,18 +65,21 @@ _STAGE_CONFIG: Dict[str, Dict[str, Any]] = {
             "selector_profiles",
             "tone_family",
             "taxonomy_version",
+            "confidence",
+            "ambiguity_score",
+            "ai_taxonomy",
         ],
         "default_model": "gpt-5.4-mini",
     },
     "research_enrichment": {
         "live_field": "pre_enrichment.outputs.research_enrichment",
-        "live_keys": ["status", "company_profile", "capability_flags"],
+        "live_keys": ["status", "company_profile", "role_profile", "application_profile", "capability_flags"],
         "default_model": "gpt-5.4-mini",
     },
     "application_surface": {
         "live_field": "pre_enrichment.outputs.application_surface",
-        "live_keys": ["status", "application_url", "portal_family", "is_direct_apply"],
-        "default_model": "gpt-5.4-mini",
+        "live_keys": ["status", "application_url", "canonical_application_url", "portal_family", "resolution_status"],
+        "default_model": "gpt-5.2",
     },
     "job_inference": {
         "live_field": "pre_enrichment.outputs.job_inference",
@@ -317,14 +320,54 @@ def validate_stage_routing(stage: str | None = None) -> list[str]:
         if cfg.provider != "none" and not cfg.primary_model:
             errors.append(f"{name}: provider={cfg.provider} missing primary_model")
         if name == "jd_facts":
-            if os.getenv("PREENRICH_JD_FACTS_V2_ENABLED", "false").strip().lower() == "true":
-                if cfg.provider == "none":
-                    errors.append("jd_facts: V2 enabled requires a real provider")
-                if (
-                    os.getenv("PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED", "true").strip().lower() == "true"
-                    and not os.getenv("PREENRICH_JD_FACTS_ESCALATION_MODEL", "").strip()
-                ):
-                    errors.append("jd_facts: escalation enabled requires PREENRICH_JD_FACTS_ESCALATION_MODEL")
+            if cfg.provider == "none":
+                errors.append("jd_facts: active stage requires a real provider")
+            if (
+                os.getenv("PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED", "true").strip().lower() == "true"
+                and not os.getenv("PREENRICH_JD_FACTS_ESCALATION_MODEL", "").strip()
+                and not os.getenv("PREENRICH_JD_FACTS_ESCALATION_MODELS", "").strip()
+            ):
+                errors.append(
+                    "jd_facts: escalation enabled requires "
+                    "PREENRICH_JD_FACTS_ESCALATION_MODEL or PREENRICH_JD_FACTS_ESCALATION_MODELS"
+                )
+        if name == "classification":
+            if cfg.provider == "none":
+                errors.append("classification: active stage requires a real provider")
+            if os.getenv("PREENRICH_CLASSIFICATION_SHADOW_MODE_ENABLED", "false").strip().lower() == "true":
+                errors.append("classification: shadow mode is no longer supported")
+            if (
+                os.getenv("PREENRICH_CLASSIFICATION_ESCALATE_ON_FAILURE_ENABLED", "true").strip().lower() == "true"
+                and not os.getenv("PREENRICH_CLASSIFICATION_ESCALATION_MODEL", "").strip()
+            ):
+                errors.append(
+                    "classification: escalation enabled requires PREENRICH_CLASSIFICATION_ESCALATION_MODEL"
+                )
+        if name in {"research_enrichment", "application_surface"}:
+            v2_enabled = os.getenv("PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED", "false").strip().lower() == "true"
+            live_web_enabled = os.getenv("WEB_RESEARCH_ENABLED", "false").strip().lower() == "true"
+            shadow_mode = os.getenv("PREENRICH_RESEARCH_SHADOW_MODE_ENABLED", "false").strip().lower() == "true"
+            live_compat = os.getenv("PREENRICH_RESEARCH_LIVE_COMPAT_WRITE_ENABLED", "false").strip().lower() == "true"
+            expanded_snapshot = os.getenv("PREENRICH_RESEARCH_UI_SNAPSHOT_EXPANDED_ENABLED", "false").strip().lower() == "true"
+            stakeholders_enabled = os.getenv("PREENRICH_RESEARCH_ENABLE_STAKEHOLDERS", "false").strip().lower() == "true"
+            outreach_enabled = os.getenv("PREENRICH_RESEARCH_ENABLE_OUTREACH_GUIDANCE", "false").strip().lower() == "true"
+            require_sources = os.getenv("PREENRICH_RESEARCH_REQUIRE_SOURCE_ATTRIBUTION", "true").strip().lower() == "true"
+            if v2_enabled and cfg.provider == "none":
+                errors.append(f"{name}: V2 enabled requires a real provider")
+            if v2_enabled and cfg.provider != "codex":
+                errors.append(f"{name}: V2 enabled requires provider=codex")
+            if v2_enabled and live_web_enabled and not (cfg.transport or "").startswith("codex"):
+                errors.append(f"{name}: WEB_RESEARCH_ENABLED=true requires a codex research transport")
+            if shadow_mode and not v2_enabled:
+                errors.append(f"{name}: shadow mode requires PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED=true")
+            if live_compat and not v2_enabled:
+                errors.append(f"{name}: live compat write requires PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED=true")
+            if expanded_snapshot and not v2_enabled:
+                errors.append(f"{name}: expanded UI snapshot requires PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED=true")
+            if outreach_enabled and not stakeholders_enabled:
+                errors.append(f"{name}: outreach guidance requires stakeholders enabled")
+            if live_compat and not require_sources:
+                errors.append(f"{name}: live compat write requires source attribution")
     return errors
 
 

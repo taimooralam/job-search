@@ -140,6 +140,18 @@ def test_given_snapshot_job_when_loading_research_partial_then_snapshot_research
                 "business_impact": ["Scale the platform"],
                 "why_now": "Executive mandate",
             },
+            "research": {
+                "application_profile": {
+                    "portal_family": "greenhouse",
+                    "canonical_application_url": "https://boards.greenhouse.io/acme/jobs/12345",
+                    "stale_signal": "likely_stale"
+                },
+                "stakeholder_summary": {
+                    "count": 1,
+                    "counts_by_type": {"hiring_manager": 1},
+                    "top_candidates": [{"name": "Jordan Smith", "title": "Engineering Manager", "stakeholder_type": "hiring_manager"}]
+                }
+            },
             "cv_guidelines": {},
         }
     }
@@ -152,6 +164,9 @@ def test_given_snapshot_job_when_loading_research_partial_then_snapshot_research
     assert "Snapshot company research summary" in data
     assert "Snapshot role research summary" in data
     assert "Business Signals (1)" in data
+    assert "Application Intelligence" in data
+    assert "may be stale" in data
+    assert "Jordan Smith" in data
 
 
 def test_given_snapshot_job_when_loading_guidance_partial_then_blueprint_guidance_is_rendered(

@@ -11,11 +11,12 @@ from bson import ObjectId
 
 from src.pipeline.queue import WorkItemQueue
 from src.preenrich.checksums import company_checksum, jd_checksum
+from src.preenrich.blueprint_config import current_input_snapshot_id
 from src.preenrich.root_enqueuer import build_stage_states
 from src.preenrich.schema import idempotency_key, input_snapshot_id
 from src.preenrich.stage_worker import StageWorker
 from src.preenrich.sweepers import drain_pending_next_stages
-from src.preenrich.types import StageResult
+from src.preenrich.types import ArtifactWrite, StageResult
 
 
 @pytest.fixture
@@ -59,7 +60,15 @@ def _insert_job(db: Any, *, description: str = "Build reliable AI systems", comp
     return job_id
 
 
-def _enqueue_stage(db: Any, *, job_id: ObjectId, stage_name: str, snapshot_id: str, work_item_idempotency: str | None = None):
+def _enqueue_stage(
+    db: Any,
+    *,
+    job_id: ObjectId,
+    stage_name: str,
+    snapshot_id: str,
+    work_item_idempotency: str | None = None,
+    dag_version: str = "iteration4.v1",
+):
     queue = WorkItemQueue(db)
     return queue.enqueue(
         task_type=f"preenrich.{stage_name}",
@@ -77,7 +86,7 @@ def _enqueue_stage(db: Any, *, job_id: ObjectId, stage_name: str, snapshot_id: s
             "input_snapshot_id": snapshot_id,
             "jd_checksum": "unused-for-test",
             "company_checksum": "unused-for-test",
-            "dag_version": "iteration4.v1",
+            "dag_version": dag_version,
             "schema_version": 2,
             "langfuse_session_id": f"job:{job_id}",
         },
@@ -234,3 +243,91 @@ def test_retryable_stage_failure_sets_retry_pending(mock_db):
     assert doc["status"] == "pending"
     stage_state = mock_db["level-2"].find_one({"_id": job_id})["pre_enrichment"]["stage_states"]["jd_structure"]
     assert stage_state["status"] == "retry_pending"
+
+
+def test_blueprint_stage_persists_provider_model_prompt_and_artifact_refs(mock_db, monkeypatch):
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PERSONA_COMPAT_ENABLED", "false")
+
+    job_id = ObjectId()
+    description = "Lead delivery"
+    company = "Acme"
+    current_jd = jd_checksum(description)
+    current_company = company_checksum(company, None)
+    snapshot_id = current_input_snapshot_id(current_jd, current_company, dag_version="iteration4.1.v1")
+    mock_db["level-2"].insert_one(
+        {
+            "_id": job_id,
+            "job_id": f"job-{job_id}",
+            "title": "Engineering Manager",
+            "company": company,
+            "description": description,
+            "lifecycle": "preenriching",
+            "pre_enrichment": {
+                "orchestration": "dag",
+                "dag_version": "iteration4.1.v1",
+                "input_snapshot_id": snapshot_id,
+                "jd_checksum": current_jd,
+                "company_checksum": current_company,
+                "stage_states": build_stage_states(snapshot_id),
+                "outputs": {
+                    "jd_structure": {"processed_jd_sections": [{"section_type": "summary", "content": "Lead delivery"}]}
+                },
+                "pending_next_stages": [],
+            },
+            "observability": {"langfuse_session_id": f"job:{job_id}"},
+        }
+    )
+    mock_db["level-2"].update_one(
+        {"_id": job_id},
+        {
+            "$set": {
+                "pre_enrichment.stage_states.jd_structure.status": "completed",
+                "pre_enrichment.stage_states.jd_structure.completed_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+    _enqueue_stage(
+        mock_db,
+        job_id=job_id,
+        stage_name="jd_facts",
+        snapshot_id=snapshot_id,
+        dag_version="iteration4.1.v1",
+    )
+
+    class _ArtifactStage:
+        name = "jd_facts"
+
+        def run(self, ctx):
+            return StageResult(
+                output={"extracted_jd": {"title": "Engineering Manager"}},
+                stage_output={"merged_view": {"title": "Engineering Manager"}},
+                artifact_writes=[
+                    ArtifactWrite(
+                        collection="jd_facts",
+                        unique_filter={"job_id": f"job-{job_id}", "jd_text_hash": "sha256:jd"},
+                        document={"job_id": f"job-{job_id}", "jd_text_hash": "sha256:jd", "merged_view": {"title": "Engineering Manager"}},
+                        ref_name="jd_facts",
+                    )
+                ],
+                provider_used="codex",
+                model_used="gpt-5.4-mini",
+                prompt_version="P-jd-judge:v1",
+            )
+
+    worker = StageWorker(
+        mock_db,
+        stage_name="jd_facts",
+        worker_id="worker-a",
+        stage_factories={"jd_facts": _ArtifactStage},
+    )
+    result = worker.process_one()
+
+    assert result["status"] == "completed"
+    doc = mock_db["level-2"].find_one({"_id": job_id})
+    state = doc["pre_enrichment"]["stage_states"]["jd_facts"]
+    assert state["provider"] == "codex"
+    assert state["model"] == "gpt-5.4-mini"
+    assert state["prompt_version"] == "P-jd-judge:v1"
+    assert state["output_ref"]["artifacts"]["jd_facts"]["collection"] == "jd_facts"
+    assert doc["pre_enrichment"]["outputs"]["jd_facts"]["merged_view"]["title"] == "Engineering Manager"

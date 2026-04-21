@@ -14,8 +14,8 @@ def test_blueprint_stage_registry_contains_iteration41_stage_set(monkeypatch):
         "jd_structure",
         "jd_facts",
         "classification",
-        "research_enrichment",
         "application_surface",
+        "research_enrichment",
         "job_inference",
         "job_hypotheses",
         "annotations",
@@ -30,6 +30,7 @@ def test_job_hypotheses_is_not_required_for_cv_ready(monkeypatch):
     registry = stage_registry()
     assert registry["job_hypotheses"].required_for_cv_ready is False
     assert registry["blueprint_assembly"].required_for_cv_ready is True
+    assert registry["research_enrichment"].prerequisites == ("jd_facts", "classification", "application_surface")
 
 
 def test_persona_compat_can_be_disabled(monkeypatch):
@@ -47,6 +48,7 @@ def test_blueprint_invalidation_propagates_to_blueprint_assembly(monkeypatch):
     stale = invalidate({"jd"})
     assert "jd_facts" in stale
     assert "classification" in stale
+    assert "application_surface" in stale
     assert "job_inference" in stale
     assert "cv_guidelines" in stale
     assert "blueprint_assembly" in stale

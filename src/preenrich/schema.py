@@ -9,9 +9,21 @@ def _sha256_hex(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def input_snapshot_id(jd_checksum: str, company_checksum: str, dag_version: str) -> str:
+def input_snapshot_id(
+    jd_checksum: str,
+    company_checksum: str,
+    dag_version: str,
+    *,
+    taxonomy_version: str | None = None,
+    required_set_version: str | None = None,
+) -> str:
     """Build the stable snapshot identifier for one job input state."""
-    raw = "|".join([jd_checksum, company_checksum, dag_version])
+    parts = [jd_checksum, company_checksum, dag_version]
+    if taxonomy_version:
+        parts.append(taxonomy_version)
+    if required_set_version:
+        parts.append(required_set_version)
+    raw = "|".join(parts)
     return f"sha256:{_sha256_hex(raw)}"
 
 

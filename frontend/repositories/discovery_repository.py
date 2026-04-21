@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from bson import ObjectId
+from dotenv import load_dotenv
 from pymongo import DESCENDING, MongoClient
 from pymongo.errors import OperationFailure
 
@@ -65,6 +66,9 @@ except ImportError:
         )
 
 logger = logging.getLogger(__name__)
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(REPO_ROOT, ".env"), override=True)
 
 DEFAULT_WINDOW_HOURS = 24
 DEFAULT_RESULTS_LIMIT = 25

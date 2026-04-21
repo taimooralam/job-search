@@ -25,8 +25,18 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, ses
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 
-# Load environment variables
-load_dotenv()
+try:
+    from src.preenrich.blueprint_config import blueprint_ui_read_enabled
+    from src.preenrich.blueprint_models import JobBlueprintSnapshot
+except ImportError:
+    def blueprint_ui_read_enabled() -> bool:
+        return False
+    JobBlueprintSnapshot = None  # type: ignore[assignment]
+
+# Load environment variables from the repo root. Override stale shell exports so
+# local Flask runs and background scripts use the same Mongo target.
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(REPO_ROOT, ".env"), override=True)
 
 # Import version - try local first (works on Vercel), then parent directory
 try:
@@ -439,6 +449,208 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
         result["score"] = None
 
     return result
+
+
+def _serialize_nested_value(value: Any) -> Any:
+    """Recursively serialize nested Mongo values used by the job-detail view."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _serialize_nested_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_serialize_nested_value(item) for item in value]
+    return value
+
+
+def prepare_job_detail_view(job: Dict[str, Any]) -> Dict[str, Any]:
+    """Build a snapshot-first detail-page view from a single job document."""
+    serialized = serialize_job(job)
+    serialized["job_blueprint_active"] = False
+    serialized["job_blueprint_snapshot"] = None
+    serialized["blueprint_application_surface"] = None
+    serialized["job_blueprint_guidance"] = None
+    pre_enrichment = job.get("pre_enrichment") or {}
+    stage_states = (pre_enrichment.get("stage_states") or {}) if isinstance(pre_enrichment, dict) else {}
+    stage_statuses = {
+        stage_name: state.get("status")
+        for stage_name, state in stage_states.items()
+        if isinstance(state, dict) and state.get("status")
+    }
+    serialized["job_detail_summary"] = {
+        "source": "legacy_fallback",
+        "lifecycle": serialized.get("lifecycle"),
+        "orchestration": pre_enrichment.get("orchestration"),
+        "blueprint_status": pre_enrichment.get("job_blueprint_status"),
+        "blueprint_version": pre_enrichment.get("job_blueprint_version"),
+        "blueprint_updated_at": _serialize_nested_value(pre_enrichment.get("job_blueprint_updated_at")),
+        "langfuse_session_id": ((job.get("observability") or {}).get("langfuse_session_id")),
+        "stage_counts": {
+            "completed": sum(1 for value in stage_statuses.values() if value == "completed"),
+            "in_flight": sum(1 for value in stage_statuses.values() if value in {"pending", "leased", "in_progress", "retry_pending"}),
+            "terminal": sum(1 for value in stage_statuses.values() if value in {"deadletter", "failed", "failed_terminal"}),
+        },
+    }
+    serialized["job_detail_debug"] = {
+        "_id": serialized.get("_id"),
+        "job_id": serialized.get("jobId") or serialized.get("job_id"),
+        "lifecycle": serialized.get("lifecycle"),
+        "status": serialized.get("status"),
+        "application_url": serialized.get("application_url"),
+        "pre_enrichment": {
+            "orchestration": pre_enrichment.get("orchestration"),
+            "dag_version": pre_enrichment.get("dag_version"),
+            "job_blueprint_refs": _serialize_nested_value(pre_enrichment.get("job_blueprint_refs")),
+            "job_blueprint_version": pre_enrichment.get("job_blueprint_version"),
+            "job_blueprint_status": pre_enrichment.get("job_blueprint_status"),
+            "job_blueprint_updated_at": _serialize_nested_value(pre_enrichment.get("job_blueprint_updated_at")),
+            "stage_statuses": stage_statuses,
+        },
+        "observability": {
+            "langfuse_session_id": ((job.get("observability") or {}).get("langfuse_session_id")),
+        },
+    }
+    serialized["job_detail_debug_hypotheses"] = {
+        "status": "not_loaded",
+        "ref_id": ((pre_enrichment.get("job_blueprint_refs") or {}).get("job_hypotheses_id"))
+        if isinstance(pre_enrichment, dict)
+        else None,
+    }
+
+    if not blueprint_ui_read_enabled():
+        return serialized
+
+    snapshot = pre_enrichment.get("job_blueprint_snapshot")
+    if not isinstance(snapshot, dict) or not snapshot:
+        return serialized
+
+    if JobBlueprintSnapshot is not None:
+        allowed_snapshot = {
+            key: value
+            for key, value in snapshot.items()
+            if key in JobBlueprintSnapshot.model_fields
+        }
+    else:
+        allowed_snapshot = dict(snapshot)
+    snapshot_view = _serialize_nested_value(allowed_snapshot)
+    serialized["job_blueprint_active"] = True
+    serialized["job_blueprint_snapshot"] = snapshot_view
+    if isinstance(serialized.get("pre_enrichment"), dict):
+        serialized_pre_enrichment = dict(serialized["pre_enrichment"])
+        serialized_pre_enrichment["job_blueprint_snapshot"] = snapshot_view
+        serialized["pre_enrichment"] = serialized_pre_enrichment
+    serialized["job_blueprint_version"] = pre_enrichment.get("job_blueprint_version")
+    serialized["job_blueprint_status"] = pre_enrichment.get("job_blueprint_status")
+    serialized["job_blueprint_updated_at"] = _serialize_nested_value(
+        pre_enrichment.get("job_blueprint_updated_at")
+    )
+    serialized["job_detail_summary"].update(
+        {
+            "source": "blueprint_snapshot",
+            "blueprint_status": pre_enrichment.get("job_blueprint_status"),
+            "blueprint_version": pre_enrichment.get("job_blueprint_version"),
+            "blueprint_updated_at": _serialize_nested_value(pre_enrichment.get("job_blueprint_updated_at")),
+        }
+    )
+
+    application_surface = snapshot_view.get("application_surface") or {}
+    compact_research = snapshot_view.get("research") or {}
+    compact_application = (compact_research.get("application_profile") or {}) if isinstance(compact_research, dict) else {}
+    serialized["blueprint_application_surface"] = application_surface
+    serialized["job_detail_summary"]["application_surface_status"] = application_surface.get("status")
+    serialized["job_detail_summary"]["portal_family"] = application_surface.get("portal_family")
+    serialized["job_detail_summary"]["is_direct_apply"] = application_surface.get("is_direct_apply")
+    serialized["job_detail_summary"]["friction_signals"] = application_surface.get("friction_signals", [])
+    if application_surface.get("application_url"):
+        serialized["application_url"] = application_surface["application_url"]
+    elif compact_application.get("canonical_application_url"):
+        serialized["application_url"] = compact_application["canonical_application_url"]
+
+    if compact_research:
+        serialized["compact_research"] = compact_research
+        stakeholder_summary = compact_research.get("stakeholder_summary") or {}
+        if stakeholder_summary:
+            serialized["stakeholder_summary"] = stakeholder_summary
+
+    for field_name in (
+        "company_research",
+        "role_research",
+        "pain_points",
+        "strategic_needs",
+        "risks_if_unfilled",
+        "success_metrics",
+    ):
+        if snapshot_view.get(field_name):
+            serialized[field_name] = snapshot_view[field_name]
+
+    cv_guidelines = snapshot_view.get("cv_guidelines") or {}
+    serialized["job_blueprint_guidance"] = {
+        "title_guidance": snapshot_view.get("title_guidance")
+        or " ".join((cv_guidelines.get("title_guidance") or {}).get("bullets", [])[:1]),
+        "identity_guidance": snapshot_view.get("identity_guidance")
+        or " ".join((cv_guidelines.get("identity_guidance") or {}).get("bullets", [])[:1]),
+        "bullet_guidance": snapshot_view.get("bullet_guidance")
+        or (cv_guidelines.get("bullet_theme_guidance") or {}).get("bullets", []),
+        "ats_keywords": snapshot_view.get("ats_keywords")
+        or (cv_guidelines.get("ats_keyword_guidance") or {}).get("bullets", []),
+        "cover_letter_expectations": snapshot_view.get("cover_letter_expectations")
+        or (cv_guidelines.get("cover_letter_expectations") or {}).get("bullets", []),
+    }
+    return serialized
+
+
+def _load_job_or_404(job_id: str) -> Dict[str, Any]:
+    """Load a job document by ObjectId or raise an HTTP error."""
+    repo = _get_repo()
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        abort(400, description="Invalid job ID format")
+
+    job = repo.find_one({"_id": object_id})
+    if not job:
+        abort(404, description="Job not found")
+    return job
+
+
+def _load_job_hypotheses_debug(job: Dict[str, Any]) -> Dict[str, Any]:
+    """Load job_hypotheses for the debug panel only."""
+    refs = (((job.get("pre_enrichment") or {}).get("job_blueprint_refs")) or {})
+    ref_id = refs.get("job_hypotheses_id")
+    if not ref_id:
+        return {"status": "missing_ref", "ref_id": None}
+
+    try:
+        object_id = ObjectId(ref_id)
+    except Exception:
+        return {"status": "invalid_ref", "ref_id": ref_id}
+
+    try:
+        hypotheses_doc = get_db()["job_hypotheses"].find_one({"_id": object_id})
+    except Exception as exc:
+        return {"status": "load_error", "ref_id": ref_id, "error": str(exc)}
+
+    if not hypotheses_doc:
+        return {"status": "missing_document", "ref_id": ref_id}
+
+    serialized_doc = _serialize_nested_value(hypotheses_doc)
+    return {
+        "status": "loaded",
+        "ref_id": ref_id,
+        "hypothesis_count": len(hypotheses_doc.get("hypotheses") or []),
+        "doc": serialized_doc,
+    }
+
+
+def _render_job_detail_partial(job_id: str, template_name: str, *, include_hypotheses: bool = False):
+    """Render a lazily loaded job-detail partial from the same job document."""
+    job = _load_job_or_404(job_id)
+    serialized_job = prepare_job_detail_view(job)
+    if include_hypotheses:
+        serialized_job["job_detail_debug_hypotheses"] = _load_job_hypotheses_debug(job)
+    return render_template(template_name, job=serialized_job)
 
 
 def parse_datetime_filter(dt_str: str, is_end_of_day: bool = False) -> Optional[datetime]:
@@ -3624,17 +3836,12 @@ def get_diagnostics_data():
 @login_required
 def job_detail(job_id: str):
     """Render the job detail page."""
-    repo = _get_repo()
-
     try:
-        object_id = ObjectId(job_id)
-    except Exception:
-        return render_template("error.html", error="Invalid job ID format"), 400
-
-    job = repo.find_one({"_id": object_id})
-
-    if not job:
-        return render_template("error.html", error="Job not found"), 404
+        job = _load_job_or_404(job_id)
+    except Exception as exc:
+        code = getattr(exc, "code", 500)
+        description = getattr(exc, "description", str(exc))
+        return render_template("error.html", error=description), code
 
     # Backward compatibility: migrate old 'contacts' field to new format
     if job and 'contacts' in job and not job.get('primary_contacts') and not job.get('secondary_contacts'):
@@ -3644,7 +3851,7 @@ def job_detail(job_id: str):
         job['secondary_contacts'] = all_contacts[4:]
 
     # Load CV content from MongoDB (not filesystem)
-    serialized_job = serialize_job(job)
+    serialized_job = prepare_job_detail_view(job)
     has_cv = False
     cv_content = None
 
@@ -3660,6 +3867,31 @@ def job_detail(job_id: str):
         "job_detail.html",
         job=serialized_job,
         statuses=JOB_STATUSES
+    )
+
+
+@app.route("/job/<job_id>/partials/research")
+@login_required
+def job_detail_research_partial(job_id: str):
+    """Render the research panel lazily for the job detail page."""
+    return _render_job_detail_partial(job_id, "partials/job_detail/_research_panel.html")
+
+
+@app.route("/job/<job_id>/partials/guidance")
+@login_required
+def job_detail_guidance_partial(job_id: str):
+    """Render the blueprint guidance panel lazily for the job detail page."""
+    return _render_job_detail_partial(job_id, "partials/job_detail/_blueprint_guidance_panel.html")
+
+
+@app.route("/job/<job_id>/partials/debug")
+@login_required
+def job_detail_debug_partial(job_id: str):
+    """Render the debug panel lazily, including job_hypotheses by reference."""
+    return _render_job_detail_partial(
+        job_id,
+        "partials/job_detail/_operator_debug_panel.html",
+        include_hypotheses=True,
     )
 
 

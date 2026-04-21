@@ -12,6 +12,7 @@ from bson import ObjectId
 from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
+from src.preenrich.blueprint_config import current_dag_version, current_input_snapshot_id, validate_blueprint_feature_flags
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import DAG_VERSION, ROOT_STAGE, SCHEMA_VERSION, build_stage_states
 from src.preenrich.schema import idempotency_key, input_snapshot_id
@@ -34,6 +35,7 @@ def drain_pending_next_stages(
     limit: int = 50,
 ) -> dict[str, int]:
     """Drain stage-outbox entries whose downstream work item is not yet enqueued."""
+    validate_blueprint_feature_flags()
     current_time = now or utc_now()
     queue = WorkItemQueue(db)
     level2 = db["level-2"]
@@ -235,7 +237,10 @@ def invalidate_snapshot_if_changed(
     dag_version = str(pre.get("dag_version") or DAG_VERSION)
     new_jd_checksum = jd_checksum(doc.get("description", "") or doc.get("job_description", "") or "")
     new_company_checksum = company_checksum(doc.get("company"), doc.get("company_domain"))
-    new_snapshot = input_snapshot_id(new_jd_checksum, new_company_checksum, dag_version)
+    if dag_version == current_dag_version():
+        new_snapshot = current_input_snapshot_id(new_jd_checksum, new_company_checksum, dag_version=dag_version)
+    else:
+        new_snapshot = input_snapshot_id(new_jd_checksum, new_company_checksum, dag_version)
     if new_snapshot == pre.get("input_snapshot_id"):
         return False
 

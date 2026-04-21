@@ -47,3 +47,44 @@ Current frozen benchmark outcome:
 
 This eval is the operational baseline for extraction sanity checks until a
 larger corpus replaces it as the default fast gate.
+
+## Classification 4.1.2 periodic check
+
+Classification already has a stage-local benchmark harness and should be run
+after:
+
+- taxonomy changes
+- classification prompt changes
+- `jd_facts` model / schema changes that affect `classification` inputs
+- routing changes between `gpt-5.4-mini` and `gpt-5.2`
+
+Primary harness:
+
+- [scripts/benchmark_classification_4_1_2.py](/Users/ala0001t/pers/projects/job-search/scripts/benchmark_classification_4_1_2.py)
+- [tests/unit/scripts/test_benchmark_classification_4_1_2.py](/Users/ala0001t/pers/projects/job-search/tests/unit/scripts/test_benchmark_classification_4_1_2.py)
+
+Debug live single-job command:
+
+```bash
+PYTHONUNBUFFERED=1 \
+PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED=false \
+./.venv/bin/python -u scripts/debug_classification_v2.py \
+  --job-id 69e63f7e12725d7147cc499c \
+  --jd-model gpt-5.2 \
+  --classification-model gpt-5.4-mini \
+  --timeout-seconds 0 \
+  --heartbeat-seconds 20 \
+  --jd-out /tmp/jd_facts_69e63f7e12725d7147cc499c.json \
+  --classification-out /tmp/classification_69e63f7e12725d7147cc499c.json
+```
+
+Use this eval surface to inspect:
+
+- primary-role correctness
+- top-2 recall under ambiguity
+- AI taxonomy quality
+- agreement/disagreement with `jd_facts`
+- deterministic short-circuit vs LLM disambiguation behavior
+
+This remains the operational classification gate until a durable frozen
+classification corpus is checked in under `data/eval/validation/`.

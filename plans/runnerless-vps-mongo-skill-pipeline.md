@@ -182,7 +182,7 @@ Suggested top-level structure:
   "location": "...",
   "job_url": "...",
   "description": "...",
-  "lifecycle": "discovered|scraped|selected|preenriching|ready_for_cv|cv_generating|reviewing|ready_to_apply|published|failed|deadletter",
+  "lifecycle": "discovered|scraped|selected|preenriching|cv_ready|cv_generating|reviewing|ready_to_apply|published|failed|deadletter",
   "scout": {},
   "scrape": {},
   "selection": {},
@@ -666,6 +666,16 @@ Goal:
 
 - move pre-CV enrichment into queue-driven host workers with atomic stage persistence
 
+Detailed rollout plan:
+
+- `plans/iteration-4-e2e-preenrich-cv-ready-and-infra.md`
+
+Iteration note:
+
+- the first production-ready slice of phase 5 now stops at `lifecycle="cv_ready"`
+- native CV generation, review, and publish are intentionally deferred to later iterations/phases
+- `ready_for_cv` should be treated as a legacy transitional label during migration, not the new target state
+
 Implementation:
 
 - build on existing `src/preenrich/`
@@ -681,7 +691,8 @@ Implementation:
   - `preenrich.role_research`
   - optional `preenrich.fit_signal`
 - each stage writes outputs atomically and enqueues the next stage
-- when the final required stage completes, set `jobs.lifecycle="ready_for_cv"` and enqueue `cv.generate`
+- when the final required stage completes, set `jobs.lifecycle="cv_ready"`
+- later phases create `cv.generate` from the `cv_ready` boundary
 
 BDD:
 
@@ -715,7 +726,7 @@ Implementation:
 
 BDD:
 
-- Given a job with completed preenrichment
+- Given a job with `jobs.lifecycle="cv_ready"`
 - When the CV worker claims `cv.generate`
 - Then a CV artifact is produced or recorded
 - And `jobs.lifecycle` becomes `reviewing`

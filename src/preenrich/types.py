@@ -86,74 +86,66 @@ _STAGE_DEFAULTS: Dict[str, Dict[str, str]] = {
     "jd_extraction": {
         "provider": "codex",
         "primary_model": "gpt-5.4",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-haiku-4-5",
+        "fallback_provider": "none",
     },
     "ai_classification": {
         "provider": "codex",
         "primary_model": "gpt-5.4-mini",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-haiku-4-5",
+        "fallback_provider": "none",
     },
     "pain_points": {
         "provider": "codex",
         "primary_model": "gpt-5.4",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-sonnet-4-5",
+        "fallback_provider": "none",
     },
     "persona": {
         "provider": "codex",
         "primary_model": "gpt-5.4",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-sonnet-4-5",
+        "fallback_provider": "none",
     },
     "jd_facts": {
         "provider": "codex",
-        "primary_model": "gpt-5.4-mini",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-sonnet-4-6",
+        "primary_model": "gpt-5.2",
+        "fallback_provider": "none",
     },
     "classification": {
         "provider": "codex",
         "primary_model": "gpt-5.4-mini",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-haiku-4-5",
+        "fallback_provider": "none",
     },
     "research_enrichment": {
         "provider": "codex",
         "primary_model": "gpt-5.4-mini",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-haiku-4-5",
+        "fallback_provider": "none",
+        "transport": "codex_web_search",
+        "fallback_transport": "none",
     },
     "application_surface": {
         "provider": "codex",
-        "primary_model": "gpt-5.4-mini",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-haiku-4-5",
+        "primary_model": "gpt-5.2",
+        "fallback_provider": "none",
+        "transport": "codex_web_search",
+        "fallback_transport": "none",
     },
     "job_inference": {
         "provider": "codex",
         "primary_model": "gpt-5.4",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-sonnet-4-5",
+        "fallback_provider": "none",
     },
     "job_hypotheses": {
         "provider": "codex",
         "primary_model": "gpt-5.4-mini",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-haiku-4-5",
+        "fallback_provider": "none",
     },
     "cv_guidelines": {
         "provider": "codex",
         "primary_model": "gpt-5.4",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-sonnet-4-5",
+        "fallback_provider": "none",
     },
     "persona_compat": {
         "provider": "codex",
         "primary_model": "gpt-5.4",
-        "fallback_provider": "claude",
-        "fallback_model": "claude-sonnet-4-5",
+        "fallback_provider": "none",
     },
     "blueprint_assembly": {
         "provider": "none",
@@ -194,18 +186,56 @@ def get_stage_step_config(stage_name: str) -> "StepConfig":
     )
     fallback_provider = os.environ.get(
         _stage_env_key(stage_name, "FALLBACK_PROVIDER"),
-        defaults.get("fallback_provider", "claude"),
+        defaults.get("fallback_provider", "none"),
     )
     fallback_model = os.environ.get(
         _stage_env_key(stage_name, "FALLBACK_MODEL"),
         defaults.get("fallback_model"),
     )
+    transport = os.environ.get(
+        _stage_env_key(stage_name, "TRANSPORT"),
+        defaults.get("transport", "none"),
+    )
+    fallback_transport = os.environ.get(
+        _stage_env_key(stage_name, "FALLBACK_TRANSPORT"),
+        defaults.get("fallback_transport", "none"),
+    )
+
+    if stage_name in {"research_enrichment", "application_surface"}:
+        from src.preenrich.blueprint_config import (
+            research_fallback_provider,
+            research_fallback_transport,
+            research_max_fetches,
+            research_max_web_queries,
+            research_provider,
+            research_transport,
+        )
+
+        provider = os.environ.get(_stage_env_key(stage_name, "PROVIDER"), research_provider())
+        fallback_provider = os.environ.get(
+            _stage_env_key(stage_name, "FALLBACK_PROVIDER"),
+            research_fallback_provider(),
+        )
+        transport = os.environ.get(_stage_env_key(stage_name, "TRANSPORT"), research_transport())
+        fallback_transport = os.environ.get(
+            _stage_env_key(stage_name, "FALLBACK_TRANSPORT"),
+            research_fallback_transport(),
+        )
+        max_web_queries = research_max_web_queries()
+        max_fetches = research_max_fetches()
+    else:
+        max_web_queries = 0
+        max_fetches = 0
 
     return StepConfig(
         provider=provider,
         primary_model=primary_model,
         fallback_provider=fallback_provider,
         fallback_model=fallback_model,
+        transport=transport,
+        fallback_transport=fallback_transport,
+        max_web_queries=max_web_queries,
+        max_fetches=max_fetches,
     )
 
 
@@ -225,8 +255,12 @@ class StepConfig:
     prompt_version: str = "v1"
     # Phase 2b: Codex-primary fields
     primary_model: Optional[str] = None
-    fallback_provider: str = "claude"
+    fallback_provider: str = "none"
     fallback_model: Optional[str] = None
+    transport: str = "none"
+    fallback_transport: str = "none"
+    max_web_queries: int = 0
+    max_fetches: int = 0
 
 
 @dataclass
