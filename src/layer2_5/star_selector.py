@@ -97,7 +97,7 @@ class STARSelector:
     def __init__(self):
         """Initialize and load STAR records."""
         # Load STAR records from knowledge base
-        kb_path = Path(__file__).parent.parent.parent / "knowledge-base.md"
+        kb_path = Path(__file__).parent.parent.parent / "docs" / "archive" / "knowledge-base.md"
         self.star_records = parse_star_records(str(kb_path))
         print(f"Loaded {len(self.star_records)} STAR records")
 

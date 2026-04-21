@@ -210,7 +210,7 @@ def test_jd_facts_v2_emits_runner_parity_compat_projection(monkeypatch):
     monkeypatch.setenv("PREENRICH_JD_FACTS_V2_LIVE_COMPAT_WRITE_ENABLED", "true")
     sample = _sample_extracted_jd()
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         assert "structured_sections" in prompt
         return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
 
@@ -238,7 +238,7 @@ def test_jd_facts_v2_escalates_to_stronger_model_on_schema_failure(monkeypatch):
     sample = _sample_extracted_jd()
     calls: list[str] = []
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         calls.append(model)
         if len(calls) < 3:
             bad = dict(sample)
@@ -261,7 +261,7 @@ def test_jd_facts_v2_respects_codex_only_mode(monkeypatch):
     ctx = _context()
     ctx.config.fallback_provider = "none"
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         return None, {"provider": "codex", "model": model, "outcome": "error_subprocess", "error": "timeout", "duration_ms": 10}
 
     monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
@@ -275,7 +275,7 @@ def test_jd_facts_v2_uses_processed_sections_without_changing_schema(monkeypatch
     sample = _sample_extracted_jd()
     captured: dict[str, str] = {}
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         captured["prompt"] = prompt
         return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
 
@@ -311,7 +311,7 @@ def test_jd_facts_v2_normalizes_rich_contract_shape_mismatches(monkeypatch):
         },
     }
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
 
     monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
@@ -346,7 +346,7 @@ def test_jd_facts_v2_literalizes_responsibilities_and_success_metrics_for_engine
         )
     )
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
 
     monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
@@ -371,7 +371,7 @@ def test_jd_facts_v2_preserves_model_keyword_order_with_dedup_only(monkeypatch):
     sample = _sample_extracted_jd()
     sample["top_keywords"] = ["Python", "AWS", "Python", "LLMs", "FinTech"]
 
-    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str):
+    def _fake_invoke_codex_json(*, prompt: str, model: str, job_id: str, cwd: str | None = None, reasoning_effort: str | None = None):
         return sample, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
 
     monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)

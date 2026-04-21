@@ -199,8 +199,8 @@ class ExtractedJDModel(BaseModel):
 
     # ATS Keywords
     top_keywords: List[str] = Field(
-        ..., min_length=10, max_length=20,
-        description="Top 15 ATS keywords"
+        ..., min_length=4, max_length=20,
+        description="Top ATS keywords"
     )
 
     # Background Requirements

@@ -74,7 +74,7 @@ _STAGE_CONFIG: Dict[str, Dict[str, Any]] = {
     "research_enrichment": {
         "live_field": "pre_enrichment.outputs.research_enrichment",
         "live_keys": ["status", "company_profile", "role_profile", "application_profile", "capability_flags"],
-        "default_model": "gpt-5.4-mini",
+        "default_model": "gpt-5.2",
     },
     "application_surface": {
         "live_field": "pre_enrichment.outputs.application_surface",
@@ -312,6 +312,11 @@ def _get_historical_jobs(
 def validate_stage_routing(stage: str | None = None) -> list[str]:
     """Return routing config errors for the requested stage or all supported stages."""
     from src.preenrich.types import get_stage_step_config
+    from src.preenrich.blueprint_config import (
+        classification_escalate_on_failure_enabled,
+        classification_escalation_model,
+        jd_facts_escalate_on_failure_enabled,
+    )
 
     targets = [stage] if stage else _SUPPORTED_STAGES
     errors: list[str] = []
@@ -323,7 +328,7 @@ def validate_stage_routing(stage: str | None = None) -> list[str]:
             if cfg.provider == "none":
                 errors.append("jd_facts: active stage requires a real provider")
             if (
-                os.getenv("PREENRICH_JD_FACTS_ESCALATE_ON_FAILURE_ENABLED", "true").strip().lower() == "true"
+                jd_facts_escalate_on_failure_enabled()
                 and not os.getenv("PREENRICH_JD_FACTS_ESCALATION_MODEL", "").strip()
                 and not os.getenv("PREENRICH_JD_FACTS_ESCALATION_MODELS", "").strip()
             ):
@@ -337,8 +342,8 @@ def validate_stage_routing(stage: str | None = None) -> list[str]:
             if os.getenv("PREENRICH_CLASSIFICATION_SHADOW_MODE_ENABLED", "false").strip().lower() == "true":
                 errors.append("classification: shadow mode is no longer supported")
             if (
-                os.getenv("PREENRICH_CLASSIFICATION_ESCALATE_ON_FAILURE_ENABLED", "true").strip().lower() == "true"
-                and not os.getenv("PREENRICH_CLASSIFICATION_ESCALATION_MODEL", "").strip()
+                classification_escalate_on_failure_enabled()
+                and not os.getenv("PREENRICH_CLASSIFICATION_ESCALATION_MODEL", classification_escalation_model()).strip()
             ):
                 errors.append(
                     "classification: escalation enabled requires PREENRICH_CLASSIFICATION_ESCALATION_MODEL"

@@ -236,13 +236,6 @@
                                 <span class="cli-diag-value"
                                       x-text="$store.cli.runs[$store.cli.activeRunId]?.startedAt ? new Date($store.cli.runs[$store.cli.activeRunId].startedAt).toLocaleString() : ''"></span>
                             </div>
-                            <!-- LangSmith URL (if available) -->
-                            <div class="cli-diag-row" x-show="$store.cli.runs[$store.cli.activeRunId]?.langsmithUrl">
-                                <span class="cli-diag-label">LangSmith:</span>
-                                <a class="cli-diag-link"
-                                   :href="$store.cli.runs[$store.cli.activeRunId]?.langsmithUrl"
-                                   target="_blank">View Trace →</a>
-                            </div>
                             <!-- Redis indicator -->
                             <div class="cli-diag-row" x-show="$store.cli.runs[$store.cli.activeRunId]?.fromRedis">
                                 <span class="cli-diag-label">Source:</span>

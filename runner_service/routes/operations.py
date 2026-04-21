@@ -960,7 +960,6 @@ class OperationStatusResponse(BaseModel):
     result: Optional[Dict[str, Any]] = Field(default=None)
     error: Optional[str] = Field(default=None)
     logs: List[str] = Field(default_factory=list, description="Accumulated log lines")
-    langsmith_url: Optional[str] = Field(default=None, description="LangSmith trace URL for debugging")
     job_id: Optional[str] = Field(default=None, description="Associated job ID")
     started_at: Optional[str] = Field(default=None, description="Run start time (ISO format)")
     operation: Optional[str] = Field(default=None, description="Operation type")
@@ -1714,7 +1713,6 @@ async def get_operation_status(run_id: str) -> OperationStatusResponse:
         result=state.result,
         error=state.error,
         logs=state.logs,  # Include accumulated logs for polling fallback
-        langsmith_url=state.langsmith_url,
         job_id=state.job_id,
         started_at=state.started_at.isoformat() if state.started_at else None,
         operation=state.operation,
@@ -1756,7 +1754,6 @@ async def get_operation_redis_logs(run_id: str) -> OperationStatusResponse:
         result=state.result,
         error=state.error,
         logs=state.logs,
-        langsmith_url=state.langsmith_url,
         job_id=state.job_id,
         started_at=state.started_at.isoformat() if state.started_at else None,
         operation=state.operation,

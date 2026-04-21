@@ -615,7 +615,6 @@ async def poll_logs(
                     "status": state.status,
                     "layer_status": state.layer_status or {},
                     "error": state.error,
-                    "langsmith_url": state.langsmith_url,
                     "log_source": "memory",
                     "runner_id": get_runner_id(),
                 }
@@ -671,7 +670,6 @@ async def poll_logs(
     meta = await redis.hgetall(meta_key)
     status = meta.get("status", "unknown") if meta else "unknown"
     error = meta.get("error") or None if meta else None
-    langsmith_url = meta.get("langsmith_url") or None if meta else None
 
     # Get expected_log_count from metadata (fixes race condition)
     # When status is completed/failed, this tells the frontend how many logs
@@ -702,7 +700,6 @@ async def poll_logs(
         "status": status,
         "layer_status": layer_status,
         "error": error,
-        "langsmith_url": langsmith_url,
         "log_source": "redis",  # Multi-runner: served from Redis (not our run)
     }
 
@@ -746,7 +743,6 @@ async def get_log_status(run_id: str) -> Dict[str, Any]:
                     "status": state.status,
                     "layer_status": state.layer_status or {},
                     "error": state.error,
-                    "langsmith_url": state.langsmith_url,
                 }
         except ImportError:
             pass
@@ -769,5 +765,4 @@ async def get_log_status(run_id: str) -> Dict[str, Any]:
         "status": meta.get("status", "unknown"),
         "layer_status": layer_status,
         "error": meta.get("error") or None,
-        "langsmith_url": meta.get("langsmith_url") or None,
     }

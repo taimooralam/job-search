@@ -91,10 +91,6 @@ class OperationState:
     _live_logs: Optional[asyncio.Queue] = None
     # Total log count for expected_log_count Redis metadata (incremented synchronously).
     _log_count: int = 0
-    # LangSmith trace URL for debugging
-    langsmith_url: Optional[str] = None
-
-
 # Global operation state storage (in-memory, similar to _runs in app.py)
 _operation_runs: Dict[str, OperationState] = {}
 
@@ -682,7 +678,6 @@ async def _persist_operation_meta_to_redis(
             "started_at": state.started_at.isoformat(),
             "updated_at": state.updated_at.isoformat(),
             "error": state.error or "",
-            "langsmith_url": state.langsmith_url or "",
         }
 
         # Include expected_log_count when completing/failing
@@ -796,7 +791,6 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
             updated_at=parse_datetime(meta.get("updated_at", "")),
             layer_status=layer_status,
             error=meta.get("error") or None,
-            langsmith_url=meta.get("langsmith_url") or None,
             # _live_logs intentionally None: SSE generator uses historical Redis path
         )
 

@@ -70,7 +70,7 @@ class TestIndeedSource:
         )
 
         key = source.generate_dedupe_key(job)
-        assert key == "big tech co|senior engineer|new york, ny|indeed_auto"
+        assert key == "indeed_auto|bigtechco|seniorengineer|newyorkny"
 
     def test_generate_dedupe_key_normalizes(self):
         """Test that dedupe key normalizes whitespace and case."""
@@ -84,7 +84,7 @@ class TestIndeedSource:
         )
 
         key = source.generate_dedupe_key(job)
-        assert key == "big tech co|senior engineer|new york, ny|indeed_auto"
+        assert key == "indeed_auto|bigtechco|seniorengineer|newyorkny"
 
     @patch("jobspy.scrape_jobs")
     def test_fetch_jobs_success(self, mock_scrape):
@@ -164,7 +164,7 @@ class TestHimalayasSource:
         )
 
         key = source.generate_dedupe_key(job)
-        assert key == "distributed inc|remote developer|worldwide|himalayas_auto"
+        assert key == "himalayas_auto|distributedinc|remotedeveloper|worldwide"
 
     @patch("src.services.job_sources.himalayas_source.requests.get")
     def test_fetch_jobs_success(self, mock_get):

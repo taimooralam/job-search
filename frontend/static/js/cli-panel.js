@@ -702,7 +702,6 @@ document.addEventListener('alpine:init', () => {
                     startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
                     completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
                     error: data.error || null,
-                    langsmithUrl: data.langsmith_url || null,
                     fromRedis: false,
                     _logPoller: null  // Will be set if we subscribe to log polling
                 };
@@ -1056,7 +1055,6 @@ document.addEventListener('alpine:init', () => {
                     startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
                     completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
                     error: data.error || null,
-                    langsmithUrl: data.langsmith_url || null,
                     fromRedis: true  // Mark as loaded from Redis
                 };
 

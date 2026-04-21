@@ -416,7 +416,7 @@ class TestJDProcessor:
 
     def test_process_jd_sync_basic(self, sample_jd_text):
         """Basic JD processing works."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         assert result.raw_text == sample_jd_text
         assert len(result.sections) > 0
         assert result.html is not None
@@ -424,7 +424,7 @@ class TestJDProcessor:
 
     def test_process_jd_sync_sections_have_required_fields(self, sample_jd_text):
         """Processed sections have all required fields."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         for section in result.sections:
             assert section.section_type is not None
             assert section.header is not None
@@ -435,26 +435,26 @@ class TestJDProcessor:
 
     def test_process_jd_sync_html_has_sections(self, sample_jd_text):
         """Generated HTML contains section tags."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         assert "<section" in result.html
         assert "data-section-type" in result.html
         assert "data-char-start" in result.html
 
     def test_process_jd_sync_detects_responsibilities(self, sample_jd_text):
         """Responsibilities section is detected."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         section_types = [s.section_type for s in result.sections]
         assert JDSectionType.RESPONSIBILITIES in section_types
 
     def test_process_jd_sync_detects_qualifications(self, sample_jd_text):
         """Qualifications section is detected."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         section_types = [s.section_type for s in result.sections]
         assert JDSectionType.QUALIFICATIONS in section_types
 
     def test_processed_jd_serialization(self, sample_jd_text):
         """ProcessedJD can be serialized and deserialized."""
-        original = process_jd_sync(sample_jd_text)
+        original, _ = process_jd_sync(sample_jd_text)
         as_dict = processed_jd_to_dict(original)
         restored = dict_to_processed_jd(as_dict)
 
@@ -464,7 +464,7 @@ class TestJDProcessor:
 
     def test_process_jd_sync_empty_input(self):
         """Empty JD text creates single 'other' section."""
-        result = process_jd_sync("")
+        result, _ = process_jd_sync("")
         assert len(result.sections) == 1
         assert result.sections[0].section_type == JDSectionType.OTHER
 
@@ -477,20 +477,20 @@ class TestJDProcessorHTMLGeneration:
         jd_text = """Responsibilities:
         - Work with <script> tags & "quotes"
         """
-        result = process_jd_sync(jd_text)
+        result, _ = process_jd_sync(jd_text)
         assert "<script>" not in result.html
         assert "&lt;script&gt;" in result.html or "&amp;" in result.html
 
     def test_html_has_item_data_attributes(self, sample_jd_text):
         """HTML items have data attributes for annotation targeting."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         assert "data-item-index" in result.html
         assert "data-char-start" in result.html
         assert "data-char-end" in result.html
 
     def test_html_section_ids_unique(self, sample_jd_text):
         """Section IDs in HTML are unique."""
-        result = process_jd_sync(sample_jd_text)
+        result, _ = process_jd_sync(sample_jd_text)
         import re
         ids = re.findall(r'id="([^"]+)"', result.html)
         assert len(ids) == len(set(ids)), "Duplicate IDs found"

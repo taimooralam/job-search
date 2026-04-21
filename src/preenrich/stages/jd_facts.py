@@ -274,7 +274,8 @@ def _supplement_minimum_content_lists(
     payload["nice_to_haves"] = nice_to_haves[:10]
 
     keywords = _dedupe_strings(_as_string_list(payload.get("top_keywords")))
-    if len(keywords) < 10:
+    # Preserve ranked model output when it already contains a meaningful ordered set.
+    if len(keywords) < 4:
         keywords.extend(_dedupe_strings(_as_string_list(deterministic.get("top_keywords"))))
         keywords.extend(_dedupe_strings(_as_string_list(deterministic.get("weak_keyword_hints"))))
         payload["top_keywords"] = _dedupe_strings(keywords)[:15]
@@ -460,9 +461,15 @@ def _needs_escalation(extraction: JDFactsExtractionOutput, title: str) -> bool:
     return False
 
 
-def _normalize_role_category(payload: dict[str, Any], title: str, deterministic: dict[str, Any]) -> None:
+def _normalize_role_category(
+    payload: dict[str, Any],
+    title: str,
+    deterministic: dict[str, Any],
+    *,
+    description: str = "",
+) -> None:
     current = str(payload.get("role_category") or "")
-    lowered_title = (title or "").lower()
+    lowered_title = f"{title or ''} {description or ''}".lower()
     responsibilities = " ".join(_as_string_list(payload.get("responsibilities"))).lower()
     qualifications = " ".join(_as_string_list(payload.get("qualifications"))).lower()
     leadership_text = f"{responsibilities} {qualifications}"
@@ -485,14 +492,33 @@ def _normalize_top_keywords(payload: dict[str, Any]) -> None:
 def _literalize_responsibilities(payload: dict[str, Any], description: str, title: str) -> None:
     text = (description or "").lower()
     responsibilities: list[str] = _dedupe_strings(_as_string_list(payload.get("responsibilities")))
+    responsibility_text = " ".join(responsibilities).lower()
 
     def add(line: str) -> None:
         if line and line not in responsibilities:
             responsibilities.append(line)
 
-    if "engineering leader" in title.lower() or "lead teams" in text or "leading teams" in text:
+    if (
+        "engineering leader" in title.lower()
+        or "engineering leader" in text
+        or "lead teams" in text
+        or "leading teams" in text
+        or "lead teams" in responsibility_text
+        or "set technical direction" in responsibility_text
+        or "team mentoring" in text
+    ):
+        responsibilities = [
+            "Lead AI engineering team and set technical direction"
+            if item.lower() == "lead teams and set technical direction"
+            else item
+            for item in responsibilities
+        ]
         add("Lead AI engineering team and set technical direction")
-    if "delivering ml solutions into production" in text or "deliver applied ml solutions into production" in text:
+    if (
+        "delivering ml solutions into production" in text
+        or "delivering applied ml solutions into production" in text
+        or "deliver applied ml solutions into production" in text
+    ):
         add("Deliver applied ML solutions into production environments")
     if "llm" in text or "nlp" in text:
         add("Design and implement LLM and NLP use cases for business applications")
@@ -513,17 +539,29 @@ def _literalize_responsibilities(payload: dict[str, Any], description: str, titl
 
 def _derive_success_metrics(payload: dict[str, Any], description: str) -> None:
     text = (description or "").lower()
+    responsibility_text = " ".join(_as_string_list(payload.get("responsibilities"))).lower()
     metrics: list[str] = []
 
     def add(line: str) -> None:
         if line and line not in metrics:
             metrics.append(line)
 
-    if "delivering ml solutions into production" in text or "deliver applied ml solutions into production" in text:
+    if (
+        "delivering ml solutions into production" in text
+        or "delivering applied ml solutions into production" in text
+        or "deliver applied ml solutions into production" in text
+    ):
         add("Applied ML solutions successfully deployed to production")
     if "scaling ai capability" in text or "scale ai capability" in text:
         add("AI capability scaled across the organization")
-    if "lead teams" in text or "leading teams" in text or "technical direction" in text:
+    if (
+        "lead teams" in text
+        or "leading teams" in text
+        or "technical direction" in text
+        or "team mentoring" in text
+        or "lead teams" in responsibility_text
+        or "set technical direction" in responsibility_text
+    ):
         add("Team growth and technical development")
     if "third-party ai tools" in text or "apis" in text:
         add("Third-party AI tools effectively integrated")
@@ -575,7 +613,7 @@ def _finalize_extraction(
             payload[field] = det_value
             provenance[field] = "deterministic"
 
-    _normalize_role_category(payload, title, deterministic)
+    _normalize_role_category(payload, title, deterministic, description=description)
     _literalize_responsibilities(payload, description, title)
     _derive_success_metrics(payload, description)
     _normalize_top_keywords(payload)
@@ -588,9 +626,16 @@ def _finalize_extraction(
     return finalized, flags, provenance
 
 
-def _invoke_codex_json(*, prompt: str, model: str, job_id: str) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+def _invoke_codex_json(
+    *,
+    prompt: str,
+    model: str,
+    job_id: str,
+    cwd: str | None = None,
+    reasoning_effort: str | None = None,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     t0 = time.monotonic()
-    cli = CodexCLI(model=model)
+    cli = CodexCLI(model=model, cwd=cwd, reasoning_effort=reasoning_effort)
     result = cli.invoke(prompt, job_id=job_id, validate_json=True)
     duration_ms = int((time.monotonic() - t0) * 1000)
     attempt = {
@@ -639,6 +684,11 @@ def _validate_llm_output(
 ) -> JDFactsExtractionOutput:
     payload = _normalize_extraction_payload(raw_output, deterministic)
     payload = _supplement_minimum_content_lists(payload, deterministic, description=description)
+    title = str(payload.get("title") or (deterministic.get("title") or {}).get("value") or "")
+    _normalize_role_category(payload, title, deterministic, description=description)
+    _literalize_responsibilities(payload, description, title)
+    _derive_success_metrics(payload, description)
+    _normalize_top_keywords(payload)
     return JDFactsExtractionOutput.model_validate(payload)
 
 
@@ -671,7 +721,13 @@ class JDFactsStage:
         primary_model = ctx.config.primary_model or "gpt-5.2"
         job_id = str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "unknown")
 
-        raw_output, primary_attempt = _invoke_codex_json(prompt=prompt, model=primary_model, job_id=job_id)
+        raw_output, primary_attempt = _invoke_codex_json(
+            prompt=prompt,
+            model=primary_model,
+            job_id=job_id,
+            cwd=ctx.config.codex_workdir,
+            reasoning_effort=ctx.config.reasoning_effort,
+        )
         attempts.append(primary_attempt)
 
         try:
@@ -687,7 +743,13 @@ class JDFactsStage:
             if jd_facts_escalate_on_failure_enabled():
                 last_escalation_error: Exception | None = None
                 for escalation_model in jd_facts_escalation_models():
-                    escalated_output, escalated_attempt = _invoke_codex_json(prompt=prompt, model=escalation_model, job_id=job_id)
+                    escalated_output, escalated_attempt = _invoke_codex_json(
+                        prompt=prompt,
+                        model=escalation_model,
+                        job_id=job_id,
+                        cwd=ctx.config.codex_workdir,
+                        reasoning_effort=ctx.config.reasoning_effort,
+                    )
                     attempts.append(escalated_attempt)
                     try:
                         if escalated_output is None:

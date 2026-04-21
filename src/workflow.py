@@ -8,10 +8,6 @@ Today's vertical slice: Layers 2, 3, 4, 6, 7 (skipping Layer 5 - People Mapper).
 import os
 import time
 import uuid
-try:
-    from langsmith import uuid7
-except ImportError:  # LangSmith not installed; fall back to uuid4
-    uuid7 = None
 from datetime import datetime
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
@@ -19,7 +15,6 @@ from src.common.config import Config
 from src.common.state import JobState, ProgressCallback
 from src.common.logger import setup_logging, get_logger
 from src.common.structured_logger import get_structured_logger, StructuredLogger
-from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
 from src.common.token_tracker import get_global_tracker
 from src.common.llm_factory import set_run_context, clear_run_context
 from src.common.database import DatabaseClient
@@ -243,7 +238,7 @@ def run_pipeline(
         set_global_debug_mode(True)
         logger.info("[Debug] Verbose logging enabled for this pipeline run")
     # Generate metadata
-    run_id = str(uuid7()) if uuid7 else str(uuid.uuid4())
+    run_id = str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat() + 'Z'
     pipeline_start_time = time.time()
 
@@ -342,7 +337,7 @@ def run_pipeline(
         "created_at": created_at,
         "errors": [],
         "status": "processing",
-        "trace_url": None,  # OB-3: LangSmith trace URL
+        "trace_url": None,
 
         # GAP-036: Cost tracking
         "total_cost_usd": None,
@@ -376,31 +371,11 @@ def run_pipeline(
     # Create and run workflow
     app = create_workflow()
 
-    # Log tracing configuration (OB-3)
-    if is_tracing_enabled():
-        run_logger.info("LangSmith tracing enabled")
-        log_trace_info(run_id, job_id)
-    else:
-        run_logger.info("LangSmith tracing disabled (set LANGCHAIN_TRACING_V2=true to enable)")
-
-    # Execute workflow with distributed tracing (OB-3)
+    # Execute workflow
     trace_url = None
     try:
         run_logger.info("Executing LangGraph workflow")
-
-        # Wrap execution with TracingContext for LangSmith integration
-        with TracingContext(
-            run_id=run_id,
-            job_id=job_id,
-            tags=[f"company:{job_data.get('company', 'unknown')}", f"source:{job_data.get('source', 'manual')}"],
-            metadata={
-                "job_title": job_data.get("title"),
-                "company": job_data.get("company"),
-                "job_url": job_data.get("url"),
-            }
-        ) as trace:
-            final_state = app.invoke(initial_state)
-            trace_url = trace.trace_url
+        final_state = app.invoke(initial_state)
 
         # Store trace URL in final state
         final_state["trace_url"] = trace_url
@@ -447,7 +422,7 @@ def run_pipeline(
             metadata={
                 "fit_score": final_state.get("fit_score"),
                 "errors_count": len(final_state.get("errors", [])),
-                "trace_url": trace_url,  # OB-3: Include trace URL in structured log
+                "trace_url": trace_url,
             },
         )
 
@@ -516,9 +491,6 @@ def run_pipeline(
     run_logger.info(f"Fit Score: {final_state.get('fit_score')}/100")
     run_logger.info(f"Drive Folder: {final_state.get('drive_folder_url')}")
     run_logger.info(f"Sheets Row: {final_state.get('sheet_row_id')}")
-    if final_state.get("trace_url"):
-        run_logger.info(f"LangSmith Trace: {final_state.get('trace_url')}")
-
     # GAP-036: Log cost tracking info
     if final_state.get("total_cost_usd") is not None:
         run_logger.info(f"Total Cost: ${final_state.get('total_cost_usd'):.4f} USD")

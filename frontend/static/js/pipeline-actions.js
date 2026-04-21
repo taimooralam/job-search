@@ -1192,7 +1192,6 @@ document.addEventListener('alpine:init', () => {
                     status: data.status,
                     error: data.error,
                     cost_usd: data.cost_usd,
-                    langsmith_url: data.langsmith_url,
                     layer_status: data.layer_status,
                     total_logs: data.total_count,
                     // Include result data if present in meta

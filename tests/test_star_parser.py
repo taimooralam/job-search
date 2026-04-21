@@ -15,8 +15,8 @@ from src.common.types import STARRecord, OUTCOME_TYPES
 
 @pytest.fixture
 def knowledge_base_path() -> str:
-    """Path to the knowledge base file."""
-    return str(Path(__file__).parent.parent / "knowledge-base.md")
+    """Path to the archived knowledge base file."""
+    return str(Path(__file__).parent.parent / "docs" / "archive" / "knowledge-base.md")
 
 
 @pytest.fixture

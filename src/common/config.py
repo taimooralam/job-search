@@ -38,11 +38,6 @@ class Config:
     # ===== Web Scraping =====
     FIRECRAWL_API_KEY: str = os.getenv("FIRECRAWL_API_KEY", "")
 
-    # ===== LangSmith (Observability) =====
-    LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY", "")
-    LANGCHAIN_TRACING_V2: str = os.getenv("LANGCHAIN_TRACING_V2", "true")
-    LANGCHAIN_PROJECT: str = os.getenv("LANGCHAIN_PROJECT", "job-intelligence-pipeline")
-
     # ===== Google APIs =====
     GOOGLE_CREDENTIALS_PATH: str = os.getenv(
         "GOOGLE_CREDENTIALS_PATH",
@@ -86,7 +81,7 @@ class Config:
     STAR_SELECTION_STRATEGY: str = os.getenv("STAR_SELECTION_STRATEGY", "LLM_ONLY")
 
     # Knowledge base path for STAR parsing
-    KNOWLEDGE_BASE_PATH: str = os.getenv("KNOWLEDGE_BASE_PATH", "./knowledge-base.md")
+    KNOWLEDGE_BASE_PATH: str = os.getenv("KNOWLEDGE_BASE_PATH", "./docs/archive/knowledge-base.md")
 
     # ===== LLM Model Configuration =====
     # Default models per layer (can be overridden)
@@ -244,7 +239,6 @@ Configuration Summary:
   CV LLM: {'OpenRouter' if cls.get_cv_llm_base_url() else 'OpenAI'} {'✓' if cls.get_cv_llm_api_key() else '✗ Missing'}
   FireCrawl: {'✓ Configured' if cls.FIRECRAWL_API_KEY else '✗ Missing'}
   People Mapper FireCrawl: {'Disabled' if cls.DISABLE_FIRECRAWL_OUTREACH else 'Enabled'}
-  LangSmith: {'✓ Enabled' if cls.LANGSMITH_API_KEY else '✗ Disabled'}
   Google Drive: {'✓ Configured' if cls.GOOGLE_DRIVE_FOLDER_ID else '✗ Missing'}
   Google Sheets: {'✓ Configured' if cls.GOOGLE_SHEET_ID else '✗ Missing'}
   Candidate Profile: {cls.CANDIDATE_PROFILE_PATH}
