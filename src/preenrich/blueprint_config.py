@@ -190,6 +190,26 @@ def research_stakeholder_cache_ttl_hours() -> int:
     return _int("PREENRICH_RESEARCH_STAKEHOLDER_CACHE_TTL_HOURS", 72)
 
 
+def stakeholder_surface_enabled() -> bool:
+    return _flag("PREENRICH_STAKEHOLDER_SURFACE_ENABLED", False)
+
+
+def stakeholder_surface_real_discovery_enabled() -> bool:
+    return _flag("PREENRICH_STAKEHOLDER_SURFACE_REAL_DISCOVERY_ENABLED", True)
+
+
+def stakeholder_surface_require_source_attribution() -> bool:
+    return _flag("PREENRICH_STAKEHOLDER_SURFACE_REQUIRE_SOURCE_ATTRIBUTION", True)
+
+
+def stakeholder_surface_max_web_queries() -> int:
+    return _int("PREENRICH_STAKEHOLDER_SURFACE_MAX_WEB_QUERIES", 6)
+
+
+def stakeholder_surface_max_fetches() -> int:
+    return _int("PREENRICH_STAKEHOLDER_SURFACE_MAX_FETCHES", 8)
+
+
 @lru_cache(maxsize=1)
 def current_git_sha() -> str:
     env_sha = _string("PREENRICH_GIT_SHA", "")
@@ -313,4 +333,9 @@ def validate_blueprint_feature_flags() -> None:
         raise RuntimeError(
             "Invalid preenrich config: live compat write requires "
             "PREENRICH_RESEARCH_REQUIRE_SOURCE_ATTRIBUTION=true"
+        )
+    if stakeholder_surface_enabled() and not blueprint_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_STAKEHOLDER_SURFACE_ENABLED=true "
+            "requires PREENRICH_BLUEPRINT_ENABLED=true"
         )

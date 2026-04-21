@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 
-from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled
+from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled, stakeholder_surface_enabled
 
 
 @dataclass(frozen=True)
@@ -166,15 +166,16 @@ LEGACY_STAGE_REGISTRY: dict[str, StageDefinition] = {
 
 def _blueprint_registry() -> dict[str, StageDefinition]:
     persona_required = persona_compat_enabled()
+    stakeholder_required = stakeholder_surface_enabled()
     blueprint_assembly_prereqs = (
         "jd_facts",
         "job_inference",
         "cv_guidelines",
         "application_surface",
         "annotations",
-    ) + (("persona_compat",) if persona_required else ())
+    ) + (("persona_compat",) if persona_required else ()) + (("stakeholder_surface",) if stakeholder_required else ())
 
-    return {
+    registry = {
         "jd_structure": StageDefinition(
             name="jd_structure",
             task_type="preenrich.jd_structure",
@@ -228,6 +229,18 @@ def _blueprint_registry() -> dict[str, StageDefinition]:
             task_type="preenrich.research_enrichment",
             prerequisites=("jd_facts", "classification", "application_surface"),
             produces_fields=("research_enrichment",),
+            required_for_cv_ready=True,
+            max_attempts=5,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_RESEARCH_ERRORS,
+            terminal_error_tags=TERMINAL_RESEARCH_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "stakeholder_surface": StageDefinition(
+            name="stakeholder_surface",
+            task_type="preenrich.stakeholder_surface",
+            prerequisites=("jd_facts", "classification", "application_surface", "research_enrichment"),
+            produces_fields=("stakeholder_surface",),
             required_for_cv_ready=True,
             max_attempts=5,
             default_priority=DEFAULT_PRIORITY,
@@ -308,6 +321,9 @@ def _blueprint_registry() -> dict[str, StageDefinition]:
             job_fail_policy="fail",
         ),
     }
+    if not stakeholder_required:
+        registry.pop("stakeholder_surface", None)
+    return registry
 
 
 def stage_registry() -> Mapping[str, StageDefinition]:

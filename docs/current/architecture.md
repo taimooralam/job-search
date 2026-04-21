@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2026-04-19 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 4 with Mongo-native search, scrape, selector-family execution, and preenrich DAG orchestration on `level-2`
+**Last Updated**: 2026-04-21 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 4.2.1 with Mongo-native search, scrape, selector-family execution, preenrich DAG orchestration on `level-2`, and guarded stakeholder modeling
 
 ---
 
@@ -214,8 +214,52 @@ Iteration 4.1.3.1 is the schema-alignment and hard-cutover-prep slice for the Co
   - `jd_facts`: `gpt-5.2`, no fallback, escalation disabled by default
   - `classification`: `gpt-5.4-mini` primary, `gpt-5.2` escalation, no fallback
   - `application_surface`: `gpt-5.2`, Codex web search, no fallback
+  - `research_enrichment`: `gpt-5.2`, Codex web search, no fallback
 - Compatibility projections are temporary migration surfaces. Where compat and canonical truth tension, canonical truth wins.
 - Direct canonical consumption by downstream readers is the intended end state; later phases migrate readers to the rich canonical `research_enrichment` artifact rather than extending top-level `company_research` / `role_research` scalar debt.
+
+### Iteration 4.2.1 Stakeholder Surface Contract
+
+Iteration 4.2.1 adds a new guarded `stakeholder_surface` stage after `research_enrichment` and before later presentation-facing work. Its purpose is to deepen evaluator modeling without collapsing identity resolution, persona inference, and final CV decisions into one artifact.
+
+- `research_enrichment` remains the canonical external-intelligence artifact.
+- `stakeholder_surface` consumes upstream company / role / application context and produces:
+  - real stakeholder identities when supported by public-professional evidence
+  - evaluator-facing profile enrichment for medium/high-confidence real stakeholders
+  - explicit inferred stakeholder personas for missing evaluator-role coverage
+  - downstream-ready CV preference signals for later `presentation_contract`
+- `presentation_contract` remains downstream. `stakeholder_surface` must not emit final CV decisions or generated CV content.
+
+Contract rules:
+
+- Truth over coverage:
+  - unresolved is better than guessed
+  - public-professional signals only
+  - no fabricated names, profile URLs, private contact routes, motives, or protected-trait inference
+- Identity resolution and persona inference are structurally separate:
+  - real stakeholders live under `real_stakeholders`
+  - inferred personas live under `inferred_stakeholder_personas`
+  - inferred personas never carry blended real-person identity
+- Fail-open / fail-closed boundary:
+  - fail open to inferred personas when company identity is weak, live discovery is disabled, or evaluator coverage is incomplete
+  - fail closed on cross-company candidates, constructed profile URLs, or privacy-violating outputs
+- Debuggability is first-class:
+  - explicit `status`, `notes`, `unresolved_questions`, `capability_flags`, `search_journal`, and `evaluator_coverage`
+  - partiality must be diagnosable, not silent
+
+Rollout rules:
+
+- `stakeholder_surface` is feature-flagged and off by default:
+  - `PREENRICH_STAKEHOLDER_SURFACE_ENABLED=false`
+- when enabled, it uses Codex web research with the same isolated-workdir discipline as the hardened `research_enrichment` path:
+  - repo context opt-in, not default
+  - public-web evidence only
+  - explicit prompt contracts and structured fallbacks
+
+Snapshot behavior:
+
+- `blueprint_assembly` mirrors only a compact `stakeholder_surface_summary`
+- full real-stakeholder identities, inferred personas, sources, evidence, and coverage diagnostics remain collection-backed
 
 ### Compatibility Boundary
 

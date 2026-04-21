@@ -98,14 +98,62 @@ def _coerce_detail_dict(value: Any) -> dict[str, Any]:
     return {"text": text} if text else {}
 
 
+def _coerce_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return list(value)
+    return [value]
+
+
+def _coerce_rich_entry(item: Any) -> dict[str, Any] | None:
+    if isinstance(item, dict):
+        return dict(item)
+    if isinstance(item, CompanySignal):
+        return item.model_dump()
+    text = _coerce_text(item)
+    if not text:
+        return None
+    return {"text": text, "description": text}
+
+
 def _coerce_confidence_payload(value: Any, *, fallback_basis: str | None = None) -> dict[str, Any]:
     if isinstance(value, ConfidenceDoc):
         return value.model_dump()
     if isinstance(value, dict):
         payload = dict(value)
-        if fallback_basis and not payload.get("basis"):
-            payload["basis"] = fallback_basis
-        return payload
+        nested_confidence = payload.get("confidence")
+        nested_evidence = payload.get("evidence")
+        score = payload.get("score")
+        band = payload.get("band")
+        if isinstance(nested_confidence, dict):
+            score = nested_confidence.get("score", score)
+            band = nested_confidence.get("band", band)
+        elif isinstance(nested_confidence, (int, float)) and score is None:
+            score = nested_confidence
+        basis = (
+            _coerce_text(payload.get("basis"))
+            or _coerce_text(payload.get("text"))
+            or _coerce_text(payload.get("summary"))
+            or _coerce_text(payload.get("description"))
+        )
+        evidence_summary = (
+            _coerce_text(payload.get("evidence_summary"))
+            or basis
+            or _coerce_text(payload.get("evidence_basis"))
+            or _coerce_text(nested_evidence)
+        )
+        unresolved_items = payload.get("unresolved_items")
+        sanitized = {
+            "score": score if score is not None else 0.0,
+            "band": _normalize_slug(band) if band is not None else "unresolved",
+            "basis": basis or fallback_basis or "No supporting evidence available.",
+            "evidence_summary": evidence_summary,
+            "unresolved_items": unresolved_items if unresolved_items is not None else [],
+        }
+        if sanitized["band"] not in {"high", "medium", "low", "unresolved"}:
+            sanitized["band"] = "unresolved"
+        return sanitized
     if isinstance(value, (int, float)):
         score = max(0.0, min(1.0, float(value)))
         if score >= 0.8:
@@ -260,9 +308,16 @@ def normalize_application_surface_payload(payload: dict[str, Any] | None) -> dic
 
 def normalize_company_profile_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
     raw = dict(payload or {})
-    signals_raw = list(raw.get("signals") or [])
-    recent_signals_raw = list(raw.get("recent_signals") or [])
-    role_relevant_raw = list(raw.get("role_relevant_signals") or [])
+    signals_input = raw.get("signals") if raw.get("signals") is not None else raw.get("signals_rich")
+    recent_signals_input = raw.get("recent_signals") if raw.get("recent_signals") is not None else raw.get("recent_signals_rich")
+    role_relevant_input = (
+        raw.get("role_relevant_signals")
+        if raw.get("role_relevant_signals") is not None
+        else raw.get("role_relevant_signals_rich")
+    )
+    signals_raw = _coerce_list(signals_input)
+    recent_signals_raw = _coerce_list(recent_signals_input)
+    role_relevant_raw = _coerce_list(role_relevant_input)
     normalized = dict(raw)
     normalized["summary"] = _coerce_text(raw.get("summary"))
     normalized["mission_summary"] = _coerce_text(raw.get("mission_summary"))
@@ -284,13 +339,35 @@ def normalize_company_profile_payload(payload: dict[str, Any] | None) -> dict[st
     normalized["signals"] = [item for item in (_coerce_company_signal(entry) for entry in signals_raw) if item]
     normalized["recent_signals"] = [item for item in (_coerce_company_signal(entry) for entry in recent_signals_raw) if item]
     normalized["role_relevant_signals"] = [item for item in (_coerce_company_signal(entry) for entry in role_relevant_raw) if item]
-    normalized["signals_rich"] = signals_raw
-    normalized["recent_signals_rich"] = recent_signals_raw
-    normalized["role_relevant_signals_rich"] = role_relevant_raw
+    normalized["signals_rich"] = [item for item in (_coerce_rich_entry(entry) for entry in signals_raw) if item]
+    normalized["recent_signals_rich"] = [item for item in (_coerce_rich_entry(entry) for entry in recent_signals_raw) if item]
+    normalized["role_relevant_signals_rich"] = [item for item in (_coerce_rich_entry(entry) for entry in role_relevant_raw) if item]
     normalized["identity_detail"] = _coerce_detail_dict(raw.get("identity_detail") or raw.get("canonical_name"))
     normalized["mission_detail"] = _coerce_detail_dict(raw.get("mission_detail") or raw.get("mission_summary"))
     normalized["product_detail"] = _coerce_detail_dict(raw.get("product_detail") or raw.get("product_summary"))
     normalized["business_model_detail"] = _coerce_detail_dict(raw.get("business_model_detail") or raw.get("business_model"))
+    company_type = _normalize_slug(raw.get("company_type"))
+    normalized["company_type"] = company_type if company_type in {"employer", "recruitment_agency", "unknown"} else "unknown"
+    normalized["customers_and_market"] = _coerce_detail_dict(raw.get("customers_and_market"))
+    scale_signals_raw = raw.get("scale_signals")
+    normalized["scale_signals"] = (
+        dict(scale_signals_raw)
+        if isinstance(scale_signals_raw, dict)
+        else {"items": scale_signals_raw}
+        if isinstance(scale_signals_raw, list) and scale_signals_raw
+        else {}
+    )
+    normalized["ai_data_platform_maturity"] = _coerce_detail_dict(raw.get("ai_data_platform_maturity"))
+    team_org_raw = raw.get("team_org_signals")
+    normalized["team_org_signals"] = (
+        dict(team_org_raw)
+        if isinstance(team_org_raw, dict)
+        else {"items": team_org_raw}
+        if isinstance(team_org_raw, list) and team_org_raw
+        else {}
+    )
+    funding_raw = raw.get("funding_signals")
+    normalized["funding_signals"] = funding_raw if isinstance(funding_raw, list) else []
     normalized["status"] = _normalize_slug(raw.get("status") or ("completed" if normalized.get("summary") else "partial"))
     if normalized["status"] not in {"completed", "partial", "unresolved", "no_research"}:
         normalized["status"] = "partial"
@@ -311,6 +388,17 @@ def normalize_role_profile_payload(payload: dict[str, Any] | None) -> dict[str, 
     normalized["mandate"] = _normalize_string_list(raw.get("mandate"))
     normalized["business_impact"] = _normalize_string_list(raw.get("business_impact"))
     normalized["success_metrics"] = _normalize_string_list(raw.get("success_metrics"))
+    collaboration_raw = raw.get("collaboration_map")
+    if isinstance(collaboration_raw, list):
+        normalized["collaboration_map"] = [item for item in collaboration_raw if isinstance(item, dict)]
+    elif isinstance(collaboration_raw, dict):
+        normalized["collaboration_map"] = [dict(collaboration_raw)]
+    else:
+        normalized["collaboration_map"] = []
+    reporting_line_raw = raw.get("reporting_line")
+    normalized["reporting_line"] = dict(reporting_line_raw) if isinstance(reporting_line_raw, dict) else {}
+    org_placement_raw = raw.get("org_placement")
+    normalized["org_placement"] = dict(org_placement_raw) if isinstance(org_placement_raw, dict) else {}
     normalized["interview_themes"] = _normalize_string_list(raw.get("interview_themes"))
     normalized["evaluation_signals"] = _normalize_string_list(raw.get("evaluation_signals"))
     normalized["risk_landscape"] = _normalize_string_list(raw.get("risk_landscape"))
@@ -341,6 +429,104 @@ def normalize_stakeholder_record_payload(payload: dict[str, Any] | None) -> dict
         fallback_basis="stakeholder_confidence_normalized",
     )
     return normalized
+
+
+def normalize_public_professional_decision_style_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    raw = dict(payload or {})
+    normalized = {
+        "evidence_preference": _normalize_slug(raw.get("evidence_preference") or "unresolved"),
+        "risk_posture": _normalize_slug(raw.get("risk_posture") or "unresolved"),
+        "speed_vs_rigor": _normalize_slug(raw.get("speed_vs_rigor") or "unresolved"),
+        "communication_style": _normalize_slug(raw.get("communication_style") or "unresolved"),
+        "authority_orientation": _normalize_slug(raw.get("authority_orientation") or "unresolved"),
+        "technical_vs_business_bias": _normalize_slug(raw.get("technical_vs_business_bias") or "unresolved"),
+    }
+    defaults = {
+        "evidence_preference": {"metrics_and_systems", "scope_and_ownership", "narrative_and_impact", "unresolved"},
+        "risk_posture": {"quality_first", "speed_first", "balanced", "unresolved"},
+        "speed_vs_rigor": {"speed_first", "balanced", "rigor_first", "unresolved"},
+        "communication_style": {"concise_substantive", "narrative", "formal", "hype_averse", "unresolved"},
+        "authority_orientation": {"credibility_over_title", "title_sensitive", "unresolved"},
+        "technical_vs_business_bias": {"technical_first", "balanced", "business_first", "unresolved"},
+    }
+    for key, allowed in defaults.items():
+        if normalized[key] not in allowed:
+            normalized[key] = "unresolved"
+    return normalized
+
+
+def normalize_cv_preference_surface_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    raw = dict(payload or {})
+    normalized = dict(raw)
+    normalized["review_objectives"] = _normalize_string_list(raw.get("review_objectives"))
+    normalized["preferred_signal_order"] = _normalize_string_list(raw.get("preferred_signal_order"))
+    normalized["preferred_header_bias"] = _normalize_string_list(raw.get("preferred_header_bias"))
+    normalized["preferred_tone"] = _normalize_string_list(raw.get("preferred_tone"))
+    normalized["preferred_evidence_types"] = _normalize_string_list(raw.get("preferred_evidence_types"))
+    normalized["title_match_preference"] = _normalize_slug(raw.get("title_match_preference") or "unresolved")
+    normalized["keyword_bias"] = _normalize_slug(raw.get("keyword_bias") or "unresolved")
+    normalized["ai_section_preference"] = _normalize_slug(raw.get("ai_section_preference") or "unresolved")
+    normalized["evidence_basis"] = _coerce_text(raw.get("evidence_basis"))
+    normalized["confidence"] = _coerce_confidence_payload(raw.get("confidence"), fallback_basis="cv_preference_surface_normalized")
+    return normalized
+
+
+def normalize_stakeholder_evaluation_profile_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    raw = dict(payload or {})
+    normalized = dict(raw)
+    if raw.get("stakeholder_record_snapshot") and isinstance(raw.get("stakeholder_record_snapshot"), dict):
+        normalized["stakeholder_record_snapshot"] = normalize_stakeholder_record_payload(raw.get("stakeholder_record_snapshot"))
+    normalized["stakeholder_type"] = _normalize_slug(raw.get("stakeholder_type") or "hiring_manager")
+    normalized["role_in_process"] = _coerce_text(raw.get("role_in_process"))
+    style = raw.get("public_professional_decision_style")
+    normalized["public_professional_decision_style"] = (
+        normalize_public_professional_decision_style_payload(style) if isinstance(style, dict) else None
+    )
+    cv_surface = raw.get("cv_preference_surface")
+    normalized["cv_preference_surface"] = (
+        normalize_cv_preference_surface_payload(cv_surface) if isinstance(cv_surface, dict) else None
+    )
+    normalized["unresolved_markers"] = _normalize_string_list(raw.get("unresolved_markers"))
+    normalized["confidence"] = _coerce_confidence_payload(raw.get("confidence"), fallback_basis="stakeholder_evaluation_profile_normalized")
+    normalized["status"] = _normalize_slug(raw.get("status") or "partial")
+    if normalized["status"] not in {"completed", "partial", "identity_only"}:
+        normalized["status"] = "partial"
+    return normalized
+
+
+def normalize_inferred_stakeholder_persona_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    raw = dict(payload or {})
+    normalized = dict(raw)
+    normalized["persona_type"] = _normalize_slug(raw.get("persona_type"))
+    normalized["coverage_gap"] = _normalize_slug(raw.get("coverage_gap") or raw.get("persona_type"))
+    normalized["role_in_process"] = _coerce_text(raw.get("role_in_process"))
+    normalized["emitted_because"] = _normalize_slug(raw.get("emitted_because") or "coverage_gap_despite_real")
+    normalized["trigger_basis"] = _normalize_string_list(raw.get("trigger_basis"))
+    style = raw.get("public_professional_decision_style")
+    normalized["public_professional_decision_style"] = (
+        normalize_public_professional_decision_style_payload(style) if isinstance(style, dict) else None
+    )
+    cv_surface = raw.get("cv_preference_surface")
+    normalized["cv_preference_surface"] = (
+        normalize_cv_preference_surface_payload(cv_surface) if isinstance(cv_surface, dict) else None
+    )
+    normalized["unresolved_markers"] = _normalize_string_list(raw.get("unresolved_markers"))
+    normalized["evidence_basis"] = _coerce_text(raw.get("evidence_basis")) or "inferred persona from role and company context"
+    normalized["confidence"] = _coerce_confidence_payload(raw.get("confidence"), fallback_basis="inferred_stakeholder_persona_normalized")
+    return normalized
+
+
+def normalize_search_journal_entry_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
+    raw = dict(payload or {})
+    return {
+        "step": _normalize_slug(raw.get("step") or "discovery"),
+        "query": _coerce_text(raw.get("query")),
+        "intent": _coerce_text(raw.get("intent")),
+        "source_type": _coerce_text(raw.get("source_type")),
+        "outcome": _normalize_slug(raw.get("outcome") or "miss"),
+        "source_ids": _normalize_string_list(raw.get("source_ids")),
+        "notes": _coerce_text(raw.get("notes")),
+    }
 
 
 class RemoteLocationDetail(BaseModel):
@@ -1091,8 +1277,6 @@ class ApplicationSurfaceDoc(BaseModel):
     def sync_application_urls(self) -> "ApplicationSurfaceDoc":
         if not self.application_url:
             self.application_url = self.canonical_application_url
-        if not self.canonical_application_url:
-            self.canonical_application_url = self.application_url
         if not self.apply_instruction_lines and self.apply_instructions:
             self.apply_instruction_lines = [self.apply_instructions]
         if not self.apply_instructions and self.apply_instruction_lines:
@@ -1104,10 +1288,29 @@ class ApplicationProfile(ApplicationSurfaceDoc):
     model_config = ConfigDict(extra="forbid")
 
 
+StakeholderType = Literal[
+    "recruiter",
+    "hiring_manager",
+    "skip_level_leader",
+    "peer_technical",
+    "cross_functional_partner",
+    "executive_sponsor",
+    "unknown",
+]
+EvaluatorRole = Literal[
+    "recruiter",
+    "hiring_manager",
+    "skip_level_leader",
+    "peer_technical",
+    "cross_functional_partner",
+    "executive_sponsor",
+]
+
+
 class StakeholderRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    stakeholder_type: Literal["recruiter", "hiring_manager", "executive_sponsor", "peer_technical", "unknown"] = "unknown"
+    stakeholder_type: StakeholderType = "unknown"
     identity_status: Literal["resolved", "ambiguous", "unresolved"] = "unresolved"
     identity_confidence: ConfidenceDoc = Field(default_factory=ConfidenceDoc)
     identity_basis: str | None = None
@@ -1181,6 +1384,241 @@ class StakeholderRecord(BaseModel):
             if not self.evidence_basis:
                 self.evidence_basis = self.identity_basis
         return self
+
+
+class PublicProfessionalDecisionStyle(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    evidence_preference: Literal["metrics_and_systems", "scope_and_ownership", "narrative_and_impact", "unresolved"] = "unresolved"
+    risk_posture: Literal["quality_first", "speed_first", "balanced", "unresolved"] = "unresolved"
+    speed_vs_rigor: Literal["speed_first", "balanced", "rigor_first", "unresolved"] = "unresolved"
+    communication_style: Literal["concise_substantive", "narrative", "formal", "hype_averse", "unresolved"] = "unresolved"
+    authority_orientation: Literal["credibility_over_title", "title_sensitive", "unresolved"] = "unresolved"
+    technical_vs_business_bias: Literal["technical_first", "balanced", "business_first", "unresolved"] = "unresolved"
+
+
+class CVPreferenceSurface(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    review_objectives: list[str] = Field(default_factory=list)
+    preferred_signal_order: list[str] = Field(default_factory=list)
+    preferred_evidence_types: list[
+        Literal[
+            "named_systems",
+            "scale_markers",
+            "metrics",
+            "ownership_scope",
+            "decision_tradeoffs",
+            "team_outcomes",
+            "product_outcomes",
+        ]
+    ] = Field(default_factory=list)
+    preferred_header_bias: list[str] = Field(default_factory=list)
+    title_match_preference: Literal["strict", "moderate", "lenient", "unresolved"] = "unresolved"
+    keyword_bias: Literal["high", "medium", "low", "unresolved"] = "unresolved"
+    ai_section_preference: Literal["dedicated_if_core", "embedded_only", "discouraged", "unresolved"] = "unresolved"
+    preferred_tone: list[str] = Field(default_factory=list)
+    evidence_basis: str | None = None
+    confidence: ConfidenceDoc = Field(default_factory=ConfidenceDoc)
+
+    @field_validator(
+        "review_objectives",
+        "preferred_signal_order",
+        "preferred_header_bias",
+        "preferred_tone",
+        mode="before",
+    )
+    @classmethod
+    def normalize_lists(cls, value: Any) -> list[str]:
+        return _normalize_string_list(value)
+
+    @field_validator("preferred_evidence_types", mode="before")
+    @classmethod
+    def normalize_evidence_types(cls, value: Any) -> list[str]:
+        allowed = {
+            "named_systems",
+            "scale_markers",
+            "metrics",
+            "ownership_scope",
+            "decision_tradeoffs",
+            "team_outcomes",
+            "product_outcomes",
+        }
+        items = [_normalize_slug(item) for item in _normalize_string_list(value)]
+        return [item for item in items if item in allowed]
+
+    @field_validator("preferred_signal_order")
+    @classmethod
+    def reject_cv_section_ids(cls, value: list[str]) -> list[str]:
+        forbidden = {
+            "title",
+            "header",
+            "summary",
+            "key_achievements",
+            "core_competencies",
+            "ai_highlights",
+            "experience",
+            "education",
+        }
+        for item in value:
+            normalized = _normalize_slug(item)
+            if normalized in forbidden:
+                raise ValueError("preferred_signal_order must use abstract signal categories, not CV section ids")
+        return value
+
+
+class StakeholderEvaluationProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stakeholder_ref: str
+    stakeholder_record_snapshot: StakeholderRecord
+    stakeholder_type: EvaluatorRole
+    role_in_process: str | None = None
+    public_professional_decision_style: PublicProfessionalDecisionStyle | None = None
+    cv_preference_surface: CVPreferenceSurface | None = None
+    likely_priorities: list[GuidanceBullet] = Field(default_factory=list)
+    likely_reject_signals: list[GuidanceAvoidBullet] = Field(default_factory=list)
+    unresolved_markers: list[str] = Field(default_factory=list)
+    sources: list[SourceEntry] = Field(default_factory=list)
+    evidence: list[EvidenceEntry] = Field(default_factory=list)
+    confidence: ConfidenceDoc = Field(default_factory=ConfidenceDoc)
+    status: Literal["completed", "partial", "identity_only"] = "identity_only"
+
+    @field_validator("unresolved_markers", mode="before")
+    @classmethod
+    def normalize_markers(cls, value: Any) -> list[str]:
+        return _normalize_string_list(value)
+
+
+class InferredStakeholderPersona(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    persona_id: str
+    persona_type: EvaluatorRole
+    role_in_process: str | None = None
+    emitted_because: Literal["no_real_candidate", "real_search_disabled", "real_ambiguous", "coverage_gap_despite_real"] = "coverage_gap_despite_real"
+    trigger_basis: list[str] = Field(default_factory=list)
+    coverage_gap: EvaluatorRole
+    public_professional_decision_style: PublicProfessionalDecisionStyle | None = None
+    cv_preference_surface: CVPreferenceSurface | None = None
+    likely_priorities: list[GuidanceBullet] = Field(default_factory=list)
+    likely_reject_signals: list[GuidanceAvoidBullet] = Field(default_factory=list)
+    unresolved_markers: list[str] = Field(default_factory=list)
+    evidence_basis: str
+    sources: list[SourceEntry] = Field(default_factory=list)
+    evidence: list[EvidenceEntry] = Field(default_factory=list)
+    confidence: ConfidenceDoc = Field(default_factory=ConfidenceDoc)
+
+    @field_validator("trigger_basis", "unresolved_markers", mode="before")
+    @classmethod
+    def normalize_lists(cls, value: Any) -> list[str]:
+        return _normalize_string_list(value)
+
+    @field_validator("evidence_basis")
+    @classmethod
+    def require_inferred_label(cls, value: str) -> str:
+        if "inferred" not in value.lower():
+            raise ValueError('persona evidence_basis must contain the literal word "inferred"')
+        return value
+
+    @field_validator("confidence", mode="after")
+    @classmethod
+    def clamp_confidence_band(cls, value: ConfidenceDoc) -> ConfidenceDoc:
+        if value.band == "high":
+            value.band = "medium"
+            if value.score > 0.79:
+                value.score = 0.79
+        return value
+
+
+class EvaluatorCoverageEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: EvaluatorRole
+    required: bool = True
+    status: Literal["real", "inferred", "uncovered"] = "uncovered"
+    stakeholder_refs: list[str] = Field(default_factory=list)
+    persona_refs: list[str] = Field(default_factory=list)
+    coverage_confidence: ConfidenceDoc = Field(default_factory=ConfidenceDoc)
+
+    @field_validator("stakeholder_refs", "persona_refs", mode="before")
+    @classmethod
+    def normalize_refs(cls, value: Any) -> list[str]:
+        return _normalize_string_list(value)
+
+    @model_validator(mode="after")
+    def validate_status_refs(self) -> "EvaluatorCoverageEntry":
+        if self.status == "real":
+            if not self.stakeholder_refs or self.persona_refs:
+                raise ValueError("real coverage requires stakeholder_refs only")
+        elif self.status == "inferred":
+            if not self.persona_refs or self.stakeholder_refs:
+                raise ValueError("inferred coverage requires persona_refs only")
+        else:
+            if self.stakeholder_refs or self.persona_refs:
+                raise ValueError("uncovered coverage may not include stakeholder_refs or persona_refs")
+        return self
+
+
+class SearchJournalEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    step: Literal["preflight", "discovery", "profile", "personas"]
+    query: str | None = None
+    intent: str | None = None
+    source_type: str | None = None
+    outcome: Literal["hit", "miss", "ambiguous", "rejected_fabrication"] = "miss"
+    source_ids: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+    @field_validator("source_ids", mode="before")
+    @classmethod
+    def normalize_source_ids(cls, value: Any) -> list[str]:
+        return _normalize_string_list(value)
+
+
+class StakeholderSurfaceDoc(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str
+    level2_job_id: str
+    research_enrichment_id: str | None = None
+    input_snapshot_id: str | None = None
+    prompt_versions: dict[str, str] = Field(default_factory=dict)
+    prompt_metadata: dict[str, PromptMetadata] = Field(default_factory=dict)
+    status: Literal["completed", "partial", "inferred_only", "unresolved", "no_research", "failed_terminal"] = "unresolved"
+    capability_flags: dict[str, Any] = Field(default_factory=dict)
+    evaluator_coverage_target: list[EvaluatorRole] = Field(default_factory=list)
+    evaluator_coverage: list[EvaluatorCoverageEntry] = Field(default_factory=list)
+    real_stakeholders: list[StakeholderEvaluationProfile] = Field(default_factory=list)
+    inferred_stakeholder_personas: list[InferredStakeholderPersona] = Field(default_factory=list)
+    search_journal: list[SearchJournalEntry] = Field(default_factory=list)
+    sources: list[SourceEntry] = Field(default_factory=list)
+    evidence: list[EvidenceEntry] = Field(default_factory=list)
+    confidence: ConfidenceDoc = Field(default_factory=ConfidenceDoc)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    timing: dict[str, Any] = Field(default_factory=dict)
+    usage: dict[str, Any] = Field(default_factory=dict)
+    cache_refs: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("evaluator_coverage_target", mode="before")
+    @classmethod
+    def normalize_coverage_target(cls, value: Any) -> list[str]:
+        allowed = {
+            "recruiter",
+            "hiring_manager",
+            "skip_level_leader",
+            "peer_technical",
+            "cross_functional_partner",
+            "executive_sponsor",
+        }
+        return [item for item in (_normalize_slug(item) for item in _normalize_string_list(value)) if item in allowed]
+
+    @field_validator("unresolved_questions", "notes", mode="before")
+    @classmethod
+    def normalize_lists(cls, value: Any) -> list[str]:
+        return _normalize_string_list(value)
 
 
 class PromptMetadata(BaseModel):

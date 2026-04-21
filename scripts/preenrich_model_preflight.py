@@ -81,6 +81,11 @@ _STAGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "live_keys": ["status", "application_url", "canonical_application_url", "portal_family", "resolution_status"],
         "default_model": "gpt-5.2",
     },
+    "stakeholder_surface": {
+        "live_field": "pre_enrichment.outputs.stakeholder_surface",
+        "live_keys": ["status", "evaluator_coverage_target", "evaluator_coverage", "real_stakeholders", "inferred_stakeholder_personas"],
+        "default_model": "gpt-5.2",
+    },
     "job_inference": {
         "live_field": "pre_enrichment.outputs.job_inference",
         "live_keys": ["semantic_role_model", "company_model", "qualifications", "application_surface"],
@@ -238,6 +243,9 @@ def _run_stage_codex(
         elif stage == "application_surface":
             from src.preenrich.stages.application_surface import ApplicationSurfaceStage
             stage_obj = ApplicationSurfaceStage()
+        elif stage == "stakeholder_surface":
+            from src.preenrich.stages.stakeholder_surface import StakeholderSurfaceStage
+            stage_obj = StakeholderSurfaceStage()
         elif stage == "job_inference":
             from src.preenrich.stages.job_inference import JobInferenceStage
             stage_obj = JobInferenceStage()
@@ -348,7 +356,7 @@ def validate_stage_routing(stage: str | None = None) -> list[str]:
                 errors.append(
                     "classification: escalation enabled requires PREENRICH_CLASSIFICATION_ESCALATION_MODEL"
                 )
-        if name in {"research_enrichment", "application_surface"}:
+        if name in {"research_enrichment", "application_surface", "stakeholder_surface"}:
             v2_enabled = os.getenv("PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED", "false").strip().lower() == "true"
             live_web_enabled = os.getenv("WEB_RESEARCH_ENABLED", "false").strip().lower() == "true"
             shadow_mode = os.getenv("PREENRICH_RESEARCH_SHADOW_MODE_ENABLED", "false").strip().lower() == "true"
@@ -357,6 +365,15 @@ def validate_stage_routing(stage: str | None = None) -> list[str]:
             stakeholders_enabled = os.getenv("PREENRICH_RESEARCH_ENABLE_STAKEHOLDERS", "false").strip().lower() == "true"
             outreach_enabled = os.getenv("PREENRICH_RESEARCH_ENABLE_OUTREACH_GUIDANCE", "false").strip().lower() == "true"
             require_sources = os.getenv("PREENRICH_RESEARCH_REQUIRE_SOURCE_ATTRIBUTION", "true").strip().lower() == "true"
+            if name == "stakeholder_surface":
+                stage_enabled = os.getenv("PREENRICH_STAKEHOLDER_SURFACE_ENABLED", "false").strip().lower() == "true"
+                if stage_enabled and cfg.provider == "none":
+                    errors.append("stakeholder_surface: enabled stage requires a real provider")
+                if stage_enabled and cfg.provider != "codex":
+                    errors.append("stakeholder_surface: enabled stage requires provider=codex")
+                if stage_enabled and live_web_enabled and not (cfg.transport or "").startswith("codex"):
+                    errors.append("stakeholder_surface: WEB_RESEARCH_ENABLED=true requires a codex research transport")
+                continue
             if v2_enabled and cfg.provider == "none":
                 errors.append(f"{name}: V2 enabled requires a real provider")
             if v2_enabled and cfg.provider != "codex":

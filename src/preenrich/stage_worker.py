@@ -61,6 +61,7 @@ def stage_factory_map() -> dict[str, Callable[[], Any]]:
     from src.preenrich.stages.persona import PersonaStage
     from src.preenrich.stages.research_enrichment import ResearchEnrichmentStage
     from src.preenrich.stages.role_research import RoleResearchStage
+    from src.preenrich.stages.stakeholder_surface import StakeholderSurfaceStage
 
     return {
         "jd_structure": JDStructureStage,
@@ -74,6 +75,7 @@ def stage_factory_map() -> dict[str, Callable[[], Any]]:
         "persona_compat": PersonaStage,
         "company_research": CompanyResearchStage,
         "research_enrichment": ResearchEnrichmentStage,
+        "stakeholder_surface": StakeholderSurfaceStage,
         "application_surface": ApplicationSurfaceStage,
         "job_inference": JobInferenceStage,
         "job_hypotheses": JobHypothesesStage,

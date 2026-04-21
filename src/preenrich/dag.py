@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Set
 
-from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled
+from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled, stakeholder_surface_enabled
 
 # Canonical execution order — dispatcher iterates in this order.
 # fit_signal is dropped from Phase 2 scope (no live consumer in BatchPipelineService
@@ -24,6 +24,7 @@ BLUEPRINT_STAGE_ORDER: List[str] = [
     "classification",
     "application_surface",
     "research_enrichment",
+    "stakeholder_surface",
     "job_inference",
     "job_hypotheses",
     "annotations",
@@ -52,12 +53,13 @@ _BLUEPRINT_DEPENDENCIES: Dict[str, List[str]] = {
     "classification": ["jd_facts"],
     "application_surface": ["jd_facts"],
     "research_enrichment": ["jd_facts", "classification", "application_surface"],
+    "stakeholder_surface": ["jd_facts", "classification", "application_surface", "research_enrichment"],
     "job_inference": ["jd_facts", "classification", "research_enrichment", "application_surface"],
     "job_hypotheses": ["jd_facts", "classification", "research_enrichment", "application_surface"],
     "annotations": ["jd_structure"],
     "persona_compat": ["annotations"],
     "cv_guidelines": ["jd_facts", "job_inference", "research_enrichment"],
-    "blueprint_assembly": ["jd_facts", "job_inference", "cv_guidelines", "application_surface", "annotations", "persona_compat"],
+    "blueprint_assembly": ["jd_facts", "job_inference", "cv_guidelines", "application_surface", "annotations", "persona_compat", "stakeholder_surface"],
 }
 
 # Inputs that affect which stages are invalidated
@@ -72,8 +74,8 @@ _INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
 }
 
 _BLUEPRINT_INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
-    "jd": {"jd_structure", "jd_facts", "classification", "research_enrichment", "application_surface", "job_inference", "job_hypotheses", "cv_guidelines", "blueprint_assembly", "annotations"},
-    "company": {"research_enrichment", "application_surface"},
+    "jd": {"jd_structure", "jd_facts", "classification", "research_enrichment", "application_surface", "stakeholder_surface", "job_inference", "job_hypotheses", "cv_guidelines", "blueprint_assembly", "annotations"},
+    "company": {"research_enrichment", "application_surface", "stakeholder_surface"},
     "priors": {"annotations"},
     "taxonomy": {"classification"},
 }
@@ -94,7 +96,9 @@ _REVERSE_DEPS: Dict[str, Set[str]] = _build_reverse_deps()
 def current_stage_order() -> List[str]:
     order = BLUEPRINT_STAGE_ORDER if blueprint_enabled() else STAGE_ORDER
     if blueprint_enabled() and not persona_compat_enabled():
-        return [stage for stage in order if stage != "persona_compat"]
+        order = [stage for stage in order if stage != "persona_compat"]
+    if blueprint_enabled() and not stakeholder_surface_enabled():
+        order = [stage for stage in order if stage != "stakeholder_surface"]
     return list(order)
 
 
@@ -102,14 +106,18 @@ def _current_dependencies() -> Dict[str, List[str]]:
     deps = _BLUEPRINT_DEPENDENCIES if blueprint_enabled() else _DEPENDENCIES
     if blueprint_enabled() and not persona_compat_enabled():
         trimmed = {stage: [dep for dep in prereqs if dep != "persona_compat"] for stage, prereqs in deps.items() if stage != "persona_compat"}
-        return trimmed
+        deps = trimmed
+    if blueprint_enabled() and not stakeholder_surface_enabled():
+        deps = {stage: [dep for dep in prereqs if dep != "stakeholder_surface"] for stage, prereqs in deps.items() if stage != "stakeholder_surface"}
     return deps
 
 
 def _current_input_invalidations() -> Dict[str, Set[str]]:
     mapping = _BLUEPRINT_INPUT_DIRECT_INVALIDATIONS if blueprint_enabled() else _INPUT_DIRECT_INVALIDATIONS
     if blueprint_enabled() and not persona_compat_enabled():
-        return {key: {stage for stage in value if stage != "persona_compat"} for key, value in mapping.items()}
+        mapping = {key: {stage for stage in value if stage != "persona_compat"} for key, value in mapping.items()}
+    if blueprint_enabled() and not stakeholder_surface_enabled():
+        mapping = {key: {stage for stage in value if stage != "stakeholder_surface"} for key, value in mapping.items()}
     return mapping
 
 

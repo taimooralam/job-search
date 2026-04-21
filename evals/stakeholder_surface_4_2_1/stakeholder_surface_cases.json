@@ -1,0 +1,302 @@
+[
+  {
+    "job_id": "job-resolved-1",
+    "expect_ambiguous_rejection": false,
+    "gold_stakeholder_surface": {
+      "job_id": "job-resolved-1",
+      "level2_job_id": "job-resolved-1",
+      "research_enrichment_id": "__ref__:research_enrichment.id",
+      "prompt_versions": {
+        "discovery": "P-stakeholder-discovery@v2",
+        "profile": "P-stakeholder-profile@v2",
+        "personas": "P-inferred-stakeholder-personas@v1"
+      },
+      "prompt_metadata": {},
+      "status": "completed",
+      "capability_flags": {"real_discovery_enabled": true},
+      "evaluator_coverage_target": ["recruiter", "hiring_manager"],
+      "evaluator_coverage": [
+        {
+          "role": "recruiter",
+          "required": true,
+          "status": "real",
+          "stakeholder_refs": ["candidate_rank:1"],
+          "persona_refs": [],
+          "coverage_confidence": {"score": 0.9, "band": "high", "basis": "real recruiter"}
+        },
+        {
+          "role": "hiring_manager",
+          "required": true,
+          "status": "inferred",
+          "stakeholder_refs": [],
+          "persona_refs": ["persona_hiring_manager_1"],
+          "coverage_confidence": {"score": 0.62, "band": "medium", "basis": "inferred hiring manager"}
+        }
+      ],
+      "real_stakeholders": [
+        {
+          "stakeholder_ref": "candidate_rank:1",
+          "stakeholder_record_snapshot": {
+            "stakeholder_type": "recruiter",
+            "identity_status": "resolved",
+            "identity_confidence": {"score": 0.82, "band": "high", "basis": "official"},
+            "identity_basis": "Official profile.",
+            "matched_signal_classes": ["official_team_page_named_person", "public_profile_company_role_match"],
+            "candidate_rank": 1,
+            "name": "Jane Doe",
+            "current_title": "Technical Recruiter",
+            "current_company": "Acme",
+            "profile_url": "https://www.linkedin.com/in/jane-doe-acme",
+            "source_trail": ["src_recruiter"],
+            "sources": [{"source_id": "src_recruiter", "url": "https://www.linkedin.com/in/jane-doe-acme", "source_type": "public_professional_profile", "trust_tier": "secondary"}],
+            "evidence": [{"claim": "Jane Doe is a recruiter at Acme.", "source_ids": ["src_recruiter"]}]
+          },
+          "stakeholder_type": "recruiter",
+          "role_in_process": "screening_and_process_control",
+          "public_professional_decision_style": {
+            "evidence_preference": "scope_and_ownership",
+            "risk_posture": "balanced",
+            "speed_vs_rigor": "balanced",
+            "communication_style": "concise_substantive",
+            "authority_orientation": "credibility_over_title",
+            "technical_vs_business_bias": "balanced"
+          },
+          "cv_preference_surface": {
+            "review_objectives": ["Verify credible fit"],
+            "preferred_signal_order": ["ownership_scope"],
+            "preferred_evidence_types": ["metrics"],
+            "preferred_header_bias": ["credibility_first"],
+            "title_match_preference": "moderate",
+            "keyword_bias": "medium",
+            "ai_section_preference": "embedded_only",
+            "preferred_tone": ["clear"],
+            "evidence_basis": "Public recruiter signals.",
+            "confidence": {"score": 0.7, "band": "medium", "basis": "signals"}
+          },
+          "likely_priorities": [{"bullet": "Credible role fit.", "basis": "signals", "source_ids": ["src_recruiter"]}],
+          "likely_reject_signals": [{"bullet": "Inflated claims.", "reason": "signals", "source_ids": ["src_recruiter"]}],
+          "unresolved_markers": [],
+          "sources": [{"source_id": "src_recruiter", "url": "https://www.linkedin.com/in/jane-doe-acme", "source_type": "public_professional_profile", "trust_tier": "secondary"}],
+          "evidence": [{"claim": "Jane Doe is a recruiter at Acme.", "source_ids": ["src_recruiter"]}],
+          "confidence": {"score": 0.78, "band": "medium", "basis": "signals"},
+          "status": "completed"
+        }
+      ],
+      "inferred_stakeholder_personas": [
+        {
+          "persona_id": "persona_hiring_manager_1",
+          "persona_type": "hiring_manager",
+          "coverage_gap": "hiring_manager",
+          "evidence_basis": "This is inferred from role class and company context.",
+          "confidence": {"score": 0.64, "band": "medium", "basis": "inferred"}
+        }
+      ],
+      "search_journal": [],
+      "sources": [],
+      "evidence": [],
+      "confidence": {"score": 0.72, "band": "medium", "basis": "aggregate"},
+      "unresolved_questions": [],
+      "notes": []
+    },
+    "candidate_stakeholder_surface": {
+      "job_id": "job-resolved-1",
+      "level2_job_id": "job-resolved-1",
+      "research_enrichment_id": "__ref__:research_enrichment.id",
+      "prompt_versions": {
+        "discovery": "P-stakeholder-discovery@v2",
+        "profile": "P-stakeholder-profile@v2",
+        "personas": "P-inferred-stakeholder-personas@v1"
+      },
+      "prompt_metadata": {},
+      "status": "completed",
+      "capability_flags": {"real_discovery_enabled": true},
+      "evaluator_coverage_target": ["recruiter", "hiring_manager"],
+      "evaluator_coverage": [
+        {
+          "role": "recruiter",
+          "required": true,
+          "status": "real",
+          "stakeholder_refs": ["candidate_rank:1"],
+          "persona_refs": [],
+          "coverage_confidence": {"score": 0.9, "band": "high", "basis": "real recruiter"}
+        },
+        {
+          "role": "hiring_manager",
+          "required": true,
+          "status": "inferred",
+          "stakeholder_refs": [],
+          "persona_refs": ["persona_hiring_manager_1"],
+          "coverage_confidence": {"score": 0.62, "band": "medium", "basis": "inferred hiring manager"}
+        }
+      ],
+      "real_stakeholders": [
+        {
+          "stakeholder_ref": "candidate_rank:1",
+          "stakeholder_record_snapshot": {
+            "stakeholder_type": "recruiter",
+            "identity_status": "resolved",
+            "identity_confidence": {"score": 0.82, "band": "high", "basis": "official"},
+            "identity_basis": "Official profile.",
+            "matched_signal_classes": ["official_team_page_named_person", "public_profile_company_role_match"],
+            "candidate_rank": 1,
+            "name": "Jane Doe",
+            "current_title": "Technical Recruiter",
+            "current_company": "Acme",
+            "profile_url": "https://www.linkedin.com/in/jane-doe-acme",
+            "source_trail": ["src_recruiter"],
+            "sources": [{"source_id": "src_recruiter", "url": "https://www.linkedin.com/in/jane-doe-acme", "source_type": "public_professional_profile", "trust_tier": "secondary"}],
+            "evidence": [{"claim": "Jane Doe is a recruiter at Acme.", "source_ids": ["src_recruiter"]}]
+          },
+          "stakeholder_type": "recruiter",
+          "role_in_process": "screening_and_process_control",
+          "public_professional_decision_style": {
+            "evidence_preference": "scope_and_ownership",
+            "risk_posture": "balanced",
+            "speed_vs_rigor": "balanced",
+            "communication_style": "concise_substantive",
+            "authority_orientation": "credibility_over_title",
+            "technical_vs_business_bias": "balanced"
+          },
+          "cv_preference_surface": {
+            "review_objectives": ["Verify credible fit"],
+            "preferred_signal_order": ["ownership_scope"],
+            "preferred_evidence_types": ["metrics"],
+            "preferred_header_bias": ["credibility_first"],
+            "title_match_preference": "moderate",
+            "keyword_bias": "medium",
+            "ai_section_preference": "embedded_only",
+            "preferred_tone": ["clear"],
+            "evidence_basis": "Public recruiter signals.",
+            "confidence": {"score": 0.7, "band": "medium", "basis": "signals"}
+          },
+          "likely_priorities": [{"bullet": "Credible role fit.", "basis": "signals", "source_ids": ["src_recruiter"]}],
+          "likely_reject_signals": [{"bullet": "Inflated claims.", "reason": "signals", "source_ids": ["src_recruiter"]}],
+          "unresolved_markers": [],
+          "sources": [{"source_id": "src_recruiter", "url": "https://www.linkedin.com/in/jane-doe-acme", "source_type": "public_professional_profile", "trust_tier": "secondary"}],
+          "evidence": [{"claim": "Jane Doe is a recruiter at Acme.", "source_ids": ["src_recruiter"]}],
+          "confidence": {"score": 0.78, "band": "medium", "basis": "signals"},
+          "status": "completed"
+        }
+      ],
+      "inferred_stakeholder_personas": [
+        {
+          "persona_id": "persona_hiring_manager_1",
+          "persona_type": "hiring_manager",
+          "coverage_gap": "hiring_manager",
+          "evidence_basis": "This is inferred from role class and company context.",
+          "confidence": {"score": 0.64, "band": "medium", "basis": "inferred"}
+        }
+      ],
+      "search_journal": [],
+      "sources": [],
+      "evidence": [],
+      "confidence": {"score": 0.72, "band": "medium", "basis": "aggregate"},
+      "unresolved_questions": [],
+      "notes": []
+    }
+  },
+  {
+    "job_id": "job-ambiguous-1",
+    "expect_ambiguous_rejection": true,
+    "gold_stakeholder_surface": {
+      "job_id": "job-ambiguous-1",
+      "level2_job_id": "job-ambiguous-1",
+      "research_enrichment_id": "__ref__:research_enrichment.id",
+      "prompt_versions": {"discovery": "P-stakeholder-discovery@v2"},
+      "prompt_metadata": {},
+      "status": "inferred_only",
+      "capability_flags": {"real_discovery_enabled": true},
+      "evaluator_coverage_target": ["recruiter", "hiring_manager"],
+      "evaluator_coverage": [
+        {
+          "role": "recruiter",
+          "required": true,
+          "status": "inferred",
+          "stakeholder_refs": [],
+          "persona_refs": ["persona_recruiter_1"],
+          "coverage_confidence": {"score": 0.6, "band": "medium", "basis": "inferred recruiter"}
+        }
+      ],
+      "real_stakeholders": [],
+      "inferred_stakeholder_personas": [
+        {
+          "persona_id": "persona_recruiter_1",
+          "persona_type": "recruiter",
+          "coverage_gap": "recruiter",
+          "cv_preference_surface": {
+            "review_objectives": ["Verify clear role fit"],
+            "preferred_signal_order": ["ownership_scope"],
+            "preferred_evidence_types": ["metrics"],
+            "preferred_header_bias": ["credibility_first"],
+            "title_match_preference": "moderate",
+            "keyword_bias": "medium",
+            "ai_section_preference": "embedded_only",
+            "preferred_tone": ["clear"],
+            "evidence_basis": "Inferred from role class and unresolved real discovery.",
+            "confidence": {"score": 0.55, "band": "medium", "basis": "inferred"}
+          },
+          "evidence_basis": "This is inferred from role class and unresolved real discovery.",
+          "confidence": {"score": 0.55, "band": "medium", "basis": "inferred"}
+        }
+      ],
+      "search_journal": [
+        {"step": "discovery", "query": "site:example.ai recruiter", "intent": "find_recruiter", "source_type": "company_site", "outcome": "rejected_fabrication", "source_ids": [], "notes": "constructed_url"}
+      ],
+      "sources": [],
+      "evidence": [],
+      "confidence": {"score": 0.55, "band": "medium", "basis": "aggregate"},
+      "unresolved_questions": [],
+      "notes": []
+    },
+    "candidate_stakeholder_surface": {
+      "job_id": "job-ambiguous-1",
+      "level2_job_id": "job-ambiguous-1",
+      "research_enrichment_id": "__ref__:research_enrichment.id",
+      "prompt_versions": {"discovery": "P-stakeholder-discovery@v2"},
+      "prompt_metadata": {},
+      "status": "inferred_only",
+      "capability_flags": {"real_discovery_enabled": true},
+      "evaluator_coverage_target": ["recruiter", "hiring_manager"],
+      "evaluator_coverage": [
+        {
+          "role": "recruiter",
+          "required": true,
+          "status": "inferred",
+          "stakeholder_refs": [],
+          "persona_refs": ["persona_recruiter_1"],
+          "coverage_confidence": {"score": 0.6, "band": "medium", "basis": "inferred recruiter"}
+        }
+      ],
+      "real_stakeholders": [],
+      "inferred_stakeholder_personas": [
+        {
+          "persona_id": "persona_recruiter_1",
+          "persona_type": "recruiter",
+          "coverage_gap": "recruiter",
+          "cv_preference_surface": {
+            "review_objectives": ["Verify clear role fit"],
+            "preferred_signal_order": ["ownership_scope"],
+            "preferred_evidence_types": ["metrics"],
+            "preferred_header_bias": ["credibility_first"],
+            "title_match_preference": "moderate",
+            "keyword_bias": "medium",
+            "ai_section_preference": "embedded_only",
+            "preferred_tone": ["clear"],
+            "evidence_basis": "Inferred from role class and unresolved real discovery.",
+            "confidence": {"score": 0.55, "band": "medium", "basis": "inferred"}
+          },
+          "evidence_basis": "This is inferred from role class and unresolved real discovery.",
+          "confidence": {"score": 0.55, "band": "medium", "basis": "inferred"}
+        }
+      ],
+      "search_journal": [
+        {"step": "discovery", "query": "site:example.ai recruiter", "intent": "find_recruiter", "source_type": "company_site", "outcome": "rejected_fabrication", "source_ids": [], "notes": "constructed_url"}
+      ],
+      "sources": [],
+      "evidence": [],
+      "confidence": {"score": 0.55, "band": "medium", "basis": "aggregate"},
+      "unresolved_questions": [],
+      "notes": []
+    }
+  }
+]

@@ -94,6 +94,34 @@ def _build_compact_research_snapshot(research: dict[str, Any]) -> dict[str, Any]
     }
 
 
+def _build_compact_stakeholder_surface_snapshot(surface: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(surface, dict) or not surface:
+        return {}
+    coverage_rows = []
+    counts_by_role: dict[str, dict[str, int]] = {}
+    for item in surface.get("evaluator_coverage") or []:
+        if not isinstance(item, dict):
+            continue
+        role = str(item.get("role") or "unknown")
+        status = str(item.get("status") or "uncovered")
+        role_counts = counts_by_role.setdefault(role, {"real_count": 0, "inferred_count": 0})
+        if status == "real":
+            role_counts["real_count"] += len(item.get("stakeholder_refs") or []) or 1
+        elif status == "inferred":
+            role_counts["inferred_count"] += len(item.get("persona_refs") or []) or 1
+        coverage_rows.append({"role": role, "status": status})
+    return {
+        "status": surface.get("status"),
+        "coverage_counts": [{"role": role, **counts} for role, counts in counts_by_role.items()],
+        "coverage_rows": coverage_rows,
+        "confidence": {
+            "score": ((surface.get("confidence") or {}).get("score") if isinstance(surface.get("confidence"), dict) else None),
+            "band": ((surface.get("confidence") or {}).get("band") if isinstance(surface.get("confidence"), dict) else None),
+        },
+        "artifact_ref": "__ref__:stakeholder_surface.id",
+    }
+
+
 class BlueprintAssemblyStage:
     name: str = "blueprint_assembly"
     dependencies: List[str] = ["jd_facts", "job_inference", "cv_guidelines", "application_surface", "annotations", "persona_compat"]
@@ -104,6 +132,7 @@ class BlueprintAssemblyStage:
         inference = outputs.get("job_inference") or {}
         guidelines = outputs.get("cv_guidelines") or {}
         research = outputs.get("research_enrichment") or {}
+        stakeholder_surface = outputs.get("stakeholder_surface") or {}
         classification = outputs.get("classification") or {}
         application_surface = outputs.get("application_surface") or {}
         v2_enabled = research_enrichment_v2_enabled()
@@ -140,7 +169,14 @@ class BlueprintAssemblyStage:
             application_surface=application_surface_snapshot,
             company_research=company_research,
             role_research=role_research,
-            research=_build_compact_research_snapshot(research) if v2_enabled else {},
+            research=(
+                {
+                    **_build_compact_research_snapshot(research),
+                    "stakeholder_surface_summary": _build_compact_stakeholder_surface_snapshot(stakeholder_surface),
+                }
+                if v2_enabled
+                else {}
+            ),
             cv_guidelines={
                 "title_guidance": guidelines.get("title_guidance"),
                 "identity_guidance": guidelines.get("identity_guidance"),

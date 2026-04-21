@@ -11,6 +11,7 @@ def test_validate_stage_routing_covers_iteration41_stages():
     assert validate_stage_routing("classification") == []
     assert validate_stage_routing("research_enrichment") == []
     assert validate_stage_routing("application_surface") == []
+    assert validate_stage_routing("stakeholder_surface") == []
     assert validate_stage_routing("job_inference") == []
     assert validate_stage_routing("job_hypotheses") == []
     assert validate_stage_routing("cv_guidelines") == []
@@ -30,6 +31,11 @@ def test_jd_facts_default_model_is_pinned_to_gpt52():
 
 def test_application_surface_default_model_is_pinned_to_gpt52():
     cfg = get_stage_step_config("application_surface")
+    assert cfg.primary_model == "gpt-5.2"
+
+
+def test_stakeholder_surface_default_model_is_pinned_to_gpt52():
+    cfg = get_stage_step_config("stakeholder_surface")
     assert cfg.primary_model == "gpt-5.2"
 
 

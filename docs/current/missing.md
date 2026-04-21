@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2026-04-19 (Iteration-4 preenrich DAG checkpoint: stage workers, sweepers, dashboard visibility, tracing, and migration tooling implemented locally)
+**Last Updated**: 2026-04-21 (Iteration-4.2.1 stakeholder-surface rollout slice implemented locally)
 
 > **See also**: `docs/current/architecture.md` | `bugs.md`
 
@@ -17,6 +17,45 @@
 | **Total** | **93** (74 fixed/documented, 15 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2026-04-21): Iteration 4.2.1 Stakeholder Surface
+
+**STATUS: IMPLEMENTED LOCALLY, GUARDED FOR ROLLOUT**
+
+**Scope**: Add a new `stakeholder_surface` stage that deepens evaluator modeling after `research_enrichment`, keeps identity resolution separate from persona inference, and emits downstream-ready CV preference signals without collapsing into final CV generation.
+
+**Implemented**
+- Added a guarded `stakeholder_surface` stage after `research_enrichment` with:
+  - deterministic preflight
+  - evaluator coverage target derivation
+  - real stakeholder discovery via public-professional sources only
+  - profile enrichment for medium/high-confidence real stakeholders
+  - inferred stakeholder persona synthesis for coverage gaps
+  - compact snapshot projection in `blueprint_assembly`
+- Added new canonical models for:
+  - evaluator-facing public-professional decision style
+  - stakeholder-conditioned CV preference surface
+  - enriched real-stakeholder profiles
+  - explicit inferred stakeholder personas
+  - evaluator coverage rows
+  - search journal entries
+  - top-level `StakeholderSurfaceDoc`
+- Preserved safety boundaries:
+  - no fabricated names, profile URLs, or private contact routes
+  - explicit cross-company rejection
+  - inferred personas remain explicitly inferred and never blended into real-person identity
+- Applied the 4.1.3.1 lessons directly:
+  - richer-first normalization
+  - explicit fail-open behavior for missing evaluator coverage
+  - isolated Codex web research with repo context opt-in
+  - structured debug fields for future live-run diagnosis
+- Added dedicated benchmark/eval coverage under `evals/stakeholder_surface_4_2_1/` and a benchmark harness in `scripts/benchmark_stakeholder_surface_4_2_1.py`.
+
+**Open Follow-Up**
+- Live single-job stakeholder-surface debug runs on production-like data are still pending; this slice has focused on deterministic/stage-local correctness, rollout guards, and eval coverage first.
+- The later `presentation_contract` consumer still has to be implemented in Iteration 4.2.x; `stakeholder_surface` only prepares evaluator-conditioned inputs for that downstream stage.
 
 ---
 
@@ -50,10 +89,11 @@
   - `jd_facts`: `gpt-5.2`, no fallback, escalation disabled by default
   - `classification`: `gpt-5.4-mini` primary, `gpt-5.2` escalation, no fallback
   - `application_surface`: `gpt-5.2`, no fallback
+  - `research_enrichment`: `gpt-5.2`, no fallback
 - Added replay-style unit/integration coverage for the observed Robson Bale drift classes and richer-shape acceptance.
 
 **Remaining Follow-Up**
-- Benchmark `gpt-5.3` vs `gpt-5.2` vs `gpt-5.4-mini` for `research_enrichment` before fixing the long-term research model default.
+- Benchmark `gpt-5.3` and `gpt-5.4-mini` against the pinned `gpt-5.2` runtime for `research_enrichment` as comparison candidates, not as the default.
 - Extend more downstream consumers away from compat projections toward direct rich canonical reads.
 
 ---

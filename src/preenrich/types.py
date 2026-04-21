@@ -11,6 +11,8 @@ Defines the core data structures used across the pre-enrichment worker:
 import os
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
+import tempfile
 from typing import Any, Dict, List, Optional
 
 from src.preenrich.schema import attempt_token as _schema_attempt_token
@@ -107,18 +109,29 @@ _STAGE_DEFAULTS: Dict[str, Dict[str, str]] = {
         "provider": "codex",
         "primary_model": "gpt-5.2",
         "fallback_provider": "none",
+        "allow_repo_context": "false",
     },
     "classification": {
         "provider": "codex",
         "primary_model": "gpt-5.4-mini",
         "fallback_provider": "none",
+        "allow_repo_context": "false",
     },
     "research_enrichment": {
         "provider": "codex",
-        "primary_model": "gpt-5.4-mini",
+        "primary_model": "gpt-5.2",
         "fallback_provider": "none",
         "transport": "codex_web_search",
         "fallback_transport": "none",
+        "allow_repo_context": "false",
+    },
+    "stakeholder_surface": {
+        "provider": "codex",
+        "primary_model": "gpt-5.2",
+        "fallback_provider": "none",
+        "transport": "codex_web_search",
+        "fallback_transport": "none",
+        "allow_repo_context": "false",
     },
     "application_surface": {
         "provider": "codex",
@@ -126,6 +139,7 @@ _STAGE_DEFAULTS: Dict[str, Dict[str, str]] = {
         "fallback_provider": "none",
         "transport": "codex_web_search",
         "fallback_transport": "none",
+        "allow_repo_context": "false",
     },
     "job_inference": {
         "provider": "codex",
@@ -200,8 +214,20 @@ def get_stage_step_config(stage_name: str) -> "StepConfig":
         _stage_env_key(stage_name, "FALLBACK_TRANSPORT"),
         defaults.get("fallback_transport", "none"),
     )
+    allow_repo_context = os.environ.get(
+        _stage_env_key(stage_name, "ALLOW_REPO_CONTEXT"),
+        defaults.get("allow_repo_context", "true"),
+    ).strip().lower() == "true"
+    codex_workdir = os.environ.get(
+        _stage_env_key(stage_name, "CODEX_WORKDIR"),
+        "",
+    ).strip() or None
+    reasoning_effort = os.environ.get(
+        _stage_env_key(stage_name, "REASONING_EFFORT"),
+        os.environ.get("PREENRICH_CODEX_REASONING_EFFORT", ""),
+    ).strip() or None
 
-    if stage_name in {"research_enrichment", "application_surface"}:
+    if stage_name in {"research_enrichment", "application_surface", "stakeholder_surface"}:
         from src.preenrich.blueprint_config import (
             research_fallback_provider,
             research_fallback_transport,
@@ -209,20 +235,20 @@ def get_stage_step_config(stage_name: str) -> "StepConfig":
             research_max_web_queries,
             research_provider,
             research_transport,
+            stakeholder_surface_max_fetches,
+            stakeholder_surface_max_web_queries,
         )
 
         provider = os.environ.get(_stage_env_key(stage_name, "PROVIDER"), research_provider())
-        fallback_provider = os.environ.get(
-            _stage_env_key(stage_name, "FALLBACK_PROVIDER"),
-            research_fallback_provider(),
-        )
+        fallback_provider = os.environ.get(_stage_env_key(stage_name, "FALLBACK_PROVIDER"), research_fallback_provider())
         transport = os.environ.get(_stage_env_key(stage_name, "TRANSPORT"), research_transport())
-        fallback_transport = os.environ.get(
-            _stage_env_key(stage_name, "FALLBACK_TRANSPORT"),
-            research_fallback_transport(),
-        )
-        max_web_queries = research_max_web_queries()
-        max_fetches = research_max_fetches()
+        fallback_transport = os.environ.get(_stage_env_key(stage_name, "FALLBACK_TRANSPORT"), research_fallback_transport())
+        if stage_name == "stakeholder_surface":
+            max_web_queries = stakeholder_surface_max_web_queries()
+            max_fetches = stakeholder_surface_max_fetches()
+        else:
+            max_web_queries = research_max_web_queries()
+            max_fetches = research_max_fetches()
     else:
         max_web_queries = 0
         max_fetches = 0
@@ -236,7 +262,18 @@ def get_stage_step_config(stage_name: str) -> "StepConfig":
         fallback_transport=fallback_transport,
         max_web_queries=max_web_queries,
         max_fetches=max_fetches,
+        allow_repo_context=allow_repo_context,
+        codex_workdir=codex_workdir or default_codex_workdir(stage_name=stage_name, allow_repo_context=allow_repo_context),
+        reasoning_effort=reasoning_effort,
     )
+
+
+def default_codex_workdir(*, stage_name: str, allow_repo_context: bool) -> str:
+    if allow_repo_context:
+        return str(Path.cwd())
+    path = Path(tempfile.gettempdir()) / "job-search-codex-isolated" / stage_name
+    path.mkdir(parents=True, exist_ok=True)
+    return str(path)
 
 
 @dataclass
@@ -261,6 +298,9 @@ class StepConfig:
     fallback_transport: str = "none"
     max_web_queries: int = 0
     max_fetches: int = 0
+    allow_repo_context: bool = True
+    codex_workdir: Optional[str] = None
+    reasoning_effort: Optional[str] = None
 
 
 @dataclass

@@ -20,6 +20,9 @@ PROMPT_VERSIONS = {
     "stakeholder_discovery": "P-stakeholder-discovery@v1.1",
     "stakeholder_profile": "P-stakeholder-profile@v1.1",
     "stakeholder_outreach_guidance": "P-stakeholder-outreach-guidance@v1.1",
+    "stakeholder_surface_discovery": "P-stakeholder-discovery@v2",
+    "stakeholder_surface_profile": "P-stakeholder-profile@v2",
+    "inferred_stakeholder_personas": "P-inferred-stakeholder-personas@v1",
 }
 
 
@@ -113,9 +116,176 @@ def build_p_transport_preamble(*, transport_used: str, max_web_queries: int, max
             "- Stop fetching once you have enough to emit a schema-valid artifact with high or medium confidence.",
             "- If you exhaust the budget without reaching medium confidence, emit status=\"partial\" with what you have.",
             "- Never fetch private pages, logged-in views, or pages behind unreadable paywalls.",
+            "- Do not inspect local repository files, local tests, or local prompt code. Treat local workspace context as irrelevant unless the payload explicitly contains it.",
+            "- Do not use shell commands for schema discovery, file discovery, or repo inspection. Use web tools only when transport is web-enabled.",
+            "- Do not narrate planning, schema deliberation, or tool strategy. Spend the budget on evidence gathering, then emit JSON immediately.",
             "Return only the downstream artifact JSON for this step. Do not echo this preamble.",
         ]
     )
+
+
+def _minimal_research_company_example() -> str:
+    example = {
+        "summary": "Acme is an enterprise workflow software company.",
+        "url": "https://acme.example.com/",
+        "signals": [{"type": "growth", "description": "Hiring across platform engineering.", "source_ids": ["src_company_home"]}],
+        "canonical_name": "Acme",
+        "canonical_domain": "acme.example.com",
+        "canonical_url": "https://acme.example.com/",
+        "identity_confidence": {"score": 0.9, "band": "high", "basis": "Official company website."},
+        "identity_basis": "Official company website.",
+        "identity_detail": {"status": "complete", "text": "Company identity verified on the official site."},
+        "company_type": "employer",
+        "mission_summary": "Acme helps operations teams automate workflows.",
+        "mission_detail": {"status": "partial", "text": "Mission inferred from official product copy."},
+        "product_summary": "Workflow automation software for enterprise operations.",
+        "product_detail": {"status": "partial", "text": "Official product description."},
+        "business_model": "B2B software.",
+        "business_model_detail": {"status": "partial", "text": "Enterprise software sold to business customers."},
+        "customers_and_market": {"status": "partial", "items": ["Enterprise operations teams"]},
+        "scale_signals": {"status": "partial", "items": ["Official careers page present"]},
+        "funding_signals": [],
+        "ai_data_platform_maturity": {"status": "unresolved", "summary": "Not evidenced in fetched sources."},
+        "team_org_signals": {"status": "partial", "items": ["Platform engineering hiring observed"]},
+        "recent_signals": [],
+        "role_relevant_signals": [{"type": "other", "description": "Hiring platform engineers.", "source_ids": ["src_company_home"]}],
+        "signals_rich": [{"type": "growth", "description": "Hiring across platform engineering.", "source_ids": ["src_company_home"]}],
+        "recent_signals_rich": [],
+        "role_relevant_signals_rich": [{"type": "other", "description": "Hiring platform engineers.", "source_ids": ["src_company_home"]}],
+        "sources": [{"source_id": "src_company_home", "url": "https://acme.example.com/", "source_type": "official_company_site", "fetched_at": "2026-04-21", "trust_tier": "primary"}],
+        "evidence": [{"claim": "Acme operates the official domain acme.example.com.", "source_ids": ["src_company_home"]}],
+        "confidence": {"score": 0.84, "band": "high", "basis": "Company identity and core business are supported by primary sources."},
+        "status": "partial",
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_research_role_example() -> str:
+    example = {
+        "role_summary": "Staff-level platform role focused on delivery and architecture.",
+        "summary": "Staff-level platform role focused on delivery and architecture.",
+        "summary_detail": {"status": "complete", "text": "Role scope grounded in the JD."},
+        "role_summary_detail": {"status": "complete", "text": "Role scope grounded in the JD."},
+        "mandate": ["Own platform architecture", "Lead delivery"],
+        "business_impact": ["Improve reliability", "Increase delivery velocity"],
+        "why_now": "The organization is scaling platform delivery.",
+        "why_now_detail": {"status": "partial", "text": "Why-now rationale is inferred from the JD and company context."},
+        "success_metrics": ["Reduce incidents", "Improve deploy velocity"],
+        "collaboration_map": [{"status": "partial", "partners": ["Product", "Security"]}],
+        "reporting_line": {},
+        "org_placement": {},
+        "interview_themes": ["Architecture", "Delivery", "Stakeholder management"],
+        "evaluation_signals": ["System design depth", "Execution signal"],
+        "risk_landscape": ["Reliability risk", "Governance risk"],
+        "company_context_alignment": "The role supports platform scale and delivery quality.",
+        "company_context_alignment_detail": {"status": "partial", "text": "Alignment is grounded in the JD plus company context."},
+        "sources": [{"source_id": "src_jd", "url": None, "source_type": "job_document", "fetched_at": "2026-04-21", "trust_tier": "primary"}],
+        "evidence": [{"claim": "The JD emphasizes platform architecture and delivery ownership.", "source_ids": ["src_jd"]}],
+        "confidence": {"score": 0.8, "band": "high", "basis": "Role scope is strongly supported by the JD."},
+        "status": "partial",
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_research_application_merge_example() -> str:
+    example = {
+        "application_profile": {
+            "status": "partial",
+            "job_url": "https://linkedin.com/jobs/view/123",
+            "canonical_application_url": None,
+            "resolution_method": "web_search",
+            "resolution_status": "unresolved",
+            "resolution_note": "No authoritative employer-owned or ATS-owned application URL was directly observed.",
+            "ui_actionability": "blocked",
+            "portal_family": "unknown",
+            "form_fetch_status": "not_attempted",
+            "apply_caveats": ["Canonical application URL remains unresolved."],
+            "sources": [{"source_id": "src_job_url", "url": "https://linkedin.com/jobs/view/123", "source_type": "input", "fetched_at": "2026-04-21", "trust_tier": "secondary"}],
+            "evidence": [{"claim": "The provided job URL is a LinkedIn job view link.", "source_ids": ["src_job_url"]}],
+            "confidence": {"score": 0.2, "band": "unresolved", "basis": "No authoritative employer or ATS URL was directly observed."}
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_stakeholder_evaluation_profile_example() -> str:
+    example = {
+        "stakeholder_ref": "candidate_rank:1",
+        "stakeholder_type": "hiring_manager",
+        "role_in_process": "mandate_fit_and_delivery_risk_screen",
+        "public_professional_decision_style": {
+            "evidence_preference": "metrics_and_systems",
+            "risk_posture": "quality_first",
+            "speed_vs_rigor": "rigor_first",
+            "communication_style": "concise_substantive",
+            "authority_orientation": "credibility_over_title",
+            "technical_vs_business_bias": "technical_first",
+        },
+        "cv_preference_surface": {
+            "review_objectives": ["Verify shipped systems", "Verify ownership scope"],
+            "preferred_signal_order": ["hands_on_implementation", "architecture_judgment", "production_impact"],
+            "preferred_evidence_types": ["named_systems", "metrics", "ownership_scope"],
+            "preferred_header_bias": ["credibility_first", "low_hype"],
+            "title_match_preference": "moderate",
+            "keyword_bias": "medium",
+            "ai_section_preference": "dedicated_if_core",
+            "preferred_tone": ["clear", "evidence_first"],
+            "evidence_basis": "Public professional signals and role context.",
+            "confidence": {"score": 0.71, "band": "medium", "basis": "Public professional signals support evaluator inference."},
+        },
+        "likely_priorities": [{"bullet": "Proof of shipped production systems.", "basis": "role mandate", "source_ids": ["src_manager_profile"]}],
+        "likely_reject_signals": [{"bullet": "Generic AI claims with no ownership signal.", "reason": "quality_screen", "source_ids": ["src_manager_profile"]}],
+        "unresolved_markers": [],
+        "sources": [{"source_id": "src_manager_profile", "url": "https://example.com/team", "source_type": "company_site", "fetched_at": "2026-04-21", "trust_tier": "primary"}],
+        "evidence": [{"claim": "The stakeholder is positioned as engineering leadership.", "source_ids": ["src_manager_profile"]}],
+        "confidence": {"score": 0.71, "band": "medium", "basis": "Public professional signals support evaluator inference."},
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_inferred_persona_example() -> str:
+    example = {
+        "inferred_stakeholder_personas": [
+            {
+                "persona_id": "persona_hiring_manager_1",
+                "persona_type": "hiring_manager",
+                "role_in_process": "mandate_fit_and_delivery_risk_screen",
+                "emitted_because": "coverage_gap_despite_real",
+                "trigger_basis": ["technical_ic_role", "hiring_manager_coverage_gap"],
+                "coverage_gap": "hiring_manager",
+                "public_professional_decision_style": {
+                    "evidence_preference": "metrics_and_systems",
+                    "risk_posture": "quality_first",
+                    "speed_vs_rigor": "balanced",
+                    "communication_style": "concise_substantive",
+                    "authority_orientation": "credibility_over_title",
+                    "technical_vs_business_bias": "technical_first",
+                },
+                "cv_preference_surface": {
+                    "review_objectives": ["Verify hands-on credibility", "Verify production impact"],
+                    "preferred_signal_order": ["hands_on_implementation", "production_impact"],
+                    "preferred_evidence_types": ["named_systems", "metrics"],
+                    "preferred_header_bias": ["execution_first", "low_hype"],
+                    "title_match_preference": "moderate",
+                    "keyword_bias": "medium",
+                    "ai_section_preference": "dedicated_if_core",
+                    "preferred_tone": ["clear", "evidence_first"],
+                    "evidence_basis": "Inferred from role class and company context.",
+                    "confidence": {"score": 0.64, "band": "medium", "basis": "Role-conditioned inferred evaluator persona."},
+                },
+                "likely_priorities": [{"bullet": "Proof of shipped systems.", "basis": "role class", "source_ids": []}],
+                "likely_reject_signals": [{"bullet": "Tool-list CV with weak ownership evidence.", "reason": "role_class_pattern", "source_ids": []}],
+                "unresolved_markers": ["No real hiring manager identity resolved."],
+                "evidence_basis": "This is inferred from role class, JD, and company context.",
+                "sources": [],
+                "evidence": [],
+                "confidence": {"score": 0.64, "band": "medium", "basis": "Role-conditioned inferred evaluator persona."},
+            }
+        ],
+        "unresolved_markers": [],
+        "notes": [],
+    }
+    return json.dumps(example, indent=2)
 
 
 def _taxonomy_prompt_context(taxonomy: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -419,6 +589,8 @@ def build_p_application_surface(
             "Preserve useful partial outcomes. If the exact job-specific deep link is unavailable but a verified employer jobs portal is directly observed, emit status=\"partial\" and keep that employer portal URL.",
             "Shape rules: `ui_actionability` must be one of ready/caution/blocked/unknown. `form_fetch_status` must be one of fetched/blocked/not_attempted. `apply_instructions` may be either a string or a short list of strings.",
             "If the result is unresolved, it must still preserve observed evidence, candidate URLs, portal hints, and the reason the URL could not be verified.",
+            "Search discipline: start with official-employer discovery queries using the exact company name plus jobs/careers/apply terms, then exact title + company queries. Prefer company-owned and ATS-owned results before any third-party job boards.",
+            "Do not spend more than one query on tertiary job boards unless they expose a directly observed employer or ATS destination. If only tertiary mirrors are found, keep the result unresolved-but-useful rather than treating them as canonical.",
             json.dumps(payload, indent=2, default=str),
         ]
     )
@@ -485,6 +657,9 @@ def build_p_research_company(
             ),
             "Resolve canonical company identity before emitting company signals. Do not guess domains or URLs from slugs alone.",
             "Richer grounded output is preferred. If a field naturally comes back as an evidence-bearing object, include both the compact alias and the richer *_detail or *_rich companion field.",
+            "Do not inspect local files, prompts, tests, or use shell commands to discover the schema. Use only the payload above and allowed web research.",
+            "Use this minimal shape as a guide and emit JSON directly with no planning chatter:",
+            _minimal_research_company_example(),
             json.dumps(payload, indent=2, default=str),
         ]
     )
@@ -542,6 +717,9 @@ def build_p_research_role(
             ),
             "Build role intelligence from the JD plus verified public company context. Reporting lines and org placement must stay unknown unless explicitly evidenced.",
             "If summary-style fields naturally resolve to structured evidence-bearing objects, emit both the compact text alias and the *_detail companion field.",
+            "Do not inspect local files, prompts, tests, or use shell commands to discover the schema. Use only the payload above and allowed web research.",
+            "Use this minimal shape as a guide and emit JSON directly with no planning chatter:",
+            _minimal_research_role_example(),
             json.dumps(payload, indent=2, default=str),
         ]
     )
@@ -564,6 +742,9 @@ def build_p_research_application_merge(
             _json_only_contract(PROMPT_VERSIONS["research_application_merge"], ["application_profile"]),
             "This is a merge step, not a refetch step. Reconcile verified inputs only. Do not invent new URLs or dates.",
             "If useful merge context needs to be preserved, place it under additional top-level debug/context blocks rather than dropping it. The persisted canonical application_profile must remain directly usable on its own.",
+            "Do not inspect local files, prompts, tests, or use shell commands to discover the schema. Use only the inputs above and emit JSON directly with no planning chatter.",
+            "Use this minimal shape as a guide:",
+            _minimal_research_application_merge_example(),
             json.dumps(payload, indent=2, default=str),
         ]
     )
@@ -671,6 +852,183 @@ def build_p_stakeholder_outreach_guidance(
                 ],
             ),
             "Produce guidance only, not outreach copy. Guidance must be evidence-grounded, stakeholder-type-specific, and non-manipulative.",
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_stakeholder_discovery_v2(
+    *,
+    canonical_company_identity: dict[str, Any],
+    target_role_brief: dict[str, Any],
+    evaluator_coverage_target: list[str],
+    seed_stakeholders: list[dict[str, Any]],
+    company_profile_excerpt: dict[str, Any],
+    role_profile_excerpt: dict[str, Any],
+    application_profile_excerpt: dict[str, Any],
+    jd_excerpt: str,
+    search_constraints: dict[str, Any],
+    transport_preamble: str,
+    job_id: str,
+) -> str:
+    payload = {
+        "job_id": job_id,
+        "target_role_brief": target_role_brief,
+        "canonical_company_identity": canonical_company_identity,
+        "evaluator_coverage_target": evaluator_coverage_target,
+        "seed_stakeholders": seed_stakeholders,
+        "company_profile_excerpt": company_profile_excerpt,
+        "role_profile_excerpt": role_profile_excerpt,
+        "application_profile_excerpt": application_profile_excerpt,
+        "jd_excerpt": jd_excerpt[:1800],
+        "search_constraints": search_constraints,
+    }
+    return "\n".join(
+        [
+            SHARED_CONTRACT_HEADER,
+            transport_preamble,
+            _json_only_contract(
+                PROMPT_VERSIONS["stakeholder_surface_discovery"],
+                ["stakeholder_intelligence", "search_journal", "unresolved_markers", "notes"],
+            ),
+            "Resolve real public-professional stakeholders using the identity ladder only. Truth beats coverage.",
+            "Do not construct LinkedIn URLs or infer names from URL slugs. Do not merge ambiguous profiles.",
+            "A real stakeholder must match canonical company identity and role/function context simultaneously.",
+            "Medium/high identity confidence requires a direct signal class or two distinct converging matched_signal_classes.",
+            "Low-confidence or ambiguous candidates belong in search_journal, not stakeholder_intelligence.",
+            "The output stakeholder_intelligence records must stay discovery-only. Do not emit evaluator personas here.",
+            "Use this minimal shape as a guide and emit JSON directly:",
+            json.dumps(
+                {
+                    "stakeholder_intelligence": [
+                        {
+                            "stakeholder_type": "recruiter",
+                            "identity_status": "resolved",
+                            "identity_confidence": {"score": 0.83, "band": "high", "basis": "Official company site plus public profile."},
+                            "identity_basis": "Official team page and public professional profile.",
+                            "matched_signal_classes": ["official_team_page_named_person", "public_profile_company_role_match"],
+                            "candidate_rank": 1,
+                            "name": "Jane Doe",
+                            "current_title": "Senior Technical Recruiter",
+                            "current_company": "Example AI",
+                            "profile_url": "https://www.linkedin.com/in/jane-doe-example",
+                            "source_trail": ["src_team_page", "src_profile"],
+                            "function": "recruiting",
+                            "seniority": "senior",
+                            "relationship_to_role": "recruiter",
+                            "likely_influence": "screening_and_process_control",
+                            "evidence_basis": "Identity only at discovery stage.",
+                            "confidence": {"score": 0.83, "band": "high", "basis": "Identity resolution only."},
+                            "unresolved_markers": [],
+                            "sources": [{"source_id": "src_team_page", "url": "https://example.ai/team", "source_type": "company_site", "fetched_at": "2026-04-21", "trust_tier": "primary"}],
+                            "evidence": [{"claim": "Jane Doe is listed as a recruiter.", "source_ids": ["src_team_page"]}],
+                        }
+                    ],
+                    "search_journal": [{"step": "discovery", "query": "site:example.ai recruiter", "intent": "find_recruiter", "source_type": "company_site", "outcome": "hit", "source_ids": ["src_team_page"], "notes": ""}],
+                    "unresolved_markers": [],
+                    "notes": [],
+                },
+                indent=2,
+            ),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_stakeholder_profile_v2(
+    *,
+    stakeholder_record: dict[str, Any],
+    target_role_brief: dict[str, Any],
+    company_profile_excerpt: dict[str, Any],
+    role_profile_excerpt: dict[str, Any],
+    application_profile_excerpt: dict[str, Any],
+    jd_excerpt: str,
+    public_posts_fetched: list[dict[str, Any]],
+    coverage_context: dict[str, Any],
+    transport_preamble: str,
+) -> str:
+    payload = {
+        "stakeholder_record": stakeholder_record,
+        "target_role_brief": target_role_brief,
+        "company_profile_excerpt": company_profile_excerpt,
+        "role_profile_excerpt": role_profile_excerpt,
+        "application_profile_excerpt": application_profile_excerpt,
+        "jd_excerpt": jd_excerpt[:1400],
+        "public_posts_fetched": public_posts_fetched[:5],
+        "coverage_context": coverage_context,
+    }
+    return "\n".join(
+        [
+            SHARED_CONTRACT_HEADER,
+            transport_preamble,
+            _json_only_contract(
+                PROMPT_VERSIONS["stakeholder_surface_profile"],
+                [
+                    "stakeholder_ref",
+                    "stakeholder_type",
+                    "role_in_process",
+                    "public_professional_decision_style",
+                    "cv_preference_surface",
+                    "likely_priorities",
+                    "likely_reject_signals",
+                    "unresolved_markers",
+                    "sources",
+                    "evidence",
+                    "confidence",
+                ],
+            ),
+            "Summarize only public-professional evidence and evaluator-style inference for this already-resolved stakeholder.",
+            "Do not emit exact title text, exact header text, exact summary text, or CV section ids. preferred_signal_order must use abstract signal categories only.",
+            "Mark fields unresolved rather than forcing a view when evidence is weak.",
+            "Do not inspect local files, prompts, tests, or use shell commands. Use only the payload above and allowed web research.",
+            "Use this minimal shape as a guide and emit JSON directly:",
+            _minimal_stakeholder_evaluation_profile_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_inferred_stakeholder_personas_v1(
+    *,
+    target_role_brief: dict[str, Any],
+    canonical_company_identity: dict[str, Any],
+    company_profile_excerpt: dict[str, Any],
+    role_profile_excerpt: dict[str, Any],
+    application_profile_excerpt: dict[str, Any],
+    classification_excerpt: dict[str, Any],
+    jd_excerpt: str,
+    real_stakeholder_summaries: list[dict[str, Any]],
+    evaluator_coverage_target: list[str],
+    missing_coverage_types: list[str],
+    emission_mode: str,
+) -> str:
+    payload = {
+        "target_role_brief": target_role_brief,
+        "canonical_company_identity": canonical_company_identity,
+        "company_profile_excerpt": company_profile_excerpt,
+        "role_profile_excerpt": role_profile_excerpt,
+        "application_profile_excerpt": application_profile_excerpt,
+        "classification_excerpt": classification_excerpt,
+        "jd_excerpt": jd_excerpt[:1400],
+        "real_stakeholder_summaries": real_stakeholder_summaries,
+        "evaluator_coverage_target": evaluator_coverage_target,
+        "missing_coverage_types": missing_coverage_types,
+        "emission_mode": emission_mode,
+    }
+    return "\n".join(
+        [
+            SHARED_CONTRACT_HEADER,
+            _json_only_contract(
+                PROMPT_VERSIONS["inferred_stakeholder_personas"],
+                ["inferred_stakeholder_personas", "unresolved_markers", "notes"],
+            ),
+            "Emit personas, not people. Never emit a name, profile_url, current_title, or current_company.",
+            'Every persona evidence_basis MUST contain the literal word "inferred".',
+            "Do not model private motives, protected traits, or personal psychology.",
+            "Persona confidence may not exceed medium.",
+            "cv_preference_surface remains evaluator signal, not CV instruction. Do not emit CV section ids or exact copy.",
+            "Use this minimal shape as a guide and emit JSON directly:",
+            _minimal_inferred_persona_example(),
             json.dumps(payload, indent=2, default=str),
         ]
     )

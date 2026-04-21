@@ -17,6 +17,7 @@ from src.preenrich.stages.job_hypotheses import JobHypothesesStage
 from src.preenrich.stages.job_inference import JobInferenceStage
 from src.preenrich.stages.research_enrichment import ResearchEnrichmentStage
 from src.preenrich.types import StageContext, StepConfig
+from tests.unit.preenrich.test_stage_jd_facts import _sample_extracted_jd
 
 
 def _context(*, title: str = "Head of Engineering", company: str = "Acme", description: str = "") -> StageContext:
@@ -59,35 +60,25 @@ def _context(*, title: str = "Head of Engineering", company: str = "Acme", descr
 def test_jd_facts_does_not_silently_overwrite_deterministic_fields(monkeypatch):
     ctx = _context()
 
-    def _fake_llm(**_: object):
-        return {
-            "additions": [
-                {
-                    "field": "title",
-                    "value": "Changed title",
-                    "confidence": "high",
-                    "evidence_span": {"quote": "Head of Engineering"},
-                },
-                {
-                    "field": "employment_type",
-                    "value": "full_time",
-                    "confidence": "high",
-                    "evidence_span": {"quote": "Remote role"},
-                },
-            ],
-            "flags": [],
-            "confirmations": {"title": True},
-        }, [{"provider": "codex", "model": "gpt-5.4-mini", "outcome": "success"}]
+    def _fake_invoke_codex_json(
+        *,
+        prompt: str,
+        model: str,
+        job_id: str,
+        cwd: str | None = None,
+        reasoning_effort: str | None = None,
+    ):
+        payload = _sample_extracted_jd()
+        payload["title"] = "Changed title"
+        return payload, {"provider": "codex", "model": model, "outcome": "success", "error": None, "duration_ms": 10}
 
-    monkeypatch.setattr("src.preenrich.stages.jd_facts._call_llm_with_fallback", _fake_llm)
+    monkeypatch.setattr("src.preenrich.stages.jd_facts._invoke_codex_json", _fake_invoke_codex_json)
 
     result = JDFactsStage().run(ctx)
     merged = result.stage_output["merged_view"]
     assert merged["title"] == "Head of Engineering"
-    assert merged["employment_type"] == "full_time"
     assert result.stage_output["provenance"]["title"] == "deterministic"
-    assert result.stage_output["provenance"]["employment_type"] == "llm_addition"
-    assert result.stage_output["llm_flags"]
+    assert result.stage_output["extraction"]["role_category"] == "head_of_engineering"
 
 
 def test_classification_uses_taxonomy_mappings():
@@ -241,6 +232,96 @@ def test_application_surface_fail_opens_on_verified_partial_employer_portal(monk
         "Use the employer jobs portal.",
         "Search by role title if needed.",
     ]
+
+
+def test_application_surface_rejects_cross_company_live_candidate(monkeypatch):
+    monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
+    ctx = _context()
+    ctx.job_doc["jobUrl"] = "https://linkedin.com/jobs/view/4401620360"
+    ctx.job_doc["application_url"] = "https://linkedin.com/jobs/view/4401620360"
+    ctx.job_doc["company"] = "Robson Bale"
+    ctx.job_doc["company_url"] = "https://www.robsonbale.com"
+
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+        payload = {
+            "job_url": "https://linkedin.com/jobs/view/4401620360",
+            "canonical_application_url": "https://jobs.other-company.example.com/123",
+            "resolution_status": "resolved",
+            "status": "resolved",
+            "ui_actionability": "ready",
+            "portal_family": "custom_unknown",
+            "sources": [],
+            "evidence": [],
+            "confidence": {"score": 0.9, "band": "high", "basis": "bad"},
+        }
+        return ResearchTransportResult(
+            success=True,
+            payload=validator(payload) if validator else payload,
+            attempts=[{"provider": "codex", "outcome": "success"}],
+            provider_used="codex",
+            model_used="gpt-5.2",
+            transport_used="codex_web_search",
+        )
+
+    monkeypatch.setattr("src.preenrich.research_transport.CodexResearchTransport.invoke_json", _fake_invoke)
+    result = ApplicationSurfaceStage().run(ctx)
+    assert result.stage_output["canonical_application_url"] is None
+    assert result.stage_output["status"] == "unresolved"
+    assert result.stage_output["ui_actionability"] == "blocked"
+    assert "Rejected a cross-company application URL candidate." in result.stage_output["apply_caveats"]
+
+
+def test_application_surface_preserves_unresolved_but_useful_findings(monkeypatch):
+    monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
+    ctx = _context()
+    ctx.job_doc["jobUrl"] = "https://linkedin.com/jobs/view/4401620360"
+    ctx.job_doc["application_url"] = "https://linkedin.com/jobs/view/4401620360"
+    ctx.job_doc["company"] = "Robson Bale"
+
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+        payload = {
+            "job_url": "https://linkedin.com/jobs/view/4401620360",
+            "status": "unresolved",
+            "resolution_status": "unresolved",
+            "resolution_note": "Only aggregator and recruiter references were found; no employer-safe portal was directly observed.",
+            "portal_family": "custom_unknown",
+            "stale_signal": "likely_stale",
+            "candidates": [
+                "https://linkedin.com/jobs/view/4401620360",
+                "https://example-job-board.invalid/job/4401620360",
+            ],
+            "notes": ["Observed aggregator-only state."],
+            "sources": [{
+                "source_id": "s_linkedin",
+                "url": "https://linkedin.com/jobs/view/4401620360",
+                "source_type": "aggregator",
+                "fetched_at": "2026-04-21T00:00:00+00:00",
+                "trust_tier": "secondary",
+            }],
+            "evidence": [{
+                "claim": "Only aggregator candidates were observed.",
+                "source_ids": ["s_linkedin"],
+                "basis": "aggregator_only",
+            }],
+            "confidence": {"score": 0.31, "band": "low", "basis": "No employer-safe URL observed"},
+        }
+        return ResearchTransportResult(
+            success=True,
+            payload=validator(payload) if validator else payload,
+            attempts=[{"provider": "codex", "outcome": "success"}],
+            provider_used="codex",
+            model_used="gpt-5.2",
+            transport_used="codex_web_search",
+        )
+
+    monkeypatch.setattr("src.preenrich.research_transport.CodexResearchTransport.invoke_json", _fake_invoke)
+    result = ApplicationSurfaceStage().run(ctx)
+    assert result.stage_output["status"] == "unresolved"
+    assert result.stage_output["canonical_application_url"] is None
+    assert result.stage_output["candidates"]
+    assert result.stage_output["notes"]
+    assert result.stage_output["sources"]
+    assert result.stage_output["evidence"]
 
 
 def test_job_inference_builds_evidence_backed_semantic_model():
