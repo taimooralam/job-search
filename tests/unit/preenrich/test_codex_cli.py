@@ -2,7 +2,7 @@
 T15 — CodexCLI subprocess wrapper.
 
 Validates:
-- subprocess.run is called with correct codex exec command
+- monitored Codex subprocess wrapper is called with correct codex exec command
 - JSON is extracted from stdout
 - Non-zero returncode maps to CodexCLIError-style failure (success=False)
 - TimeoutExpired maps to timeout error
@@ -10,17 +10,30 @@ Validates:
 - validate_json=False skips JSON parsing
 """
 
-import json
 import subprocess
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from src.common.codex_cli import CodexCLI, CodexCLIError, CodexResult
+from src.common.codex_cli import CodexCLI, CodexResult, MonitoredProcessResult
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def _make_process_result(
+    *,
+    returncode: int = 0,
+    stdout: str = '{"result": "ok"}',
+    stderr: str = "",
+    timed_out: bool = False,
+) -> MonitoredProcessResult:
+    return MonitoredProcessResult(
+        returncode=returncode,
+        stdout=stdout,
+        stderr=stderr,
+        pid=12345,
+        timed_out=timed_out,
+    )
 
 
 def _make_completed_process(
@@ -29,7 +42,7 @@ def _make_completed_process(
     stderr: str = "",
 ) -> subprocess.CompletedProcess:
     return subprocess.CompletedProcess(
-        args=["codex", "exec", "--model", "gpt-5.4", "--skip-git-repo-check", "prompt"],
+        args=["codex", "--version"],
         returncode=returncode,
         stdout=stdout,
         stderr=stderr,
@@ -45,7 +58,7 @@ def test_codex_cli_success():
     """Successful codex exec returns CodexResult with success=True and parsed result."""
     cli = CodexCLI(model="gpt-5.4")
 
-    with patch("subprocess.run", return_value=_make_completed_process(
+    with patch("src.common.codex_cli._run_monitored_codex_subprocess", return_value=_make_process_result(
         stdout='{"answer": 42}'
     )) as mock_run:
         result = cli.invoke("What is 6x7?", job_id="j1")
@@ -56,7 +69,7 @@ def test_codex_cli_success():
     assert result.job_id == "j1"
 
     mock_run.assert_called_once()
-    cmd = mock_run.call_args[0][0]
+    cmd = mock_run.call_args.kwargs["cmd"]
     assert "codex" in cmd
     assert "--model" in cmd
     assert "gpt-5.4" in cmd
@@ -68,7 +81,7 @@ def test_codex_cli_json_extracted_from_prefix_text():
     cli = CodexCLI(model="gpt-5.4")
 
     stdout = 'Let me think about this... {"key": "value"}'
-    with patch("subprocess.run", return_value=_make_completed_process(stdout=stdout)):
+    with patch("src.common.codex_cli._run_monitored_codex_subprocess", return_value=_make_process_result(stdout=stdout)):
         result = cli.invoke("prompt", job_id="j1")
 
     assert result.success is True
@@ -79,7 +92,7 @@ def test_codex_cli_validate_json_false():
     """validate_json=False skips JSON parsing and returns raw_result."""
     cli = CodexCLI()
 
-    with patch("subprocess.run", return_value=_make_completed_process(
+    with patch("src.common.codex_cli._run_monitored_codex_subprocess", return_value=_make_process_result(
         stdout="not json output"
     )):
         result = cli.invoke("prompt", job_id="j1", validate_json=False)
@@ -98,7 +111,7 @@ def test_codex_cli_nonzero_returncode_returns_failure():
     """Non-zero exit code → success=False with error message."""
     cli = CodexCLI()
 
-    with patch("subprocess.run", return_value=_make_completed_process(
+    with patch("src.common.codex_cli._run_monitored_codex_subprocess", return_value=_make_process_result(
         returncode=1,
         stderr="Authentication failed",
     )):
@@ -110,10 +123,13 @@ def test_codex_cli_nonzero_returncode_returns_failure():
 
 
 def test_codex_cli_timeout_maps_to_error():
-    """TimeoutExpired maps to success=False with timeout message."""
+    """Timed-out monitored subprocess maps to success=False with timeout message."""
     cli = CodexCLI(timeout=1)
 
-    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired(["codex"], 1)):
+    with patch(
+        "src.common.codex_cli._run_monitored_codex_subprocess",
+        return_value=_make_process_result(returncode=-9, timed_out=True),
+    ):
         result = cli.invoke("prompt", job_id="j1")
 
     assert result.success is False
@@ -124,7 +140,7 @@ def test_codex_cli_not_found_maps_to_error():
     """FileNotFoundError (codex not installed) maps to success=False."""
     cli = CodexCLI()
 
-    with patch("subprocess.run", side_effect=FileNotFoundError("No such file")):
+    with patch("src.common.codex_cli._run_monitored_codex_subprocess", side_effect=FileNotFoundError("No such file")):
         result = cli.invoke("prompt", job_id="j1")
 
     assert result.success is False
@@ -135,7 +151,7 @@ def test_codex_cli_no_json_in_output():
     """Stdout with no JSON → success=False when validate_json=True."""
     cli = CodexCLI()
 
-    with patch("subprocess.run", return_value=_make_completed_process(
+    with patch("src.common.codex_cli._run_monitored_codex_subprocess", return_value=_make_process_result(
         stdout="This is not JSON at all."
     )):
         result = cli.invoke("prompt", job_id="j1")

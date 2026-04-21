@@ -64,6 +64,25 @@ Project-local Codex skills are stored under `.codex/skills/`.
 - Fetch jobs with `_id` from MongoDB collection `level-2`, use .env for the connection string
 - Skip integration and bulk tests when testing
 
+## Long-Running Debug Sessions
+
+Source of truth: **`docs/current/operational-development-manual.md`**
+
+For long local development or live-debug runs:
+- do not run blind
+- prefer outside-sandbox execution when real MongoDB, Codex, or live web research is required
+- always use `.venv`
+- always use `python -u`
+- load `.env` from Python with an explicit path, not `source .env`
+- use `MONGODB_URI` correctly
+- enable verbose logs, stage heartbeats, and inner Codex PID/stdout/stderr heartbeat logging
+- use the worker-compatible `StageContext` shape and checksum/snapshot construction
+
+When a long run appears stuck:
+- inspect the live heartbeat first
+- inspect the inner Codex PID and last output age
+- do not assume silence means progress
+
 ## LLM Integration
 
 - Use retry decorators with exponential backoff for all LLM calls

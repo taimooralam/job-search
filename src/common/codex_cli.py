@@ -35,10 +35,14 @@ Usage:
 
 import json
 import logging
+import os
 import re
 import subprocess
 from dataclasses import dataclass, asdict
 from datetime import datetime
+from queue import Empty, Queue
+import threading
+import time
 from typing import Any, Dict, Optional
 
 from src.common.json_utils import parse_llm_json
@@ -48,8 +52,34 @@ logger = logging.getLogger(__name__)
 # Default Codex model for shadow runs
 DEFAULT_CODEX_MODEL = "gpt-5.4"
 
-# Timeout for codex exec subprocess (seconds)
-DEFAULT_TIMEOUT_SECONDS = 300
+def _optional_timeout_seconds(*env_names: str) -> int | None:
+    for name in env_names:
+        raw = os.getenv(name)
+        if raw is None:
+            continue
+        raw = raw.strip()
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except Exception:
+            continue
+        if value <= 0:
+            return None
+        return value
+    return None
+
+
+# Timeout for codex exec subprocess (seconds). None means no timeout.
+DEFAULT_TIMEOUT_SECONDS = _optional_timeout_seconds(
+    "PREENRICH_CODEX_TIMEOUT_SECONDS",
+    "CODEX_TIMEOUT_SECONDS",
+)
+DEFAULT_HEARTBEAT_SECONDS = int(
+    os.getenv("PREENRICH_CODEX_HEARTBEAT_SECONDS")
+    or os.getenv("CODEX_HEARTBEAT_SECONDS")
+    or "20"
+)
 
 
 class CodexCLIError(Exception):
@@ -88,6 +118,15 @@ class CodexResult:
         return asdict(self)
 
 
+@dataclass
+class MonitoredProcessResult:
+    returncode: int
+    stdout: str
+    stderr: str
+    pid: int | None
+    timed_out: bool = False
+
+
 def _extract_json_from_stdout(stdout: str) -> Optional[str]:
     """
     Extract the first JSON object or array from stdout.
@@ -118,6 +157,149 @@ def _extract_json_from_stdout(stdout: str) -> Optional[str]:
     return None
 
 
+def _stream_reader(
+    stream: Any,
+    stream_name: str,
+    queue: Queue[tuple[str, bytes | None]],
+) -> None:
+    try:
+        while True:
+            chunk = stream.read(4096)
+            if not chunk:
+                break
+            queue.put((stream_name, chunk))
+    finally:
+        queue.put((stream_name, None))
+
+
+def _run_monitored_codex_subprocess(
+    *,
+    cmd: list[str],
+    timeout: int | None,
+    job_id: str,
+    logger: logging.Logger,
+) -> MonitoredProcessResult:
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
+        cwd=None,
+        text=False,
+        bufsize=0,
+    )
+    pid = proc.pid
+    logger.info(
+        "Codex subprocess spawned: job=%s pid=%s timeout_s=%s",
+        job_id,
+        pid,
+        "none" if timeout is None else timeout,
+    )
+    assert proc.stdout is not None
+    assert proc.stderr is not None
+
+    queue: Queue[tuple[str, bytes | None]] = Queue()
+    stdout_chunks = bytearray()
+    stderr_chunks = bytearray()
+    stream_state = {"stdout": False, "stderr": False}
+    partial_lines = {"stdout": "", "stderr": ""}
+    last_output_monotonic = time.monotonic()
+    start_monotonic = last_output_monotonic
+    last_heartbeat = start_monotonic
+
+    threads = [
+        threading.Thread(target=_stream_reader, args=(proc.stdout, "stdout", queue), daemon=True),
+        threading.Thread(target=_stream_reader, args=(proc.stderr, "stderr", queue), daemon=True),
+    ]
+    for thread in threads:
+        thread.start()
+
+    try:
+        while True:
+            now = time.monotonic()
+            if timeout is not None and now - start_monotonic > timeout:
+                proc.kill()
+                logger.warning(
+                    "Codex subprocess timeout: job=%s pid=%s elapsed_s=%d stdout_bytes=%d stderr_bytes=%d",
+                    job_id,
+                    pid,
+                    int(now - start_monotonic),
+                    len(stdout_chunks),
+                    len(stderr_chunks),
+                )
+                return MonitoredProcessResult(
+                    returncode=-9,
+                    stdout=stdout_chunks.decode("utf-8", errors="replace"),
+                    stderr=stderr_chunks.decode("utf-8", errors="replace"),
+                    pid=pid,
+                    timed_out=True,
+                )
+
+            try:
+                stream_name, chunk = queue.get(timeout=1.0)
+                if chunk is None:
+                    stream_state[stream_name] = True
+                else:
+                    last_output_monotonic = time.monotonic()
+                    if stream_name == "stdout":
+                        stdout_chunks.extend(chunk)
+                    else:
+                        stderr_chunks.extend(chunk)
+                    text = chunk.decode("utf-8", errors="replace")
+                    partial_lines[stream_name] += text
+                    while "\n" in partial_lines[stream_name]:
+                        line, remainder = partial_lines[stream_name].split("\n", 1)
+                        partial_lines[stream_name] = remainder
+                        line = line.rstrip()
+                        if line:
+                            log_fn = logger.debug if stream_name == "stdout" else logger.warning
+                            log_fn("Codex %s: job=%s pid=%s %s", stream_name, job_id, pid, line)
+            except Empty:
+                pass
+
+            now = time.monotonic()
+            if now - last_heartbeat >= DEFAULT_HEARTBEAT_SECONDS:
+                logger.info(
+                    "Codex subprocess heartbeat: job=%s pid=%s alive=%s elapsed_s=%d stdout_bytes=%d stderr_bytes=%d last_output_age_s=%.1f",
+                    job_id,
+                    pid,
+                    proc.poll() is None,
+                    int(now - start_monotonic),
+                    len(stdout_chunks),
+                    len(stderr_chunks),
+                    max(0.0, now - last_output_monotonic),
+                )
+                last_heartbeat = now
+
+            if proc.poll() is not None and all(stream_state.values()) and queue.empty():
+                break
+    finally:
+        for thread in threads:
+            thread.join(timeout=0.1)
+        try:
+            proc.stdout.close()
+        except Exception:
+            pass
+        try:
+            proc.stderr.close()
+        except Exception:
+            pass
+
+    for stream_name, remainder in partial_lines.items():
+        remainder = remainder.strip()
+        if remainder:
+            log_fn = logger.debug if stream_name == "stdout" else logger.warning
+            log_fn("Codex %s: job=%s pid=%s %s", stream_name, job_id, pid, remainder)
+
+    return MonitoredProcessResult(
+        returncode=proc.returncode or 0,
+        stdout=stdout_chunks.decode("utf-8", errors="replace"),
+        stderr=stderr_chunks.decode("utf-8", errors="replace"),
+        pid=pid,
+        timed_out=False,
+    )
+
+
 class CodexCLI:
     """
     Subprocess wrapper for `codex exec --model <model> --skip-git-repo-check "<prompt>"`.
@@ -129,7 +311,7 @@ class CodexCLI:
     def __init__(
         self,
         model: str = DEFAULT_CODEX_MODEL,
-        timeout: int = DEFAULT_TIMEOUT_SECONDS,
+        timeout: int | None = DEFAULT_TIMEOUT_SECONDS,
     ) -> None:
         """
         Initialize the Codex CLI wrapper.
@@ -180,11 +362,11 @@ class CodexCLI:
                 prompt,
             ]
 
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
+            proc = _run_monitored_codex_subprocess(
+                cmd=cmd,
                 timeout=self.timeout,
+                job_id=job_id,
+                logger=logger,
             )
 
             duration_ms = int(
@@ -192,8 +374,12 @@ class CodexCLI:
             )
 
             if proc.returncode != 0:
-                error_msg = (proc.stderr.strip() or proc.stdout.strip()
-                             or f"codex exec exited with code {proc.returncode}")
+                error_msg = (
+                    f"codex exec timeout after {self.timeout}s"
+                    if proc.timed_out
+                    else (proc.stderr.strip() or proc.stdout.strip()
+                          or f"codex exec exited with code {proc.returncode}")
+                )
                 logger.warning(
                     "Codex exec failed for job %s: %s", job_id, error_msg
                 )
@@ -266,23 +452,6 @@ class CodexCLI:
                 result=parsed,
                 raw_result=None,
                 error=None,
-                model=self.model,
-                duration_ms=duration_ms,
-                invoked_at=start_time.isoformat(),
-            )
-
-        except subprocess.TimeoutExpired:
-            duration_ms = int(
-                (datetime.utcnow() - start_time).total_seconds() * 1000
-            )
-            error_msg = f"codex exec timeout after {self.timeout}s"
-            logger.warning("Codex timeout for job %s: %s", job_id, error_msg)
-            return CodexResult(
-                job_id=job_id,
-                success=False,
-                result=None,
-                raw_result=None,
-                error=error_msg,
                 model=self.model,
                 duration_ms=duration_ms,
                 invoked_at=start_time.isoformat(),
