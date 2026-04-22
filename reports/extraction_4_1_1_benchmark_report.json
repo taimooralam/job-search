@@ -1,0 +1,1170 @@
+{
+  "summary": {
+    "count": 20,
+    "schema_validity_pass_rate": 1.0,
+    "remote_policy_match_rate": 0.95,
+    "responsibilities_item_f1_mean": 0.14115384615384616,
+    "qualifications_item_f1_mean": 0.37675574425574426,
+    "technical_skills_item_f1_mean": 0.5965881485608203,
+    "implied_pain_points_item_f1_mean": 0.0,
+    "success_metrics_item_f1_mean": 0.02,
+    "keyword_precision_at_10": 0.5561111111111111,
+    "keyword_recall_at_10": 0.555,
+    "ideal_candidate_archetype_match_rate": 0.75,
+    "thresholds": {
+      "schema_validity_pass_rate": 1.0,
+      "remote_policy_match_rate": 0.95,
+      "responsibilities_item_f1_mean": 0.55,
+      "qualifications_item_f1_mean": 0.6,
+      "technical_skills_item_f1_mean": 0.65,
+      "implied_pain_points_item_f1_mean": 0.4,
+      "success_metrics_item_f1_mean": 0.4,
+      "keyword_precision_at_10": 0.6,
+      "keyword_recall_at_10": 0.6,
+      "ideal_candidate_archetype_match_rate": 0.8
+    },
+    "passes_thresholds": false
+  },
+  "report": [
+    {
+      "job_id": "69a7bd28243c445ec2e17f33",
+      "title": "AI Engineering Leader | Remote (Spain) | Global Fintech",
+      "company": "Oliver Bernard",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": false,
+          "seniority_level": false,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 0,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.625,
+          "technical_skills": 0.5517241379310344,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.3,
+          "recall_at_10": 0.3
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69939f4087737d491c0a1f16",
+      "title": "Assistant Manager - Audit (Remote) - TJ / 1820164",
+      "company": "AGAY BARHO!",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": false,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 5,
+            "architecture": 0,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.3333333333333333,
+          "qualifications": 0.4,
+          "technical_skills": 0.75,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.3,
+          "recall_at_10": 0.3
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "696649cd28faeca4ab8752e5",
+      "title": "Cloud Solution Architect",
+      "company": "SUTHERLAND",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": false,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 0,
+            "architecture": 0,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.0,
+          "technical_skills": 0.5517241379310344,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.4,
+          "recall_at_10": 0.4
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "697793017d41dc1e8a0c6000",
+      "title": "Cloud Architect (Freelance)",
+      "company": "K2 PARTNERING SOLUTIONS",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": false,
+          "remote_policy": true,
+          "ideal_candidate_archetype": false
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 0,
+            "architecture": 0,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.0,
+          "technical_skills": 0.47619047619047616,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.7,
+          "recall_at_10": 0.7
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69c6701c2cceb8c38538d41b",
+      "title": "Director AI Learning System",
+      "company": "University of South Asia",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": false
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.3076923076923077,
+          "technical_skills": 0.36363636363636365,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.2222222222222222,
+          "recall_at_10": 0.2
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "6994634287737d491c0b5e81",
+      "title": "Lead Data Architect",
+      "company": "FIRST ABU DHABI BANK (FAB)",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": false,
+          "seniority_level": false,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 10,
+            "architecture": 10,
+            "leadership": 25
+          }
+        },
+        "list_scores": {
+          "responsibilities": 1.0,
+          "qualifications": 0.6153846153846153,
+          "technical_skills": 0.8125,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.6,
+          "recall_at_10": 0.6
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69c6c4762cceb8c385399f34",
+      "title": "Head of AI Engineering",
+      "company": "MAM Gruppe",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": false
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 0,
+            "architecture": 10,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.26666666666666666,
+          "qualifications": 0.5714285714285714,
+          "technical_skills": 0.6,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.6,
+          "recall_at_10": 0.6
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69b0bbea433c8005529aa87a",
+      "title": "Head of Artificial Intelligence",
+      "company": "Art Capital",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": false,
+          "years_experience_required": false,
+          "education_requirements": false,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 0,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.7692307692307692,
+          "qualifications": 1.0,
+          "technical_skills": 0.8571428571428571,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.7,
+          "recall_at_10": 0.7
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69d6734d12725d714784c492",
+      "title": "Vice President \u2013 AI Platform Owner",
+      "company": "RAKBANK",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": false,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": false,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 0,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.5333333333333333,
+          "technical_skills": 0.5,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.6,
+          "recall_at_10": 0.6
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69825fa77d41dc1e8a360e23",
+      "title": "Vice President of Product Engineering, 2 Hour Learning (Remote) - $400,000/year",
+      "company": "CROSSOVER",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": false,
+          "seniority_level": false,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 0,
+            "leadership": 10
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.13333333333333333,
+          "qualifications": 0.6666666666666666,
+          "technical_skills": 0.4444444444444445,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.4,
+          "recall_at_10": 0.4
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69c2846fe0db966f8fa4e44d",
+      "title": "CTO / Co-Founder",
+      "company": "AdTech LLM Startup (via recruiter)",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 2,
+          "competency_weights": {
+            "delivery": 10,
+            "process": 0,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.0,
+          "technical_skills": 0.08333333333333333,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.3,
+          "recall_at_10": 0.3
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69ad2ef5560250caad508ac7",
+      "title": "Chief AI Officer / Head of AI",
+      "company": "Future of Work Pop Up Lab",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": false,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 0,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.7692307692307692,
+          "technical_skills": 0.9523809523809523,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.4
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.9,
+          "recall_at_10": 0.9
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69a7bcec2a8394f20243905e",
+      "title": "AI Engineering Leader \u2013 Remote (Spain) | Fintech",
+      "company": "Oliver Bernard",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 5,
+            "architecture": 5,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.625,
+          "technical_skills": 0.6086956521739131,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.4,
+          "recall_at_10": 0.4
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69a5fad88b6d5ff29a3d28f0",
+      "title": "Lead Agentic AI Developer",
+      "company": "Archer Recruitment",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": false
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.15384615384615383,
+          "qualifications": 0.1818181818181818,
+          "technical_skills": 0.5454545454545455,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.6,
+          "recall_at_10": 0.6
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69c743062cceb8c3853b8beb",
+      "title": "Artificial Intelligence Engineer",
+      "company": "MPower Plus",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": false,
+          "years_experience_required": false,
+          "education_requirements": false,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 5,
+            "architecture": 5,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.0,
+          "technical_skills": 0.8695652173913044,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.7,
+          "recall_at_10": 0.7
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69ab9a6f343051a100c84991",
+      "title": "AI Software Engineer",
+      "company": "S2W",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": false,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": false
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 0,
+            "architecture": 5,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.0,
+          "technical_skills": 0.1081081081081081,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.3,
+          "recall_at_10": 0.3
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69b5cb26874f6f603ca8559b",
+      "title": "AI\u5e94\u7528\u5de5\u7a0b\u5e08",
+      "company": "\u5317\u4eac\u82f1\u535a\u7535\u6c14\u80a1\u4efd\u6709\u9650\u516c\u53f8",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": false,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 0,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.0,
+          "technical_skills": 0.7,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.7,
+          "recall_at_10": 0.7
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69837ea67d41dc1e8a3b6fdf",
+      "title": "Data Architect",
+      "company": "EVANTIS RECRUITMENT",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": false,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 0,
+            "architecture": 5,
+            "leadership": 5
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.16666666666666666,
+          "qualifications": 0.15384615384615383,
+          "technical_skills": 0.7407407407407408,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.8,
+          "recall_at_10": 0.8
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69ac8809d699ad2d41f8d050",
+      "title": "\u751f\u6210AI\u30a8\u30f3\u30b8\u30cb\u30a2",
+      "company": "Retrieva, Inc.",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": true,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 0,
+            "process": 5,
+            "architecture": 5,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.28571428571428575,
+          "technical_skills": 0.5925925925925926,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.8,
+          "recall_at_10": 0.8
+        }
+      },
+      "error": null
+    },
+    {
+      "job_id": "69c0d5b61d1ee14c5803cbf3",
+      "title": "AI Engineer | Gen AI & Sourcegraph Amp",
+      "company": "Kaizen Global Technologies",
+      "comparison": {
+        "schema_valid": true,
+        "schema_message": "ok",
+        "presence": {
+          "title": true,
+          "company": true,
+          "location": true,
+          "remote_policy": true,
+          "role_category": true,
+          "seniority_level": true,
+          "competency_weights": true,
+          "responsibilities": true,
+          "qualifications": true,
+          "nice_to_haves": true,
+          "technical_skills": true,
+          "soft_skills": true,
+          "implied_pain_points": true,
+          "success_metrics": true,
+          "top_keywords": true,
+          "industry_background": true,
+          "years_experience_required": true,
+          "education_requirements": false,
+          "ideal_candidate_profile": true
+        },
+        "enum_matches": {
+          "role_category": true,
+          "seniority_level": true,
+          "remote_policy": true,
+          "ideal_candidate_archetype": true
+        },
+        "numeric_deltas": {
+          "years_experience_required": 0,
+          "competency_weights": {
+            "delivery": 5,
+            "process": 5,
+            "architecture": 0,
+            "leadership": 0
+          }
+        },
+        "list_scores": {
+          "responsibilities": 0.0,
+          "qualifications": 0.8000000000000002,
+          "technical_skills": 0.823529411764706,
+          "implied_pain_points": 0.0,
+          "success_metrics": 0.0
+        },
+        "keyword_scores": {
+          "precision_at_10": 0.8,
+          "recall_at_10": 0.8
+        }
+      },
+      "error": null
+    }
+  ]
+}

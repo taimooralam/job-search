@@ -1,0 +1,63 @@
+{
+  "version": "v1",
+  "technique": null,
+  "timestamp": "2025-12-12T11:41:56.010897",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "Worked at NonExistent Corp achieving 999% growth and $1 trillion savings.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 6.5,
+        "combined": 5.5
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Moderate hallucination risk: Unknown companies mentioned: ['NonExistent']; Unverified metrics: ['999%', '$1']"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "Worked at NonExistent Corp achieving 999% growth and $1 trillion savings.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 6.5,
+        "combined": 5.5
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Moderate hallucination risk: Unknown companies mentioned: ['NonExistent']; Unverified metrics: ['999%', '$1']"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "Worked at NonExistent Corp achieving 999% growth and $1 trillion savings.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 6.5,
+        "combined": 5.5
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Moderate hallucination risk: Unknown companies mentioned: ['NonExistent']; Unverified metrics: ['999%', '$1']"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 6.0,
+    "grounding": 4.5,
+    "hallucinations": 6.5,
+    "combined": 5.5
+  },
+  "metadata": {
+    "layer": "layer6b",
+    "issue": "hallucination-gaps",
+    "type": "baseline"
+  }
+}

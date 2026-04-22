@@ -1,0 +1,63 @@
+{
+  "version": "v1",
+  "technique": null,
+  "timestamp": "2026-04-21T16:14:23.052550",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "\nBased on my review, I believe I would be a great fit for this role at KAIZEN GAMING.\n\nI have extensive experience in software engineering and have a proven track record of success.\nI am a team player with excellent communication skills and am excited to apply for this opportunity.\n\nI have worked at several companies and delivered results. My background makes me well-suited\nfor the Software Engineering Team Lead (Backend).\n        ",
+      "scores": {
+        "specificity": 2.5,
+        "grounding": 4.6,
+        "hallucinations": 8.5,
+        "combined": 5.1
+      },
+      "feedback": {
+        "specificity": "High generic phrase count (6); No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced",
+        "hallucinations": "Minor verification concerns"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "\nBased on my review, I believe I would be a great fit for this role at FinSecure Technologies.\n\nI have extensive experience in software engineering and have a proven track record of success.\nI am a team player with excellent communication skills and am excited to apply for this opportunity.\n\nI have worked at several companies and delivered results. My background makes me well-suited\nfor the Engineering Lead - Compliance Platform.\n        ",
+      "scores": {
+        "specificity": 2.5,
+        "grounding": 4.0,
+        "hallucinations": 8.5,
+        "combined": 4.9
+      },
+      "feedback": {
+        "specificity": "High generic phrase count (6); No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Minor verification concerns"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "\nBased on my review, I believe I would be a great fit for this role at GlobalTech Enterprise.\n\nI have extensive experience in software engineering and have a proven track record of success.\nI am a team player with excellent communication skills and am excited to apply for this opportunity.\n\nI have worked at several companies and delivered results. My background makes me well-suited\nfor the Principal Engineer - Platform Infrastructure.\n        ",
+      "scores": {
+        "specificity": 2.5,
+        "grounding": 4.0,
+        "hallucinations": 8.5,
+        "combined": 4.9
+      },
+      "feedback": {
+        "specificity": "High generic phrase count (6); No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Minor verification concerns"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 2.5,
+    "grounding": 4.2,
+    "hallucinations": 8.5,
+    "combined": 4.97
+  },
+  "metadata": {
+    "layer": "layer4",
+    "issue": "weak-grounding",
+    "type": "baseline"
+  }
+}

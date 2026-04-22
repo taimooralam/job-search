@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2025-12-12T11:41:55.734229",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "Top match: Seven.One Entertainment Group - Need strong technical leadership for backend engineering team",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 6.6,
+        "hallucinations": 10.0,
+        "combined": 7.3
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "Top match: Seven.One Entertainment Group - Manual compliance reporting taking 40+ hours per audit",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 6.4,
+        "hallucinations": 10.0,
+        "combined": 7.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "Top match: Seven.One Entertainment Group - Legacy on-premise infrastructure limiting agility",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 6.4,
+        "hallucinations": 10.0,
+        "combined": 7.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 5.5,
+    "grounding": 6.47,
+    "hallucinations": 10.0,
+    "combined": 7.23
+  },
+  "metadata": {
+    "layer": "layer4",
+    "issue": "context-overload",
+    "type": "enhanced",
+    "technique": null
+  }
+}

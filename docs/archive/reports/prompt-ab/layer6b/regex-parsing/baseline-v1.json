@@ -1,0 +1,63 @@
+{
+  "version": "v1",
+  "technique": null,
+  "timestamp": "2025-12-12T11:41:55.918716",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "Rigid CV parse: [SECTIONS MAY BE MISSING]",
+      "scores": {
+        "specificity": 5.0,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.1
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found; No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "Rigid CV parse: [SECTIONS MAY BE MISSING]",
+      "scores": {
+        "specificity": 5.0,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.1
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found; No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "Rigid CV parse: [SECTIONS MAY BE MISSING]",
+      "scores": {
+        "specificity": 5.0,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.1
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found; No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 5.0,
+    "grounding": 4.0,
+    "hallucinations": 10.0,
+    "combined": 6.1
+  },
+  "metadata": {
+    "layer": "layer6b",
+    "issue": "regex-parsing",
+    "type": "baseline"
+  }
+}

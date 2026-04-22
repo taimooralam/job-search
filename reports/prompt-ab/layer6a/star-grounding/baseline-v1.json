@@ -1,0 +1,63 @@
+{
+  "version": "v1",
+  "technique": null,
+  "timestamp": "2026-04-21T16:43:46.144071",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "I achieved 999% growth and saved $100 billion at FakeCorp Industries.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 6.5,
+        "combined": 5.5
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Moderate hallucination risk: Unknown companies mentioned: ['FakeCorp']; Unverified metrics: ['999%', '$100']"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "I achieved 999% growth and saved $100 billion at FakeCorp Industries.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 6.5,
+        "combined": 5.5
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Moderate hallucination risk: Unknown companies mentioned: ['FakeCorp']; Unverified metrics: ['999%', '$100']"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "I achieved 999% growth and saved $100 billion at FakeCorp Industries.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 6.5,
+        "combined": 5.5
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "Moderate hallucination risk: Unknown companies mentioned: ['FakeCorp']; Unverified metrics: ['999%', '$100']"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 6.0,
+    "grounding": 4.5,
+    "hallucinations": 6.5,
+    "combined": 5.5
+  },
+  "metadata": {
+    "layer": "layer6a",
+    "issue": "star-grounding",
+    "type": "baseline"
+  }
+}

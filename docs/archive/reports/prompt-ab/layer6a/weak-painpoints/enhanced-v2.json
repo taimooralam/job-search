@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2025-12-12T11:41:55.834346",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "\nYour need for Need strong technical leadership for backend engineering team maps to my experience at Seven.One Entertainment Group.\nI achieved: 75% incident reduction, 25% faster delivery, 3 engineers promoted to lead positions.\n            ",
+      "scores": {
+        "specificity": 7.0,
+        "grounding": 7.2,
+        "hallucinations": 10.0,
+        "combined": 8.0
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Moderate grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "\nYour need for Manual compliance reporting taking 40+ hours per audit maps to my experience at Seven.One Entertainment Group.\nI achieved: 100% audit pass rate, 30M euro protected, zero compliance violations.\n            ",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 7.9,
+        "hallucinations": 10.0,
+        "combined": 8.0
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Moderate grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "\nYour need for Legacy on-premise infrastructure limiting agility maps to my experience at Seven.One Entertainment Group.\nI achieved: 75% incident reduction, 10x cost savings on observability, 25% faster delivery.\n            ",
+      "scores": {
+        "specificity": 7.0,
+        "grounding": 7.9,
+        "hallucinations": 10.0,
+        "combined": 8.3
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Moderate grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 6.67,
+    "grounding": 7.67,
+    "hallucinations": 10.0,
+    "combined": 8.1
+  },
+  "metadata": {
+    "layer": "layer6a",
+    "issue": "weak-painpoints",
+    "type": "enhanced",
+    "technique": null
+  }
+}

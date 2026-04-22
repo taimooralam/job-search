@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2026-04-21T16:49:49.344390",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "At Seven.One Entertainment Group: 75% incident reduction, 25% faster delivery, 3 engineers promoted to lead positions [verified]",
+      "scores": {
+        "specificity": 7.0,
+        "grounding": 6.6,
+        "hallucinations": 10.0,
+        "combined": 7.7
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "At Seven.One Entertainment Group: 100% audit pass rate, 30M euro protected, zero compliance violations [verified]",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 7.9,
+        "hallucinations": 10.0,
+        "combined": 8.0
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Moderate grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "At Seven.One Entertainment Group: 75% incident reduction, 10x cost savings on observability, 25% faster delivery [verified]",
+      "scores": {
+        "specificity": 7.0,
+        "grounding": 7.5,
+        "hallucinations": 10.0,
+        "combined": 8.1
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 6.67,
+    "grounding": 7.33,
+    "hallucinations": 10.0,
+    "combined": 7.93
+  },
+  "metadata": {
+    "layer": "layer6b",
+    "issue": "hallucination-gaps",
+    "type": "enhanced",
+    "technique": null
+  }
+}

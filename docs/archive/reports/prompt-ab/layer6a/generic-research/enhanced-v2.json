@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2025-12-12T11:41:55.857288",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "Given KAIZEN GAMING's Expanding into new markets including Canada, Ecuador, and Peru, my experience is directly relevant.",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "Given FinSecure Technologies's Raised $40M Series B, my experience is directly relevant.",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 4.5,
+        "hallucinations": 9.0,
+        "combined": 6.3
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "Given GlobalTech Enterprise's Cloud-first initiative announced, my experience is directly relevant.",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 5.67,
+    "grounding": 4.17,
+    "hallucinations": 9.67,
+    "combined": 6.23
+  },
+  "metadata": {
+    "layer": "layer6a",
+    "issue": "generic-research",
+    "type": "enhanced",
+    "technique": null
+  }
+}

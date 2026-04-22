@@ -1,0 +1,63 @@
+{
+  "version": "v1",
+  "technique": null,
+  "timestamp": "2026-04-21T16:40:44.515716",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "Generic cover letter for KAIZEN GAMING.",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "Generic cover letter for FinSecure Technologies.",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "Generic cover letter for GlobalTech Enterprise.",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 4.0,
+        "hallucinations": 10.0,
+        "combined": 6.2
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR companies cited; No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 5.5,
+    "grounding": 4.0,
+    "hallucinations": 10.0,
+    "combined": 6.2
+  },
+  "metadata": {
+    "layer": "layer6a",
+    "issue": "weak-painpoints",
+    "type": "baseline"
+  }
+}

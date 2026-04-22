@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2026-04-21T16:14:23.064299",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "\nAt Seven.One Entertainment Group, I directly addressed challenges similar to KAIZEN GAMING's need for Need strong technical leadership for backend engineering team.\n\nMy specific results included: 75% incident reduction, 25% faster delivery, 3 engineers promoted to lead positions\n\nFor KAIZEN GAMING, I would apply these learnings to:\n1. Address the pain point of Need strong technical leadership for backend engineering team using proven approaches from Seven.One Entertainment Group\n2. Leverage my ...",
+      "scores": {
+        "specificity": 8.2,
+        "grounding": 8.0,
+        "hallucinations": 10.0,
+        "combined": 8.7
+      },
+      "feedback": {
+        "specificity": "Good specificity with concrete details",
+        "grounding": "Strong evidence grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "\nAt Seven.One Entertainment Group, I directly addressed challenges similar to FinSecure Technologies's need for Manual compliance reporting taking 40+ hours per audit.\n\nMy specific results included: 100% audit pass rate, 30M euro protected, zero compliance violations\n\nFor FinSecure Technologies, I would apply these learnings to:\n1. Address the pain point of Manual compliance reporting taking 40+ hours per audit using proven approaches from Seven.One Entertainment Group\n2. Leverage my experience ...",
+      "scores": {
+        "specificity": 7.8,
+        "grounding": 8.4,
+        "hallucinations": 10.0,
+        "combined": 8.7
+      },
+      "feedback": {
+        "specificity": "Average specificity",
+        "grounding": "Strong evidence grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "\nAt Seven.One Entertainment Group, I directly addressed challenges similar to GlobalTech Enterprise's need for Legacy on-premise infrastructure limiting agility.\n\nMy specific results included: 75% incident reduction, 10x cost savings on observability, 25% faster delivery\n\nFor GlobalTech Enterprise, I would apply these learnings to:\n1. Address the pain point of Legacy on-premise infrastructure limiting agility using proven approaches from Seven.One Entertainment Group\n2. Leverage my experience wi...",
+      "scores": {
+        "specificity": 8.2,
+        "grounding": 8.4,
+        "hallucinations": 10.0,
+        "combined": 8.8
+      },
+      "feedback": {
+        "specificity": "Good specificity with concrete details",
+        "grounding": "Strong evidence grounding",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 8.07,
+    "grounding": 8.27,
+    "hallucinations": 10.0,
+    "combined": 8.73
+  },
+  "metadata": {
+    "layer": "layer4",
+    "issue": "weak-grounding",
+    "type": "enhanced",
+    "technique": null
+  }
+}

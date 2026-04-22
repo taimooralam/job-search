@@ -80,8 +80,11 @@ GEMINI.md
 # Claude Code CLI auth (never commit - contains subscription tokens!)
 claude-auth/
 .claude/*
+!.claude/
 !.claude/skills/
 !.claude/skills/**
+!.claude/agents/
+!.claude/agents/**
 
 # VPS MongoDB secrets
 vps/mongodb/mongodb-keyfile
@@ -136,3 +139,15 @@ data/eval/validation/*
 .codex-tmp/
 tmp/
 tmp_query*.py
+
+# Repo-authored documentation intentionally versioned
+!SESSION_CONTINUITY_INDEX.md
+!GEMINI.md
+!reports/
+!reports/**
+!research/
+!research/**
+!plans/
+!plans/**
+!docs/archive/
+!docs/archive/**

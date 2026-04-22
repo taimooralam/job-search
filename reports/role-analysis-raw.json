@@ -1,0 +1,3969 @@
+{
+  "senior_engineer": {
+    "count": 156,
+    "sample_titles": [
+      "Senior Software Engineer",
+      "Lead Software Engineer",
+      "Senior Software Engineering Lead",
+      "Senior Software Engineer - Node",
+      "Senior Back-end Software Engineer - Typescript/NodeJS (remote within Europe)",
+      "Senior Software Engineer, Connectors team",
+      "> Senior Software Engineer / Full-stack Developer / DevOp (m/f/d)",
+      "Tech Lead, LLM & Generative AI (Full Remote - France)",
+      "Senior Software Engineer II - Backend, Flywheel",
+      "Senior Backend Software Engineer",
+      "Senior Fullstack Software Engineer - JavaScript / TypeScript",
+      "Senior Software Engineer | $120/hr",
+      "Founding Engineer",
+      "Senior Software Engineer - 120k\u20ac - 150k\u20ac im ersten Jahr m\u00f6glich. Starte jetzt"
+    ],
+    "sample_companies": [
+      "Passporter",
+      "Lead Software Engineer",
+      "Senior Software Engineer",
+      "BAO",
+      "BERKELEY PAYMENTS",
+      "FOUNTAIN",
+      "WEDO",
+      "RELATIVITY",
+      "BLUE YONDER",
+      "VIVA TECH TALENT",
+      "SCILEADS",
+      "BUBB",
+      "CATCHES",
+      "DRIFTROCK",
+      "MALWAREBYTES",
+      "INTELERAD",
+      "BEACON",
+      "BEYOND",
+      "APEX FINTECH SOLUTIONS UK",
+      "LEO TECHNOLOGY"
+    ],
+    "pain_points_count": 637,
+    "pain_points_by_theme": {
+      "Scaling & Architecture": 206,
+      "Cross-Functional": 33,
+      "Process & Delivery": 103,
+      "AI/ML Integration": 67,
+      "Other": 124,
+      "Team Building": 13,
+      "Platform & Infrastructure": 40,
+      "Technical Debt": 50,
+      "Strategic Alignment": 1
+    },
+    "top_technical_skills": [
+      [
+        "aws",
+        80
+      ],
+      [
+        "python",
+        73
+      ],
+      [
+        "ci/cd",
+        68
+      ],
+      [
+        "kubernetes",
+        59
+      ],
+      [
+        "docker",
+        52
+      ],
+      [
+        "java",
+        50
+      ],
+      [
+        "javascript",
+        49
+      ],
+      [
+        "typescript",
+        49
+      ],
+      [
+        "microservices",
+        48
+      ],
+      [
+        "azure",
+        44
+      ],
+      [
+        "react",
+        43
+      ],
+      [
+        "gcp",
+        37
+      ],
+      [
+        "c#",
+        36
+      ],
+      [
+        "sql",
+        32
+      ],
+      [
+        "go",
+        30
+      ],
+      [
+        "distributed systems",
+        29
+      ],
+      [
+        "terraform",
+        29
+      ],
+      [
+        "git",
+        26
+      ],
+      [
+        "postgresql",
+        26
+      ],
+      [
+        "system design",
+        26
+      ],
+      [
+        "software architecture",
+        22
+      ],
+      [
+        "backend development",
+        20
+      ],
+      [
+        "node.js",
+        19
+      ],
+      [
+        "kafka",
+        19
+      ],
+      [
+        "version control",
+        18
+      ],
+      [
+        "agile",
+        17
+      ],
+      [
+        "design patterns",
+        17
+      ],
+      [
+        "mysql",
+        16
+      ],
+      [
+        "devops",
+        15
+      ],
+      [
+        "code review",
+        15
+      ],
+      [
+        "linux",
+        14
+      ],
+      [
+        "api development",
+        14
+      ],
+      [
+        "css",
+        14
+      ],
+      [
+        "performance optimization",
+        13
+      ],
+      [
+        "dynamodb",
+        13
+      ],
+      [
+        "tdd",
+        12
+      ],
+      [
+        "c++",
+        12
+      ],
+      [
+        "event-driven architecture",
+        12
+      ],
+      [
+        ".net",
+        12
+      ],
+      [
+        "rest api",
+        11
+      ],
+      [
+        "unit testing",
+        11
+      ],
+      [
+        "next.js",
+        11
+      ],
+      [
+        "nosql",
+        11
+      ],
+      [
+        "infrastructure as code",
+        11
+      ],
+      [
+        "html",
+        11
+      ],
+      [
+        "postgres",
+        11
+      ],
+      [
+        "mongodb",
+        10
+      ],
+      [
+        "angular",
+        9
+      ],
+      [
+        "scrum",
+        9
+      ],
+      [
+        "golang",
+        9
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        118
+      ],
+      [
+        "collaboration",
+        106
+      ],
+      [
+        "problem-solving",
+        71
+      ],
+      [
+        "mentoring",
+        50
+      ],
+      [
+        "problem solving",
+        43
+      ],
+      [
+        "leadership",
+        35
+      ],
+      [
+        "adaptability",
+        31
+      ],
+      [
+        "ownership",
+        21
+      ],
+      [
+        "mentorship",
+        19
+      ],
+      [
+        "code review",
+        19
+      ],
+      [
+        "attention to detail",
+        18
+      ],
+      [
+        "continuous learning",
+        17
+      ],
+      [
+        "technical leadership",
+        16
+      ],
+      [
+        "cross-functional collaboration",
+        15
+      ],
+      [
+        "autonomy",
+        15
+      ],
+      [
+        "independent work",
+        14
+      ],
+      [
+        "analytical thinking",
+        13
+      ],
+      [
+        "knowledge-sharing",
+        13
+      ],
+      [
+        "team collaboration",
+        10
+      ],
+      [
+        "ownership mindset",
+        10
+      ],
+      [
+        "team player",
+        9
+      ],
+      [
+        "teamwork",
+        9
+      ],
+      [
+        "initiative",
+        8
+      ],
+      [
+        "learning agility",
+        8
+      ],
+      [
+        "proactive",
+        8
+      ],
+      [
+        "cross-functional teamwork",
+        8
+      ],
+      [
+        "knowledge sharing",
+        8
+      ],
+      [
+        "curiosity",
+        8
+      ],
+      [
+        "documentation",
+        8
+      ],
+      [
+        "critical thinking",
+        7
+      ]
+    ],
+    "top_keywords": [
+      [
+        "senior software engineer",
+        138
+      ],
+      [
+        "aws",
+        78
+      ],
+      [
+        "ci/cd",
+        65
+      ],
+      [
+        "python",
+        63
+      ],
+      [
+        "kubernetes",
+        58
+      ],
+      [
+        "microservices",
+        58
+      ],
+      [
+        "agile",
+        50
+      ],
+      [
+        "typescript",
+        47
+      ],
+      [
+        "docker",
+        42
+      ],
+      [
+        "java",
+        40
+      ],
+      [
+        "mentoring",
+        39
+      ],
+      [
+        "react",
+        37
+      ],
+      [
+        "distributed systems",
+        32
+      ],
+      [
+        "system design",
+        32
+      ],
+      [
+        "javascript",
+        27
+      ],
+      [
+        "code review",
+        26
+      ],
+      [
+        "postgresql",
+        26
+      ],
+      [
+        "sql",
+        23
+      ],
+      [
+        "remote",
+        21
+      ],
+      [
+        "devops",
+        20
+      ],
+      [
+        "terraform",
+        20
+      ],
+      [
+        "software architecture",
+        20
+      ],
+      [
+        "cloud platforms",
+        19
+      ],
+      [
+        "fintech",
+        17
+      ],
+      [
+        "c#",
+        17
+      ],
+      [
+        "kafka",
+        17
+      ],
+      [
+        "node.js",
+        16
+      ],
+      [
+        "backend development",
+        16
+      ],
+      [
+        "design patterns",
+        15
+      ],
+      [
+        "rest api",
+        13
+      ],
+      [
+        "performance optimization",
+        13
+      ],
+      [
+        "event-driven architecture",
+        13
+      ],
+      [
+        "azure",
+        13
+      ],
+      [
+        "tdd",
+        12
+      ],
+      [
+        "git",
+        12
+      ],
+      [
+        "scrum",
+        12
+      ],
+      [
+        "scalability",
+        12
+      ],
+      [
+        "scalable applications",
+        12
+      ],
+      [
+        "problem-solving",
+        12
+      ],
+      [
+        "gcp",
+        11
+      ],
+      [
+        "mysql",
+        11
+      ],
+      [
+        ".net",
+        11
+      ],
+      [
+        "go",
+        11
+      ],
+      [
+        "cloud infrastructure",
+        10
+      ],
+      [
+        "mentorship",
+        10
+      ],
+      [
+        "c++",
+        9
+      ],
+      [
+        "linux",
+        9
+      ],
+      [
+        "full-stack",
+        9
+      ],
+      [
+        "cloud-native",
+        9
+      ],
+      [
+        "technical leadership",
+        9
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 43.717948717948715,
+        "min": 30,
+        "max": 45,
+        "count": 156
+      },
+      "process": {
+        "avg": 19.19871794871795,
+        "min": 10,
+        "max": 35,
+        "count": 156
+      },
+      "architecture": {
+        "avg": 26.378205128205128,
+        "min": 15,
+        "max": 35,
+        "count": 156
+      },
+      "leadership": {
+        "avg": 10.705128205128204,
+        "min": 5,
+        "max": 20,
+        "count": 156
+      }
+    },
+    "seniority_distribution": {
+      "senior": 156
+    }
+  },
+  "head_of_engineering": {
+    "count": 19,
+    "sample_titles": [
+      "Head of Engineering",
+      "Head of Technology",
+      "Head of Software Engineering (m/f/d)",
+      "Engineering Leader",
+      "Co-Founder",
+      "Consumer AI Co-Founder / Head of Engineering (100 % remote) (m/f/d)",
+      "Head of Engineering (m/w/d)",
+      "EdTech Co-Founder / Head of Engineering (100 % remote) (m/f/d)"
+    ],
+    "sample_companies": [
+      "Anadyr Horizon",
+      "Head of Engineering",
+      "FINOM",
+      "ITDS",
+      "P2P.ORG",
+      "JOBGETHER",
+      "SIENA AI",
+      "KREATOORS.AI",
+      "TIDE",
+      "BAUMLINK",
+      "VEEVA SYSTEMS",
+      "ThirtyEight Capital",
+      "EWOR",
+      "Hirelight EB Consulting",
+      "AI School"
+    ],
+    "pain_points_count": 85,
+    "pain_points_by_theme": {
+      "Team Building": 8,
+      "Cross-Functional": 3,
+      "Platform & Infrastructure": 6,
+      "Scaling & Architecture": 21,
+      "Other": 11,
+      "Technical Debt": 7,
+      "Process & Delivery": 15,
+      "AI/ML Integration": 13,
+      "Strategic Alignment": 1
+    },
+    "top_technical_skills": [
+      [
+        "ci/cd",
+        9
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "cloud infrastructure",
+        6
+      ],
+      [
+        "restful apis",
+        5
+      ],
+      [
+        "api design",
+        5
+      ],
+      [
+        "python",
+        4
+      ],
+      [
+        "react",
+        4
+      ],
+      [
+        "aws",
+        4
+      ],
+      [
+        "web3",
+        4
+      ],
+      [
+        "blockchain",
+        4
+      ],
+      [
+        "smart contracts",
+        4
+      ],
+      [
+        "ethereum",
+        4
+      ],
+      [
+        "containerization",
+        4
+      ],
+      [
+        "polkadot",
+        4
+      ],
+      [
+        "ton",
+        4
+      ],
+      [
+        "cosmos",
+        4
+      ],
+      [
+        "kubernetes",
+        3
+      ],
+      [
+        "typescript",
+        3
+      ],
+      [
+        "bitcoin",
+        3
+      ],
+      [
+        "system design",
+        3
+      ],
+      [
+        "terraform",
+        2
+      ],
+      [
+        "postgresql",
+        2
+      ],
+      [
+        "snowflake",
+        2
+      ],
+      [
+        "dbt",
+        2
+      ],
+      [
+        "observability",
+        2
+      ],
+      [
+        "agile methodologies",
+        2
+      ],
+      [
+        "technical architecture",
+        2
+      ],
+      [
+        "staking",
+        2
+      ],
+      [
+        "high-availability systems",
+        2
+      ],
+      [
+        "security",
+        2
+      ],
+      [
+        "restaking",
+        2
+      ],
+      [
+        "system architecture",
+        2
+      ],
+      [
+        "llm applications",
+        2
+      ],
+      [
+        "conversational ai",
+        2
+      ],
+      [
+        "event-driven systems",
+        2
+      ],
+      [
+        "api integrations",
+        2
+      ],
+      [
+        "multi-agent orchestration",
+        2
+      ],
+      [
+        "ai pipelines",
+        2
+      ],
+      [
+        "cx platforms",
+        2
+      ],
+      [
+        "chatgpt",
+        2
+      ],
+      [
+        "claude",
+        2
+      ],
+      [
+        "perplexity pro",
+        2
+      ],
+      [
+        "fault-tolerant architecture",
+        2
+      ],
+      [
+        "software architecture",
+        2
+      ],
+      [
+        "data pipelines",
+        2
+      ],
+      [
+        "machine learning",
+        2
+      ],
+      [
+        "ai",
+        2
+      ],
+      [
+        "ai/ml",
+        2
+      ],
+      [
+        "product development",
+        2
+      ],
+      [
+        "software engineering",
+        2
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        18
+      ],
+      [
+        "leadership",
+        14
+      ],
+      [
+        "strategic thinking",
+        14
+      ],
+      [
+        "team building",
+        13
+      ],
+      [
+        "stakeholder management",
+        9
+      ],
+      [
+        "cross-functional collaboration",
+        8
+      ],
+      [
+        "mentorship",
+        7
+      ],
+      [
+        "community engagement",
+        4
+      ],
+      [
+        "ownership mindset",
+        3
+      ],
+      [
+        "coaching",
+        3
+      ],
+      [
+        "public speaking",
+        3
+      ],
+      [
+        "technical leadership",
+        3
+      ],
+      [
+        "adaptability",
+        3
+      ],
+      [
+        "entrepreneurship",
+        3
+      ],
+      [
+        "product mindset",
+        2
+      ],
+      [
+        "collaboration",
+        2
+      ],
+      [
+        "strategic planning",
+        2
+      ],
+      [
+        "problem-solving",
+        2
+      ],
+      [
+        "high agency",
+        2
+      ],
+      [
+        "customer empathy",
+        2
+      ],
+      [
+        "budget planning",
+        2
+      ],
+      [
+        "mentoring",
+        2
+      ],
+      [
+        "decision-making",
+        2
+      ],
+      [
+        "goal management",
+        2
+      ],
+      [
+        "time management",
+        2
+      ],
+      [
+        "energy management",
+        2
+      ],
+      [
+        "fundraising",
+        2
+      ],
+      [
+        "resilience",
+        2
+      ],
+      [
+        "technical standards",
+        1
+      ],
+      [
+        "recruiting",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "head of engineering",
+        13
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "team building",
+        6
+      ],
+      [
+        "ci/cd",
+        6
+      ],
+      [
+        "engineering leadership",
+        5
+      ],
+      [
+        "technical leadership",
+        5
+      ],
+      [
+        "technical strategy",
+        5
+      ],
+      [
+        "aws",
+        4
+      ],
+      [
+        "web3",
+        4
+      ],
+      [
+        "blockchain",
+        4
+      ],
+      [
+        "staking",
+        4
+      ],
+      [
+        "ethereum",
+        4
+      ],
+      [
+        "smart contracts",
+        4
+      ],
+      [
+        "co-founder",
+        4
+      ],
+      [
+        "startup",
+        4
+      ],
+      [
+        "python",
+        3
+      ],
+      [
+        "kubernetes",
+        3
+      ],
+      [
+        "react",
+        3
+      ],
+      [
+        "cross-functional collaboration",
+        3
+      ],
+      [
+        "stakeholder management",
+        3
+      ],
+      [
+        "api design",
+        3
+      ],
+      [
+        "cloud infrastructure",
+        3
+      ],
+      [
+        "team scaling",
+        3
+      ],
+      [
+        "system architecture",
+        2
+      ],
+      [
+        "fintech",
+        2
+      ],
+      [
+        "high-availability",
+        2
+      ],
+      [
+        "strategic planning",
+        2
+      ],
+      [
+        "restful apis",
+        2
+      ],
+      [
+        "llm applications",
+        2
+      ],
+      [
+        "conversational ai",
+        2
+      ],
+      [
+        "multi-agent orchestration",
+        2
+      ],
+      [
+        "event-driven systems",
+        2
+      ],
+      [
+        "api integrations",
+        2
+      ],
+      [
+        "cross-functional leadership",
+        2
+      ],
+      [
+        "high agency",
+        2
+      ],
+      [
+        "team leadership",
+        2
+      ],
+      [
+        "remote",
+        2
+      ],
+      [
+        "team management",
+        2
+      ],
+      [
+        "microservices",
+        2
+      ],
+      [
+        "data pipelines",
+        2
+      ],
+      [
+        "machine learning",
+        2
+      ],
+      [
+        "product-market fit",
+        2
+      ],
+      [
+        "fundraising",
+        2
+      ],
+      [
+        "scale",
+        2
+      ],
+      [
+        "ai/ml",
+        2
+      ],
+      [
+        "revenue growth",
+        2
+      ],
+      [
+        "edtech",
+        2
+      ],
+      [
+        "llm orchestration",
+        1
+      ],
+      [
+        "agent frameworks",
+        1
+      ],
+      [
+        "next.js",
+        1
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 28.94736842105263,
+        "min": 25,
+        "max": 40,
+        "count": 19
+      },
+      "process": {
+        "avg": 14.736842105263158,
+        "min": 10,
+        "max": 25,
+        "count": 19
+      },
+      "architecture": {
+        "avg": 27.894736842105264,
+        "min": 10,
+        "max": 35,
+        "count": 19
+      },
+      "leadership": {
+        "avg": 28.42105263157895,
+        "min": 20,
+        "max": 40,
+        "count": 19
+      }
+    },
+    "seniority_distribution": {
+      "director": 11,
+      "c_level": 5,
+      "vp": 3
+    }
+  },
+  "engineering_manager": {
+    "count": 53,
+    "sample_titles": [
+      "Engineering Manager",
+      "Software Engineering Team Lead - Riyadh",
+      "Engineering Manager (m/f/d)",
+      "Engineering Manager, Enterprise AI Platform",
+      "Engineering Manager \u2013 Modular Solidity Compiler APIs",
+      "Software Engineering Leader",
+      "Engineering Manager, EU",
+      "Senior Software Engineer",
+      "Software Engineering Manager - Identity and Access Management",
+      "Engineering Manager *remote* (m/f/d)",
+      "Platform Engineering Manager",
+      "Senior Engineering Manager",
+      "Software Engineering Manager - Cross-platform C++ - Multipass",
+      "Senior Team Lead - Data Operations",
+      "Software Engineering Manager",
+      "Senior Engineering Manager - Staffing",
+      "Engineering Manager - Voice Agents",
+      "Software Engineering Manager, Content Agent",
+      "Senior AI Engineering Manager",
+      "AI Engineering Manager (LLMs & Deep Learning) - LATAM or Europe"
+    ],
+    "sample_companies": [
+      "Engineering Manager",
+      "MOZN",
+      "SPORT ALLIANCE GMBH",
+      "CLOUDERA",
+      "TRYHACKME",
+      "NOMIC FOUNDATION",
+      "DLOCAL",
+      "ASHBY",
+      "HAYSTACK",
+      "CAMUNDA",
+      "PLIANT",
+      "EPAM SYSTEMS",
+      "P2P.ORG",
+      "CANONICAL",
+      "RTB HOUSE",
+      "ODILO",
+      "VEEVA SYSTEMS",
+      "HUNGERSTATION | \u0647\u0646\u0642\u0631\u0633\u062a\u064a\u0634\u0646",
+      "MALT",
+      "CLOUDBEDS"
+    ],
+    "pain_points_count": 194,
+    "pain_points_by_theme": {
+      "Scaling & Architecture": 47,
+      "Process & Delivery": 39,
+      "Other": 35,
+      "Team Building": 12,
+      "Strategic Alignment": 5,
+      "AI/ML Integration": 22,
+      "Cross-Functional": 21,
+      "Technical Debt": 6,
+      "Platform & Infrastructure": 7
+    },
+    "top_technical_skills": [
+      [
+        "aws",
+        14
+      ],
+      [
+        "ci/cd",
+        14
+      ],
+      [
+        "kubernetes",
+        12
+      ],
+      [
+        "python",
+        12
+      ],
+      [
+        "microservices",
+        12
+      ],
+      [
+        "typescript",
+        11
+      ],
+      [
+        "java",
+        11
+      ],
+      [
+        "react",
+        11
+      ],
+      [
+        "distributed systems",
+        10
+      ],
+      [
+        "node.js",
+        9
+      ],
+      [
+        "terraform",
+        8
+      ],
+      [
+        "docker",
+        7
+      ],
+      [
+        "javascript",
+        6
+      ],
+      [
+        "postgresql",
+        6
+      ],
+      [
+        "backend development",
+        6
+      ],
+      [
+        "golang",
+        5
+      ],
+      [
+        "angular",
+        5
+      ],
+      [
+        "linux",
+        5
+      ],
+      [
+        "kotlin",
+        5
+      ],
+      [
+        "frontend development",
+        5
+      ],
+      [
+        "devops",
+        4
+      ],
+      [
+        "saas",
+        4
+      ],
+      [
+        "c++",
+        4
+      ],
+      [
+        "web technologies",
+        4
+      ],
+      [
+        "code review",
+        4
+      ],
+      [
+        "cloud infrastructure",
+        4
+      ],
+      [
+        "go",
+        4
+      ],
+      [
+        "agile methodologies",
+        3
+      ],
+      [
+        "rust",
+        3
+      ],
+      [
+        "developer tooling",
+        3
+      ],
+      [
+        "redis",
+        3
+      ],
+      [
+        "spring boot",
+        3
+      ],
+      [
+        "gcp",
+        3
+      ],
+      [
+        "testing",
+        3
+      ],
+      [
+        "serverless architectures",
+        3
+      ],
+      [
+        "cloud computing",
+        3
+      ],
+      [
+        "domain-driven design",
+        2
+      ],
+      [
+        "software architecture",
+        2
+      ],
+      [
+        "spring",
+        2
+      ],
+      [
+        "tensorflow",
+        2
+      ],
+      [
+        "mlflow",
+        2
+      ],
+      [
+        "datadog",
+        2
+      ],
+      [
+        "grafana",
+        2
+      ],
+      [
+        "prometheus",
+        2
+      ],
+      [
+        "nosql",
+        2
+      ],
+      [
+        "git",
+        2
+      ],
+      [
+        "windows",
+        2
+      ],
+      [
+        "rest apis",
+        2
+      ],
+      [
+        "infrastructure as code",
+        2
+      ],
+      [
+        "nest.js",
+        2
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        50
+      ],
+      [
+        "communication",
+        44
+      ],
+      [
+        "mentorship",
+        21
+      ],
+      [
+        "stakeholder management",
+        14
+      ],
+      [
+        "collaboration",
+        13
+      ],
+      [
+        "coaching",
+        11
+      ],
+      [
+        "cross-functional collaboration",
+        9
+      ],
+      [
+        "problem-solving",
+        9
+      ],
+      [
+        "team building",
+        7
+      ],
+      [
+        "strategic thinking",
+        7
+      ],
+      [
+        "mentoring",
+        7
+      ],
+      [
+        "people management",
+        5
+      ],
+      [
+        "team development",
+        5
+      ],
+      [
+        "problem solving",
+        5
+      ],
+      [
+        "prioritization",
+        5
+      ],
+      [
+        "presentation skills",
+        4
+      ],
+      [
+        "empathy",
+        4
+      ],
+      [
+        "team management",
+        4
+      ],
+      [
+        "organizational skills",
+        4
+      ],
+      [
+        "accountability",
+        3
+      ],
+      [
+        "cross-team collaboration",
+        3
+      ],
+      [
+        "ownership",
+        3
+      ],
+      [
+        "decision-making",
+        3
+      ],
+      [
+        "growth mindset",
+        3
+      ],
+      [
+        "attention to detail",
+        3
+      ],
+      [
+        "adaptability",
+        2
+      ],
+      [
+        "documentation",
+        2
+      ],
+      [
+        "continuous improvement",
+        2
+      ],
+      [
+        "feedback delivery",
+        2
+      ],
+      [
+        "inspiring others",
+        2
+      ]
+    ],
+    "top_keywords": [
+      [
+        "engineering manager",
+        39
+      ],
+      [
+        "leadership",
+        23
+      ],
+      [
+        "agile",
+        19
+      ],
+      [
+        "ci/cd",
+        16
+      ],
+      [
+        "aws",
+        14
+      ],
+      [
+        "team leadership",
+        14
+      ],
+      [
+        "distributed systems",
+        13
+      ],
+      [
+        "communication",
+        13
+      ],
+      [
+        "python",
+        12
+      ],
+      [
+        "mentorship",
+        11
+      ],
+      [
+        "kubernetes",
+        11
+      ],
+      [
+        "microservices",
+        11
+      ],
+      [
+        "java",
+        10
+      ],
+      [
+        "typescript",
+        9
+      ],
+      [
+        "react",
+        9
+      ],
+      [
+        "coaching",
+        8
+      ],
+      [
+        "node.js",
+        7
+      ],
+      [
+        "terraform",
+        7
+      ],
+      [
+        "devops",
+        6
+      ],
+      [
+        "saas",
+        6
+      ],
+      [
+        "technical leadership",
+        6
+      ],
+      [
+        "people management",
+        6
+      ],
+      [
+        "postgresql",
+        6
+      ],
+      [
+        "golang",
+        5
+      ],
+      [
+        "mentoring",
+        5
+      ],
+      [
+        "fintech",
+        5
+      ],
+      [
+        "remote",
+        5
+      ],
+      [
+        "hiring",
+        4
+      ],
+      [
+        "docker",
+        4
+      ],
+      [
+        "developer experience",
+        4
+      ],
+      [
+        "career development",
+        4
+      ],
+      [
+        "linux",
+        4
+      ],
+      [
+        "software engineering manager",
+        4
+      ],
+      [
+        "javascript",
+        3
+      ],
+      [
+        "software development lifecycle",
+        3
+      ],
+      [
+        "stakeholder management",
+        3
+      ],
+      [
+        "software development",
+        3
+      ],
+      [
+        "backend",
+        3
+      ],
+      [
+        "frontend",
+        3
+      ],
+      [
+        "innovation",
+        3
+      ],
+      [
+        "collaboration",
+        3
+      ],
+      [
+        "angular",
+        3
+      ],
+      [
+        "team management",
+        3
+      ],
+      [
+        "rust",
+        3
+      ],
+      [
+        "performance reviews",
+        3
+      ],
+      [
+        "redis",
+        3
+      ],
+      [
+        "security",
+        3
+      ],
+      [
+        "spring boot",
+        3
+      ],
+      [
+        "infrastructure as code",
+        3
+      ],
+      [
+        "senior engineering manager",
+        3
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 29.81132075471698,
+        "min": 25,
+        "max": 35,
+        "count": 53
+      },
+      "process": {
+        "avg": 20.471698113207548,
+        "min": 15,
+        "max": 35,
+        "count": 53
+      },
+      "architecture": {
+        "avg": 20.09433962264151,
+        "min": 10,
+        "max": 35,
+        "count": 53
+      },
+      "leadership": {
+        "avg": 29.62264150943396,
+        "min": 15,
+        "max": 40,
+        "count": 53
+      }
+    },
+    "seniority_distribution": {
+      "senior": 53
+    }
+  },
+  "staff_principal_engineer": {
+    "count": 52,
+    "sample_titles": [
+      "Staff Software Engineer",
+      "Principal Software Engineer",
+      "Solutions Architect",
+      "Cloud Enterprise Architect, Professional Services, Google Cloud",
+      "Javascript Fullstack Engineer - Tech Lead",
+      "Senior Tech Lead / Principal Backend Engineer",
+      "Enterprise Architect",
+      "Staff Software Engineer - Python, Go",
+      "Staff Engineer (f/m/d)",
+      "Software Architect \u2013 Cloud, AI & Distributed Systems",
+      "AI Engineering Lead",
+      "Principal Enterprise Architect",
+      "AI Enterprise Architect",
+      "Senior Software Engineer",
+      "Software Architecture Engineer",
+      "Staff Solutions Engineer",
+      "Principal Backend Engineer (m/f/x)",
+      "Staff Backend Engineer, Chat & Notifications"
+    ],
+    "sample_companies": [
+      "Staff Software Engineer",
+      "Principal Software Engineer",
+      "FANATICS",
+      "BAZAARVOICE",
+      "AMENTUM",
+      "MYGWORK - LGBTQ+ BUSINESS COMMUNITY",
+      "TRUST IN SODA",
+      "PADDLE",
+      "SAILPOINT",
+      "GOOGLE",
+      "LUMENALTA",
+      "NICE COGNIGY",
+      "INNOTECH",
+      "PRIMIS",
+      "DBT LABS",
+      "BYTESEARCH",
+      "FLUXON",
+      "SAMSARA",
+      "SMARTCORE AG",
+      "GTREASURY"
+    ],
+    "pain_points_count": 207,
+    "pain_points_by_theme": {
+      "Scaling & Architecture": 59,
+      "Process & Delivery": 36,
+      "Platform & Infrastructure": 11,
+      "AI/ML Integration": 24,
+      "Other": 43,
+      "Technical Debt": 15,
+      "Cross-Functional": 12,
+      "Strategic Alignment": 7
+    },
+    "top_technical_skills": [
+      [
+        "python",
+        21
+      ],
+      [
+        "kubernetes",
+        19
+      ],
+      [
+        "java",
+        17
+      ],
+      [
+        "microservices",
+        17
+      ],
+      [
+        "ci/cd",
+        17
+      ],
+      [
+        "aws",
+        17
+      ],
+      [
+        "typescript",
+        14
+      ],
+      [
+        "distributed systems",
+        13
+      ],
+      [
+        "postgresql",
+        12
+      ],
+      [
+        "azure",
+        12
+      ],
+      [
+        "react",
+        12
+      ],
+      [
+        "docker",
+        11
+      ],
+      [
+        "c#",
+        9
+      ],
+      [
+        "go",
+        9
+      ],
+      [
+        "sql",
+        9
+      ],
+      [
+        "api design",
+        9
+      ],
+      [
+        "gcp",
+        9
+      ],
+      [
+        "performance optimization",
+        7
+      ],
+      [
+        "javascript",
+        7
+      ],
+      [
+        "node.js",
+        7
+      ],
+      [
+        "event-driven architecture",
+        7
+      ],
+      [
+        "rest apis",
+        6
+      ],
+      [
+        "unit testing",
+        6
+      ],
+      [
+        "cloud architecture",
+        6
+      ],
+      [
+        "system architecture",
+        6
+      ],
+      [
+        "golang",
+        6
+      ],
+      [
+        "kafka",
+        6
+      ],
+      [
+        "devops",
+        6
+      ],
+      [
+        "spring boot",
+        5
+      ],
+      [
+        "system design",
+        5
+      ],
+      [
+        "scalability",
+        5
+      ],
+      [
+        "nosql",
+        5
+      ],
+      [
+        "tdd",
+        5
+      ],
+      [
+        "llms",
+        5
+      ],
+      [
+        "google cloud platform",
+        5
+      ],
+      [
+        "redis",
+        5
+      ],
+      [
+        "enterprise architecture",
+        5
+      ],
+      [
+        "terraform",
+        5
+      ],
+      [
+        "git",
+        4
+      ],
+      [
+        "iot",
+        4
+      ],
+      [
+        "infrastructure as code",
+        4
+      ],
+      [
+        ".net",
+        4
+      ],
+      [
+        "ai/ml",
+        4
+      ],
+      [
+        "mongodb",
+        4
+      ],
+      [
+        "angular",
+        4
+      ],
+      [
+        "security",
+        4
+      ],
+      [
+        "relational databases",
+        3
+      ],
+      [
+        "nosql databases",
+        3
+      ],
+      [
+        "containerization",
+        3
+      ],
+      [
+        "aws lambda",
+        3
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        40
+      ],
+      [
+        "mentorship",
+        21
+      ],
+      [
+        "collaboration",
+        21
+      ],
+      [
+        "technical leadership",
+        19
+      ],
+      [
+        "leadership",
+        18
+      ],
+      [
+        "problem solving",
+        18
+      ],
+      [
+        "cross-functional collaboration",
+        17
+      ],
+      [
+        "strategic thinking",
+        14
+      ],
+      [
+        "problem-solving",
+        12
+      ],
+      [
+        "stakeholder management",
+        10
+      ],
+      [
+        "mentoring",
+        10
+      ],
+      [
+        "innovation",
+        6
+      ],
+      [
+        "team collaboration",
+        5
+      ],
+      [
+        "autonomy",
+        5
+      ],
+      [
+        "attention to detail",
+        5
+      ],
+      [
+        "coaching",
+        4
+      ],
+      [
+        "adaptability",
+        3
+      ],
+      [
+        "analytical skills",
+        3
+      ],
+      [
+        "analytical thinking",
+        3
+      ],
+      [
+        "knowledge sharing",
+        3
+      ],
+      [
+        "ownership mindset",
+        3
+      ],
+      [
+        "ownership",
+        3
+      ],
+      [
+        "continuous learning",
+        2
+      ],
+      [
+        "code review",
+        2
+      ],
+      [
+        "growth mindset",
+        2
+      ],
+      [
+        "influence",
+        2
+      ],
+      [
+        "influencing",
+        2
+      ],
+      [
+        "empathy",
+        2
+      ],
+      [
+        "team-oriented",
+        2
+      ],
+      [
+        "technical excellence",
+        2
+      ]
+    ],
+    "top_keywords": [
+      [
+        "python",
+        19
+      ],
+      [
+        "kubernetes",
+        18
+      ],
+      [
+        "technical leadership",
+        18
+      ],
+      [
+        "staff software engineer",
+        17
+      ],
+      [
+        "mentorship",
+        16
+      ],
+      [
+        "distributed systems",
+        16
+      ],
+      [
+        "microservices",
+        15
+      ],
+      [
+        "ci/cd",
+        15
+      ],
+      [
+        "aws",
+        15
+      ],
+      [
+        "java",
+        12
+      ],
+      [
+        "typescript",
+        11
+      ],
+      [
+        "docker",
+        9
+      ],
+      [
+        "scalability",
+        9
+      ],
+      [
+        "react",
+        9
+      ],
+      [
+        "postgresql",
+        9
+      ],
+      [
+        "sql",
+        8
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "go",
+        7
+      ],
+      [
+        "principal software engineer",
+        7
+      ],
+      [
+        "staff engineer",
+        7
+      ],
+      [
+        "saas",
+        7
+      ],
+      [
+        "c#",
+        6
+      ],
+      [
+        "system architecture",
+        6
+      ],
+      [
+        "system design",
+        6
+      ],
+      [
+        "kafka",
+        6
+      ],
+      [
+        "mentoring",
+        6
+      ],
+      [
+        "event-driven architecture",
+        6
+      ],
+      [
+        "spring boot",
+        5
+      ],
+      [
+        "cloud-native",
+        5
+      ],
+      [
+        "cloud architecture",
+        5
+      ],
+      [
+        "azure",
+        5
+      ],
+      [
+        "tdd",
+        5
+      ],
+      [
+        "code review",
+        5
+      ],
+      [
+        "api design",
+        5
+      ],
+      [
+        "google cloud platform",
+        5
+      ],
+      [
+        "enterprise architecture",
+        5
+      ],
+      [
+        "enterprise architect",
+        5
+      ],
+      [
+        "rest apis",
+        4
+      ],
+      [
+        "nosql",
+        4
+      ],
+      [
+        ".net",
+        4
+      ],
+      [
+        "golang",
+        4
+      ],
+      [
+        "node.js",
+        4
+      ],
+      [
+        "gcp",
+        4
+      ],
+      [
+        "togaf",
+        4
+      ],
+      [
+        "infrastructure as code",
+        3
+      ],
+      [
+        "unit testing",
+        3
+      ],
+      [
+        "software architecture",
+        3
+      ],
+      [
+        "analytical skills",
+        3
+      ],
+      [
+        "communication",
+        3
+      ],
+      [
+        "principal engineer",
+        3
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 29.134615384615383,
+        "min": 20,
+        "max": 40,
+        "count": 52
+      },
+      "process": {
+        "avg": 17.692307692307693,
+        "min": 10,
+        "max": 25,
+        "count": 52
+      },
+      "architecture": {
+        "avg": 39.80769230769231,
+        "min": 30,
+        "max": 55,
+        "count": 52
+      },
+      "leadership": {
+        "avg": 13.365384615384615,
+        "min": 10,
+        "max": 20,
+        "count": 52
+      }
+    },
+    "seniority_distribution": {
+      "staff": 28,
+      "principal": 21,
+      "senior": 3
+    }
+  },
+  "tech_lead": {
+    "count": 55,
+    "sample_titles": [
+      "Lead Software Engineer",
+      "Software Engineering Team Lead",
+      "Tech Lead",
+      "Staff - Tech Lead Software Engineer - OpenCTI",
+      "Team Lead, Engineering, Node.js",
+      "Software Engineering Lead",
+      "Senior Engineering Manager \u2013 Growth Acquire",
+      "Team Lead Software Engineering (all genders)",
+      "Engineering Team Lead",
+      "Technical Team Lead, Technology, Design Inspiration - Spain Remote",
+      "Engineering Lead",
+      "Technical Lead - Solution Engineering Manager",
+      "DevOps Team Lead",
+      "Senior Lead Software Engineer",
+      "Data Engineering Team Lead",
+      "Tech Lead - AI Platform - $20m + Series A Funded Start Up",
+      "Software Engineering Lead Manager",
+      "Lead Software Engineer- Spain Remote",
+      "AI Technical Lead",
+      "Senior Software Engineer"
+    ],
+    "sample_companies": [
+      "Lead Software Engineer",
+      "Software Engineering Team Lead",
+      "SOFTNICE UG",
+      "FILIGRAN",
+      "AVALANCHE LABORATORY",
+      "DEEL",
+      "MERCOR",
+      "FALCON SMART IT (FALCONSMARTIT)",
+      "MYEDSPACE",
+      "DRIFTROCK",
+      "KRAKEN",
+      "SERRALA",
+      "DUBIZZLE",
+      "BLINK",
+      "GRAVITAS RECRUITMENT GROUP (GLOBAL) LTD",
+      "FRUITION GROUP",
+      "PARKDEAN RESORTS",
+      "OLIVER BERNARD",
+      "VISTA",
+      "PLAN A TECHNOLOGIES"
+    ],
+    "pain_points_count": 211,
+    "pain_points_by_theme": {
+      "Scaling & Architecture": 52,
+      "Platform & Infrastructure": 15,
+      "Technical Debt": 13,
+      "Cross-Functional": 10,
+      "AI/ML Integration": 20,
+      "Strategic Alignment": 3,
+      "Process & Delivery": 51,
+      "Other": 43,
+      "Team Building": 4
+    },
+    "top_technical_skills": [
+      [
+        "aws",
+        24
+      ],
+      [
+        "ci/cd",
+        21
+      ],
+      [
+        "react",
+        18
+      ],
+      [
+        "python",
+        16
+      ],
+      [
+        "typescript",
+        16
+      ],
+      [
+        "java",
+        15
+      ],
+      [
+        "javascript",
+        13
+      ],
+      [
+        "node.js",
+        11
+      ],
+      [
+        "microservices",
+        11
+      ],
+      [
+        "docker",
+        10
+      ],
+      [
+        "kubernetes",
+        10
+      ],
+      [
+        "c#",
+        9
+      ],
+      [
+        "distributed systems",
+        8
+      ],
+      [
+        "postgresql",
+        8
+      ],
+      [
+        "azure",
+        8
+      ],
+      [
+        "system design",
+        8
+      ],
+      [
+        "gcp",
+        7
+      ],
+      [
+        "terraform",
+        7
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "api design",
+        6
+      ],
+      [
+        "full-stack development",
+        6
+      ],
+      [
+        "api development",
+        6
+      ],
+      [
+        "graphql",
+        5
+      ],
+      [
+        "performance optimization",
+        4
+      ],
+      [
+        "api gateway",
+        4
+      ],
+      [
+        "git",
+        4
+      ],
+      [
+        "unit testing",
+        4
+      ],
+      [
+        "backend development",
+        4
+      ],
+      [
+        "cloud architecture",
+        4
+      ],
+      [
+        "monitoring",
+        4
+      ],
+      [
+        "front-end development",
+        4
+      ],
+      [
+        "rabbitmq",
+        3
+      ],
+      [
+        "apache kafka",
+        3
+      ],
+      [
+        ".net core",
+        3
+      ],
+      [
+        "rest apis",
+        3
+      ],
+      [
+        "spring boot",
+        3
+      ],
+      [
+        "event-driven architecture",
+        3
+      ],
+      [
+        "integration testing",
+        3
+      ],
+      [
+        "observability",
+        3
+      ],
+      [
+        "data pipelines",
+        3
+      ],
+      [
+        "data engineering",
+        3
+      ],
+      [
+        "machine learning",
+        3
+      ],
+      [
+        "rest api",
+        3
+      ],
+      [
+        "dynamodb",
+        3
+      ],
+      [
+        "back-end development",
+        3
+      ],
+      [
+        "frontend development",
+        3
+      ],
+      [
+        "pytest",
+        3
+      ],
+      [
+        "system architecture",
+        3
+      ],
+      [
+        "restful apis",
+        3
+      ],
+      [
+        "software architecture",
+        2
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        44
+      ],
+      [
+        "leadership",
+        30
+      ],
+      [
+        "collaboration",
+        26
+      ],
+      [
+        "technical leadership",
+        15
+      ],
+      [
+        "mentorship",
+        14
+      ],
+      [
+        "mentoring",
+        13
+      ],
+      [
+        "problem-solving",
+        13
+      ],
+      [
+        "stakeholder management",
+        11
+      ],
+      [
+        "problem solving",
+        10
+      ],
+      [
+        "cross-functional collaboration",
+        9
+      ],
+      [
+        "coaching",
+        6
+      ],
+      [
+        "analytical thinking",
+        6
+      ],
+      [
+        "strategic thinking",
+        6
+      ],
+      [
+        "code review",
+        6
+      ],
+      [
+        "ownership mindset",
+        5
+      ],
+      [
+        "team building",
+        5
+      ],
+      [
+        "autonomy",
+        5
+      ],
+      [
+        "documentation",
+        4
+      ],
+      [
+        "team collaboration",
+        3
+      ],
+      [
+        "attention to detail",
+        3
+      ],
+      [
+        "continuous learning",
+        3
+      ],
+      [
+        "accountability",
+        3
+      ],
+      [
+        "adaptability",
+        3
+      ],
+      [
+        "decision-making",
+        3
+      ],
+      [
+        "cross-team collaboration",
+        2
+      ],
+      [
+        "innovation",
+        2
+      ],
+      [
+        "technical decision-making",
+        2
+      ],
+      [
+        "technical decision making",
+        2
+      ],
+      [
+        "analytical skills",
+        2
+      ],
+      [
+        "proactive mindset",
+        2
+      ]
+    ],
+    "top_keywords": [
+      [
+        "aws",
+        24
+      ],
+      [
+        "ci/cd",
+        22
+      ],
+      [
+        "tech lead",
+        20
+      ],
+      [
+        "lead software engineer",
+        19
+      ],
+      [
+        "python",
+        17
+      ],
+      [
+        "typescript",
+        16
+      ],
+      [
+        "react",
+        16
+      ],
+      [
+        "java",
+        13
+      ],
+      [
+        "microservices",
+        13
+      ],
+      [
+        "agile",
+        13
+      ],
+      [
+        "technical leadership",
+        12
+      ],
+      [
+        "node.js",
+        11
+      ],
+      [
+        "javascript",
+        10
+      ],
+      [
+        "mentoring",
+        10
+      ],
+      [
+        "leadership",
+        10
+      ],
+      [
+        "mentorship",
+        10
+      ],
+      [
+        "kubernetes",
+        10
+      ],
+      [
+        "docker",
+        9
+      ],
+      [
+        "distributed systems",
+        8
+      ],
+      [
+        "scalability",
+        8
+      ],
+      [
+        "c#",
+        8
+      ],
+      [
+        "postgresql",
+        8
+      ],
+      [
+        "devops",
+        8
+      ],
+      [
+        "code review",
+        8
+      ],
+      [
+        "azure",
+        7
+      ],
+      [
+        "system design",
+        7
+      ],
+      [
+        "gcp",
+        6
+      ],
+      [
+        "terraform",
+        6
+      ],
+      [
+        "remote",
+        6
+      ],
+      [
+        "team leadership",
+        6
+      ],
+      [
+        "graphql",
+        5
+      ],
+      [
+        "api design",
+        5
+      ],
+      [
+        "cloud platforms",
+        5
+      ],
+      [
+        "technical lead",
+        5
+      ],
+      [
+        "communication",
+        4
+      ],
+      [
+        "full-stack development",
+        4
+      ],
+      [
+        "architecture",
+        4
+      ],
+      [
+        "saas",
+        4
+      ],
+      [
+        "collaboration",
+        4
+      ],
+      [
+        "fintech",
+        4
+      ],
+      [
+        "machine learning",
+        4
+      ],
+      [
+        "full-stack",
+        4
+      ],
+      [
+        "scrum",
+        4
+      ],
+      [
+        "apache kafka",
+        3
+      ],
+      [
+        "software architecture",
+        3
+      ],
+      [
+        ".net core",
+        3
+      ],
+      [
+        "spring boot",
+        3
+      ],
+      [
+        "rest api",
+        3
+      ],
+      [
+        "team lead",
+        3
+      ],
+      [
+        "git",
+        3
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 32.870370370370374,
+        "min": 25,
+        "max": 40,
+        "count": 54
+      },
+      "process": {
+        "avg": 18.796296296296298,
+        "min": 10,
+        "max": 35,
+        "count": 54
+      },
+      "architecture": {
+        "avg": 30.555555555555557,
+        "min": 20,
+        "max": 40,
+        "count": 54
+      },
+      "leadership": {
+        "avg": 17.77777777777778,
+        "min": 10,
+        "max": 30,
+        "count": 54
+      }
+    },
+    "seniority_distribution": {
+      "senior": 42,
+      "staff": 13
+    }
+  },
+  "cto": {
+    "count": 3,
+    "sample_titles": [
+      "CTO",
+      "Senior Software Engineer",
+      "Lead Software Engineer"
+    ],
+    "sample_companies": [
+      "CTO",
+      "CUREMYCAR"
+    ],
+    "pain_points_count": 12,
+    "pain_points_by_theme": {
+      "Team Building": 5,
+      "Scaling & Architecture": 4,
+      "Process & Delivery": 3
+    },
+    "top_technical_skills": [
+      [
+        "react",
+        2
+      ],
+      [
+        "typescript",
+        2
+      ],
+      [
+        "full-stack development",
+        2
+      ],
+      [
+        "system design",
+        2
+      ],
+      [
+        "api architecture",
+        2
+      ],
+      [
+        "mobile development",
+        2
+      ],
+      [
+        "web development",
+        2
+      ],
+      [
+        "marketplace platforms",
+        2
+      ],
+      [
+        "saas",
+        2
+      ],
+      [
+        "ott video platforms",
+        1
+      ],
+      [
+        "adaptive streaming",
+        1
+      ],
+      [
+        "cdn optimization",
+        1
+      ],
+      [
+        "blockchain",
+        1
+      ],
+      [
+        "cloud-native architectures",
+        1
+      ],
+      [
+        "devops",
+        1
+      ],
+      [
+        "decentralized storage",
+        1
+      ],
+      [
+        "ai integration",
+        1
+      ],
+      [
+        "web3",
+        1
+      ],
+      [
+        "video streaming infrastructure",
+        1
+      ],
+      [
+        "backend systems",
+        1
+      ],
+      [
+        "mobile platforms",
+        1
+      ],
+      [
+        "multi-device streaming",
+        1
+      ],
+      [
+        "scalable architecture",
+        1
+      ],
+      [
+        "global content delivery",
+        1
+      ],
+      [
+        "payment integration",
+        1
+      ],
+      [
+        "mapping integration",
+        1
+      ],
+      [
+        "mvp development",
+        1
+      ],
+      [
+        "payment integrations",
+        1
+      ],
+      [
+        "mapping integrations",
+        1
+      ],
+      [
+        "on-demand platforms",
+        1
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        3
+      ],
+      [
+        "technical decision-making",
+        2
+      ],
+      [
+        "collaboration",
+        2
+      ],
+      [
+        "entrepreneurial mindset",
+        2
+      ],
+      [
+        "commercial thinking",
+        2
+      ],
+      [
+        "strategic mindset",
+        1
+      ],
+      [
+        "startup agility",
+        1
+      ],
+      [
+        "team building",
+        1
+      ],
+      [
+        "innovation",
+        1
+      ],
+      [
+        "technical vision",
+        1
+      ],
+      [
+        "cross-functional collaboration",
+        1
+      ],
+      [
+        "roadmapping",
+        1
+      ],
+      [
+        "speed of execution",
+        1
+      ],
+      [
+        "ownership",
+        1
+      ],
+      [
+        "feature prioritization",
+        1
+      ],
+      [
+        "fast execution",
+        1
+      ],
+      [
+        "ownership mentality",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "technical leadership",
+        3
+      ],
+      [
+        "startup",
+        3
+      ],
+      [
+        "cto",
+        2
+      ],
+      [
+        "react",
+        2
+      ],
+      [
+        "typescript",
+        2
+      ],
+      [
+        "full-stack",
+        2
+      ],
+      [
+        "founding cto",
+        2
+      ],
+      [
+        "marketplace",
+        2
+      ],
+      [
+        "system design",
+        2
+      ],
+      [
+        "api architecture",
+        2
+      ],
+      [
+        "saas",
+        2
+      ],
+      [
+        "mobile development",
+        2
+      ],
+      [
+        "ott video platform",
+        1
+      ],
+      [
+        "video streaming",
+        1
+      ],
+      [
+        "blockchain",
+        1
+      ],
+      [
+        "adaptive streaming",
+        1
+      ],
+      [
+        "cdn optimization",
+        1
+      ],
+      [
+        "cloud-native architectures",
+        1
+      ],
+      [
+        "devops",
+        1
+      ],
+      [
+        "ai integration",
+        1
+      ],
+      [
+        "web3",
+        1
+      ],
+      [
+        "decentralized storage",
+        1
+      ],
+      [
+        "vp engineering",
+        1
+      ],
+      [
+        "scalable architecture",
+        1
+      ],
+      [
+        "mvp",
+        1
+      ],
+      [
+        "payment integration",
+        1
+      ],
+      [
+        "on-demand platform",
+        1
+      ],
+      [
+        "mvp development",
+        1
+      ],
+      [
+        "on-demand platforms",
+        1
+      ],
+      [
+        "payment integrations",
+        1
+      ],
+      [
+        "zero-to-one",
+        1
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 28.333333333333332,
+        "min": 15,
+        "max": 35,
+        "count": 3
+      },
+      "process": {
+        "avg": 10.0,
+        "min": 10,
+        "max": 10,
+        "count": 3
+      },
+      "architecture": {
+        "avg": 38.333333333333336,
+        "min": 35,
+        "max": 45,
+        "count": 3
+      },
+      "leadership": {
+        "avg": 23.333333333333332,
+        "min": 20,
+        "max": 30,
+        "count": 3
+      }
+    },
+    "seniority_distribution": {
+      "c_level": 3
+    }
+  },
+  "director_of_engineering": {
+    "count": 4,
+    "sample_titles": [
+      "Enterprise Architect Director",
+      "Director of Engineering (Technology Consulting)"
+    ],
+    "sample_companies": [
+      "THE PROFESSIONALS",
+      "Plain Concepts"
+    ],
+    "pain_points_count": 16,
+    "pain_points_by_theme": {
+      "Strategic Alignment": 3,
+      "Process & Delivery": 4,
+      "Other": 6,
+      "Cross-Functional": 2,
+      "Platform & Infrastructure": 1
+    },
+    "top_technical_skills": [
+      [
+        "enterprise architecture",
+        3
+      ],
+      [
+        "data management",
+        3
+      ],
+      [
+        "togaf",
+        3
+      ],
+      [
+        "it infrastructure",
+        2
+      ],
+      [
+        "security",
+        2
+      ],
+      [
+        "strategic planning",
+        2
+      ],
+      [
+        "it infrastructure design",
+        1
+      ],
+      [
+        "systems integration",
+        1
+      ],
+      [
+        "it governance",
+        1
+      ],
+      [
+        "cloud architecture",
+        1
+      ],
+      [
+        "security architecture",
+        1
+      ],
+      [
+        "digital transformation",
+        1
+      ],
+      [
+        "it strategy",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        ".net",
+        1
+      ],
+      [
+        "cloud computing",
+        1
+      ],
+      [
+        "artificial intelligence",
+        1
+      ],
+      [
+        "big data",
+        1
+      ],
+      [
+        "microsoft technologies",
+        1
+      ],
+      [
+        "web technologies",
+        1
+      ],
+      [
+        "microsoft ecosystem",
+        1
+      ],
+      [
+        "agile",
+        1
+      ],
+      [
+        "technical consulting",
+        1
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        4
+      ],
+      [
+        "communication",
+        4
+      ],
+      [
+        "collaboration",
+        2
+      ],
+      [
+        "strategic planning",
+        1
+      ],
+      [
+        "stakeholder management",
+        1
+      ],
+      [
+        "project management",
+        1
+      ],
+      [
+        "decision making",
+        1
+      ],
+      [
+        "problem solving",
+        1
+      ],
+      [
+        "client relationship management",
+        1
+      ],
+      [
+        "business development",
+        1
+      ],
+      [
+        "strategic thinking",
+        1
+      ],
+      [
+        "team coordination",
+        1
+      ],
+      [
+        "continuous improvement",
+        1
+      ],
+      [
+        "proposal writing",
+        1
+      ],
+      [
+        "account management",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "enterprise architecture",
+        3
+      ],
+      [
+        "it infrastructure",
+        3
+      ],
+      [
+        "data management",
+        3
+      ],
+      [
+        "security",
+        3
+      ],
+      [
+        "togaf",
+        3
+      ],
+      [
+        "strategic planning",
+        3
+      ],
+      [
+        "enterprise architect director",
+        3
+      ],
+      [
+        "compliance",
+        3
+      ],
+      [
+        "project management",
+        3
+      ],
+      [
+        "digital transformation",
+        3
+      ],
+      [
+        "stakeholder collaboration",
+        2
+      ],
+      [
+        "leadership",
+        2
+      ],
+      [
+        "communication",
+        2
+      ],
+      [
+        "architecture frameworks",
+        1
+      ],
+      [
+        "governance",
+        1
+      ],
+      [
+        "architecture management",
+        1
+      ],
+      [
+        "governance frameworks",
+        1
+      ],
+      [
+        "it strategy",
+        1
+      ],
+      [
+        "it governance",
+        1
+      ],
+      [
+        "systems integration",
+        1
+      ],
+      [
+        "stakeholder management",
+        1
+      ],
+      [
+        "scalable infrastructure",
+        1
+      ],
+      [
+        "director of engineering",
+        1
+      ],
+      [
+        "technology consulting",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        ".net",
+        1
+      ],
+      [
+        "cloud",
+        1
+      ],
+      [
+        "ai",
+        1
+      ],
+      [
+        "big data",
+        1
+      ],
+      [
+        "microsoft",
+        1
+      ],
+      [
+        "account farming",
+        1
+      ],
+      [
+        "client relationship management",
+        1
+      ],
+      [
+        "technical leadership",
+        1
+      ],
+      [
+        "business development",
+        1
+      ],
+      [
+        "agile",
+        1
+      ],
+      [
+        "team leadership",
+        1
+      ],
+      [
+        "project delivery",
+        1
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 22.5,
+        "min": 20,
+        "max": 30,
+        "count": 4
+      },
+      "process": {
+        "avg": 20.0,
+        "min": 15,
+        "max": 25,
+        "count": 4
+      },
+      "architecture": {
+        "avg": 36.25,
+        "min": 25,
+        "max": 40,
+        "count": 4
+      },
+      "leadership": {
+        "avg": 21.25,
+        "min": 15,
+        "max": 30,
+        "count": 4
+      }
+    },
+    "seniority_distribution": {
+      "director": 4
+    }
+  },
+  "vp_engineering": {
+    "count": 1,
+    "sample_titles": [
+      "Software Engineering Manager - Database"
+    ],
+    "sample_companies": [
+      "TIGER DATA (CREATORS OF TIMESCALEDB)"
+    ],
+    "pain_points_count": 3,
+    "pain_points_by_theme": {
+      "Other": 3
+    },
+    "top_technical_skills": [
+      [
+        "cloud architecture",
+        1
+      ],
+      [
+        "aws",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        "gcp",
+        1
+      ],
+      [
+        "microservices",
+        1
+      ],
+      [
+        "serverless computing",
+        1
+      ],
+      [
+        "docker",
+        1
+      ],
+      [
+        "kubernetes",
+        1
+      ],
+      [
+        "terraform",
+        1
+      ],
+      [
+        "cloudformation",
+        1
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        1
+      ],
+      [
+        "communication",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "cloud architecture",
+        1
+      ],
+      [
+        "aws",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        "gcp",
+        1
+      ],
+      [
+        "microservices",
+        1
+      ],
+      [
+        "serverless computing",
+        1
+      ],
+      [
+        "docker",
+        1
+      ],
+      [
+        "kubernetes",
+        1
+      ],
+      [
+        "terraform",
+        1
+      ],
+      [
+        "cloudformation",
+        1
+      ],
+      [
+        "pxm",
+        1
+      ],
+      [
+        "saas",
+        1
+      ],
+      [
+        "leadership",
+        1
+      ],
+      [
+        "devops",
+        1
+      ],
+      [
+        "security",
+        1
+      ]
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 25.0,
+        "min": 25,
+        "max": 25,
+        "count": 1
+      },
+      "process": {
+        "avg": 15.0,
+        "min": 15,
+        "max": 15,
+        "count": 1
+      },
+      "architecture": {
+        "avg": 30.0,
+        "min": 30,
+        "max": 30,
+        "count": 1
+      },
+      "leadership": {
+        "avg": 30.0,
+        "min": 30,
+        "max": 30,
+        "count": 1
+      }
+    },
+    "seniority_distribution": {
+      "vp": 1
+    }
+  },
+  "unknown": {
+    "count": 1,
+    "sample_titles": [
+      "Technical Lead"
+    ],
+    "sample_companies": [
+      "ELITE HR CONSULTANCY"
+    ],
+    "pain_points_count": 0,
+    "pain_points_by_theme": {},
+    "top_technical_skills": [],
+    "top_soft_skills": [],
+    "top_keywords": [],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 0,
+        "min": 0,
+        "max": 0,
+        "count": 0
+      },
+      "process": {
+        "avg": 0,
+        "min": 0,
+        "max": 0,
+        "count": 0
+      },
+      "architecture": {
+        "avg": 0,
+        "min": 0,
+        "max": 0,
+        "count": 0
+      },
+      "leadership": {
+        "avg": 0,
+        "min": 0,
+        "max": 0,
+        "count": 0
+      }
+    },
+    "seniority_distribution": {
+      "unknown": 1
+    }
+  }
+}

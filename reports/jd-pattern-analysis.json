@@ -1,0 +1,2860 @@
+{
+  "senior_engineer": {
+    "count": 156,
+    "sample_titles": [
+      "Senior Software Engineer",
+      "Lead Software Engineer",
+      "Senior Software Engineering Lead",
+      "Senior Software Engineer - Node",
+      "Senior Back-end Software Engineer - Typescript/NodeJS (remote within Europe)",
+      "Senior Software Engineer, Connectors team",
+      "> Senior Software Engineer / Full-stack Developer / DevOp (m/f/d)",
+      "Tech Lead, LLM & Generative AI (Full Remote - France)",
+      "Senior Software Engineer II - Backend, Flywheel",
+      "Senior Backend Software Engineer"
+    ],
+    "sample_companies": [
+      "Passporter",
+      "Lead Software Engineer",
+      "Senior Software Engineer",
+      "BAO",
+      "BERKELEY PAYMENTS",
+      "FOUNTAIN",
+      "WEDO",
+      "RELATIVITY",
+      "BLUE YONDER",
+      "VIVA TECH TALENT"
+    ],
+    "top_technical_skills": [
+      [
+        "aws",
+        80
+      ],
+      [
+        "python",
+        73
+      ],
+      [
+        "ci/cd",
+        68
+      ],
+      [
+        "kubernetes",
+        59
+      ],
+      [
+        "docker",
+        52
+      ],
+      [
+        "java",
+        50
+      ],
+      [
+        "javascript",
+        49
+      ],
+      [
+        "typescript",
+        49
+      ],
+      [
+        "microservices",
+        48
+      ],
+      [
+        "azure",
+        44
+      ],
+      [
+        "react",
+        43
+      ],
+      [
+        "gcp",
+        37
+      ],
+      [
+        "c#",
+        36
+      ],
+      [
+        "sql",
+        32
+      ],
+      [
+        "go",
+        30
+      ],
+      [
+        "distributed systems",
+        29
+      ],
+      [
+        "terraform",
+        29
+      ],
+      [
+        "git",
+        26
+      ],
+      [
+        "postgresql",
+        26
+      ],
+      [
+        "system design",
+        26
+      ],
+      [
+        "software architecture",
+        22
+      ],
+      [
+        "backend development",
+        20
+      ],
+      [
+        "node.js",
+        19
+      ],
+      [
+        "kafka",
+        19
+      ],
+      [
+        "version control",
+        18
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        118
+      ],
+      [
+        "collaboration",
+        106
+      ],
+      [
+        "problem-solving",
+        71
+      ],
+      [
+        "mentoring",
+        50
+      ],
+      [
+        "problem solving",
+        43
+      ],
+      [
+        "leadership",
+        35
+      ],
+      [
+        "adaptability",
+        31
+      ],
+      [
+        "ownership",
+        21
+      ],
+      [
+        "mentorship",
+        19
+      ],
+      [
+        "code review",
+        19
+      ],
+      [
+        "attention to detail",
+        18
+      ],
+      [
+        "continuous learning",
+        17
+      ],
+      [
+        "technical leadership",
+        16
+      ],
+      [
+        "cross-functional collaboration",
+        15
+      ],
+      [
+        "autonomy",
+        15
+      ]
+    ],
+    "top_keywords": [
+      [
+        "senior software engineer",
+        138
+      ],
+      [
+        "aws",
+        78
+      ],
+      [
+        "ci/cd",
+        65
+      ],
+      [
+        "python",
+        63
+      ],
+      [
+        "kubernetes",
+        58
+      ],
+      [
+        "microservices",
+        58
+      ],
+      [
+        "agile",
+        50
+      ],
+      [
+        "typescript",
+        47
+      ],
+      [
+        "docker",
+        42
+      ],
+      [
+        "java",
+        40
+      ],
+      [
+        "mentoring",
+        39
+      ],
+      [
+        "react",
+        37
+      ],
+      [
+        "distributed systems",
+        32
+      ],
+      [
+        "system design",
+        32
+      ],
+      [
+        "javascript",
+        27
+      ],
+      [
+        "code review",
+        26
+      ],
+      [
+        "postgresql",
+        26
+      ],
+      [
+        "sql",
+        23
+      ],
+      [
+        "remote",
+        21
+      ],
+      [
+        "devops",
+        20
+      ],
+      [
+        "terraform",
+        20
+      ],
+      [
+        "software architecture",
+        20
+      ],
+      [
+        "cloud platforms",
+        19
+      ],
+      [
+        "fintech",
+        17
+      ],
+      [
+        "c#",
+        17
+      ]
+    ],
+    "implied_pain_points": [
+      "Need for senior engineer to scale product and implement company strategy",
+      "Requirement for strong collaboration during synchronized work hours to avoid blockers",
+      "Need for someone who can contribute to architectural decisions while shipping features",
+      "Challenge of maintaining code quality and testing practices while moving fast",
+      "Need for experienced on-site leadership to manage complex multidisciplinary coordination",
+      "Managing contractor compliance and quality control on high-end developments",
+      "Navigating Dubai regulatory and authority approval processes efficiently",
+      "Ensuring timely project delivery while maintaining quality standards",
+      "Need to expand 3D engine capabilities across multiple platforms",
+      "Growing product complexity requiring specialized graphics programming talent",
+      "Cross-platform compatibility challenges between Windows, Android, iOS, and Linux",
+      "Maintaining code quality and delivery schedules for MAGNET product suite",
+      "Need to build internal tools and platforms from scratch to enable data-driven decision making across 90+ portfolio companies",
+      "Lack of scalable infrastructure to support rapid acquisitions and due diligence processes",
+      "Limited technical expertise to bridge data science outputs with production systems",
+      "Need for technical standards and best practices across a growing engineering organization",
+      "Complex loan calculation logic requiring deep technical expertise",
+      "High-scale system serving millions of end-users needs reliability",
+      "Need for engineers who can own features end-to-end without hand-holding",
+      "On-call incidents requiring rapid problem resolution",
+      "Need to scale AI-driven platform with production-grade reliability",
+      "Bridging gap between complex unstructured data and actionable intelligence",
+      "Optimizing LLM integration for latency, cost, and reliability at scale",
+      "Building foundational backend architecture for AI infrastructure startup",
+      "Need to scale engineering team with senior talent who can mentor juniors",
+      "Require strong remote collaboration capabilities in distributed team",
+      "Seeking to improve code quality and engineering practices",
+      "Looking for product-minded engineers who can influence business direction",
+      "Need for senior engineers who can work independently in fully remote environment",
+      "Lack of engineering excellence and code quality standards"
+    ],
+    "success_metrics": [
+      "Successful delivery of sprint functionalities on time",
+      "Effective collaboration during hot hours (9:30-14:00) with minimal blockers",
+      "Code quality improvements through TDD and clean code practices",
+      "Contribution to architectural decisions that scale the platform",
+      "Positive team dynamics through feedback and knowledge sharing",
+      "Successful delivery of large-scale residential and hospitality projects to quality standards",
+      "Timely issuance of Taking Over Certificates",
+      "Effective coordination of multidisciplinary teams",
+      "Contractor compliance with approved plans and specifications",
+      "Risk mitigation and project compliance maintenance",
+      "Client satisfaction and stakeholder communication effectiveness",
+      "Successful delivery of new 3D engine features across all target platforms",
+      "Reduction in platform-specific defects and bugs",
+      "Meeting delivery schedules as planned with project manager",
+      "Code quality improvements through adherence to software processes",
+      "Performance optimization of 3D rendering and graphics operations",
+      "Successful delivery of data-driven applications supporting portfolio analytics and acquisitions",
+      "Reduced time-to-insight for investment teams through scalable internal tools",
+      "Improved infrastructure reliability and deployment velocity through CI/CD best practices",
+      "Junior engineer skill development and team capability growth"
+    ],
+    "sample_responsibilities": [
+      "Work on sprint functionalities and features",
+      "Collaborate closely with mobile, UX, and product teams",
+      "Participate in architecture and development decisions",
+      "Contribute to development of additional products to complement company strategy",
+      "Participate in pair programming during hot hours (9:30-14:00)",
+      "Share code ownership and responsibility with team",
+      "Lead or participate in team ceremonies proactively",
+      "Direct and manage all aspects of construction supervision on-site, ensuring adherence to approved plans, specifications, and safety requirements",
+      "Coordinate and manage multidisciplinary teams including architectural, structural, MEP, infrastructure, and specialist consultants",
+      "Serve as the key point of contact for all site-related matters, maintaining regular communication with the client and stakeholders",
+      "Review and monitor contractors' work plans, method statements, and progress schedules",
+      "Lead weekly progress and technical coordination meetings",
+      "Manage risks, propose mitigation strategies, and monitor overall project compliance",
+      "Review contractor submissions, including material approvals, quality plans, and safety documentation",
+      "Support the client with authority approvals, provisional sum activation, and timely decision-making"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 43.7,
+        "min": 30,
+        "max": 45,
+        "count": 156
+      },
+      "process": {
+        "avg": 19.2,
+        "min": 10,
+        "max": 35,
+        "count": 156
+      },
+      "architecture": {
+        "avg": 26.4,
+        "min": 15,
+        "max": 35,
+        "count": 156
+      },
+      "leadership": {
+        "avg": 10.7,
+        "min": 5,
+        "max": 20,
+        "count": 156
+      }
+    },
+    "seniority_distribution": {
+      "senior": 156
+    }
+  },
+  "head_of_engineering": {
+    "count": 19,
+    "sample_titles": [
+      "Head of Engineering",
+      "Head of Technology",
+      "Head of Software Engineering (m/f/d)",
+      "Engineering Leader",
+      "Co-Founder",
+      "Consumer AI Co-Founder / Head of Engineering (100 % remote) (m/f/d)",
+      "Head of Engineering (m/w/d)",
+      "EdTech Co-Founder / Head of Engineering (100 % remote) (m/f/d)"
+    ],
+    "sample_companies": [
+      "Anadyr Horizon",
+      "Head of Engineering",
+      "FINOM",
+      "ITDS",
+      "P2P.ORG",
+      "JOBGETHER",
+      "SIENA AI",
+      "KREATOORS.AI",
+      "TIDE",
+      "BAUMLINK"
+    ],
+    "top_technical_skills": [
+      [
+        "ci/cd",
+        9
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "cloud infrastructure",
+        6
+      ],
+      [
+        "restful apis",
+        5
+      ],
+      [
+        "api design",
+        5
+      ],
+      [
+        "python",
+        4
+      ],
+      [
+        "react",
+        4
+      ],
+      [
+        "aws",
+        4
+      ],
+      [
+        "web3",
+        4
+      ],
+      [
+        "blockchain",
+        4
+      ],
+      [
+        "smart contracts",
+        4
+      ],
+      [
+        "ethereum",
+        4
+      ],
+      [
+        "containerization",
+        4
+      ],
+      [
+        "polkadot",
+        4
+      ],
+      [
+        "ton",
+        4
+      ],
+      [
+        "cosmos",
+        4
+      ],
+      [
+        "kubernetes",
+        3
+      ],
+      [
+        "typescript",
+        3
+      ],
+      [
+        "bitcoin",
+        3
+      ],
+      [
+        "system design",
+        3
+      ],
+      [
+        "terraform",
+        2
+      ],
+      [
+        "postgresql",
+        2
+      ],
+      [
+        "snowflake",
+        2
+      ],
+      [
+        "dbt",
+        2
+      ],
+      [
+        "observability",
+        2
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        18
+      ],
+      [
+        "leadership",
+        14
+      ],
+      [
+        "strategic thinking",
+        14
+      ],
+      [
+        "team building",
+        13
+      ],
+      [
+        "stakeholder management",
+        9
+      ],
+      [
+        "cross-functional collaboration",
+        8
+      ],
+      [
+        "mentorship",
+        7
+      ],
+      [
+        "community engagement",
+        4
+      ],
+      [
+        "ownership mindset",
+        3
+      ],
+      [
+        "coaching",
+        3
+      ],
+      [
+        "public speaking",
+        3
+      ],
+      [
+        "technical leadership",
+        3
+      ],
+      [
+        "adaptability",
+        3
+      ],
+      [
+        "entrepreneurship",
+        3
+      ],
+      [
+        "product mindset",
+        2
+      ]
+    ],
+    "top_keywords": [
+      [
+        "head of engineering",
+        13
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "team building",
+        6
+      ],
+      [
+        "ci/cd",
+        6
+      ],
+      [
+        "engineering leadership",
+        5
+      ],
+      [
+        "technical leadership",
+        5
+      ],
+      [
+        "technical strategy",
+        5
+      ],
+      [
+        "aws",
+        4
+      ],
+      [
+        "web3",
+        4
+      ],
+      [
+        "blockchain",
+        4
+      ],
+      [
+        "staking",
+        4
+      ],
+      [
+        "ethereum",
+        4
+      ],
+      [
+        "smart contracts",
+        4
+      ],
+      [
+        "co-founder",
+        4
+      ],
+      [
+        "startup",
+        4
+      ],
+      [
+        "python",
+        3
+      ],
+      [
+        "kubernetes",
+        3
+      ],
+      [
+        "react",
+        3
+      ],
+      [
+        "cross-functional collaboration",
+        3
+      ],
+      [
+        "stakeholder management",
+        3
+      ],
+      [
+        "api design",
+        3
+      ],
+      [
+        "cloud infrastructure",
+        3
+      ],
+      [
+        "team scaling",
+        3
+      ],
+      [
+        "system architecture",
+        2
+      ],
+      [
+        "fintech",
+        2
+      ]
+    ],
+    "implied_pain_points": [
+      "Need to build engineering organization from zero with no existing structure",
+      "Converting research prototypes into production-grade systems",
+      "Meeting national security compliance requirements (ATO/FedRAMP) without prior infrastructure",
+      "Balancing research velocity with mission-critical reliability and security",
+      "Hiring elite engineering talent for dual-use AI in competitive market",
+      "Establishing engineering culture and operating rhythm in early-stage startup",
+      "Legacy ASP.NET codebase requiring modernization to .NET Core",
+      "Need to scale engineering team and establish formal engineering processes",
+      "Lack of standardized AI tooling and development velocity metrics",
+      "Growing enterprise customer base requiring zero-downtime migrations and robust DevOps practices",
+      "Scaling engineering organization while maintaining startup agility and entrepreneurial DNA",
+      "Balancing feature velocity with technical excellence during rapid growth phase",
+      "Managing technical debt and build vs buy decisions across expanding product domains",
+      "Coordinating multiple squads and ensuring predictable delivery at scale",
+      "Bottlenecks in engineering delivery pipeline",
+      "Ownership gaps in technical areas",
+      "Need for improved cross-functional collaboration",
+      "System performance and stability issues",
+      "Need to scale infrastructure from 10B+ TVL to exponential growth while maintaining security",
+      "Building engineering organization from scratch to support rapid product expansion (RWA, data, yield)",
+      "Managing complex blockchain integrations across multiple protocols and institutional clients",
+      "Ensuring API reliability and security for high-value institutional clients like BitGo, Crypto.com, OKX",
+      "Need to build and scale engineering function from scratch or near-scratch",
+      "Lack of robust technical strategy to support competitive advantage in blockchain space",
+      "API reliability and performance issues at scale with complex blockchain workloads",
+      "Need for stronger engineering culture and operational excellence practices",
+      "Need to scale engineering organization rapidly while maintaining quality and velocity",
+      "Building first-of-its-kind AI intelligence layer requires strong technical vision and execution",
+      "Balancing speed of startup execution with building scalable systems and processes",
+      "Need technical leader who can operate at executive level while staying hands-on with AI tools"
+    ],
+    "success_metrics": [
+      "Successfully hire and scale engineering team from zero to production-ready organization",
+      "Deploy secure, mission-critical AI systems that pass government security reviews",
+      "Achieve SOC2/ISO27001 certification and U.S. government ATO/FedRAMP readiness",
+      "Convert research artifacts into productionized systems with high reliability (SLOs)",
+      "Establish engineering velocity and delivery cadence that supports quarterly build cycles",
+      "Build engineering culture aligned with Integrity, Amity, and Excellence values",
+      "Successful ASP.NET to .NET Core migration with zero downtime",
+      "Annual bonus tied to delivery and uptime targets (up to 10% of base)",
+      "Multiple production deployments per day capability",
+      "AI toolchain adoption and measurable velocity improvements",
+      "Team growth and retention of 10-30 engineers",
+      "Platform scalability across multi-cloud environments",
+      "Predictable delivery of domain roadmap milestones",
+      "Engineering team performance and engagement metrics",
+      "Domain contribution to Finom's strategic and financial goals",
+      "System scalability, reliability, and performance improvements",
+      "Successful hiring and development of engineering managers and ICs",
+      "Balance between feature velocity and technical quality",
+      "Stakeholder satisfaction and transparent progress communication",
+      "Reduction in delivery bottlenecks"
+    ],
+    "sample_responsibilities": [
+      "Found the engineering organization from the ground up",
+      "Own engineering execution, architecture, delivery velocity, and code quality",
+      "Design resilient systems for agentic workflows, simulation pipelines, multi-tenancy, and observability",
+      "Write and review code - Python backend, orchestration, data pipelines, and React/Next.js dashboards",
+      "Establish engineering operating rhythm: design reviews, delivery cadences, RFC/ADR rigor",
+      "Design systems aligned with SOC2/ISO27001 and U.S. government ATO/FedRAMP-style readiness",
+      "Build in security: RBAC/ABAC, audit logs, SBOM, least privilege, data residency",
+      "Convert prototypes and research artifacts into productionized systems",
+      "Lead engineering representation in customer security reviews",
+      "Own the hiring bar, team design, and engineering culture",
+      "Define technical strategy including architecture, tooling, security, and scaling for SqlDBM v2",
+      "Own ASP.NET to .NET Core migration path with zero downtime requirement",
+      "Formalize AI toolchain with Cursor/Copilot, establish prompt patterns, guardrails, and velocity metrics",
+      "Hire, coach, and unblock a squad of full-stack engineers",
+      "Set up and maintain CI/CD pipelines, automated testing, and deployment workflows"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 28.9,
+        "min": 25,
+        "max": 40,
+        "count": 19
+      },
+      "process": {
+        "avg": 14.7,
+        "min": 10,
+        "max": 25,
+        "count": 19
+      },
+      "architecture": {
+        "avg": 27.9,
+        "min": 10,
+        "max": 35,
+        "count": 19
+      },
+      "leadership": {
+        "avg": 28.4,
+        "min": 20,
+        "max": 40,
+        "count": 19
+      }
+    },
+    "seniority_distribution": {
+      "director": 11,
+      "c_level": 5,
+      "vp": 3
+    }
+  },
+  "engineering_manager": {
+    "count": 53,
+    "sample_titles": [
+      "Engineering Manager",
+      "Software Engineering Team Lead - Riyadh",
+      "Engineering Manager (m/f/d)",
+      "Engineering Manager, Enterprise AI Platform",
+      "Engineering Manager \u2013 Modular Solidity Compiler APIs",
+      "Software Engineering Leader",
+      "Engineering Manager, EU",
+      "Senior Software Engineer",
+      "Software Engineering Manager - Identity and Access Management",
+      "Engineering Manager *remote* (m/f/d)"
+    ],
+    "sample_companies": [
+      "Engineering Manager",
+      "MOZN",
+      "SPORT ALLIANCE GMBH",
+      "CLOUDERA",
+      "TRYHACKME",
+      "NOMIC FOUNDATION",
+      "DLOCAL",
+      "ASHBY",
+      "HAYSTACK",
+      "CAMUNDA"
+    ],
+    "top_technical_skills": [
+      [
+        "aws",
+        14
+      ],
+      [
+        "ci/cd",
+        14
+      ],
+      [
+        "kubernetes",
+        12
+      ],
+      [
+        "python",
+        12
+      ],
+      [
+        "microservices",
+        12
+      ],
+      [
+        "typescript",
+        11
+      ],
+      [
+        "java",
+        11
+      ],
+      [
+        "react",
+        11
+      ],
+      [
+        "distributed systems",
+        10
+      ],
+      [
+        "node.js",
+        9
+      ],
+      [
+        "terraform",
+        8
+      ],
+      [
+        "docker",
+        7
+      ],
+      [
+        "javascript",
+        6
+      ],
+      [
+        "postgresql",
+        6
+      ],
+      [
+        "backend development",
+        6
+      ],
+      [
+        "golang",
+        5
+      ],
+      [
+        "angular",
+        5
+      ],
+      [
+        "linux",
+        5
+      ],
+      [
+        "kotlin",
+        5
+      ],
+      [
+        "frontend development",
+        5
+      ],
+      [
+        "devops",
+        4
+      ],
+      [
+        "saas",
+        4
+      ],
+      [
+        "c++",
+        4
+      ],
+      [
+        "web technologies",
+        4
+      ],
+      [
+        "code review",
+        4
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        50
+      ],
+      [
+        "communication",
+        44
+      ],
+      [
+        "mentorship",
+        21
+      ],
+      [
+        "stakeholder management",
+        14
+      ],
+      [
+        "collaboration",
+        13
+      ],
+      [
+        "coaching",
+        11
+      ],
+      [
+        "cross-functional collaboration",
+        9
+      ],
+      [
+        "problem-solving",
+        9
+      ],
+      [
+        "team building",
+        7
+      ],
+      [
+        "strategic thinking",
+        7
+      ],
+      [
+        "mentoring",
+        7
+      ],
+      [
+        "people management",
+        5
+      ],
+      [
+        "team development",
+        5
+      ],
+      [
+        "problem solving",
+        5
+      ],
+      [
+        "prioritization",
+        5
+      ]
+    ],
+    "top_keywords": [
+      [
+        "engineering manager",
+        39
+      ],
+      [
+        "leadership",
+        23
+      ],
+      [
+        "agile",
+        19
+      ],
+      [
+        "ci/cd",
+        16
+      ],
+      [
+        "aws",
+        14
+      ],
+      [
+        "team leadership",
+        14
+      ],
+      [
+        "distributed systems",
+        13
+      ],
+      [
+        "communication",
+        13
+      ],
+      [
+        "python",
+        12
+      ],
+      [
+        "mentorship",
+        11
+      ],
+      [
+        "kubernetes",
+        11
+      ],
+      [
+        "microservices",
+        11
+      ],
+      [
+        "java",
+        10
+      ],
+      [
+        "typescript",
+        9
+      ],
+      [
+        "react",
+        9
+      ],
+      [
+        "coaching",
+        8
+      ],
+      [
+        "node.js",
+        7
+      ],
+      [
+        "terraform",
+        7
+      ],
+      [
+        "devops",
+        6
+      ],
+      [
+        "saas",
+        6
+      ],
+      [
+        "technical leadership",
+        6
+      ],
+      [
+        "people management",
+        6
+      ],
+      [
+        "postgresql",
+        6
+      ],
+      [
+        "golang",
+        5
+      ],
+      [
+        "mentoring",
+        5
+      ]
+    ],
+    "implied_pain_points": [
+      "Need for technical leadership to scale technology platform",
+      "Ensuring high-quality product delivery",
+      "Fostering a collaborative and safe team environment",
+      "Attracting and retaining engineering talent",
+      "Need to scale and mature engineering practices within the screening modules team",
+      "Requirement to hire and onboard top talent quickly in a high-growth environment",
+      "Balancing delivery speed with quality for customer-facing compliance products",
+      "Evolving architecture to support scalable and reliable screening features",
+      "Need for strong leadership to scale engineering teams",
+      "Aligning team growth with strategic business objectives",
+      "Ensuring technical excellence and adherence to best practices",
+      "Need to accelerate machine learning and AI development",
+      "Requirement to manage and grow engineering teams",
+      "Addressing gaps in team processes and practices",
+      "Scaling engineering practices",
+      "Improving developer experience",
+      "Integrating AI technologies",
+      "Need for technical leadership in early-stage projects",
+      "Improving team performance and structure",
+      "Aligning technical roadmap with user needs and market trends",
+      "Need for scalable enterprise-grade applications to handle mission-critical payments for large clients",
+      "Managing remote distributed development teams effectively",
+      "Ensuring performance, scalability and security for critical payment applications",
+      "Cross-team coordination and communication in a global remote-first organization",
+      "Overcoming traditional process barriers",
+      "Building a high-autonomy engineering culture",
+      "Ensuring engineers take ownership of projects",
+      "Need to modernize aerospace software development practices and adopt industry standards",
+      "Complex multi-stakeholder coordination across internal teams, academia, SMEs and external partners",
+      "Legacy systems requiring migration to open architectures and containerized environments"
+    ],
+    "success_metrics": [
+      "Successful delivery of high-quality products",
+      "Improved team engagement and collaboration",
+      "Technical excellence in architecture and software",
+      "Effective incident response and learning",
+      "Team velocity and delivery speed improvements",
+      "Quality of features and services measured by stability and reliability",
+      "Successful hiring and retention of top engineering talent",
+      "Team engagement and career progression of engineers",
+      "Successful client onboarding and product adoption rates",
+      "Achievement of product and business KPIs through OKR framework",
+      "Successful scaling of engineering teams",
+      "Alignment of team goals with business objectives",
+      "Delivery of high-quality software solutions",
+      "Effective definition and delivery of product capabilities",
+      "Successful team growth and development",
+      "Improved process and practice adherence",
+      "Improved developer workflows and satisfaction",
+      "Successful AI technology integration",
+      "High-quality delivery across the stack",
+      "On-time delivery of projects with desired features and quality"
+    ],
+    "sample_responsibilities": [
+      "Lead an empowered team to design, build, and scale Emma\u2019s technology platform",
+      "Own the team\u2019s delivery, driving predictable progress",
+      "Champion continuous improvement and innovation",
+      "Foster a highly engaged, collaborative, and psychologically safe team",
+      "Attract, recruit, develop, and retain great engineering talent",
+      "Work collaboratively with cross-functional teams to define and achieve a data-informed roadmap",
+      "Ensure the technical excellence of the architecture and software",
+      "Coach, mentor, and support team members",
+      "Coordinate incident response and ensure learning opportunities",
+      "Define the strategic direction of the team and contribute to technical strategy for screening modules",
+      "Guide and coach an exceptional team of engineers in technical and non-technical aspects",
+      "Build stable, scalable, and reliable features and services",
+      "Assist team members in shaping their individual careers while fostering self-organized agile team environment",
+      "Establish and enhance Engineering Practices to improve engagement, delivery speed, and quality",
+      "Collaborate with product managers to lead team projects, managing stakeholders, dependencies, roadmaps, and cost"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 29.8,
+        "min": 25,
+        "max": 35,
+        "count": 53
+      },
+      "process": {
+        "avg": 20.5,
+        "min": 15,
+        "max": 35,
+        "count": 53
+      },
+      "architecture": {
+        "avg": 20.1,
+        "min": 10,
+        "max": 35,
+        "count": 53
+      },
+      "leadership": {
+        "avg": 29.6,
+        "min": 15,
+        "max": 40,
+        "count": 53
+      }
+    },
+    "seniority_distribution": {
+      "senior": 53
+    }
+  },
+  "staff_principal_engineer": {
+    "count": 52,
+    "sample_titles": [
+      "Staff Software Engineer",
+      "Principal Software Engineer",
+      "Solutions Architect",
+      "Cloud Enterprise Architect, Professional Services, Google Cloud",
+      "Javascript Fullstack Engineer - Tech Lead",
+      "Senior Tech Lead / Principal Backend Engineer",
+      "Enterprise Architect",
+      "Staff Software Engineer - Python, Go",
+      "Staff Engineer (f/m/d)",
+      "Software Architect \u2013 Cloud, AI & Distributed Systems"
+    ],
+    "sample_companies": [
+      "Staff Software Engineer",
+      "Principal Software Engineer",
+      "FANATICS",
+      "BAZAARVOICE",
+      "AMENTUM",
+      "MYGWORK - LGBTQ+ BUSINESS COMMUNITY",
+      "TRUST IN SODA",
+      "PADDLE",
+      "SAILPOINT",
+      "GOOGLE"
+    ],
+    "top_technical_skills": [
+      [
+        "python",
+        21
+      ],
+      [
+        "kubernetes",
+        19
+      ],
+      [
+        "java",
+        17
+      ],
+      [
+        "microservices",
+        17
+      ],
+      [
+        "ci/cd",
+        17
+      ],
+      [
+        "aws",
+        17
+      ],
+      [
+        "typescript",
+        14
+      ],
+      [
+        "distributed systems",
+        13
+      ],
+      [
+        "postgresql",
+        12
+      ],
+      [
+        "azure",
+        12
+      ],
+      [
+        "react",
+        12
+      ],
+      [
+        "docker",
+        11
+      ],
+      [
+        "c#",
+        9
+      ],
+      [
+        "go",
+        9
+      ],
+      [
+        "sql",
+        9
+      ],
+      [
+        "api design",
+        9
+      ],
+      [
+        "gcp",
+        9
+      ],
+      [
+        "performance optimization",
+        7
+      ],
+      [
+        "javascript",
+        7
+      ],
+      [
+        "node.js",
+        7
+      ],
+      [
+        "event-driven architecture",
+        7
+      ],
+      [
+        "rest apis",
+        6
+      ],
+      [
+        "unit testing",
+        6
+      ],
+      [
+        "cloud architecture",
+        6
+      ],
+      [
+        "system architecture",
+        6
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        40
+      ],
+      [
+        "mentorship",
+        21
+      ],
+      [
+        "collaboration",
+        21
+      ],
+      [
+        "technical leadership",
+        19
+      ],
+      [
+        "leadership",
+        18
+      ],
+      [
+        "problem solving",
+        18
+      ],
+      [
+        "cross-functional collaboration",
+        17
+      ],
+      [
+        "strategic thinking",
+        14
+      ],
+      [
+        "problem-solving",
+        12
+      ],
+      [
+        "stakeholder management",
+        10
+      ],
+      [
+        "mentoring",
+        10
+      ],
+      [
+        "innovation",
+        6
+      ],
+      [
+        "team collaboration",
+        5
+      ],
+      [
+        "autonomy",
+        5
+      ],
+      [
+        "attention to detail",
+        5
+      ]
+    ],
+    "top_keywords": [
+      [
+        "python",
+        19
+      ],
+      [
+        "kubernetes",
+        18
+      ],
+      [
+        "technical leadership",
+        18
+      ],
+      [
+        "staff software engineer",
+        17
+      ],
+      [
+        "mentorship",
+        16
+      ],
+      [
+        "distributed systems",
+        16
+      ],
+      [
+        "microservices",
+        15
+      ],
+      [
+        "ci/cd",
+        15
+      ],
+      [
+        "aws",
+        15
+      ],
+      [
+        "java",
+        12
+      ],
+      [
+        "typescript",
+        11
+      ],
+      [
+        "docker",
+        9
+      ],
+      [
+        "scalability",
+        9
+      ],
+      [
+        "react",
+        9
+      ],
+      [
+        "postgresql",
+        9
+      ],
+      [
+        "sql",
+        8
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "go",
+        7
+      ],
+      [
+        "principal software engineer",
+        7
+      ],
+      [
+        "staff engineer",
+        7
+      ],
+      [
+        "saas",
+        7
+      ],
+      [
+        "c#",
+        6
+      ],
+      [
+        "system architecture",
+        6
+      ],
+      [
+        "system design",
+        6
+      ],
+      [
+        "kafka",
+        6
+      ]
+    ],
+    "implied_pain_points": [
+      "Need for scalable cloud architecture in energy systems to handle distributed energy resources",
+      "Technical leadership gap requiring experienced staff engineer to guide team and maintain code quality",
+      "Complex integration challenges between renewable energy technologies and cloud infrastructure",
+      "Growing demand for cloud-native solutions in rapidly expanding energy industry",
+      "Need for scalable cloud-native solutions in the energy sector",
+      "Building robust software for distributed energy resources management",
+      "Establishing code quality and design standards across engineering teams",
+      "Bridging gap between energy domain expertise and software engineering",
+      "Need to scale platform infrastructure to support growing biotech/pharma research demands",
+      "Building foundational technology from ground up as founding team member",
+      "Establishing technical standards and architecture principles for new engineering organization",
+      "Accelerating translational medicine platform requiring highly reliable and performant systems",
+      "Need to unify fragmented third-party data sources across multiple datastores",
+      "Scaling real estate technology platform to handle growing user base",
+      "Building reliable end-to-end systems that combine backend and frontend seamlessly",
+      "Maintaining code quality and test coverage across full stack",
+      "Need for technical leadership to guide real-time risk and trading platform architecture",
+      "Code complexity and architectural debt requiring proactive remediation",
+      "Scaling challenges in sports betting platform requiring high-performance solutions",
+      "Cross-team collaboration gaps between Product, Quants, and Engineering",
+      "Need to unify fragmented backend data systems across multiple product offerings",
+      "Struggle to make data available at scale while maintaining performance and availability",
+      "Lack of engineering best practices and technical leadership in data infrastructure",
+      "Need to build scalable data pipeline to power multiple client-facing dashboards and reporting products",
+      "Need for scalable and secure IT systems",
+      "Integration of complex technology systems",
+      "Addressing security design gaps",
+      "Need to scale security detection across 420+ million repositories and 150+ million developers",
+      "Challenge of maintaining detection support for 9+ programming languages simultaneously",
+      "Gap between traditional static analysis capabilities and LLM-powered detection/remediation"
+    ],
+    "success_metrics": [
+      "Delivery of high-quality, scalable software solutions meeting architectural standards",
+      "Successful deployment of cloud-native applications to production",
+      "Team growth and development through effective mentorship",
+      "Code quality improvements through reviews and adherence to best practices",
+      "Meeting technical and product roadmap deadlines through direct contributions",
+      "Delivery of scalable, maintainable software solutions on technical roadmap",
+      "Code quality improvements through reviews and automated testing",
+      "Performance, reliability, and scalability of backend systems",
+      "Successful design and implementation of scalable, performant, and reliable platform systems",
+      "Effective technical leadership demonstrated through architecture decisions and team guidance",
+      "Growth and development of mid-level engineers through mentorship",
+      "Delivery of high-quality features that meet customer needs and quality standards",
+      "Adoption of emerging technologies that improve engineering efficiency and effectiveness",
+      "Establishment of best practices, coding standards, and architecture principles",
+      "Delivery of scalable, reliable, and secure full stack applications",
+      "Production-ready code quality with comprehensive test coverage",
+      "Successful integration of third-party data sources into unified datastore",
+      "Improved user experiences through collaborative product development",
+      "Effective participation in code reviews and knowledge sharing",
+      "Adoption of new tools and techniques that improve development practices"
+    ],
+    "sample_responsibilities": [
+      "Design and implement scalable, maintainable, and efficient software solutions translating architectural vision into high-quality systems",
+      "Develop and maintain high-quality cloud-native applications focusing on performance, reliability, and scalability",
+      "Deliver on technical and product roadmaps through direct code contributions",
+      "Work closely with cross-functional teams including product managers and data scientists to define technical requirements",
+      "Deploy software applications into production partnering with DevOps teams",
+      "Mentor a team of cloud backend software engineers fostering professional growth",
+      "Ensure design and code quality through rigorous code reviews and automated testing",
+      "Apply knowledge of energy systems and renewable energy technologies to build domain-specific solutions",
+      "Develop Azure cloud solutions utilizing full suite of Azure services",
+      "Design and implement scalable, maintainable, and efficient software solutions",
+      "Develop and maintain high-quality cloud-native applications for backend systems",
+      "Collaborate with cross-functional teams including product managers and data scientists",
+      "Deploy software applications into production partnering with DevOps",
+      "Mentor a team of cloud backend software engineers",
+      "Ensure design and code quality through code reviews and automated testing"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 29.1,
+        "min": 20,
+        "max": 40,
+        "count": 52
+      },
+      "process": {
+        "avg": 17.7,
+        "min": 10,
+        "max": 25,
+        "count": 52
+      },
+      "architecture": {
+        "avg": 39.8,
+        "min": 30,
+        "max": 55,
+        "count": 52
+      },
+      "leadership": {
+        "avg": 13.4,
+        "min": 10,
+        "max": 20,
+        "count": 52
+      }
+    },
+    "seniority_distribution": {
+      "staff": 28,
+      "principal": 21,
+      "senior": 3
+    }
+  },
+  "tech_lead": {
+    "count": 55,
+    "sample_titles": [
+      "Lead Software Engineer",
+      "Software Engineering Team Lead",
+      "Tech Lead",
+      "Staff - Tech Lead Software Engineer - OpenCTI",
+      "Team Lead, Engineering, Node.js",
+      "Software Engineering Lead",
+      "Senior Engineering Manager \u2013 Growth Acquire",
+      "Team Lead Software Engineering (all genders)",
+      "Engineering Team Lead",
+      "Technical Team Lead, Technology, Design Inspiration - Spain Remote"
+    ],
+    "sample_companies": [
+      "Lead Software Engineer",
+      "Software Engineering Team Lead",
+      "SOFTNICE UG",
+      "FILIGRAN",
+      "AVALANCHE LABORATORY",
+      "DEEL",
+      "MERCOR",
+      "FALCON SMART IT (FALCONSMARTIT)",
+      "MYEDSPACE",
+      "DRIFTROCK"
+    ],
+    "top_technical_skills": [
+      [
+        "aws",
+        24
+      ],
+      [
+        "ci/cd",
+        21
+      ],
+      [
+        "react",
+        18
+      ],
+      [
+        "python",
+        16
+      ],
+      [
+        "typescript",
+        16
+      ],
+      [
+        "java",
+        15
+      ],
+      [
+        "javascript",
+        13
+      ],
+      [
+        "node.js",
+        11
+      ],
+      [
+        "microservices",
+        11
+      ],
+      [
+        "docker",
+        10
+      ],
+      [
+        "kubernetes",
+        10
+      ],
+      [
+        "c#",
+        9
+      ],
+      [
+        "distributed systems",
+        8
+      ],
+      [
+        "postgresql",
+        8
+      ],
+      [
+        "azure",
+        8
+      ],
+      [
+        "system design",
+        8
+      ],
+      [
+        "gcp",
+        7
+      ],
+      [
+        "terraform",
+        7
+      ],
+      [
+        "devops",
+        7
+      ],
+      [
+        "api design",
+        6
+      ],
+      [
+        "full-stack development",
+        6
+      ],
+      [
+        "api development",
+        6
+      ],
+      [
+        "graphql",
+        5
+      ],
+      [
+        "performance optimization",
+        4
+      ],
+      [
+        "api gateway",
+        4
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "communication",
+        44
+      ],
+      [
+        "leadership",
+        30
+      ],
+      [
+        "collaboration",
+        26
+      ],
+      [
+        "technical leadership",
+        15
+      ],
+      [
+        "mentorship",
+        14
+      ],
+      [
+        "mentoring",
+        13
+      ],
+      [
+        "problem-solving",
+        13
+      ],
+      [
+        "stakeholder management",
+        11
+      ],
+      [
+        "problem solving",
+        10
+      ],
+      [
+        "cross-functional collaboration",
+        9
+      ],
+      [
+        "coaching",
+        6
+      ],
+      [
+        "analytical thinking",
+        6
+      ],
+      [
+        "strategic thinking",
+        6
+      ],
+      [
+        "code review",
+        6
+      ],
+      [
+        "ownership mindset",
+        5
+      ]
+    ],
+    "top_keywords": [
+      [
+        "aws",
+        24
+      ],
+      [
+        "ci/cd",
+        22
+      ],
+      [
+        "tech lead",
+        20
+      ],
+      [
+        "lead software engineer",
+        19
+      ],
+      [
+        "python",
+        17
+      ],
+      [
+        "typescript",
+        16
+      ],
+      [
+        "react",
+        16
+      ],
+      [
+        "java",
+        13
+      ],
+      [
+        "microservices",
+        13
+      ],
+      [
+        "agile",
+        13
+      ],
+      [
+        "technical leadership",
+        12
+      ],
+      [
+        "node.js",
+        11
+      ],
+      [
+        "javascript",
+        10
+      ],
+      [
+        "mentoring",
+        10
+      ],
+      [
+        "leadership",
+        10
+      ],
+      [
+        "mentorship",
+        10
+      ],
+      [
+        "kubernetes",
+        10
+      ],
+      [
+        "docker",
+        9
+      ],
+      [
+        "distributed systems",
+        8
+      ],
+      [
+        "scalability",
+        8
+      ],
+      [
+        "c#",
+        8
+      ],
+      [
+        "postgresql",
+        8
+      ],
+      [
+        "devops",
+        8
+      ],
+      [
+        "code review",
+        8
+      ],
+      [
+        "azure",
+        7
+      ]
+    ],
+    "implied_pain_points": [
+      "Need for scalable distributed systems to handle growing workload",
+      "Integration challenges requiring robust messaging infrastructure",
+      "Technical debt in existing systems requiring modernization",
+      "Communication gaps between technical team and stakeholders",
+      "Ensuring scalability for global customers",
+      "Maintaining engineering best practices in a fast-paced environment",
+      "Driving technical direction in a data-intensive platform",
+      "Need for architectural guidance and technical leadership in .NET/React projects",
+      "Lack of engineering standards and best practices enforcement",
+      "Challenge in delivering enterprise-grade scalable solutions on Azure",
+      "Gap in technical mentorship and team capability building",
+      "Improving code quality and performance",
+      "Managing technical dependencies and security issues",
+      "Aligning team efforts with product roadmap",
+      "Need for technical leadership to drive banking integration projects with complex payment flows",
+      "Lack of senior expertise in regulated banking environments and compliance requirements",
+      "Challenges integrating legacy core banking systems with modern microservices architecture",
+      "Need for reliable event-driven messaging in critical payment processing systems",
+      "Need for scalable, robust systems",
+      "Ensuring high coding standards",
+      "Balancing short-term objectives with long-term system health",
+      "Need for high-quality open-source contributions",
+      "Enhancing AI model performance",
+      "Effective communication of evaluation results",
+      "Need for technical leadership that can balance hands-on development with strategic oversight",
+      "Scaling engineering teams rapidly in a high-growth global environment",
+      "Maintaining technical excellence and code quality across distributed teams",
+      "Balancing short-term product delivery with long-term technical health and scalability",
+      "Need for architectural guidance and hands-on technical leadership across full-stack teams",
+      "Delivering enterprise applications on aggressive timelines while maintaining quality"
+    ],
+    "success_metrics": [
+      "Successful delivery of large-scale distributed applications",
+      "System performance and reliability improvements",
+      "Effective messaging queue implementation and optimization",
+      "Stakeholder satisfaction with product features and technical communication",
+      "Successful mentoring and development of engineering team",
+      "Effective architectural decisions and technical direction",
+      "High reliability and scalability of the platform",
+      "Delivery of scalable, production-ready applications on Azure",
+      "Improved code quality through enforced engineering standards",
+      "Successful client engagement and requirement translation",
+      "Team skill development and mentorship outcomes",
+      "Reduction in technical debt through architectural oversight",
+      "On-time delivery with accurate timeline estimates",
+      "High standards of code quality and performance",
+      "Effective mentorship and team development",
+      "Successful delivery of key features and bug fixes",
+      "Successful delivery of banking integration projects from design to production",
+      "Clean, secure microservices architecture that meets regulatory requirements",
+      "Reliable payment flow integrations with core banking and card platforms",
+      "Effective technical leadership visible in design reviews and stakeholder engagement"
+    ],
+    "sample_responsibilities": [
+      "Design and develop large-scale, distributed software applications, tools, systems and services",
+      "Develop software services with focus on scalability, performance, and reliability",
+      "Work with messaging queue tools including RabbitMQ, Apache Kafka and ActiveMQ",
+      "Communicate product features, designs and product strategy to users, team members, and stakeholders",
+      "Apply professional software engineering practices throughout the full software development life cycle",
+      "Learn and adopt new technologies as needed",
+      "Develop solutions using modern programming languages including Java, Python, Javascript or C#",
+      "Leading, mentoring, and developing a team of engineers",
+      "Driving technical direction and architectural decisions for your domain",
+      "Staying hands-on across code reviews and critical development work",
+      "Fostering strong collaboration with Product and other Engineering teams",
+      "Ensuring reliability, scalability, and engineering best practices",
+      "Lead solution design, architecture reviews, and full-stack development (.NET + React)",
+      "Deliver scalable, production-ready software in collaboration with product, QA, architecture, and DevOps teams",
+      "Define and enforce engineering best practices: coding standards, automated testing, CI/CD, security, observability"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 32.9,
+        "min": 25,
+        "max": 40,
+        "count": 54
+      },
+      "process": {
+        "avg": 18.8,
+        "min": 10,
+        "max": 35,
+        "count": 54
+      },
+      "architecture": {
+        "avg": 30.6,
+        "min": 20,
+        "max": 40,
+        "count": 54
+      },
+      "leadership": {
+        "avg": 17.8,
+        "min": 10,
+        "max": 30,
+        "count": 54
+      }
+    },
+    "seniority_distribution": {
+      "senior": 42,
+      "staff": 13
+    }
+  },
+  "cto": {
+    "count": 3,
+    "sample_titles": [
+      "CTO",
+      "Senior Software Engineer",
+      "Lead Software Engineer"
+    ],
+    "sample_companies": [
+      "CTO",
+      "CUREMYCAR"
+    ],
+    "top_technical_skills": [
+      [
+        "react",
+        2
+      ],
+      [
+        "typescript",
+        2
+      ],
+      [
+        "full-stack development",
+        2
+      ],
+      [
+        "system design",
+        2
+      ],
+      [
+        "api architecture",
+        2
+      ],
+      [
+        "mobile development",
+        2
+      ],
+      [
+        "web development",
+        2
+      ],
+      [
+        "marketplace platforms",
+        2
+      ],
+      [
+        "saas",
+        2
+      ],
+      [
+        "ott video platforms",
+        1
+      ],
+      [
+        "adaptive streaming",
+        1
+      ],
+      [
+        "cdn optimization",
+        1
+      ],
+      [
+        "blockchain",
+        1
+      ],
+      [
+        "cloud-native architectures",
+        1
+      ],
+      [
+        "devops",
+        1
+      ],
+      [
+        "decentralized storage",
+        1
+      ],
+      [
+        "ai integration",
+        1
+      ],
+      [
+        "web3",
+        1
+      ],
+      [
+        "video streaming infrastructure",
+        1
+      ],
+      [
+        "backend systems",
+        1
+      ],
+      [
+        "mobile platforms",
+        1
+      ],
+      [
+        "multi-device streaming",
+        1
+      ],
+      [
+        "scalable architecture",
+        1
+      ],
+      [
+        "global content delivery",
+        1
+      ],
+      [
+        "payment integration",
+        1
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        3
+      ],
+      [
+        "technical decision-making",
+        2
+      ],
+      [
+        "collaboration",
+        2
+      ],
+      [
+        "entrepreneurial mindset",
+        2
+      ],
+      [
+        "commercial thinking",
+        2
+      ],
+      [
+        "strategic mindset",
+        1
+      ],
+      [
+        "startup agility",
+        1
+      ],
+      [
+        "team building",
+        1
+      ],
+      [
+        "innovation",
+        1
+      ],
+      [
+        "technical vision",
+        1
+      ],
+      [
+        "cross-functional collaboration",
+        1
+      ],
+      [
+        "roadmapping",
+        1
+      ],
+      [
+        "speed of execution",
+        1
+      ],
+      [
+        "ownership",
+        1
+      ],
+      [
+        "feature prioritization",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "technical leadership",
+        3
+      ],
+      [
+        "startup",
+        3
+      ],
+      [
+        "cto",
+        2
+      ],
+      [
+        "react",
+        2
+      ],
+      [
+        "typescript",
+        2
+      ],
+      [
+        "full-stack",
+        2
+      ],
+      [
+        "founding cto",
+        2
+      ],
+      [
+        "marketplace",
+        2
+      ],
+      [
+        "system design",
+        2
+      ],
+      [
+        "api architecture",
+        2
+      ],
+      [
+        "saas",
+        2
+      ],
+      [
+        "mobile development",
+        2
+      ],
+      [
+        "ott video platform",
+        1
+      ],
+      [
+        "video streaming",
+        1
+      ],
+      [
+        "blockchain",
+        1
+      ],
+      [
+        "adaptive streaming",
+        1
+      ],
+      [
+        "cdn optimization",
+        1
+      ],
+      [
+        "cloud-native architectures",
+        1
+      ],
+      [
+        "devops",
+        1
+      ],
+      [
+        "ai integration",
+        1
+      ],
+      [
+        "web3",
+        1
+      ],
+      [
+        "decentralized storage",
+        1
+      ],
+      [
+        "vp engineering",
+        1
+      ],
+      [
+        "scalable architecture",
+        1
+      ],
+      [
+        "mvp",
+        1
+      ]
+    ],
+    "implied_pain_points": [
+      "Building a greenfield streaming platform from scratch in competitive market",
+      "Integrating emerging technologies (AI, blockchain) into proven streaming architecture",
+      "Scaling globally while maintaining performance and reliability",
+      "Attracting and retaining top engineering talent in stealth mode",
+      "No technical leadership in place - need founding CTO immediately",
+      "Urgent MVP deadline of 2 weeks requires rapid execution",
+      "Building nationwide marketplace from scratch with no existing tech foundation",
+      "Need to establish entire engineering organization and future team structure",
+      "Need to launch MVP in extremely tight 2-week timeline",
+      "Building founding technical team from scratch with no existing engineering organization",
+      "Establishing technical architecture and infrastructure for nationwide scale from day one",
+      "Balancing rapid MVP delivery with building scalable foundation for future growth"
+    ],
+    "success_metrics": [
+      "Successfully launch world-class OTT platform supporting multi-device streaming",
+      "Build and scale high-performance engineering teams across multiple domains",
+      "Achieve global scalability with optimal CDN and streaming performance",
+      "Deliver innovative AI and blockchain features that differentiate the platform",
+      "Establish engineering culture and technical excellence standards",
+      "Deliver usable MVP within 2 weeks of joining",
+      "Build scalable architecture that can handle national-scale adoption",
+      "Successfully launch app with users within weeks of development start",
+      "Establish technical foundation that enables future engineering team growth",
+      "Create high-performance marketplace system used by thousands of technicians and customers",
+      "Deliver usable MVP within 2 weeks of start",
+      "Build scalable marketplace architecture capable of nationwide expansion",
+      "Successfully integrate payment, mapping, and communication systems",
+      "Establish technical foundation that supports future engineering team growth",
+      "Launch app to real users within weeks of MVP completion",
+      "Create technical roadmap aligned with business growth objectives"
+    ],
+    "sample_responsibilities": [
+      "Design and scale a world-class OTT video platform for multi-device, global audience",
+      "Lead high-performance teams across backend, streaming, mobile, and blockchain",
+      "Build out adaptive streaming infrastructure",
+      "Implement CDN optimization",
+      "Develop decentralized storage infrastructure",
+      "Drive innovation at the intersection of video, AI, and Web3",
+      "Define technical strategy for AI-driven, blockchain-integrated streaming platform",
+      "Oversee architecture and engineering from the ground up",
+      "Own end-to-end development of the CureMyCar platform (web + mobile)",
+      "Build the MVP using React + TypeScript and preferred backend stack",
+      "Architect a scalable, secure, high-performance marketplace system",
+      "Lead technical decision-making, roadmapping, and feature prioritisation",
+      "Collaborate closely with founders to deliver usable product within 2 weeks",
+      "Manage product iterations, releases, and ongoing improvements",
+      "Set the foundation for future engineering hires and team structure"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 28.3,
+        "min": 15,
+        "max": 35,
+        "count": 3
+      },
+      "process": {
+        "avg": 10.0,
+        "min": 10,
+        "max": 10,
+        "count": 3
+      },
+      "architecture": {
+        "avg": 38.3,
+        "min": 35,
+        "max": 45,
+        "count": 3
+      },
+      "leadership": {
+        "avg": 23.3,
+        "min": 20,
+        "max": 30,
+        "count": 3
+      }
+    },
+    "seniority_distribution": {
+      "c_level": 3
+    }
+  },
+  "director_of_engineering": {
+    "count": 4,
+    "sample_titles": [
+      "Enterprise Architect Director",
+      "Director of Engineering (Technology Consulting)"
+    ],
+    "sample_companies": [
+      "THE PROFESSIONALS",
+      "Plain Concepts"
+    ],
+    "top_technical_skills": [
+      [
+        "enterprise architecture",
+        3
+      ],
+      [
+        "data management",
+        3
+      ],
+      [
+        "togaf",
+        3
+      ],
+      [
+        "it infrastructure",
+        2
+      ],
+      [
+        "security",
+        2
+      ],
+      [
+        "strategic planning",
+        2
+      ],
+      [
+        "it infrastructure design",
+        1
+      ],
+      [
+        "systems integration",
+        1
+      ],
+      [
+        "it governance",
+        1
+      ],
+      [
+        "cloud architecture",
+        1
+      ],
+      [
+        "security architecture",
+        1
+      ],
+      [
+        "digital transformation",
+        1
+      ],
+      [
+        "it strategy",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        ".net",
+        1
+      ],
+      [
+        "cloud computing",
+        1
+      ],
+      [
+        "artificial intelligence",
+        1
+      ],
+      [
+        "big data",
+        1
+      ],
+      [
+        "microsoft technologies",
+        1
+      ],
+      [
+        "web technologies",
+        1
+      ],
+      [
+        "microsoft ecosystem",
+        1
+      ],
+      [
+        "agile",
+        1
+      ],
+      [
+        "technical consulting",
+        1
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        4
+      ],
+      [
+        "communication",
+        4
+      ],
+      [
+        "collaboration",
+        2
+      ],
+      [
+        "strategic planning",
+        1
+      ],
+      [
+        "stakeholder management",
+        1
+      ],
+      [
+        "project management",
+        1
+      ],
+      [
+        "decision making",
+        1
+      ],
+      [
+        "problem solving",
+        1
+      ],
+      [
+        "client relationship management",
+        1
+      ],
+      [
+        "business development",
+        1
+      ],
+      [
+        "strategic thinking",
+        1
+      ],
+      [
+        "team coordination",
+        1
+      ],
+      [
+        "continuous improvement",
+        1
+      ],
+      [
+        "proposal writing",
+        1
+      ],
+      [
+        "account management",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "enterprise architecture",
+        3
+      ],
+      [
+        "it infrastructure",
+        3
+      ],
+      [
+        "data management",
+        3
+      ],
+      [
+        "security",
+        3
+      ],
+      [
+        "togaf",
+        3
+      ],
+      [
+        "strategic planning",
+        3
+      ],
+      [
+        "enterprise architect director",
+        3
+      ],
+      [
+        "compliance",
+        3
+      ],
+      [
+        "project management",
+        3
+      ],
+      [
+        "digital transformation",
+        3
+      ],
+      [
+        "stakeholder collaboration",
+        2
+      ],
+      [
+        "leadership",
+        2
+      ],
+      [
+        "communication",
+        2
+      ],
+      [
+        "architecture frameworks",
+        1
+      ],
+      [
+        "governance",
+        1
+      ],
+      [
+        "architecture management",
+        1
+      ],
+      [
+        "governance frameworks",
+        1
+      ],
+      [
+        "it strategy",
+        1
+      ],
+      [
+        "it governance",
+        1
+      ],
+      [
+        "systems integration",
+        1
+      ],
+      [
+        "stakeholder management",
+        1
+      ],
+      [
+        "scalable infrastructure",
+        1
+      ],
+      [
+        "director of engineering",
+        1
+      ],
+      [
+        "technology consulting",
+        1
+      ],
+      [
+        "azure",
+        1
+      ]
+    ],
+    "implied_pain_points": [
+      "Aligning IT strategy with business objectives",
+      "Ensuring compliance with industry standards",
+      "Managing complex project portfolios",
+      "Lack of alignment between IT strategy and business objectives",
+      "Fragmented IT systems and applications causing communication and data flow issues",
+      "Insufficient governance frameworks leading to compliance risks",
+      "Need for digital transformation and operational efficiency improvements",
+      "Complex project portfolios requiring better management and strategic alignment",
+      "Need for stronger account growth and farming beyond project delivery",
+      "Scaling client relationships across national and international markets",
+      "Coordinating large multidisciplinary teams (40-60 professionals) effectively",
+      "Balancing technical excellence with business development responsibilities",
+      "Ensuring consistent quality across diverse technology stacks (Cloud, AI, Big Data, Microsoft)"
+    ],
+    "success_metrics": [
+      "Successful alignment of IT strategy with business goals",
+      "Effective governance frameworks established",
+      "Projects delivered on time and within budget",
+      "Enterprise architecture frameworks successfully implemented and aligned with business objectives",
+      "IT infrastructure scalability and robustness meeting organizational needs",
+      "Compliance with industry standards and regulations achieved",
+      "Seamless integration of IT systems enabling effective data flow",
+      "Stakeholder satisfaction with architectural decisions and communication",
+      "Account growth and new opportunity identification (farming success)",
+      "Client satisfaction and strategic alignment",
+      "Quality and business value of project deliveries",
+      "Team performance across 40-60 professionals",
+      "Successful proposal win rate",
+      "Revenue growth from assigned accounts"
+    ],
+    "sample_responsibilities": [
+      "Design and lead the strategic development and execution of enterprise architecture frameworks",
+      "Ensure IT strategy aligns with business objectives",
+      "Oversee the design and implementation of scalable IT infrastructure",
+      "Develop strategies for integrating IT systems and applications",
+      "Establish governance frameworks for compliance and data management",
+      "Collaborate with stakeholders to ensure architectural alignment",
+      "Continuously assess and improve enterprise architecture",
+      "Document architectural decisions and communicate effectively",
+      "Manage complex project portfolios",
+      "Oversee the design and implementation of a robust, scalable IT infrastructure",
+      "Design and lead the strategic development and execution of enterprise architecture frameworks and strategies to support business objectives",
+      "Ensure the IT strategy aligns with business objectives by analyzing processes and identifying technology enhancements",
+      "Oversee the design and implementation of a robust, scalable IT infrastructure that meets organizational needs",
+      "Develop strategies for integrating IT systems and applications to facilitate seamless communication and data flow",
+      "Establish governance frameworks to ensure compliance with industry standards and regulations while defining policies for data management and security"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 22.5,
+        "min": 20,
+        "max": 30,
+        "count": 4
+      },
+      "process": {
+        "avg": 20.0,
+        "min": 15,
+        "max": 25,
+        "count": 4
+      },
+      "architecture": {
+        "avg": 36.2,
+        "min": 25,
+        "max": 40,
+        "count": 4
+      },
+      "leadership": {
+        "avg": 21.2,
+        "min": 15,
+        "max": 30,
+        "count": 4
+      }
+    },
+    "seniority_distribution": {
+      "director": 4
+    }
+  },
+  "vp_engineering": {
+    "count": 1,
+    "sample_titles": [
+      "Software Engineering Manager - Database"
+    ],
+    "sample_companies": [
+      "TIGER DATA (CREATORS OF TIMESCALEDB)"
+    ],
+    "top_technical_skills": [
+      [
+        "cloud architecture",
+        1
+      ],
+      [
+        "aws",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        "gcp",
+        1
+      ],
+      [
+        "microservices",
+        1
+      ],
+      [
+        "serverless computing",
+        1
+      ],
+      [
+        "docker",
+        1
+      ],
+      [
+        "kubernetes",
+        1
+      ],
+      [
+        "terraform",
+        1
+      ],
+      [
+        "cloudformation",
+        1
+      ]
+    ],
+    "top_soft_skills": [
+      [
+        "leadership",
+        1
+      ],
+      [
+        "communication",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "cloud architecture",
+        1
+      ],
+      [
+        "aws",
+        1
+      ],
+      [
+        "azure",
+        1
+      ],
+      [
+        "gcp",
+        1
+      ],
+      [
+        "microservices",
+        1
+      ],
+      [
+        "serverless computing",
+        1
+      ],
+      [
+        "docker",
+        1
+      ],
+      [
+        "kubernetes",
+        1
+      ],
+      [
+        "terraform",
+        1
+      ],
+      [
+        "cloudformation",
+        1
+      ],
+      [
+        "pxm",
+        1
+      ],
+      [
+        "saas",
+        1
+      ],
+      [
+        "leadership",
+        1
+      ],
+      [
+        "devops",
+        1
+      ],
+      [
+        "security",
+        1
+      ]
+    ],
+    "implied_pain_points": [
+      "Rebuilding trust and forging a unified culture post-acquisition",
+      "Transitioning from PIM to PXM",
+      "Managing a large global team"
+    ],
+    "success_metrics": [
+      "Successful evolution of the PXM platform",
+      "Effective cost management and optimization",
+      "Building a collaborative and transparent team culture"
+    ],
+    "sample_responsibilities": [
+      "Own the end-to-end technical vision, strategy, and architecture for the PXM platform",
+      "Lead, mentor, and inspire a global team of approximately 80 product and engineering professionals",
+      "Manage the PXM infrastructure budget with a focus on cost planning and optimization",
+      "Serve as the senior technical voice for PXM at industry events and executive discussions",
+      "Guide the evolution from PIM to a full-fledged PXM framework"
+    ],
+    "competency_weight_stats": {
+      "delivery": {
+        "avg": 25.0,
+        "min": 25,
+        "max": 25,
+        "count": 1
+      },
+      "process": {
+        "avg": 15.0,
+        "min": 15,
+        "max": 15,
+        "count": 1
+      },
+      "architecture": {
+        "avg": 30.0,
+        "min": 30,
+        "max": 30,
+        "count": 1
+      },
+      "leadership": {
+        "avg": 30.0,
+        "min": 30,
+        "max": 30,
+        "count": 1
+      }
+    },
+    "seniority_distribution": {
+      "vp": 1
+    }
+  },
+  "unknown": {
+    "count": 1,
+    "sample_titles": [
+      "Technical Lead"
+    ],
+    "sample_companies": [
+      "ELITE HR CONSULTANCY"
+    ],
+    "top_technical_skills": [],
+    "top_soft_skills": [],
+    "top_keywords": [],
+    "implied_pain_points": [],
+    "success_metrics": [],
+    "sample_responsibilities": [],
+    "competency_weight_stats": {},
+    "seniority_distribution": {
+      "unknown": 1
+    }
+  }
+}

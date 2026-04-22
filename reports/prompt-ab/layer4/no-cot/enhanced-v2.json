@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": "reasoning-first-2.2",
+  "timestamp": "2026-04-21T16:15:53.864758",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "\n<thinking>\nAnalysis of KAIZEN GAMING:\n1. Pain point: Need strong technical leadership for backend engineering team\n2. Match: Strong based on STAR evidence\n</thinking>\n\nRecommendation: Strong fit due to Seven.One Entertainment Group.\n            ",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 6.6,
+        "hallucinations": 10.0,
+        "combined": 7.4
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "\n<thinking>\nAnalysis of FinSecure Technologies:\n1. Pain point: Manual compliance reporting taking 40+ hours per audit\n2. Match: Strong based on STAR evidence\n</thinking>\n\nRecommendation: Strong fit due to Seven.One Entertainment Group.\n            ",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 6.4,
+        "hallucinations": 10.0,
+        "combined": 7.4
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "\n<thinking>\nAnalysis of GlobalTech Enterprise:\n1. Pain point: Legacy on-premise infrastructure limiting agility\n2. Match: Strong based on STAR evidence\n</thinking>\n\nRecommendation: Strong fit due to Seven.One Entertainment Group.\n            ",
+      "scores": {
+        "specificity": 6.0,
+        "grounding": 6.4,
+        "hallucinations": 10.0,
+        "combined": 7.4
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 6.0,
+    "grounding": 6.47,
+    "hallucinations": 10.0,
+    "combined": 7.4
+  },
+  "metadata": {
+    "layer": "layer4",
+    "issue": "no-cot",
+    "type": "enhanced",
+    "technique": "reasoning-first-2.2"
+  }
+}

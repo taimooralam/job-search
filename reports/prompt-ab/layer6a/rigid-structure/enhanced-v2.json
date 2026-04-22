@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2026-04-21T16:39:13.760089",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "Addressing: Need strong technical leadership for backend engineering team\n\nAddressing: Ensuring engineering best practices are followed across the team\n\nAddressing: Managing project timelines and resource allocation effectively\n\nAddressing: Maintaining code quality and documentation standards",
+      "scores": {
+        "specificity": 5.0,
+        "grounding": 5.2,
+        "hallucinations": 10.0,
+        "combined": 6.6
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found; No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "Addressing: Manual compliance reporting taking 40+ hours per audit\n\nAddressing: Lack of real-time visibility into compliance status\n\nAddressing: Security incidents not detected until post-mortem\n\nAddressing: Data privacy violations due to inadequate controls",
+      "scores": {
+        "specificity": 5.0,
+        "grounding": 5.5,
+        "hallucinations": 10.0,
+        "combined": 6.7
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found; No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "Addressing: Legacy on-premise infrastructure limiting agility\n\nAddressing: Cloud costs growing 30% YoY without performance gains\n\nAddressing: Single points of failure causing outages\n\nAddressing: 12-month feature release cycles blocking innovation",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 5.5,
+        "hallucinations": 10.0,
+        "combined": 6.8
+      },
+      "feedback": {
+        "specificity": "No company names cited",
+        "grounding": "No STAR companies cited; No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 5.17,
+    "grounding": 5.4,
+    "hallucinations": 10.0,
+    "combined": 6.7
+  },
+  "metadata": {
+    "layer": "layer6a",
+    "issue": "rigid-structure",
+    "type": "enhanced",
+    "technique": null
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "technique": null,
+  "timestamp": "2026-04-21T16:46:47.768272",
+  "outputs": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "output_text": "\nTop Match for Software Engineering Team Lead (Backend):\nSeven.One Entertainment Group - Technical Lead (Addressable TV)\nBecause: Large-scale monolithic AdTech platform processing millions of impressions daily needed modernization\n            ",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 6.6,
+        "hallucinations": 10.0,
+        "combined": 7.3
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "output_text": "\nTop Match for Engineering Lead - Compliance Platform:\nSeven.One Entertainment Group - Technical Lead\nBecause: Needed GDPR/TCF compliance for AdTech platform handling millions of users\n            ",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 6.0,
+        "hallucinations": 10.0,
+        "combined": 7.1
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "output_text": "\nTop Match for Principal Engineer - Platform Infrastructure:\nSeven.One Entertainment Group - Technical Lead\nBecause: Monolithic AdTech platform needed modernization\n            ",
+      "scores": {
+        "specificity": 5.5,
+        "grounding": 6.0,
+        "hallucinations": 10.0,
+        "combined": 7.1
+      },
+      "feedback": {
+        "specificity": "No quantified metrics found",
+        "grounding": "No STAR metrics referenced; Pain points not addressed",
+        "hallucinations": "No significant hallucinations detected"
+      }
+    }
+  ],
+  "averages": {
+    "specificity": 5.5,
+    "grounding": 6.2,
+    "hallucinations": 10.0,
+    "combined": 7.17
+  },
+  "metadata": {
+    "layer": "layer6b",
+    "issue": "role-selection",
+    "type": "enhanced",
+    "technique": null
+  }
+}

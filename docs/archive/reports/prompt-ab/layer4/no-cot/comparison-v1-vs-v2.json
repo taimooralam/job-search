@@ -1,0 +1,41 @@
+{
+  "baseline_version": "v1",
+  "enhanced_version": "v2",
+  "deltas": {
+    "specificity": 3.5,
+    "grounding": 2.27,
+    "hallucinations": 1.5,
+    "combined": 2.43
+  },
+  "improvement_percentage": 48.9,
+  "meets_targets": {
+    "specificity": false,
+    "grounding": false,
+    "hallucinations": true,
+    "combined": false
+  },
+  "per_job_deltas": [
+    {
+      "job_id": "6929c97b45fa3c355f84ba2d",
+      "specificity_delta": 3.5,
+      "grounding_delta": 2.0,
+      "hallucinations_delta": 1.5,
+      "combined_delta": 2.3
+    },
+    {
+      "job_id": "synthetic_fintech_001",
+      "specificity_delta": 3.5,
+      "grounding_delta": 2.4,
+      "hallucinations_delta": 1.5,
+      "combined_delta": 2.5
+    },
+    {
+      "job_id": "synthetic_enterprise_001",
+      "specificity_delta": 3.5,
+      "grounding_delta": 2.4,
+      "hallucinations_delta": 1.5,
+      "combined_delta": 2.5
+    }
+  ],
+  "recommendation": "ITERATE: Improvement seen but targets not met for: specificity, grounding, combined"
+}
