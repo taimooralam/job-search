@@ -20,6 +20,7 @@ Long-running local or live-debug sessions must be:
 - launched from the repo root
 - run from `.venv`
 - configured with the correct Mongo env key: `MONGODB_URI`
+- isolated from repo context by default for pure stage runs
 
 ## Required Launch Defaults
 
@@ -36,6 +37,19 @@ For live stage debugging:
 - enable DEBUG logging for the launcher and subprocess monitor
 - stream inner Codex stdout/stderr live
 - log spawned Codex PID
+- make repo context opt-in, not default
+- default Codex subprocess `cwd` to an isolated temp directory for:
+  - `jd_facts`
+  - `classification`
+  - `application_surface`
+  - `research_enrichment`
+- only allow repo-context execution when the task explicitly needs local code/files
+- when production, VPS, or a Codex skill needs a specific workdir, set:
+  - `PREENRICH_CODEX_WORKDIR_JD_FACTS`
+  - `PREENRICH_CODEX_WORKDIR_CLASSIFICATION`
+  - `PREENRICH_CODEX_WORKDIR_APPLICATION_SURFACE`
+  - `PREENRICH_CODEX_WORKDIR_RESEARCH_ENRICHMENT`
+  instead of relying on inherited repo cwd
 
 ## Why `.env` Must Be Loaded From Python
 
@@ -133,6 +147,7 @@ The live-debug launcher should:
 - load `.env` from Python with explicit path
 - construct the real `StageContext`
 - use worker-compatible checksums and snapshot ids
+- use `get_stage_step_config(...)` where available so stage defaults like isolated Codex workdir are preserved
 - run with `python -u`
 - emit heartbeats while stages run
 
@@ -246,6 +261,21 @@ Correction:
 - watch stderr for tool wandering
 - tighten prompts so schema/output contract is fully explicit
 - if a stage is expected to be strictly extraction-only, inspect whether the Codex invocation mode or prompt still invites repo exploration
+
+### Failure 10: Repo cwd was inherited by `codex exec`
+
+Observed:
+- `codex exec` inherited the repo working directory
+- pure JSON stages like `jd_facts` and `classification` explored tests and source files instead of returning the stage payload directly
+
+Correction:
+- add `codex_workdir` / `allow_repo_context` to stage config
+- default 4.1 stages to an isolated temp cwd
+- only opt into repo context deliberately
+
+Required policy:
+- repo context is opt-in, not default, for preenrich stage runs
+- production/VPS/Codex-skill launches must preserve this policy unless there is a deliberate reason to override it with a stage-specific `PREENRICH_CODEX_WORKDIR_<STAGE>`
 
 ## Minimum Live-Debug Checklist
 

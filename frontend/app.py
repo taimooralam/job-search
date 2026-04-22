@@ -5249,7 +5249,7 @@ def get_cv_editor_state(job_id: str):
                     "bottom": 0.5,
                     "left": 0.5
                 },
-                "pageSize": "a4",  # A4 size (matches cv-editor.js defaults)
+                "pageSize": "letter",  # Backend/editor-state default for persisted CVs
                 "colorText": "#1f2a38",  # Near-black for better readability
                 "colorMuted": "#4b5563",  # Muted gray for metadata
                 "colorAccent": "#475569"  # slate-600 - professional dark blue-gray
@@ -5559,7 +5559,7 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
                 "bottom": 0.5,
                 "left": 0.5
             },
-            "pageSize": "a4",  # A4 size (matches cv-editor.js defaults)
+            "pageSize": "letter",  # Backend/editor-state default for persisted CVs
             "colorText": "#1f2a38",  # Near-black for better readability
             "colorMuted": "#4b5563",  # Muted gray for metadata
             "colorAccent": "#475569"  # slate-600 - professional dark blue-gray

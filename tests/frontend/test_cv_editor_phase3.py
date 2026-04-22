@@ -44,8 +44,8 @@ class TestDocumentMarginControls:
         assert 'margin-bottom' in html.lower() or 'Margin' in html
         assert 'margin-left' in html.lower() or 'Margin' in html
 
-    def test_default_margins_are_one_inch(self, authenticated_client, mock_db, sample_job):
-        """Default margins should be 1.0 inch on all sides."""
+    def test_default_margins_are_half_inch(self, authenticated_client, mock_db, sample_job):
+        """Default margins should be 0.5 inch on all sides."""
         # Arrange
         job_id = str(sample_job["_id"])
         mock_db.find_one.return_value = sample_job
@@ -57,10 +57,10 @@ class TestDocumentMarginControls:
         assert response.status_code == 200
         data = response.get_json()
         margins = data["editor_state"]["documentStyles"]["margins"]
-        assert margins["top"] == 1.0
-        assert margins["right"] == 1.0
-        assert margins["bottom"] == 1.0
-        assert margins["left"] == 1.0
+        assert margins["top"] == 0.5
+        assert margins["right"] == 0.5
+        assert margins["bottom"] == 0.5
+        assert margins["left"] == 0.5
 
     def test_custom_margins_persist_to_mongodb(self, authenticated_client, mock_db, sample_job):
         """Custom margin settings should persist to MongoDB."""

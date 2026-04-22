@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from src.preenrich.blueprint_config import taxonomy_version
 from src.preenrich.blueprint_prompts import build_p_jd_extract
 from src.preenrich.stages.jd_facts import _compact_raw_jd
 
@@ -39,7 +40,7 @@ def test_build_p_jd_extract_contains_runner_taxonomy_contract():
         assert slug in prompt
     assert "Return ONLY valid JSON" in prompt
     assert "No markdown fences" in prompt
-    assert "taxonomy_version=2026-04-19-v1" in prompt
+    assert f"taxonomy_version={taxonomy_version()}" in prompt
     assert "application_url" in prompt
     assert "salary_range" in prompt
     assert "language_requirements" in prompt

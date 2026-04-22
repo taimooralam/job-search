@@ -518,12 +518,21 @@ def normalize_inferred_stakeholder_persona_payload(payload: dict[str, Any] | Non
 
 def normalize_search_journal_entry_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
     raw = dict(payload or {})
+    outcome = _normalize_slug(raw.get("outcome") or "miss")
+    outcome_aliases = {
+        "hit_but_no_named_people": "miss",
+        "hit_no_named_people": "miss",
+        "no_named_people": "miss",
+        "no_named_person": "miss",
+        "named_people_ambiguous": "ambiguous",
+        "cross_company_candidate": "rejected_fabrication",
+    }
     return {
         "step": _normalize_slug(raw.get("step") or "discovery"),
         "query": _coerce_text(raw.get("query")),
         "intent": _coerce_text(raw.get("intent")),
         "source_type": _coerce_text(raw.get("source_type")),
-        "outcome": _normalize_slug(raw.get("outcome") or "miss"),
+        "outcome": outcome_aliases.get(outcome, outcome),
         "source_ids": _normalize_string_list(raw.get("source_ids")),
         "notes": _coerce_text(raw.get("notes")),
     }

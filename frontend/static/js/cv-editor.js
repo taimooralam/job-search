@@ -1723,7 +1723,7 @@ function updatePageBreaks() {
 
     // Calculate page breaks using the PageBreakCalculator module
     const breakPositions = window.PageBreakCalculator.calculatePageBreaks(
-        documentStyles.pageSize || 'a4',
+        documentStyles.pageSize || 'letter',
         documentStyles.margins || {top: 0.5, right: 0.5, bottom: 0.5, left: 0.5},
         editorContent
     );

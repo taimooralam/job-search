@@ -713,21 +713,8 @@ class TestCompanyResearchServiceIntegration:
         mock_repository.update_one.return_value = MagicMock(modified_count=1)
 
         # Setup cache collection mock (for company_cache)
-        mock_cache_collection = MagicMock()
-        mock_cache_collection.find_one.return_value = None  # Cache miss
-
-        mock_operation_runs = MagicMock()
-
-        mock_db = MagicMock()
-        mock_db.__getitem__ = MagicMock(
-            side_effect=lambda key: {
-                "company_cache": mock_cache_collection,
-                "operation_runs": mock_operation_runs,
-            }.get(key, MagicMock())
-        )
-
-        mock_mongo = MagicMock()
-        mock_mongo.__getitem__ = MagicMock(return_value=mock_db)
+        mock_cache_repository = MagicMock()
+        mock_cache_repository.find_by_company_key.return_value = None  # Cache miss
 
         # Setup researcher mocks
         mock_company_researcher = MagicMock()
@@ -756,8 +743,10 @@ class TestCompanyResearchServiceIntegration:
         MockPeopleMapper.return_value = mock_people_mapper
 
         # Execute
-        service = CompanyResearchService(repository=mock_repository)
-        service._mongo_client = mock_mongo
+        service = CompanyResearchService(
+            repository=mock_repository,
+            cache_repository=mock_cache_repository,
+        )
 
         result = await service.execute(
             job_id=str(sample_job_doc["_id"]),

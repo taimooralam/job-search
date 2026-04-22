@@ -77,6 +77,9 @@ For long local development or live-debug runs:
 - use `MONGODB_URI` correctly
 - enable verbose logs, stage heartbeats, and inner Codex PID/stdout/stderr heartbeat logging
 - use the worker-compatible `StageContext` shape and checksum/snapshot construction
+- make repo context opt-in, not default, for Codex preenrich stage runs
+- default `jd_facts`, `classification`, `application_surface`, and `research_enrichment` to isolated temp cwd unless repo context is explicitly required
+- for VPS / production / Codex-skill launches, preserve the same default isolation and only override with `PREENRICH_CODEX_WORKDIR_<STAGE>` when a stage deliberately needs a specific working directory
 
 When a long run appears stuck:
 - inspect the live heartbeat first

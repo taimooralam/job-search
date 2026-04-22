@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Any, List
+import logging
+from typing import Any, Callable, List, TypeVar
+
+from pydantic import BaseModel
 
 from src.preenrich.blueprint_config import (
     current_git_sha,
@@ -56,6 +60,8 @@ from src.preenrich.types import ArtifactWrite, StageContext, StageResult
 
 PROMPT_VERSION = "research_enrichment_bundle@v4.1.3.1"
 RESEARCH_VERSION = "research_enrichment.v4.1.3.1"
+logger = logging.getLogger(__name__)
+TProfile = TypeVar("TProfile", bound=BaseModel)
 
 
 def _now_iso() -> str:
@@ -361,6 +367,31 @@ def _transport_preamble(ctx: StageContext, transport: CodexResearchTransport) ->
     )
 
 
+def _payload_keys(payload: Any) -> list[str]:
+    if isinstance(payload, dict):
+        return sorted(payload.keys())
+    return []
+
+
+def _attempt_fail_open_profile(
+    *,
+    payload: Any,
+    normalizer: Callable[[dict[str, Any] | None], dict[str, Any]],
+    model_cls: type[TProfile],
+    fallback_status: str = "partial",
+) -> TProfile | None:
+    if isinstance(payload, model_cls):
+        return payload
+    if not isinstance(payload, dict):
+        return None
+    normalized = normalizer(payload)
+    if not normalized.get("status"):
+        normalized["status"] = fallback_status
+    elif str(normalized.get("status")).strip().lower() == "completed" and not normalized.get("summary"):
+        normalized["status"] = fallback_status
+    return model_cls.model_validate(normalized)
+
+
 def _live_company_profile(
     ctx: StageContext,
     transport: CodexResearchTransport,
@@ -385,11 +416,55 @@ def _live_company_profile(
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-company"),
         validator=lambda payload: CompanyProfile.model_validate(normalize_company_profile_payload(payload)),
     )
+    logger.info(
+        "research_enrichment company transport result: success=%s error=%s payload_type=%s payload_keys=%s",
+        result.success,
+        result.error,
+        type(result.payload).__name__ if result.payload is not None else None,
+        _payload_keys(result.payload),
+    )
     if not result.success:
+        if isinstance(result.payload, dict):
+            try:
+                profile = _attempt_fail_open_profile(
+                    payload=result.payload,
+                    normalizer=normalize_company_profile_payload,
+                    model_cls=CompanyProfile,
+                )
+                if profile is not None:
+                    logger.warning(
+                        "research_enrichment company fail-open accepted live payload after schema drift: status=%s canonical_name=%s canonical_domain=%s",
+                        profile.status,
+                        profile.canonical_name,
+                        profile.canonical_domain,
+                    )
+                    return profile, [f"Live Codex company research recovered via fail-open normalization after schema drift: {result.error or 'unknown error'}"]
+            except Exception:
+                logger.exception("research_enrichment company fail-open normalization failed")
+        logger.warning(
+            "research_enrichment company fallback to seed: reason=%s seed_status=%s seed_canonical_name=%s",
+            result.error or "unknown error",
+            seed.status,
+            seed.canonical_name,
+        )
         return seed, [f"Live Codex company research failed: {result.error or 'unknown error'}"]
-    profile = result.payload if isinstance(result.payload, CompanyProfile) else CompanyProfile.model_validate(normalize_company_profile_payload(result.payload))
+    try:
+        profile = result.payload if isinstance(result.payload, CompanyProfile) else CompanyProfile.model_validate(normalize_company_profile_payload(result.payload))
+    except Exception as exc:
+        logger.exception("research_enrichment company validation fallback to seed")
+        return seed, [f"Live Codex company research validation failed: {exc}"]
     if not profile.status:
         profile.status = "completed" if profile.summary else "partial"
+    logger.info(
+        "research_enrichment company accepted live profile: status=%s canonical_name=%s canonical_domain=%s sources=%d evidence=%d signals=%d signals_rich=%d",
+        profile.status,
+        profile.canonical_name,
+        profile.canonical_domain,
+        len(profile.sources or []),
+        len(profile.evidence or []),
+        len(profile.signals or []),
+        len(profile.signals_rich or []),
+    )
     return profile, []
 
 
@@ -416,11 +491,54 @@ def _live_role_profile(
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-role"),
         validator=lambda payload: RoleProfile.model_validate(normalize_role_profile_payload(payload)),
     )
+    logger.info(
+        "research_enrichment role transport result: success=%s error=%s payload_type=%s payload_keys=%s",
+        result.success,
+        result.error,
+        type(result.payload).__name__ if result.payload is not None else None,
+        _payload_keys(result.payload),
+    )
     if not result.success:
+        if isinstance(result.payload, dict):
+            try:
+                profile = _attempt_fail_open_profile(
+                    payload=result.payload,
+                    normalizer=normalize_role_profile_payload,
+                    model_cls=RoleProfile,
+                )
+                if profile is not None:
+                    logger.warning(
+                        "research_enrichment role fail-open accepted live payload after schema drift: status=%s summary=%s",
+                        profile.status,
+                        profile.summary,
+                    )
+                    return profile, [f"Live Codex role research recovered via fail-open normalization after schema drift: {result.error or 'unknown error'}"]
+            except Exception:
+                logger.exception("research_enrichment role fail-open normalization failed")
+        logger.warning(
+            "research_enrichment role fallback to seed: reason=%s seed_status=%s seed_summary=%s",
+            result.error or "unknown error",
+            seed.status,
+            seed.summary,
+        )
         return seed, [f"Live Codex role research failed: {result.error or 'unknown error'}"]
-    profile = result.payload if isinstance(result.payload, RoleProfile) else RoleProfile.model_validate(normalize_role_profile_payload(result.payload))
+    try:
+        profile = result.payload if isinstance(result.payload, RoleProfile) else RoleProfile.model_validate(normalize_role_profile_payload(result.payload))
+    except Exception as exc:
+        logger.exception("research_enrichment role validation fallback to seed")
+        return seed, [f"Live Codex role research validation failed: {exc}"]
     if not profile.status:
         profile.status = "completed" if profile.summary else "partial"
+    logger.info(
+        "research_enrichment role accepted live profile: status=%s summary=%s sources=%d evidence=%d mandate=%d success_metrics=%d collaboration_map=%d",
+        profile.status,
+        profile.summary,
+        len(profile.sources or []),
+        len(profile.evidence or []),
+        len(profile.mandate or []),
+        len(profile.success_metrics or []),
+        len(profile.collaboration_map or []),
+    )
     return profile, []
 
 
@@ -445,12 +563,51 @@ def _merge_application_profile_live(
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-application-merge"),
         validator=lambda payload: ApplicationProfile.model_validate(normalize_application_surface_payload(payload)),
     )
+    logger.info(
+        "research_enrichment application merge transport result: success=%s error=%s payload_type=%s payload_keys=%s",
+        result.success,
+        result.error,
+        type(result.payload).__name__ if result.payload is not None else None,
+        _payload_keys(result.payload),
+    )
     if not result.success:
+        if isinstance(result.payload, dict):
+            try:
+                profile = _attempt_fail_open_profile(
+                    payload=result.payload,
+                    normalizer=normalize_application_surface_payload,
+                    model_cls=ApplicationProfile,
+                )
+                if profile is not None:
+                    logger.warning(
+                        "research_enrichment application merge fail-open accepted live payload after schema drift: status=%s resolution_status=%s canonical_application_url=%s",
+                        profile.status,
+                        profile.resolution_status,
+                        profile.canonical_application_url,
+                    )
+                    return profile, [f"Codex application merge recovered via fail-open normalization after schema drift: {result.error or 'unknown error'}"]
+            except Exception:
+                logger.exception("research_enrichment application merge fail-open normalization failed")
+        logger.warning(
+            "research_enrichment application merge fallback to base: reason=%s base_status=%s base_resolution_status=%s",
+            result.error or "unknown error",
+            base_application_profile.status,
+            base_application_profile.resolution_status,
+        )
         return base_application_profile, [f"Codex application merge failed: {result.error or 'unknown error'}"]
-    profile = result.payload if isinstance(result.payload, ApplicationProfile) else ApplicationProfile.model_validate(normalize_application_surface_payload(result.payload))
+    try:
+        profile = result.payload if isinstance(result.payload, ApplicationProfile) else ApplicationProfile.model_validate(normalize_application_surface_payload(result.payload))
+    except Exception as exc:
+        logger.exception("research_enrichment application merge validation fallback to base")
+        return base_application_profile, [f"Codex application merge validation failed: {exc}"]
     if profile.canonical_application_url:
         host = canonical_domain_from_url(profile.canonical_application_url)
         if host and company_profile.canonical_domain and company_profile.canonical_domain not in host and profile.portal_family in {"unknown", "custom_unknown", None}:
+            logger.warning(
+                "research_enrichment application merge rejected cross-company URL: candidate=%s canonical_domain=%s",
+                profile.canonical_application_url,
+                company_profile.canonical_domain,
+            )
             return base_application_profile, ["Codex application merge proposed a cross-company URL and it was rejected."]
     if not profile.sources:
         profile.sources = list(base_application_profile.sources)
@@ -458,6 +615,14 @@ def _merge_application_profile_live(
         profile.evidence = list(base_application_profile.evidence)
     if profile.confidence.band == "unresolved":
         profile.confidence = base_application_profile.confidence
+    logger.info(
+        "research_enrichment application merge accepted live profile: status=%s resolution_status=%s canonical_application_url=%s sources=%d evidence=%d",
+        profile.status,
+        profile.resolution_status,
+        profile.canonical_application_url,
+        len(profile.sources or []),
+        len(profile.evidence or []),
+    )
     return profile, []
 
 
@@ -780,7 +945,27 @@ class ResearchEnrichmentStage:
         company_profile = _seed_company_profile(ctx, application_profile)
         role_profile = _seed_role_profile(ctx, company_profile)
         if web_research_enabled() and transport.is_live_configured():
-            company_profile, company_notes = _live_company_profile(ctx, transport, application_profile)
+            seed_company_profile = company_profile
+            with ThreadPoolExecutor(max_workers=2, thread_name_prefix="research_enrichment") as executor:
+                company_future = executor.submit(_live_company_profile, ctx, transport, application_profile)
+                role_future = executor.submit(
+                    _live_role_profile,
+                    ctx,
+                    transport,
+                    seed_company_profile,
+                    application_profile,
+                )
+                company_profile, company_notes = company_future.result()
+                role_profile, role_notes = role_future.result()
+            logger.info(
+                "research_enrichment parallel live subpasses complete: company_status=%s company_domain=%s role_status=%s role_summary=%s company_notes=%s role_notes=%s",
+                company_profile.status,
+                company_profile.canonical_domain,
+                role_profile.status,
+                role_profile.summary,
+                company_notes,
+                role_notes,
+            )
             live_notes.extend(company_notes)
             application_profile = _application_profile(ctx, company_profile)
             application_profile, application_notes = _merge_application_profile_live(
@@ -789,8 +974,15 @@ class ResearchEnrichmentStage:
                 company_profile,
                 application_profile,
             )
+            logger.info(
+                "research_enrichment post-merge assembly state: company_status=%s role_status=%s application_status=%s application_resolution_status=%s application_notes=%s",
+                company_profile.status,
+                role_profile.status,
+                application_profile.status,
+                application_profile.resolution_status,
+                application_notes,
+            )
             live_notes.extend(application_notes)
-            role_profile, role_notes = _live_role_profile(ctx, transport, company_profile, application_profile)
             live_notes.extend(role_notes)
             stakeholders, stakeholder_notes = _live_stakeholder_records(
                 ctx,
@@ -838,9 +1030,12 @@ class ResearchEnrichmentStage:
         if not capability_flags["transport_configured"] or not web_research_enabled():
             unresolved_questions.append("Live web transport unavailable; artifact was built from deterministic seeds and application-surface inputs only.")
 
+        company_role_statuses = {company_profile.status, role_profile.status}
         gating_statuses = {company_profile.status, role_profile.status, application_profile.status}
-        if "unresolved" in gating_statuses:
+        if "unresolved" in company_role_statuses:
             overall_status = "unresolved"
+        elif application_profile.status == "unresolved":
+            overall_status = "partial"
         elif "partial" in gating_statuses:
             overall_status = "partial"
         elif not web_research_enabled():

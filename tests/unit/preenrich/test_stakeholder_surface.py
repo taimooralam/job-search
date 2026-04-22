@@ -294,6 +294,35 @@ def test_no_hiring_manager_found_emits_inferred_hiring_manager_persona(monkeypat
     assert any(item["coverage_gap"] == "hiring_manager" for item in result.stage_output["inferred_stakeholder_personas"])
 
 
+def test_search_journal_outcome_drift_is_normalized(monkeypatch):
+    monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_STAKEHOLDER_SURFACE_REAL_DISCOVERY_ENABLED", "true")
+    _mock_transport(
+        monkeypatch,
+        discovery_payload={
+            "stakeholder_intelligence": [],
+            "search_journal": [
+                {
+                    "step": "discovery",
+                    "query": "site:acme.example.com engineering manager",
+                    "intent": "find_hiring_manager",
+                    "source_type": "company_site",
+                    "outcome": "hit_but_no_named_people",
+                    "source_ids": ["src_team"],
+                    "notes": "Relevant team page found but no named stakeholders observed.",
+                }
+            ],
+            "unresolved_markers": ["no_named_people_found"],
+            "notes": [],
+        },
+        personas_payload={"inferred_stakeholder_personas": [], "unresolved_markers": [], "notes": []},
+    )
+    result = StakeholderSurfaceStage().run(_context())
+    assert result.stage_output["status"] == "inferred_only"
+    assert result.stage_output["search_journal"][1]["outcome"] == "miss"
+    assert "no named stakeholders observed" in (result.stage_output["search_journal"][1]["notes"] or "").lower()
+
+
 def test_ambiguous_cross_company_match_is_rejected(monkeypatch):
     monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_STAKEHOLDER_SURFACE_REAL_DISCOVERY_ENABLED", "true")

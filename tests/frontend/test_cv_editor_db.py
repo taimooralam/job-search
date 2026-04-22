@@ -356,14 +356,12 @@ class TestErrorHandling:
         # Arrange
         job_id = str(sample_job["_id"])
 
-        # Simulate update failure by patching get_db
-        mock_db_instance = MagicMock()
-        mock_collection = MagicMock()
-        mock_db_instance.__getitem__.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.side_effect = Exception("Database write error")
-
-        mocker.patch("app.get_db", return_value=mock_db_instance)
+        # Simulate update failure through the repository abstraction used by
+        # the current Flask routes.
+        mock_repo = MagicMock()
+        mock_repo.find_one.return_value = sample_job
+        mock_repo.update_one.side_effect = Exception("Database write error")
+        mocker.patch("app._get_repo", return_value=mock_repo)
 
         editor_state = {
             "version": 1,
@@ -391,8 +389,11 @@ class TestErrorHandling:
         # Arrange
         job_id = str(ObjectId())
 
-        # Simulate find failure by patching get_db
-        mocker.patch("app.get_db", side_effect=Exception("Database read error"))
+        # Simulate find failure through the repository abstraction used by
+        # the current Flask routes.
+        mock_repo = MagicMock()
+        mock_repo.find_one.side_effect = Exception("Database read error")
+        mocker.patch("app._get_repo", return_value=mock_repo)
 
         # Act
         try:

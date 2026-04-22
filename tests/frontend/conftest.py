@@ -83,6 +83,11 @@ def mock_db(mocker):
 
     # Mock get_db() to return the mocked database
     mocker.patch("app.get_db", return_value=mock_db_instance)
+    # Most current Flask routes use the repository abstraction directly.
+    # Patch both the repository factory and the local helper so tests never
+    # leak through to a real MongoDB connection.
+    mocker.patch("app.get_job_repository", return_value=mock_collection)
+    mocker.patch("app._get_repo", return_value=mock_collection)
 
     return mock_collection
 
@@ -196,12 +201,12 @@ def default_editor_state():
         "documentStyles": {
             "fontFamily": "Inter",
             "fontSize": 11,
-            "lineHeight": 1.15,  # Phase 3: Standard resume spacing
+            "lineHeight": 1.5,  # Phase 3: current editor default
             "margins": {
-                "top": 1.0,  # Phase 3: Standard 1-inch margins
-                "right": 1.0,
-                "bottom": 1.0,
-                "left": 1.0
+                "top": 0.5,  # Phase 3: current narrow-margin default
+                "right": 0.5,
+                "bottom": 0.5,
+                "left": 0.5
             },
             "pageSize": "letter"
         }

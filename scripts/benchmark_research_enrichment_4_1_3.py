@@ -11,6 +11,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.preenrich.blueprint_config import current_git_sha, research_prompt_file_path
+from src.preenrich.blueprint_models import (
+    ApplicationProfile,
+    CompanyProfile,
+    RoleProfile,
+    normalize_company_profile_payload,
+    normalize_role_profile_payload,
+)
 
 DEFAULT_THRESHOLDS = {
     "company_profile_factuality": 0.95,
@@ -43,7 +50,37 @@ def _score_match(expected: Any, actual: Any) -> float:
     return 1.0 if expected == actual else 0.0
 
 
+def _normalize_candidate_company_profile(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return CompanyProfile.model_validate(normalize_company_profile_payload(payload)).model_dump()
+    except Exception:
+        return payload
+
+
+def _normalize_candidate_role_profile(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return RoleProfile.model_validate(normalize_role_profile_payload(payload)).model_dump()
+    except Exception:
+        return payload
+
+
+def _normalize_candidate_application_profile(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return ApplicationProfile.model_validate(payload).model_dump()
+    except Exception:
+        return payload
+
+
+def _normalize_candidate_research_enrichment(candidate: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(candidate or {})
+    normalized["company_profile"] = _normalize_candidate_company_profile(dict(normalized.get("company_profile") or {}))
+    normalized["role_profile"] = _normalize_candidate_role_profile(dict(normalized.get("role_profile") or {}))
+    normalized["application_profile"] = _normalize_candidate_application_profile(dict(normalized.get("application_profile") or {}))
+    return normalized
+
+
 def compare_research_artifacts(gold: dict[str, Any], candidate: dict[str, Any]) -> dict[str, float]:
+    candidate = _normalize_candidate_research_enrichment(candidate)
     gold_company = gold.get("company_profile") or {}
     cand_company = candidate.get("company_profile") or {}
     gold_role = gold.get("role_profile") or {}
@@ -191,7 +228,7 @@ def main() -> None:
     parser.add_argument("--use-fixture-candidate", action="store_true", default=False)
     parser.add_argument("--prompt-version", default="research_enrichment_bundle@v4.1.3.1")
     parser.add_argument("--provider", default="codex")
-    parser.add_argument("--model", default="gpt-5.4-mini")
+    parser.add_argument("--model", default="gpt-5.2")
     parser.add_argument("--transport", default="none")
     args = parser.parse_args()
 

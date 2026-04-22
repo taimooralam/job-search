@@ -218,6 +218,27 @@ def _dedupe_strings(values: list[str]) -> list[str]:
     return normalized
 
 
+_LIST_FIELD_LIMITS: dict[str, int] = {
+    "responsibilities": 15,
+    "qualifications": 12,
+    "nice_to_haves": 10,
+    "technical_skills": 20,
+    "soft_skills": 10,
+    "implied_pain_points": 8,
+    "success_metrics": 8,
+    "top_keywords": 20,
+}
+
+
+def _cap_list_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    for field, limit in _LIST_FIELD_LIMITS.items():
+        value = payload.get(field)
+        if not isinstance(value, list):
+            continue
+        payload[field] = value[:limit]
+    return payload
+
+
 def _split_listish_text(value: str) -> list[str]:
     text = str(value or "").strip()
     if not text:
@@ -689,6 +710,7 @@ def _validate_llm_output(
     _literalize_responsibilities(payload, description, title)
     _derive_success_metrics(payload, description)
     _normalize_top_keywords(payload)
+    _cap_list_fields(payload)
     return JDFactsExtractionOutput.model_validate(payload)
 
 

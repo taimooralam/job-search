@@ -54,9 +54,11 @@ class CodexResearchTransport:
 
     def __init__(self, config: StepConfig) -> None:
         self.provider = (config.provider or "codex").strip().lower()
-        self.model = config.primary_model or config.model or "gpt-5.4-mini"
+        self.model = config.primary_model or config.model or "gpt-5.2"
         self.transport = (config.transport or "none").strip().lower()
         self.timeout_seconds = DEFAULT_RESEARCH_TIMEOUT_SECONDS
+        self.cwd = config.codex_workdir
+        self.reasoning_effort = (config.reasoning_effort or "").strip() or None
 
     def is_live_configured(self) -> bool:
         return self.provider == "codex" and self.transport.startswith("codex")
@@ -86,9 +88,13 @@ class CodexResearchTransport:
             "--model",
             self.model,
             "--full-auto",
+        ]
+        if self.reasoning_effort:
+            command.extend(["-c", f'model_reasoning_effort="{self.reasoning_effort}"'])
+        command.extend([
             "--skip-git-repo-check",
             prompt,
-        ]
+        ])
         invoked_at = datetime.utcnow().isoformat()
         try:
             proc = _run_monitored_codex_subprocess(
@@ -96,6 +102,7 @@ class CodexResearchTransport:
                 timeout=self.timeout_seconds,
                 job_id=job_id,
                 logger=logging.getLogger(__name__),
+                cwd=self.cwd,
             )
         except FileNotFoundError:
             duration_ms = int((time.monotonic() - started) * 1000)
@@ -167,6 +174,7 @@ class CodexResearchTransport:
             attempts[0]["error"] = str(exc)
             return ResearchTransportResult(
                 success=False,
+                payload=payload,
                 error=f"schema validation failed: {exc}",
                 attempts=attempts,
                 provider_used="codex",

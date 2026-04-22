@@ -86,7 +86,7 @@ class TestIngestService:
         job = sample_jobs[0]
         key = service.generate_dedupe_key(job, "himalayas_auto")
 
-        assert key == "acme ai|senior ml engineer|remote|himalayas_auto"
+        assert key == "himalayas_auto|job-001"
 
     def test_get_last_fetch_timestamp_exists(self, mock_db):
         """Test retrieving existing timestamp."""
@@ -121,10 +121,15 @@ class TestIngestService:
             stats={"fetched": 10, "ingested": 5},
         )
 
-        mock_db["system_state"].update_one.assert_called_once()
-        call_args = mock_db["system_state"].update_one.call_args
-        assert call_args[0][0] == {"_id": "ingest_himalayas_auto"}
-        assert call_args[1]["upsert"] is True
+        assert mock_db["system_state"].update_one.call_count == 2
+        first_call = mock_db["system_state"].update_one.call_args_list[0]
+        second_call = mock_db["system_state"].update_one.call_args_list[1]
+        assert first_call[0][0] == {"_id": "ingest_himalayas_auto"}
+        assert first_call[1]["upsert"] is True
+        assert "$set" in first_call[0][1]
+        assert second_call[0][0] == {"_id": "ingest_himalayas_auto"}
+        assert "$push" in second_call[0][1]
+        assert second_call[1]["upsert"] is True
 
     def test_create_job_document(self, mock_db, sample_jobs):
         """Test job document creation."""
@@ -147,10 +152,10 @@ class TestIngestService:
     async def test_ingest_jobs_skip_duplicates(self, mock_db, sample_jobs):
         """Test that duplicate jobs are skipped."""
         # Setup: First job is duplicate, second is new
-        def find_one_side_effect(query):
+        def find_one_side_effect(query, projection=None):
             if "dedupeKey" in query:
                 dedupe_key = query["dedupeKey"]
-                if "acme ai" in dedupe_key:
+                if dedupe_key == "himalayas_auto|job-001":
                     return {"_id": "existing"}  # Duplicate
                 return None  # Not duplicate
             return None

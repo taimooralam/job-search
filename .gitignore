@@ -23,6 +23,7 @@ credentials/
 !package.json
 !tsconfig.json
 !vercel.json
+!tests/fixtures/**/*.json
 !data/master-cv/role_metadata.json
 !data/master-cv/role_skills_taxonomy.json
 !example/example_job.json

@@ -36,6 +36,7 @@ Usage:
 import json
 import logging
 import os
+from pathlib import Path
 import re
 import subprocess
 from dataclasses import dataclass, asdict
@@ -178,13 +179,14 @@ def _run_monitored_codex_subprocess(
     timeout: int | None,
     job_id: str,
     logger: logging.Logger,
+    cwd: str | None = None,
 ) -> MonitoredProcessResult:
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         stdin=subprocess.DEVNULL,
-        cwd=None,
+        cwd=cwd,
         text=False,
         bufsize=0,
     )
@@ -312,6 +314,8 @@ class CodexCLI:
         self,
         model: str = DEFAULT_CODEX_MODEL,
         timeout: int | None = DEFAULT_TIMEOUT_SECONDS,
+        cwd: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> None:
         """
         Initialize the Codex CLI wrapper.
@@ -322,6 +326,8 @@ class CodexCLI:
         """
         self.model = model
         self.timeout = timeout
+        self.cwd = cwd
+        self.reasoning_effort = (reasoning_effort or "").strip() or None
 
     def invoke(
         self,
@@ -349,8 +355,8 @@ class CodexCLI:
         """
         start_time = datetime.utcnow()
         logger.info(
-            "Codex shadow invoke: model=%s, job_id=%s, prompt_len=%d",
-            self.model, job_id, len(prompt),
+            "Codex shadow invoke: model=%s, job_id=%s, prompt_len=%d cwd=%s",
+            self.model, job_id, len(prompt), self.cwd or str(Path.cwd()),
         )
 
         try:
@@ -358,15 +364,20 @@ class CodexCLI:
                 "codex",
                 "exec",
                 "--model", self.model,
+            ]
+            if self.reasoning_effort:
+                cmd.extend(["-c", f'model_reasoning_effort="{self.reasoning_effort}"'])
+            cmd.extend([
                 "--skip-git-repo-check",
                 prompt,
-            ]
+            ])
 
             proc = _run_monitored_codex_subprocess(
                 cmd=cmd,
                 timeout=self.timeout,
                 job_id=job_id,
                 logger=logger,
+                cwd=self.cwd,
             )
 
             duration_ms = int(

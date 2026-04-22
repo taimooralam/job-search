@@ -14,7 +14,7 @@ from scripts.benchmark_research_enrichment_4_1_3 import (
 def test_load_corpus_reads_fixture_directory():
     corpus = load_corpus(Path("tests/fixtures/research_enrichment_benchmark"))
     assert corpus
-    assert corpus[0]["job_id"] == "bench-job-1"
+    assert {row["job_id"] for row in corpus} >= {"bench-job-1", "69e63f7e12725d7147cc499c"}
 
 
 def test_run_benchmark_no_write_mode_uses_fixture_candidate():

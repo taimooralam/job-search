@@ -140,9 +140,16 @@ def _secondary_categories(pre_score: list[dict[str, Any]], *, margin: float) -> 
     return []
 
 
-def _invoke_codex_json(*, prompt: str, model: str, job_id: str) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+def _invoke_codex_json(
+    *,
+    prompt: str,
+    model: str,
+    job_id: str,
+    cwd: str | None = None,
+    reasoning_effort: str | None = None,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     t0 = time.monotonic()
-    cli = CodexCLI(model=model)
+    cli = CodexCLI(model=model, cwd=cwd, reasoning_effort=reasoning_effort)
     result = cli.invoke(prompt, job_id=job_id, validate_json=True)
     duration_ms = int((time.monotonic() - t0) * 1000)
     return (result.result or None), {
@@ -263,6 +270,8 @@ class ClassificationStage:
                 prompt=prompt,
                 model=ctx.config.primary_model or "gpt-5.4-mini",
                 job_id=job_id,
+                cwd=ctx.config.codex_workdir,
+                reasoning_effort=ctx.config.reasoning_effort,
             )
             payload = attempt
             provider_used = "codex"
@@ -272,6 +281,8 @@ class ClassificationStage:
                     prompt=prompt,
                     model=classification_escalation_model(),
                     job_id=job_id,
+                    cwd=ctx.config.codex_workdir,
+                    reasoning_effort=ctx.config.reasoning_effort,
                 )
                 payload = attempt
                 provider_used = "codex"

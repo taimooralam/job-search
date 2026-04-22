@@ -1,0 +1,155 @@
+{
+  "job_id": "bench-job-1",
+  "gold_research_enrichment": {
+    "status": "partial",
+    "company_profile": {
+      "summary": "Acme builds AI workflow software for enterprise teams.",
+      "canonical_name": "Acme",
+      "canonical_domain": "acme.example.com",
+      "canonical_url": "https://acme.example.com",
+      "signals_rich": [
+        {
+          "name": "growth",
+          "value": "Hiring across platform engineering.",
+          "confidence": {
+            "score": 0.7,
+            "band": "medium",
+            "basis": "official site"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "source_id": "s1",
+          "url": "https://acme.example.com",
+          "source_type": "official_company_site",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "Acme summary",
+          "source_ids": ["s1"]
+        }
+      ]
+    },
+    "role_profile": {
+      "summary": "Staff-level platform role focused on delivery and technical leadership.",
+      "role_summary": "Staff-level platform role focused on delivery and technical leadership.",
+      "summary_detail": {
+        "text": "Staff-level platform role focused on delivery and technical leadership.",
+        "confidence": {
+          "score": 0.8,
+          "band": "high",
+          "basis": "job posting"
+        }
+      },
+      "why_now": "Growth in enterprise demand.",
+      "company_context_alignment": "The role supports platform scale and reliability.",
+      "sources": [
+        {
+          "source_id": "s2",
+          "url": "https://acme.example.com/careers/123",
+          "source_type": "official_job_posting",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "Role summary",
+          "source_ids": ["s2"]
+        }
+      ]
+    },
+    "application_profile": {
+      "canonical_application_url": "https://boards.greenhouse.io/acme/jobs/123",
+      "portal_family": "greenhouse",
+      "evidence": [
+        {
+          "claim": "Application URL",
+          "source_ids": ["s1"]
+        }
+      ]
+    },
+    "stakeholder_intelligence": []
+  },
+  "candidate_research_enrichment": {
+    "status": "partial",
+    "company_profile": {
+      "summary": "Acme builds AI workflow software for enterprise teams.",
+      "canonical_name": {
+        "text": "Acme"
+      },
+      "canonical_domain": {
+        "value": "acme.example.com"
+      },
+      "canonical_url": {
+        "value": "https://acme.example.com"
+      },
+      "signals": [
+        {
+          "name": "growth",
+          "value": "Hiring across platform engineering.",
+          "confidence": {
+            "score": 0.7,
+            "band": "medium",
+            "basis": "official site"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "source_id": "s1",
+          "url": "https://acme.example.com",
+          "source_type": "official_company_site",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "Acme summary",
+          "source_ids": ["s1"]
+        }
+      ]
+    },
+    "role_profile": {
+      "summary": {
+        "text": "Staff-level platform role focused on delivery and technical leadership."
+      },
+      "role_summary": {
+        "text": "Staff-level platform role focused on delivery and technical leadership."
+      },
+      "why_now": {
+        "text": "Growth in enterprise demand."
+      },
+      "company_context_alignment": {
+        "text": "The role supports platform scale and reliability."
+      },
+      "sources": [
+        {
+          "source_id": "s2",
+          "url": "https://acme.example.com/careers/123",
+          "source_type": "official_job_posting",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "Role summary",
+          "source_ids": ["s2"]
+        }
+      ]
+    },
+    "application_profile": {
+      "canonical_application_url": "https://boards.greenhouse.io/acme/jobs/123",
+      "portal_family": "greenhouse",
+      "evidence": [
+        {
+          "claim": "Application URL",
+          "source_ids": ["s1"]
+        }
+      ]
+    },
+    "stakeholder_intelligence": []
+  }
+}

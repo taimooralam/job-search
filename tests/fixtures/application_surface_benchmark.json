@@ -1,0 +1,132 @@
+[
+  {
+    "job_id": "robson-bale-unresolved-useful",
+    "job_doc": {
+      "_id": "69e63f7e12725d7147cc499c",
+      "title": "Lead AI Engineer",
+      "company": "Robson Bale",
+      "location": "London Area, United Kingdom",
+      "jobUrl": "https://linkedin.com/jobs/view/4401620360",
+      "application_url": "https://linkedin.com/jobs/view/4401620360",
+      "description": "Lead AI Engineer - Permanent - London/Hybrid"
+    },
+    "gold_application_surface": {
+      "status": "unresolved",
+      "resolution_status": "unresolved",
+      "canonical_application_url": null,
+      "portal_family": "unknown",
+      "stale_signal": "unknown",
+      "closed_signal": "unknown"
+    },
+    "candidate_application_surface": {
+      "status": "unresolved",
+      "job_url": "https://linkedin.com/jobs/view/4401620360",
+      "canonical_application_url": null,
+      "resolution_status": "unresolved",
+      "resolution_note": "No verified employer or ATS apply destination was directly observed.",
+      "ui_actionability": "blocked",
+      "portal_family": "unknown",
+      "ats_vendor": "unknown",
+      "form_fetch_status": "not_attempted",
+      "stale_signal": "unknown",
+      "closed_signal": "unknown",
+      "duplicate_signal": null,
+      "geo_normalization": {
+        "country": "GB",
+        "region": "London Area",
+        "city": "London Area",
+        "remote_policy": "hybrid"
+      },
+      "apply_instructions": [],
+      "apply_caveats": [
+        "Only aggregator candidates observed; canonical application path remains unverified."
+      ],
+      "sources": [
+        {
+          "source_id": "s1",
+          "url": "https://linkedin.com/jobs/view/4401620360",
+          "source_type": "job_document",
+          "fetched_at": "2026-04-21",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "The only observed job URL is a LinkedIn listing.",
+          "source_ids": ["s1"]
+        }
+      ],
+      "confidence": {
+        "score": 0.15,
+        "band": "unresolved",
+        "basis": "No verified company-safe application URL was observed."
+      }
+    }
+  },
+  {
+    "job_id": "verified-employer-portal-partial",
+    "job_doc": {
+      "_id": "fixture-partial",
+      "title": "Platform Engineer",
+      "company": "Acme Robotics",
+      "location": "Remote",
+      "jobUrl": "https://linkedin.com/jobs/view/1234567890",
+      "application_url": "https://linkedin.com/jobs/view/1234567890",
+      "description": "Platform Engineer"
+    },
+    "gold_application_surface": {
+      "status": "partial",
+      "resolution_status": "partial",
+      "canonical_application_url": "https://careers.acmerobotics.com/jobs",
+      "portal_family": "custom_unknown",
+      "stale_signal": "unknown",
+      "closed_signal": "unknown"
+    },
+    "candidate_application_surface": {
+      "status": "partial",
+      "job_url": "https://linkedin.com/jobs/view/1234567890",
+      "canonical_application_url": "https://careers.acmerobotics.com/jobs",
+      "resolution_status": "partial",
+      "resolution_note": "Verified employer jobs portal found, but the exact job-specific deep link was not directly observed.",
+      "ui_actionability": "caution",
+      "portal_family": "custom_unknown",
+      "ats_vendor": "unknown",
+      "form_fetch_status": "fetched",
+      "stale_signal": "unknown",
+      "closed_signal": "unknown",
+      "duplicate_signal": null,
+      "geo_normalization": {
+        "country": "US",
+        "region": "Remote",
+        "city": "Remote",
+        "remote_policy": "fully_remote"
+      },
+      "apply_instructions": [
+        "Start from the employer jobs portal and confirm the matching role before applying."
+      ],
+      "apply_caveats": [
+        "Exact job-specific deep link was not directly observed."
+      ],
+      "sources": [
+        {
+          "source_id": "s1",
+          "url": "https://careers.acmerobotics.com/jobs",
+          "source_type": "fetched_page",
+          "fetched_at": "2026-04-21",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "The employer careers page exposes a jobs landing page for current openings.",
+          "source_ids": ["s1"]
+        }
+      ],
+      "confidence": {
+        "score": 0.66,
+        "band": "medium",
+        "basis": "Verified employer portal observed directly, but no exact job deep link was exposed."
+      }
+    }
+  }
+]

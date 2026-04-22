@@ -625,8 +625,8 @@
                     <label for="{{ id_prefix }}cv-page-size" class="text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">Page Size</label>
                     <select id="{{ id_prefix }}cv-page-size" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle{% else %}applyDocumentStyle{% endif %}('pageSize')"
                             class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md {{ padding_x }} {{ padding_y }} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}28{% else %}32{% endif %}">
-                        <option value="letter">Letter (8.5" x 11")</option>
-                        <option value="a4" selected>A4 (210mm x 297mm)</option>
+                        <option value="letter" selected>Letter (8.5" x 11")</option>
+                        <option value="a4">A4 (210mm x 297mm)</option>
                     </select>
                 </div>
 

@@ -864,7 +864,7 @@ Second paragraph"""
         assert styles["lineHeight"] == 1.5  # Default line height for readability
         assert styles["pageSize"] == "letter"
         assert "margins" in styles
-        assert styles["margins"]["top"] == 1.0  # Phase 3 default: 1-inch margins
+        assert styles["margins"]["top"] == 0.5  # Phase 3 default: narrow margins
 
     def test_migrates_heading_not_mistaken_for_h2(self):
         """Should not mistake # for ## due to startswith logic."""

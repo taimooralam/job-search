@@ -1,0 +1,148 @@
+{
+  "job_id": "69e63f7e12725d7147cc499c",
+  "gold_research_enrichment": {
+    "status": "partial",
+    "company_profile": {
+      "summary": "Robson Bale is an IT recruitment specialist with offices in London, Amsterdam, Warsaw, Frankfurt, and New York.",
+      "canonical_name": "Robson Bale",
+      "canonical_domain": "robsonbale.com",
+      "canonical_url": "https://www.robsonbale.com/",
+      "sources": [
+        {
+          "source_id": "src_robsonbale_home",
+          "url": "https://www.robsonbale.com/",
+          "source_type": "official_company_site",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "Robson Bale is an IT recruitment specialist.",
+          "source_ids": [
+            "src_robsonbale_home"
+          ]
+        }
+      ]
+    },
+    "role_profile": {
+      "summary": "Architecture-heavy Lead AI Engineer role spanning production GenAI delivery, governance, and engineering standards.",
+      "role_summary": "Architecture-heavy Lead AI Engineer role spanning production GenAI delivery, governance, and engineering standards.",
+      "why_now": "The JD emphasizes moving AI initiatives from evaluation into production-grade GenAI systems with governance.",
+      "company_context_alignment": "Robson Bale publicly presents as an IT recruitment specialist, while the JD describes organization-wide AI ownership, so employer/client context remains partially ambiguous.",
+      "sources": [
+        {
+          "source_id": "src_jd_input",
+          "source_type": "job_document",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "The JD emphasizes production GenAI architecture, delivery, and governance.",
+          "source_ids": [
+            "src_jd_input"
+          ]
+        }
+      ]
+    },
+    "application_profile": {
+      "status": "unresolved",
+      "resolution_status": "unresolved",
+      "canonical_application_url": null,
+      "portal_family": "unknown",
+      "evidence": [
+        {
+          "claim": "No authoritative employer-owned or ATS-owned application URL was directly observed.",
+          "source_ids": [
+            "src_input_job_url"
+          ]
+        }
+      ]
+    },
+    "stakeholder_intelligence": []
+  },
+  "candidate_research_enrichment": {
+    "status": "partial",
+    "company_profile": {
+      "summary": "Robson Bale is an IT recruitment specialist with offices in London, Amsterdam, Warsaw, Frankfurt, and New York.",
+      "canonical_name": {
+        "text": "Robson Bale"
+      },
+      "canonical_domain": {
+        "value": "robsonbale.com"
+      },
+      "canonical_url": {
+        "value": "https://www.robsonbale.com/"
+      },
+      "signals": [
+        "IT recruitment specialist",
+        "Permanent, contract, and temporary recruitment services",
+        "Global recruitment services"
+      ],
+      "role_relevant_signals": [
+        "Covers recruiting for AI / Machine Learning within Data & Emerging Tech",
+        "Positions itself as an IT recruitment specialist connecting IT talent and employers"
+      ],
+      "sources": [
+        {
+          "source_id": "src_robsonbale_home",
+          "url": "https://www.robsonbale.com/",
+          "source_type": "official_company_site",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "Robson Bale is an IT recruitment specialist.",
+          "source_ids": [
+            "src_robsonbale_home"
+          ]
+        }
+      ]
+    },
+    "role_profile": {
+      "summary": {
+        "text": "Architecture-heavy Lead AI Engineer role spanning production GenAI delivery, governance, and engineering standards."
+      },
+      "role_summary": {
+        "text": "Architecture-heavy Lead AI Engineer role spanning production GenAI delivery, governance, and engineering standards."
+      },
+      "why_now": {
+        "text": "The JD emphasizes moving AI initiatives from evaluation into production-grade GenAI systems with governance."
+      },
+      "company_context_alignment": {
+        "text": "Robson Bale publicly presents as an IT recruitment specialist, while the JD describes organization-wide AI ownership, so employer/client context remains partially ambiguous."
+      },
+      "sources": [
+        {
+          "source_id": "src_jd_input",
+          "source_type": "job_document",
+          "trust_tier": "primary"
+        }
+      ],
+      "evidence": [
+        {
+          "claim": "The JD emphasizes production GenAI architecture, delivery, and governance.",
+          "source_ids": [
+            "src_jd_input"
+          ]
+        }
+      ]
+    },
+    "application_profile": {
+      "status": "unresolved",
+      "resolution_status": "unresolved",
+      "canonical_application_url": null,
+      "portal_family": "unknown",
+      "evidence": [
+        {
+          "claim": "No authoritative employer-owned or ATS-owned application URL was directly observed.",
+          "source_ids": [
+            "src_input_job_url"
+          ]
+        }
+      ]
+    },
+    "stakeholder_intelligence": []
+  }
+}

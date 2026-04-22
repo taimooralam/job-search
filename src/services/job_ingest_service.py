@@ -53,6 +53,57 @@ LogCallback = Callable[[str], None]
 ProgressCallback = Callable[[str, str, Dict[str, Any]], None]
 
 
+class _LegacyJobRepositoryAdapter:
+    """Minimal repository adapter for deprecated direct-db callers."""
+
+    def __init__(self, db: Database):
+        self._collection = db["level-2"]
+
+    def find_one(self, filter: Dict[str, Any], projection: Optional[Dict[str, Any]] = None):
+        return self._collection.find_one(filter, projection)
+
+    def insert_one(self, document: Dict[str, Any]):
+        return self._collection.insert_one(document)
+
+    def update_one(self, filter: Dict[str, Any], update: Dict[str, Any], upsert: bool = False):
+        return self._collection.update_one(filter, update, upsert=upsert)
+
+
+class _LegacySystemStateRepositoryAdapter:
+    """Minimal system-state adapter for deprecated direct-db callers."""
+
+    def __init__(self, db: Database):
+        self._collection = db["system_state"]
+
+    def get_state(self, state_id: str) -> Optional[Dict[str, Any]]:
+        return self._collection.find_one({"_id": state_id})
+
+    def set_state(self, state_id: str, data: Dict[str, Any], upsert: bool = True) -> bool:
+        result = self._collection.update_one({"_id": state_id}, {"$set": data}, upsert=upsert)
+        return bool(getattr(result, "modified_count", 0) or getattr(result, "upserted_id", None))
+
+    def push_to_array(
+        self,
+        state_id: str,
+        array_field: str,
+        value: Any,
+        max_size: Optional[int] = None,
+    ) -> bool:
+        if max_size is not None:
+            update = {
+                "$push": {
+                    array_field: {
+                        "$each": [value],
+                        "$slice": -max_size,
+                    }
+                }
+            }
+        else:
+            update = {"$push": {array_field: value}}
+        result = self._collection.update_one({"_id": state_id}, update, upsert=True)
+        return bool(getattr(result, "modified_count", 0) or getattr(result, "upserted_id", None))
+
+
 @dataclass
 class IngestResult:
     """Result of a job ingestion run."""
@@ -143,12 +194,16 @@ class IngestService:
         """Get the job repository instance."""
         if self._repository is not None:
             return self._repository
+        if self.db is not None:
+            return _LegacyJobRepositoryAdapter(self.db)  # type: ignore[return-value]
         return get_job_repository()
 
     def _get_system_state_repository(self) -> SystemStateRepositoryInterface:
         """Get the system state repository instance."""
         if self._system_state_repository is not None:
             return self._system_state_repository
+        if self.db is not None:
+            return _LegacySystemStateRepositoryAdapter(self.db)  # type: ignore[return-value]
         return get_system_state_repository()
 
     def _log(self, message: str) -> None:

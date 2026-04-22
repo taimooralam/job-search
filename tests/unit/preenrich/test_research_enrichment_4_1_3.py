@@ -457,6 +457,103 @@ def test_research_stage_accepts_richer_live_shapes_after_normalization(monkeypat
     assert stage_output["stakeholder_intelligence"][0]["relationship_to_role"] == "likely_hiring_manager"
 
 
+def test_research_stage_fail_opens_company_and_role_on_schema_drift(monkeypatch):
+    monkeypatch.setenv("PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED", "true")
+    monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
+
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+        if "P-research-company@" in prompt:
+            return ResearchTransportResult(
+                success=False,
+                payload={
+                    "summary": "Acme is an enterprise AI workflow software company.",
+                    "canonical_name": "Acme",
+                    "canonical_domain": "acme.example.com",
+                    "canonical_url": "https://acme.example.com",
+                    "identity_confidence": {
+                        "text": "Official company site and LinkedIn company profile align.",
+                        "confidence": {"score": 0.91, "band": "high"},
+                        "evidence": [
+                            {"source_ids": ["s_company"]},
+                            {"source_ids": ["s_company_linkedin"]},
+                        ],
+                    },
+                    "signals": [
+                        "LinkedIn-listed company size: 11-50 employees",
+                        "Hiring across platform engineering",
+                    ],
+                    "role_relevant_signals": [
+                        "The company is hiring senior platform and AI engineering roles",
+                    ],
+                    "sources": [{
+                        "source_id": "s_company",
+                        "url": "https://acme.example.com",
+                        "source_type": "official_company_site",
+                        "fetched_at": "2026-04-20T00:00:00+00:00",
+                        "trust_tier": "primary",
+                    }],
+                    "confidence": {"score": 0.8, "band": "high", "basis": "Official company site"},
+                    "status": "completed",
+                },
+                error="schema validation failed: signals_rich.0 expected dict",
+                attempts=[{"provider": "codex", "outcome": "error_schema"}],
+                provider_used="codex",
+                model_used="gpt-5.2",
+                transport_used="codex_web_search",
+            )
+        if "P-research-role@" in prompt:
+            return ResearchTransportResult(
+                success=False,
+                payload={
+                    "summary": "Staff platform role focused on reliability and delivery.",
+                    "role_summary": "Senior platform leadership role with execution depth.",
+                    "mandate": ["Improve platform reliability", "Lead delivery"],
+                    "collaboration_map": {
+                        "status": "partial",
+                        "partners": ["Product", "Security"],
+                    },
+                    "success_metrics": ["Reduce incidents", "Improve deploy velocity"],
+                    "confidence": {"score": 0.84, "band": "high", "basis": "Verified job posting"},
+                    "status": "completed",
+                },
+                error="schema validation failed: collaboration_map expected list",
+                attempts=[{"provider": "codex", "outcome": "error_schema"}],
+                provider_used="codex",
+                model_used="gpt-5.2",
+                transport_used="codex_web_search",
+            )
+        return ResearchTransportResult(
+            success=True,
+            payload=validator({
+                "application_profile": {
+                    "canonical_application_url": "https://boards.greenhouse.io/acme/jobs/123",
+                    "status": "partial",
+                    "resolution_status": "partial",
+                    "portal_family": "greenhouse",
+                    "ui_actionability": "applyable",
+                    "form_fetch_status": "unavailable",
+                    "apply_instructions": ["Use the official ATS entrypoint."],
+                },
+            }) if validator else {},
+            attempts=[{"provider": "codex", "outcome": "success"}],
+            provider_used="codex",
+            model_used="gpt-5.2",
+            transport_used="codex_web_search",
+        )
+
+    monkeypatch.setattr("src.preenrich.research_transport.CodexResearchTransport.invoke_json", _fake_invoke)
+    stage_output = ResearchEnrichmentStage().run(_context()).stage_output
+    assert stage_output["company_profile"]["canonical_domain"] == "acme.example.com"
+    assert stage_output["company_profile"]["canonical_url"] == "https://acme.example.com"
+    assert stage_output["company_profile"]["signals_rich"][0]["text"] == "LinkedIn-listed company size: 11-50 employees"
+    assert stage_output["company_profile"]["identity_confidence"]["band"] == "high"
+    assert stage_output["company_profile"]["status"] == "completed"
+    assert stage_output["role_profile"]["summary"] == "Staff platform role focused on reliability and delivery."
+    assert stage_output["role_profile"]["collaboration_map"][0]["partners"] == ["Product", "Security"]
+    assert stage_output["role_profile"]["status"] == "completed"
+    assert stage_output["status"] == "partial"
+
+
 def test_snapshot_compactness_allow_list(monkeypatch):
     monkeypatch.setenv("PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_BLUEPRINT_SNAPSHOT_WRITE_ENABLED", "true")

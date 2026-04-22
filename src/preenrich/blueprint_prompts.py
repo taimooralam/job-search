@@ -896,6 +896,8 @@ def build_p_stakeholder_discovery_v2(
             "A real stakeholder must match canonical company identity and role/function context simultaneously.",
             "Medium/high identity confidence requires a direct signal class or two distinct converging matched_signal_classes.",
             "Low-confidence or ambiguous candidates belong in search_journal, not stakeholder_intelligence.",
+            "search_journal.outcome must be exactly one of: hit, miss, ambiguous, rejected_fabrication.",
+            "If a search found relevant company pages but no named people, use outcome=\"miss\" and explain that in notes instead of inventing a new outcome value.",
             "The output stakeholder_intelligence records must stay discovery-only. Do not emit evaluator personas here.",
             "Use this minimal shape as a guide and emit JSON directly:",
             json.dumps(

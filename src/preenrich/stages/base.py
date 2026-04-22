@@ -33,6 +33,8 @@ def _call_llm_with_fallback(
     job_id: str,
     schema: Optional[Type[BaseModel]] = None,
     claude_invoker: Callable[..., Any],
+    codex_cwd: str | None = None,
+    reasoning_effort: str | None = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """
     Invoke the primary provider (Codex) and optionally fall back on failure.
@@ -85,7 +87,7 @@ def _call_llm_with_fallback(
 
     t0 = time.monotonic()
     try:
-        cli = CodexCLI(model=primary_model)
+        cli = CodexCLI(model=primary_model, cwd=codex_cwd, reasoning_effort=reasoning_effort)
         codex_result = cli.invoke(prompt, job_id=job_id, validate_json=True)
         primary_duration_ms = int((time.monotonic() - t0) * 1000)
 

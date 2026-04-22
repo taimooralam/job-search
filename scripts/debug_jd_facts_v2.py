@@ -21,7 +21,7 @@ from pymongo import MongoClient
 
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.stages.jd_facts import JDFactsStage
-from src.preenrich.types import StageContext, StepConfig
+from src.preenrich.types import StageContext, get_stage_step_config
 
 
 def _load_env() -> None:
@@ -41,18 +41,18 @@ def _build_context(job_doc: dict, *, model: str) -> StageContext:
         or ("sha256:" + hashlib.sha256(description.encode("utf-8")).hexdigest())
     )
     attempt_number = int(pre.get("attempt_number", 0) or 0) + 1
+    config = get_stage_step_config("jd_facts")
+    config.provider = "codex"
+    config.primary_model = model
+    config.fallback_provider = "none"
+    config.fallback_model = None
     return StageContext(
         job_doc=job_doc,
         jd_checksum=jd_cs,
         company_checksum=company_cs,
         input_snapshot_id=snapshot_id,
         attempt_number=attempt_number,
-        config=StepConfig(
-            provider="codex",
-            primary_model=model,
-            fallback_provider="none",
-            fallback_model=None,
-        ),
+        config=config,
         shadow_mode=False,
     )
 
