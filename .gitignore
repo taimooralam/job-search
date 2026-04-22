@@ -85,6 +85,9 @@ claude-auth/
 !.claude/skills/**
 !.claude/agents/
 !.claude/agents/**
+!.codex/
+!.codex/skills/
+!.codex/skills/**
 
 # VPS MongoDB secrets
 vps/mongodb/mongodb-keyfile
