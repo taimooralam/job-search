@@ -1,0 +1,468 @@
+{
+  "signal_strength": {
+    "applied_count": 0,
+    "avg_score": 85.4,
+    "median_score": 85,
+    "score_range": [
+      75,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "solutions_architect": 6,
+      "ai_architect": 4
+    },
+    "top_title_variants": {
+      "AI Solution Architect": 2,
+      "AI & Computer Vision Solution Architect": 1,
+      "AI Solution Architect (Power Platform Specialist)": 1,
+      "Agentic AI Architect": 1,
+      "Enterprise & Agentic AI Solutions Architect": 1,
+      "Enterprise Solutions Architect (AI Focus)": 1,
+      "Platform Architect": 1,
+      "Senior AI Solutions Architect": 1
+    },
+    "noisy_title_mode": false
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 6,
+      "senior_manager": 3,
+      "mid_ic": 1
+    },
+    "role_scope_distribution": {
+      "ic": 4,
+      "player_coach": 4,
+      "manager": 2
+    },
+    "management_signals_weak": false
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    "performance_management": {
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    "org_building": {
+      "count": 3,
+      "total": 10,
+      "pct": 30.0
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 10,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 100.0,
+    "greenfield_split": {
+      "both": 8
+    },
+    "cloud_preference": {
+      "multi_cloud": 5,
+      "Azure": 2,
+      "AWS": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "ci/cd",
+      "count": 4,
+      "total": 10,
+      "pct": 40.0
+    },
+    {
+      "label": "cost management",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0
+    },
+    {
+      "label": "python",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0
+    },
+    {
+      "label": "solution architecture",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0
+    },
+    {
+      "label": "agent orchestration",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "ai / ml architecture",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "alm",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "application insights",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "architecture reviews",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "azure ai foundry",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "azure monitor",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "build-vs-buy decisions",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "data loss prevention",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "data pipelines",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "docker",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "communication",
+      "count": 9,
+      "total": 10,
+      "pct": 90.0
+    },
+    {
+      "label": "collaboration",
+      "count": 7,
+      "total": 10,
+      "pct": 70.0
+    },
+    {
+      "label": "stakeholder management",
+      "count": 7,
+      "total": 10,
+      "pct": 70.0
+    },
+    {
+      "label": "mentoring",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0
+    },
+    {
+      "label": "analytical",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "coaching",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "documentation",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "knowledge transfer",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "problem-solving",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "agile ceremonies",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 3,
+        "total": 10,
+        "pct": 30.0
+      },
+      {
+        "label": "golang",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "java",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "javascript",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "typescript",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      }
+    ],
+    "preferred": []
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      },
+      "agents_orchestration": {
+        "count": 6,
+        "total": 10,
+        "pct": 60.0
+      },
+      "fine_tuning": {
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      "evaluation_quality": {
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      },
+      "guardrails_governance": {
+        "count": 6,
+        "total": 10,
+        "pct": 60.0
+      },
+      "prompt_engineering": {
+        "count": 0,
+        "total": 10,
+        "pct": 0.0
+      },
+      "vector_search": {
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      },
+      "model_serving_routing": {
+        "count": 0,
+        "total": 10,
+        "pct": 0.0
+      }
+    },
+    "frameworks": [
+      {
+        "label": "azure ai foundry",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      },
+      {
+        "label": "microsoft copilot studio",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      },
+      {
+        "label": "langchain",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "microsoft power platform",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "opencv",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "pytorch",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      },
+      {
+        "label": "tensorflow",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0
+      }
+    ],
+    "observability": [
+      {
+        "label": "application insights",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      },
+      {
+        "label": "azure monitor",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "gdpr",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    {
+      "label": "aws well-architected",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    {
+      "label": "data loss prevention",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    {
+      "label": "eu ai act",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    {
+      "label": "fda / ce class b or c",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    {
+      "label": "fedramp",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    {
+      "label": "hipaa",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    {
+      "label": "microsoft purview",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "design sovereign ai solutions that satisfy regulatory and security requirements",
+      "count": 1
+    },
+    {
+      "pain_point": "translate customer vision and complex requirements into actionable roadmaps",
+      "count": 1
+    },
+    {
+      "pain_point": "navigate ai infrastructure complexity while improving performance",
+      "count": 1
+    },
+    {
+      "pain_point": "balance cloud operations leadership with hands-on ai/ml delivery",
+      "count": 1
+    },
+    {
+      "pain_point": "manage aws/gcp partnership programs, funding, and governance work",
+      "count": 1
+    },
+    {
+      "pain_point": "build production-grade ai/ml systems for regulated enterprise clients",
+      "count": 1
+    },
+    {
+      "pain_point": "improve operational efficiency through automation and reusable patterns",
+      "count": 1
+    },
+    {
+      "pain_point": "define a scalable and governed solution blueprint for ai agents and power platform delivery",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "BFSI": 1,
+      "consulting": 1,
+      "healthcare": 1
+    },
+    "company_stage": {
+      "consultancy": 1
+    },
+    "collaboration_model": {
+      "distributed": 1,
+      "hybrid": 1
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

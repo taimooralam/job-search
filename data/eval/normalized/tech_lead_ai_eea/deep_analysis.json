@@ -1,0 +1,2789 @@
+[
+  {
+    "job_id": "695a4c576dd552ab7ec2ce73",
+    "title_normalized": "Tech Lead - ML/AI (LLM Systems & Infrastructure)",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "LLMs",
+      "RAG",
+      "LangChain",
+      "vector stores",
+      "Qdrant",
+      "Pinecone",
+      "hybrid retrieval",
+      "prompt engineering",
+      "embedding strategies",
+      "monitoring",
+      "evaluation",
+      "FastAPI",
+      "Docker",
+      "GitHub Actions",
+      "Python packaging",
+      "GDPR",
+      "RBAC",
+      "audit logging"
+    ],
+    "hard_skills_nice_to_have": [
+      "Langfuse",
+      "Weights & Biases",
+      "BentoML",
+      "streaming inference",
+      "token cost control",
+      "fine-tuning",
+      "prompt-evaluation pipelines"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "derived",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "explicit",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain"
+      ],
+      "observability": [
+        "Langfuse",
+        "Weights & Biases"
+      ]
+    },
+    "data_stack": [
+      "Qdrant",
+      "Pinecone"
+    ],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "collaboration",
+      "independent decision-making",
+      "architectural leadership"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalable, secure, production-grade AI systems",
+      "LLM-powered solutions deliver real value",
+      "seamless integration into the platform",
+      "robust monitoring",
+      "robust evaluation",
+      "security practices for AI workflows",
+      "GDPR compliance",
+      "RBAC",
+      "audit logging",
+      "model integration, deployment, and scaling"
+    ],
+    "implied_pain_points": [
+      "Need to turn LLM ideas into production-grade platform capabilities",
+      "Need secure, compliant RAG pipelines integrated with the core product",
+      "Need strong monitoring, evaluation, and security around AI workflows",
+      "Need technical leadership to guide backend and data collaboration"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years in ML/AI Engineering or MLOps",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show ownership of a production LLM/RAG platform, not just experimentation. It needs concrete evidence of architecture, deployment, monitoring, evaluation, and governance controls such as guardrails, access control, and auditability. Proof of scaling a user-facing AI system and making independent technical decisions will matter most.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "governance",
+        "architecture",
+        "evaluation",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct people management or hiring ownership",
+        "performance management",
+        "specific LangChain, Qdrant, or Pinecone production use unless documented",
+        "fine-tuning or prompt-evaluation pipeline ownership unless explicitly shown",
+        "token-cost optimization at scale unless explicitly shown",
+        "formal GDPR program ownership"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps directly to the RAG, evaluation, guardrails, and production AI workflow requirements",
+        "Lantern maps to model routing and reliability needs for LLM infrastructure",
+        "Technical Lead experience at Seven.One supports the architectural leadership part of the role"
+      ]
+    }
+  },
+  {
+    "job_id": "693caee1230bd5792d1b789c",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "AWS",
+      "Azure",
+      "GCP",
+      "distributed systems",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing",
+      "code quality",
+      "production readiness",
+      "technical planning",
+      "effort estimation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven",
+      "cloud-native",
+      "CI_CD",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "FastAPI",
+        "Django",
+        "Flask",
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "collaboration",
+      "mentoring",
+      "technical discussions",
+      "solution reviews",
+      "client presentations"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalable backend systems",
+      "smooth handoffs and timeline alignment",
+      "accurate estimations",
+      "delivery roadmaps",
+      "technical quality",
+      "code quality",
+      "testing",
+      "production readiness",
+      "successful client requirement gathering and solution presentations"
+    ],
+    "implied_pain_points": [
+      "Need a lead who can architect backend systems and integrate AI features into enterprise applications",
+      "Need coordination across onshore/offshore teams and clear client communication",
+      "Need strong delivery planning, estimations, and quality control for distributed execution",
+      "Need production-ready Python backend work with cloud-native and AI integrations"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years of backend engineering experience",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show you have led backend architecture in distributed teams and shipped AI features into real enterprise systems. It should include evidence of Python backend depth, microservices or event-driven design, delivery ownership, and client-facing communication. The best proof is a history of producing reliable systems while coordinating multiple stakeholders and keeping quality high.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct client ownership or account management unless explicitly shown",
+        "formal people-management scope such as hiring or performance reviews",
+        "specific OpenAI, Azure OpenAI, Llama, or HuggingFace production integration unless documented",
+        "cloud-provider depth across AWS, Azure, and GCP unless documented",
+        "budget or P&L ownership"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern maps to AI integration and reliable model routing in a production backend context",
+        "Commander-4 maps to enterprise AI feature delivery with operational concerns such as evaluation and guardrails",
+        "Prior lead engineer work in CQRS/event sourcing and microservices maps to backend architecture, distributed systems, and delivery discipline"
+      ]
+    }
+  },
+  {
+    "job_id": "693ccb18230bd5792d1b78a1",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "AWS",
+      "Azure",
+      "GCP",
+      "distributed systems",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing",
+      "code quality",
+      "production readiness",
+      "technical planning",
+      "effort estimation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven",
+      "cloud-native",
+      "CI_CD",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "FastAPI",
+        "Django",
+        "Flask",
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "collaboration",
+      "mentoring",
+      "technical discussions",
+      "solution reviews",
+      "client presentations"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalable backend systems",
+      "smooth handoffs and timeline alignment",
+      "accurate estimations",
+      "delivery roadmaps",
+      "technical quality",
+      "code quality",
+      "testing",
+      "production readiness",
+      "successful client requirement gathering and solution presentations"
+    ],
+    "implied_pain_points": [
+      "Need a lead who can architect backend systems and integrate AI features into enterprise applications",
+      "Need coordination across onshore/offshore teams and clear client communication",
+      "Need strong delivery planning, estimations, and quality control for distributed execution",
+      "Need production-ready Python backend work with cloud-native and AI integrations"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years of backend engineering experience",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show you have led backend architecture in distributed teams and shipped AI features into real enterprise systems. It should include evidence of Python backend depth, microservices or event-driven design, delivery ownership, and client-facing communication. The best proof is a history of producing reliable systems while coordinating multiple stakeholders and keeping quality high.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct client ownership or account management unless explicitly shown",
+        "formal people-management scope such as hiring or performance reviews",
+        "specific OpenAI, Azure OpenAI, Llama, or HuggingFace production integration unless documented",
+        "cloud-provider depth across AWS, Azure, and GCP unless documented",
+        "budget or P&L ownership"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern maps to AI integration and reliable model routing in a production backend context",
+        "Commander-4 maps to enterprise AI feature delivery with operational concerns such as evaluation and guardrails",
+        "Prior lead engineer work in CQRS/event sourcing and microservices maps to backend architecture, distributed systems, and delivery discipline"
+      ]
+    }
+  },
+  {
+    "job_id": "693cd91c230bd5792d1b78a3",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "backend architecture",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "distributed systems",
+      "AWS",
+      "Azure",
+      "GCP",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing",
+      "production readiness"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL",
+      "NoSQL",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership skills",
+      "client-facing communication",
+      "coordination",
+      "mentoring",
+      "stakeholder management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need someone to drive backend architecture for enterprise AI systems",
+      "Need to integrate AI/LLM capabilities into existing backend applications",
+      "Need stronger coordination across onshore/offshore teams",
+      "Need reliable delivery planning, estimations, and timeline control",
+      "Need better code quality, testing, CI/CD, and production readiness"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show 10+ years building Python backend systems and leading technical decisions for distributed teams. It should also show shipping enterprise AI/LLM features end to end, with concrete evidence of client-facing delivery, estimation, and production hardening.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people management with direct reports",
+        "hiring or performance review ownership",
+        "budget or P&L ownership",
+        "deep AWS/Azure/GCP platform ownership if not already evidenced",
+        "specific FastAPI or Django production leadership if not shown"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to enterprise AI workflow platforms, RAG, guardrails, evaluation, and production-scale delivery.",
+        "Lantern maps to LLM gateway design, multi-provider routing, and resilience patterns such as circuit breakers.",
+        "CQRS and event-sourcing work maps to backend architecture, distributed systems, and event-driven design.",
+        "Flask/MongoDB and microservices/RabbitMQ work map to Python backend delivery, NoSQL, and messaging systems."
+      ]
+    }
+  },
+  {
+    "job_id": "693ce720230bd5792d1b78a4",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "backend architecture",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "distributed systems",
+      "AWS",
+      "Azure",
+      "GCP",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing",
+      "production readiness"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL",
+      "NoSQL",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership skills",
+      "client-facing communication",
+      "coordination",
+      "mentoring",
+      "stakeholder management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need someone to drive backend architecture for enterprise AI systems",
+      "Need to integrate AI/LLM capabilities into existing backend applications",
+      "Need stronger coordination across onshore/offshore teams",
+      "Need reliable delivery planning, estimations, and timeline control",
+      "Need better code quality, testing, CI/CD, and production readiness"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show 10+ years building Python backend systems and leading technical decisions for distributed teams. It should also show shipping enterprise AI/LLM features end to end, with concrete evidence of client-facing delivery, estimation, and production hardening.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people management with direct reports",
+        "hiring or performance review ownership",
+        "budget or P&L ownership",
+        "deep AWS/Azure/GCP platform ownership if not already evidenced",
+        "specific FastAPI or Django production leadership if not shown"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to enterprise AI workflow platforms, RAG, guardrails, evaluation, and production-scale delivery.",
+        "Lantern maps to LLM gateway design, multi-provider routing, and resilience patterns such as circuit breakers.",
+        "CQRS and event-sourcing work maps to backend architecture, distributed systems, and event-driven design.",
+        "Flask/MongoDB and microservices/RabbitMQ work maps to Python backend delivery, NoSQL, and messaging systems."
+      ]
+    }
+  },
+  {
+    "job_id": "693cf540230bd5792d1b78a5",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "backend architecture",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "distributed systems",
+      "AWS",
+      "Azure",
+      "GCP",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing",
+      "production readiness"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL",
+      "NoSQL",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership skills",
+      "client-facing communication",
+      "coordination",
+      "mentoring",
+      "stakeholder management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need someone to drive backend architecture for enterprise AI systems",
+      "Need to integrate AI/LLM capabilities into existing backend applications",
+      "Need stronger coordination across onshore/offshore teams",
+      "Need reliable delivery planning, estimations, and timeline control",
+      "Need better code quality, testing, CI/CD, and production readiness"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show 10+ years building Python backend systems and leading technical decisions for distributed teams. It should also show shipping enterprise AI/LLM features end to end, with concrete evidence of client-facing delivery, estimation, and production hardening.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people management with direct reports",
+        "hiring or performance review ownership",
+        "budget or P&L ownership",
+        "deep AWS/Azure/GCP platform ownership if not already evidenced",
+        "specific FastAPI or Django production leadership if not shown"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to enterprise AI workflow platforms, RAG, guardrails, evaluation, and production-scale delivery.",
+        "Lantern maps to LLM gateway design, multi-provider routing, and resilience patterns such as circuit breakers.",
+        "CQRS and event-sourcing work maps to backend architecture, distributed systems, and event-driven design.",
+        "Flask/MongoDB and microservices/RabbitMQ work maps to Python backend delivery, NoSQL, and messaging systems."
+      ]
+    }
+  },
+  {
+    "job_id": "693d034c230bd5792d1b78ab",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "production readiness"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "AI/LLM integrations",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "testing",
+      "CI/CD",
+      "production readiness",
+      "distributed systems",
+      "cloud (AWS/Azure/GCP)"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL databases",
+      "NoSQL databases",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "requirements gathering",
+      "coordination",
+      "technical discussions",
+      "solution reviews",
+      "client presentations",
+      "mentoring",
+      "timeline alignment"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need a technical lead to architect scalable Python backend systems for enterprise AI/LLM use cases.",
+      "Need someone to coordinate distributed onshore/offshore execution while keeping delivery on track.",
+      "Need strong client-facing leadership to gather requirements, present solutions, and maintain code quality."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show senior Python backend ownership, especially around microservices, APIs, and distributed delivery. It should also show concrete AI/LLM integration work in production, plus evidence of coordinating technical work across teams and delivering to client requirements.\n",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct people management or performance reviews",
+        "hiring ownership",
+        "budget or P&L ownership",
+        "hands-on experience with every named stack item unless explicitly evidenced",
+        "formal ownership of onshore/offshore team coordination at company level"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it is an enterprise AI workflow platform with RAG, semantic caching, evaluation, and guardrails, which matches the AI/LLM backend integration and production-readiness angle.",
+        "Lantern maps strongly because multi-provider routing and circuit breaking are relevant to production AI/LLM backend architecture and reliability.",
+        "Lead Engineer work on CQRS/event-sourcing maps to scalable backend architecture and distributed systems design.",
+        "Backend Engineer work with Flask/MongoDB and microservices/RabbitMQ maps directly to the Python backend, API, and message-queue expectations."
+      ]
+    }
+  },
+  {
+    "job_id": "693d2d58230bd5792d1b78b1",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "production readiness"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "AI/LLM integrations",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "testing",
+      "CI/CD",
+      "production readiness",
+      "distributed systems",
+      "cloud (AWS/Azure/GCP)"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL databases",
+      "NoSQL databases",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "requirements gathering",
+      "coordination",
+      "technical discussions",
+      "solution reviews",
+      "client presentations",
+      "mentoring",
+      "timeline alignment"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need a technical lead to architect scalable Python backend systems for enterprise AI/LLM use cases.",
+      "Need someone to coordinate distributed onshore/offshore execution while keeping delivery on track.",
+      "Need strong client-facing leadership to gather requirements, present solutions, and maintain code quality."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show senior Python backend ownership, especially around microservices, APIs, and distributed delivery. It should also show concrete AI/LLM integration work in production, plus evidence of coordinating technical work across teams and delivering to client requirements.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct people management or performance reviews",
+        "hiring ownership",
+        "budget or P&L ownership",
+        "hands-on experience with every named stack item unless explicitly evidenced",
+        "formal ownership of onshore/offshore team coordination at company level"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it is an enterprise AI workflow platform with RAG, semantic caching, evaluation, and guardrails, which matches the AI/LLM backend integration and production-readiness angle.",
+        "Lantern maps strongly because multi-provider routing and circuit breaking are relevant to production AI/LLM backend architecture and reliability.",
+        "Lead Engineer work on CQRS/event-sourcing maps to scalable backend architecture and distributed systems design.",
+        "Backend Engineer work with Flask/MongoDB and microservices/RabbitMQ maps directly to the Python backend, API, and message-queue expectations."
+      ]
+    }
+  },
+  {
+    "job_id": "693d3b62230bd5792d1b78b4",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "production readiness"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "AI/LLM integrations",
+      "SQL databases",
+      "NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "testing",
+      "CI/CD",
+      "production readiness",
+      "distributed systems",
+      "cloud (AWS/Azure/GCP)"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL databases",
+      "NoSQL databases",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "requirements gathering",
+      "coordination",
+      "technical discussions",
+      "solution reviews",
+      "client presentations",
+      "mentoring",
+      "timeline alignment"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need a technical lead to architect scalable Python backend systems for enterprise AI/LLM use cases.",
+      "Need someone to coordinate distributed onshore/offshore execution while keeping delivery on track.",
+      "Need strong client-facing leadership to gather requirements, present solutions, and maintain code quality."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show senior Python backend ownership, especially around microservices, APIs, and distributed delivery. It should also show concrete AI/LLM integration work in production, plus evidence of coordinating technical work across teams and delivering to client requirements.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct people management or performance reviews",
+        "hiring ownership",
+        "budget or P&L ownership",
+        "hands-on experience with every named stack item unless explicitly evidenced",
+        "formal ownership of onshore/offshore team coordination at company level"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it is an enterprise AI workflow platform with RAG, semantic caching, evaluation, and guardrails, which matches the AI/LLM backend integration and production-readiness angle.",
+        "Lantern maps strongly because multi-provider routing and circuit breaking are relevant to production AI/LLM backend architecture and reliability.",
+        "Lead Engineer work on CQRS/event-sourcing maps to scalable backend architecture and distributed systems design.",
+        "Backend Engineer work with Flask/MongoDB and microservices/RabbitMQ maps directly to the Python backend, API, and message-queue expectations."
+      ]
+    }
+  },
+  {
+    "job_id": "6961384a6dd552ab7ec2d68c",
+    "title_normalized": "Lead Product Engineer (Next.js + Generative AI)",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "derived",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "large, complex systems",
+      "latency_reliability": "safe deployments"
+    },
+    "hard_skills_must_have": [
+      "React",
+      "Next.js",
+      "Python",
+      "Generative AI",
+      "LLMs",
+      "AI-driven features",
+      "UI/UX principles",
+      "product design details",
+      "testing strategies",
+      "A/B testing",
+      "continuous integration and delivery",
+      "Agile/Scrum"
+    ],
+    "hard_skills_nice_to_have": [
+      "chatbot interfaces",
+      "AI-native products",
+      "AI agents",
+      "prompt engineering"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "technical leadership",
+      "attention to detail",
+      "positive mindset",
+      "can-do attitude",
+      "extreme ownership"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "agency",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "perform to the expectations you and your team have agreed upon",
+      "deliver on commitments"
+    ],
+    "implied_pain_points": [
+      "Need a senior engineer who can slot into an existing client team and deliver production web features quickly.",
+      "Need someone who can bridge frontend, backend, and GenAI work while keeping deployments safe and quality high."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "7+ years building and scaling production-grade web applications in a senior or lead engineering role",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show senior product-engineering delivery across React/Next.js and Python, with shipped LLM-backed features in production. It should also show the candidate can work across frontend, backend, testing, A/B experimentation, and safe deployments while collaborating closely with designers and engineers.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "evaluation",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep Next.js ownership if not directly evidenced",
+        "formal product design ownership",
+        "team management or hiring responsibility",
+        "large frontend organization leadership without proof"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the best fit because it demonstrates an enterprise AI workflow platform shipped to 2,000 users with RAG, evaluation, and guardrails.",
+        "Lantern maps well because it shows production AI reliability, multi-provider routing, and circuit-breaker style resilience.",
+        "Prior backend and microservices work can support the Python and complex-system parts of the role, but should not be stretched into frontend depth unless directly shown."
+      ]
+    }
+  },
+  {
+    "job_id": "696a74863da7d438ae4f5cb3",
+    "title_normalized": "AI System Leader - Vision AI & NVIDIA Systems",
+    "title_family": "ai_architect",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "1,000+ devices or multi-GPU clusters",
+      "latency_reliability": "real-time performance on Jetson Orin/Xavier and similar platforms"
+    },
+    "hard_skills_must_have": [
+      "NVIDIA DeepStream",
+      "TensorRT",
+      "Triton",
+      "Jetson Orin",
+      "Jetson Xavier",
+      "PyTorch",
+      "TensorFlow",
+      "OpenCV",
+      "GStreamer",
+      "Python",
+      "C++",
+      "CUDA",
+      "distributed AI training",
+      "continuous learning systems",
+      "cloud-native ML",
+      "Docker",
+      "Kubernetes",
+      "MLflow",
+      "CI/CD",
+      "video analytics pipelines"
+    ],
+    "hard_skills_nice_to_have": [
+      "Vision Transformers",
+      "NeRF",
+      "Diffusion Models"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "C++",
+        "CUDA"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "CI_CD",
+      "MLflow"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "PyTorch",
+        "TensorFlow",
+        "OpenCV",
+        "GStreamer"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "strategic communication",
+      "stakeholder_management",
+      "mentoring"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "deliver business impact",
+      "deploy at scale across 1,000+ devices or multi-GPU clusters",
+      "optimize for real-time performance on edge devices",
+      "define edge vs cloud AI platform strategy"
+    ],
+    "implied_pain_points": [
+      "Need a leader who can turn vision AI work into deployable real-time systems across edge and cloud.",
+      "Need someone who can standardize MLOps, observability, and reliability practices while influencing senior technology and business stakeholders."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years in AI/ML/Computer Vision, with 8+ years in technical leadership roles",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show hands-on leadership in AI systems, especially architecture, deployment, and optimization under real-time constraints. It should also prove the candidate can operate across edge/cloud trade-offs, MLOps, and senior stakeholder communication.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "architecture",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct CUDA, TensorRT, or DeepStream experience if not explicitly proven",
+        "vision AI deployments at 1,000+ devices or multi-GPU clusters if not evidenced",
+        "advanced degree if not held",
+        "executive stakeholder ownership with CIOs and CTOs if not directly shown"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern is the strongest fit for production reliability, routing, and resilience patterns in AI systems.",
+        "Commander-4 supports the AI platform architecture, evaluation, and guardrails side, though it does not prove vision AI or NVIDIA stack depth.",
+        "IoT and real-time/WebRTC work is the best supporting evidence for edge and latency-sensitive systems."
+      ]
+    }
+  },
+  {
+    "job_id": "6938465bc9b1888e56022aea",
+    "title_normalized": "Product AI Engineering Lead",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "millions of users",
+      "latency_reliability": "scalable, reliable production systems"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "OpenAI",
+      "Anthropic",
+      "Hugging Face",
+      "LangChain",
+      "agentic AI systems",
+      "retrieval-augmented generation (RAG) pipelines",
+      "AI system design",
+      "model evaluation",
+      "fine-tuning",
+      "inference optimization",
+      "production-grade APIs",
+      "FastAPI",
+      "Flask",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "monitoring",
+      "version control",
+      "prompt engineering",
+      "AI system reliability"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "CI_CD",
+      "monitoring",
+      "version control"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "OpenAI",
+        "Anthropic",
+        "Hugging Face",
+        "LangChain"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "mentoring",
+      "coaching",
+      "performance feedback",
+      "collaboration",
+      "communication",
+      "experiment-driven decision-making"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deliver AI-powered product features from prototypes to scalable production systems",
+      "make solutions impactful and measurable",
+      "align AI work with business goals",
+      "improve AI engineering processes",
+      "build a strong AI engineering culture",
+      "support team technical and professional development"
+    ],
+    "implied_pain_points": [
+      "Need a lead who can turn AI ideas into production product features for millions of users.",
+      "Need someone who can manage and grow an AI engineering squad while establishing practical standards for prompting, evaluation, fine-tuning, and reliability.",
+      "Need cross-functional alignment with Product, Design, and Data."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show leadership of an AI engineering team, with clear ownership of coaching, feedback, hiring, and production delivery. It should also prove hands-on execution on agentic and RAG systems, plus evaluation, fine-tuning, and reliability work that reached real users.",
+      "most_valued_evidence_types": [
+        "hiring",
+        "delivery",
+        "architecture",
+        "evaluation",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people-management scope if direct reports are not evidenced",
+        "hiring or performance review ownership without proof",
+        "fine-tuning at scale if not actually done",
+        "company-wide AI strategy ownership beyond the team level"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the best match because it combines AI product delivery, RAG, semantic caching, evaluation, and guardrails in a production setting.",
+        "Lantern maps well to the reliability and model-routing side of production AI systems.",
+        "Prior lead-engineer and software-architect experience supports the technical leadership and mentoring aspects, but not people management unless that scope is directly documented."
+      ]
+    }
+  },
+  {
+    "job_id": "6925a6c845fa3c355f83f8ec",
+    "title_normalized": "Senior Software Engineer II, Tech Lead - ML New Products",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "over 2.3 million IoT devices deployed; trillions of data points processed annually",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "backend development",
+      "full stack feature delivery",
+      "web development",
+      "mobile development"
+    ],
+    "hard_skills_nice_to_have": [
+      "GoLang",
+      "GraphQL",
+      "TypeScript",
+      "React",
+      "ReactNative"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "GoLang",
+        "TypeScript"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "team_player",
+      "customer_focus",
+      "leadership",
+      "growth_mindset"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "features immediately used by customers",
+      "iterate based on customer feedback",
+      "better customer outcomes",
+      "use metrics to validate impact"
+    ],
+    "implied_pain_points": [
+      "gaps in the telematics data platform",
+      "need to influence roadmap direction",
+      "complex core object models powering the platform",
+      "need to preserve seamless customer experience at very large scale",
+      "need to understand downstream implications across teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of building production systems that handle large-scale data or event traffic, plus evidence of leading technical direction with other engineers and product stakeholders. It should also show you can ship customer-facing features quickly and iterate from user feedback rather than only doing internal platform work.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "architecture",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim production GoLang, GraphQL, React, or ReactNative depth unless it is directly supported by your history.",
+        "Do not claim people-management, hiring, or budget ownership if you have not explicitly done those.",
+        "Do not claim machine learning model training or research experience; this role reads more like platform and product engineering."
+      ],
+      "best_candidate_experience_mapping": [
+        "Technical Lead at Seven.One Entertainment Group: strongest match for cross-team technical leadership, roadmap influence, and platform ownership.",
+        "IoT/CoAP/MQTT and real-time/WebRTC work: good analogue for telematics-style connected systems and operational data flows.",
+        "CQRS/event-sourcing and microservices/RabbitMQ experience: relevant to the core object-model and data-platform design problem."
+      ]
+    }
+  },
+  {
+    "job_id": "6926ea3645fa3c355f8425aa",
+    "title_normalized": "Senior Software Engineer II, Tech Lead - ML New Products",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "over 2.3 million IoT devices deployed; trillions of data points processed annually",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "backend development",
+      "full stack feature delivery",
+      "web development",
+      "mobile development"
+    ],
+    "hard_skills_nice_to_have": [
+      "GoLang",
+      "GraphQL",
+      "TypeScript",
+      "React",
+      "ReactNative"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "GoLang",
+        "TypeScript"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "team_player",
+      "customer_focus",
+      "leadership",
+      "growth_mindset"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "features immediately used by customers",
+      "iterate based on customer feedback",
+      "better customer outcomes",
+      "use metrics to validate impact"
+    ],
+    "implied_pain_points": [
+      "gaps in the telematics data platform",
+      "need to influence roadmap direction",
+      "complex core object models powering the platform",
+      "need to preserve seamless customer experience at very large scale",
+      "need to understand downstream implications across teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of building production systems that handle large-scale data or event traffic, plus evidence of leading technical direction with other engineers and product stakeholders. It should also show you can ship customer-facing features quickly and iterate from user feedback rather than only doing internal platform work.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "architecture",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim production GoLang, GraphQL, React, or ReactNative depth unless it is directly supported by your history.",
+        "Do not claim people-management, hiring, or budget ownership if you have not explicitly done those.",
+        "Do not claim machine learning model training or research experience; this role reads more like platform and product engineering."
+      ],
+      "best_candidate_experience_mapping": [
+        "Technical Lead at Seven.One Entertainment Group: strongest match for cross-team technical leadership, roadmap influence, and platform ownership.",
+        "IoT/CoAP/MQTT and real-time/WebRTC work: good analogue for telematics-style connected systems and operational data flows.",
+        "CQRS/event-sourcing and microservices/RabbitMQ experience: relevant to the core object-model and data-platform design problem."
+      ]
+    }
+  },
+  {
+    "job_id": "693c84b9230bd5792d1b7895",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "SQL/NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven components",
+      "cloud-native solutions",
+      "message queues",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL",
+      "NoSQL",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "requirement gathering",
+      "solution presentations",
+      "collaboration",
+      "mentoring",
+      "technical planning",
+      "coordination"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "delivery roadmaps",
+      "smooth handoffs",
+      "timeline alignment",
+      "technical quality",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "need to build scalable backend architecture",
+      "need to integrate AI/LLM capabilities into enterprise systems",
+      "need to coordinate onshore and offshore delivery",
+      "need to improve code quality, testing, CI/CD, and production readiness",
+      "need to translate client requirements into delivery plans"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years backend engineering",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs clear evidence of Python backend architecture, microservices or event-driven delivery, and direct AI/LLM integration in production systems. It also needs proof of client-facing leadership: requirement gathering, solution design, planning, estimation, and coordination across multiple teams.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim deep hands-on FastAPI, Django, or Flask experience unless your history explicitly supports it.",
+        "Do not claim equal depth across AWS, Azure, and GCP if you have only worked on one or two of them.",
+        "Do not claim formal people management, hiring, or budget ownership if you have not done that work."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: strongest match for AI/LLM platform work because it includes RAG, semantic caching, evaluation, and guardrails.",
+        "Lantern: strong match for routing, resilience, and multi-provider gateway patterns that map to enterprise AI integration.",
+        "Lead Engineer CQRS/event-sourcing and microservices/RabbitMQ work: strong backend architecture evidence for distributed systems and delivery.",
+        "Technical Lead at Seven.One: relevant for stakeholder coordination, technical planning, and mentoring."
+      ]
+    }
+  },
+  {
+    "job_id": "693c92cd230bd5792d1b7898",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "SQL/NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD",
+      "caching",
+      "message queues"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL/NoSQL databases",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "mentoring",
+      "coordination across onshore/offshore teams",
+      "solution presentations"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "code quality",
+      "testing",
+      "CI/CD",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need a technical lead who can turn AI/LLM requirements into scalable backend delivery.",
+      "Need someone who can coordinate distributed onshore/offshore teams and keep timelines aligned.",
+      "Need stronger discipline around estimation, client communication, and production readiness."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years backend engineering",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show 10+ years of backend engineering leadership, with concrete evidence of building scalable distributed systems in Python and shipping AI/LLM features into production. It should also show client-facing delivery ownership: estimation, roadmap execution, and coordination across distributed teams.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people management with direct reports or performance reviews unless explicitly shown",
+        "budget or P&L ownership",
+        "named Python framework depth in FastAPI, Django, or Flask unless the CV shows it",
+        "distributed onshore/offshore leadership unless the CV shows global team coordination"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly: enterprise AI workflow platform, 42 plugins, 2,000 users, RAG, evaluation, and guardrails align with backend AI integration, production readiness, and scalable platform design.",
+        "Lantern maps strongly: LLM gateway, multi-provider routing, and circuit breaker work align with resilient backend architecture and multi-model integration.",
+        "Lead Engineer / CQRS-event-sourcing / microservices / RabbitMQ maps to distributed systems, event-driven architecture, APIs, and message-queue experience."
+      ]
+    }
+  },
+  {
+    "job_id": "693ca0d0230bd5792d1b789b",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "SQL/NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD",
+      "caching",
+      "message queues"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL/NoSQL databases",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "mentoring",
+      "coordination across onshore/offshore teams",
+      "solution presentations"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "code quality",
+      "testing",
+      "CI/CD",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need a technical lead who can turn AI/LLM requirements into scalable backend delivery.",
+      "Need someone who can coordinate distributed onshore/offshore teams and keep timelines aligned.",
+      "Need stronger discipline around estimation, client communication, and production readiness."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years backend engineering",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show 10+ years of backend engineering leadership, with concrete evidence of building scalable distributed systems in Python and shipping AI/LLM features into production. It should also show client-facing delivery ownership: estimation, roadmap execution, and coordination across distributed teams.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people management with direct reports or performance reviews unless explicitly shown",
+        "budget or P&L ownership",
+        "named Python framework depth in FastAPI, Django, or Flask unless the CV shows it",
+        "distributed onshore/offshore leadership unless the CV shows global team coordination"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly: enterprise AI workflow platform, 42 plugins, 2,000 users, RAG, evaluation, and guardrails align with backend AI integration, production readiness, and scalable platform design.",
+        "Lantern maps strongly: LLM gateway, multi-provider routing, and circuit breaker work align with resilient backend architecture and multi-model integration.",
+        "Lead Engineer / CQRS-event-sourcing / microservices / RabbitMQ maps to distributed systems, event-driven architecture, APIs, and message-queue experience."
+      ]
+    }
+  },
+  {
+    "job_id": "693cbcf2230bd5792d1b789e",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "SQL/NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD",
+      "caching",
+      "message queues"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "HuggingFace"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL/NoSQL databases",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "client-facing communication",
+      "mentoring",
+      "coordination across onshore/offshore teams",
+      "solution presentations"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "manage delivery",
+      "ensure technical quality",
+      "smooth handoffs",
+      "timeline alignment",
+      "code quality",
+      "testing",
+      "CI/CD",
+      "production readiness"
+    ],
+    "implied_pain_points": [
+      "Need a technical lead who can turn AI/LLM requirements into scalable backend delivery.",
+      "Need someone who can coordinate distributed onshore/offshore teams and keep timelines aligned.",
+      "Need stronger discipline around estimation, client communication, and production readiness."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years backend engineering",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show 10+ years of backend engineering leadership, with concrete evidence of building scalable distributed systems in Python and shipping AI/LLM features into production. It should also show client-facing delivery ownership: estimation, roadmap execution, and coordination across distributed teams.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people management with direct reports or performance reviews unless explicitly shown",
+        "budget or P&L ownership",
+        "named Python framework depth in FastAPI, Django, or Flask unless the CV shows it",
+        "distributed onshore/offshore leadership unless the CV shows global team coordination"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly: enterprise AI workflow platform, 42 plugins, 2,000 users, RAG, evaluation, and guardrails align with backend AI integration, production readiness, and scalable platform design.",
+        "Lantern maps strongly: LLM gateway, multi-provider routing, and circuit breaker work align with resilient backend architecture and multi-model integration.",
+        "Lead Engineer / CQRS-event-sourcing / microservices / RabbitMQ maps to distributed systems, event-driven architecture, APIs, and message-queue experience."
+      ]
+    }
+  },
+  {
+    "job_id": "693d114a230bd5792d1b78ac",
+    "title_normalized": "AI/ML Python Team Lead",
+    "title_family": "tech_lead",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Django",
+      "Flask",
+      "microservices",
+      "APIs",
+      "event-driven components",
+      "cloud-native solutions",
+      "AI/LLM integrations",
+      "OpenAI",
+      "Azure OpenAI",
+      "Llama",
+      "HuggingFace",
+      "SQL/NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ",
+      "CI/CD",
+      "testing",
+      "production readiness",
+      "distributed systems",
+      "cloud (AWS/Azure/GCP)"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure OpenAI"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven components",
+      "cloud-native solutions",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "FastAPI",
+        "Django",
+        "Flask"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL/NoSQL databases",
+      "caching",
+      "Kafka",
+      "SQS",
+      "RabbitMQ"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "mentoring"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accurate estimations",
+      "technical planning",
+      "delivery roadmaps",
+      "smooth handoffs",
+      "timeline alignment",
+      "technical quality",
+      "code quality",
+      "testing",
+      "production readiness",
+      "client presentations"
+    ],
+    "implied_pain_points": [
+      "backend architecture for enterprise AI/LLM systems needs ownership",
+      "distributed onshore/offshore coordination needs tighter delivery alignment",
+      "client requirements need translation into technical plans",
+      "code quality, testing, and production readiness need stronger oversight",
+      "engineers need mentoring and best-practice guidance"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years backend engineering",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show ownership of backend architecture in Python, especially microservices and event-driven systems, plus real AI/LLM integration work in enterprise settings. It should also prove you can run delivery across distributed teams and client stakeholders without losing quality or timeline control.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people-management or performance-review ownership over multiple engineers",
+        "budget or P&L ownership",
+        "large-scale cloud platform ownership beyond the projects you can evidence",
+        "deep AI/LLM integration claims without concrete production examples"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 because it demonstrates enterprise AI workflow platform ownership, RAG, semantic caching, evaluation, guardrails, and integration breadth",
+        "Lantern because it shows multi-provider LLM gateway design and routing/circuit-breaker patterns for production resilience",
+        "Lead Engineer CQRS/event-sourcing and microservices/RabbitMQ work because it maps to distributed backend architecture and delivery discipline"
+      ]
+    }
+  },
+  {
+    "job_id": "69493f71056b4548bf979360",
+    "title_normalized": "AI Tech Lead (Infrastructure)",
+    "title_family": "tech_lead",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "2,000+ active projects; 170+ experts in the AI and Data Science CoE; 300+ AI projects delivered in 2024 and 2025; over 220 GenAI projects",
+      "latency_reliability": "reliability, security, observability, cost efficiency, scalability guarantees"
+    },
+    "hard_skills_must_have": [
+      "data science",
+      "statistical modeling",
+      "machine learning",
+      "Agentic Systems",
+      "LLMs",
+      "RAG",
+      "Cloud Landing Zones",
+      "Infrastructure as Code (Terraform)",
+      "CI/CD pipelines for ML and GenAI systems",
+      "MLOps",
+      "model monitoring",
+      "data drift detection",
+      "evaluation pipelines",
+      "cost/performance optimization",
+      "AWS",
+      "GCP",
+      "Azure",
+      "deployment",
+      "observability",
+      "grounding",
+      "safety",
+      "scalability"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Cloud Landing Zones",
+      "Terraform",
+      "CI/CD",
+      "secure environments"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "derived",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "mentoring"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "production-grade AI/ML systems",
+      "reliability",
+      "security",
+      "observability",
+      "cost efficiency",
+      "scalability guarantees",
+      "accurate technical estimation",
+      "delivery planning",
+      "risk management"
+    ],
+    "implied_pain_points": [
+      "AI systems need standardized infrastructure and reusable landing zones",
+      "ML and GenAI pipelines need CI/CD, monitoring, drift detection, and evaluation",
+      "agentic systems need grounding, safety, and scalability",
+      "teams need clear technical guidance that bridges AI, infrastructure, and stakeholder needs",
+      "projects need tighter control over reliability, security, observability, and cost"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "Polish",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years production-grade AI/ML systems",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show end-to-end AI platform and infrastructure ownership, with production GenAI or MLOps work that goes beyond experimentation. It should also demonstrate you can standardize IaC, CI/CD, monitoring, and operating practices across teams while balancing reliability, security, and cost.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "reliability",
+        "delivery",
+        "evaluation",
+        "cost",
+        "scale",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal people-management ownership over developers and DevOps",
+        "budget or P&L responsibility",
+        "original model research or publication record",
+        "Polish language fluency",
+        "hands-on MLOps at scale if the CV cannot show concrete production examples"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 because it already proves enterprise GenAI platform work with RAG, evaluation, guardrails, and a production user base",
+        "Lantern because it shows LLM gateway patterns, provider routing, and circuit breaking for production resilience",
+        "Microservices and CQRS/event-sourcing work because it maps to infrastructure-minded backend architecture, reliability, and delivery rigor"
+      ]
+    }
+  }
+]

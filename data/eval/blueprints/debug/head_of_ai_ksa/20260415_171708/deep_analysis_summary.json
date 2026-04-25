@@ -1,0 +1,189 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "leading a large infrastructure team with multiple direct reports if the candidate's experience is primarily technical leadership",
+      "count": 2
+    },
+    {
+      "label": "deep production go work if not evidenced by code shipped in go",
+      "count": 2
+    },
+    {
+      "label": "operating kubernetes, openstack, or bare-metal infrastructure at 800k-core scale without direct experience",
+      "count": 2
+    },
+    {
+      "label": "owning okrs, kpis, or platform-health metrics without concrete numbers",
+      "count": 2
+    },
+    {
+      "label": "direct ownership of databricks unity catalog production architecture",
+      "count": 1
+    },
+    {
+      "label": "hands-on power bi semantic models and power bi embedded at customer scale",
+      "count": 1
+    },
+    {
+      "label": "leading acquisition onboarding of multiple data sources as a proven delivery record",
+      "count": 1
+    },
+    {
+      "label": "building microsoft fabric-based copilots on governed data end to end",
+      "count": 1
+    },
+    {
+      "label": "owned a live customer 360 or mdm program at airline scale",
+      "count": 1
+    },
+    {
+      "label": "deep neo4j or graph database delivery in production",
+      "count": 1
+    },
+    {
+      "label": "direct microsoft fabric and aks implementation ownership",
+      "count": 1
+    },
+    {
+      "label": "togaf or safe certification if not explicitly held",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "delivery",
+      "count": 16
+    },
+    {
+      "label": "architecture",
+      "count": 14
+    },
+    {
+      "label": "scale",
+      "count": 11
+    },
+    {
+      "label": "governance",
+      "count": 8
+    },
+    {
+      "label": "reliability",
+      "count": 8
+    },
+    {
+      "label": "cost",
+      "count": 5
+    },
+    {
+      "label": "evaluation",
+      "count": 5
+    },
+    {
+      "label": "hiring",
+      "count": 4
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "visibility",
+      "count": 2
+    },
+    {
+      "label": "efficiency",
+      "count": 2
+    },
+    {
+      "label": "reliability",
+      "count": 2
+    },
+    {
+      "label": "lifecycle management",
+      "count": 2
+    },
+    {
+      "label": "delivery",
+      "count": 2
+    },
+    {
+      "label": "operational outcomes",
+      "count": 2
+    },
+    {
+      "label": "platform health",
+      "count": 2
+    },
+    {
+      "label": "delivery outcomes",
+      "count": 2
+    },
+    {
+      "label": "performance",
+      "count": 2
+    },
+    {
+      "label": "high-quality data and tooling",
+      "count": 2
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "lantern maps best to reliability and routing / circuit-breaker thinking for platform tooling",
+      "count": 2
+    },
+    {
+      "label": "commander-4 maps to platform ownership, quality, and operating an internal product at scale",
+      "count": 2
+    },
+    {
+      "label": "prior lead roles in cqrs / event-sourcing and microservices support hands-on system design and technical mentorship",
+      "count": 2
+    },
+    {
+      "label": "commander-4 maps best to the governed ai part of the role because it shows an enterprise ai workflow platform with rag, semantic caching, evaluation, guardrails, and 2,000 users.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to platform reliability and controlled access patterns through multi-provider routing and circuit breaker design.",
+      "count": 1
+    },
+    {
+      "label": "lead engineer work in cqrs / event sourcing helps prove architecture discipline, but there is no direct databricks, power bi, or embedded analytics evidence in the candidate summary.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 is the closest match because it shows governed enterprise ai workflows, but it is still not a direct customer 360 or mdm story.",
+      "count": 1
+    },
+    {
+      "label": "lantern adds evidence of platform control, routing, and reliability, which helps for enterprise architecture but not for graph or cdc specifically.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [],
+  "specific_domain_years": [
+    {
+      "label": "3+ years as an engineering manager leading, coaching, and developing engineers with a mix of seniority and experience levels",
+      "count": 2
+    },
+    {
+      "label": "10+ years in enterprise data architecture",
+      "count": 1
+    },
+    {
+      "label": "8-10 years in it; at least 4 years in a solution architect or lead data eng",
+      "count": 1
+    },
+    {
+      "label": "15+ years across enterprise architecture, solution design, application development, cloud platforms, middleware, integration, and data technologies",
+      "count": 1
+    },
+    {
+      "label": "10\u201315 years in data engineering, software architecture, or technology consulting",
+      "count": 1
+    },
+    {
+      "label": "10\u201316 years in cloud, data platforms, and customer-facing architecture",
+      "count": 1
+    }
+  ]
+}

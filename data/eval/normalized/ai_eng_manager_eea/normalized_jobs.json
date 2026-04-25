@@ -1,0 +1,3217 @@
+[
+  {
+    "job_id": "69275eb345fa3c355f8435ab",
+    "title_normalized": "Engineering Manager, AI Agents",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "6-8",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "derived",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "more than 100,000 paid customer accounts in over 150 countries and territories",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "developing and maintaining complex architectures",
+      "pair programming",
+      "code reviews",
+      "iterative development",
+      "balancing risks",
+      "quality"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "mentorship",
+      "collaboration",
+      "communication",
+      "stakeholder_management",
+      "continuous_improvement",
+      "mutual_accountability",
+      "shared_ownership"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "delivery",
+      "product quality",
+      "accelerate Time to Value",
+      "unlock automation at scale",
+      "transform the way businesses interact with their customers"
+    ],
+    "implied_pain_points": [
+      "streamline self-service onboarding",
+      "build intuitive tools like Procedure Builder",
+      "create seamless integrations into the Zendesk ecosystem",
+      "advance next-generation voice agents",
+      "improve the customer journey from presales to Go Live"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "692983d045fa3c355f84a23e",
+    "title_normalized": "Engineering Manager, GenAI Platform Development Experience",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "almost 3 trillion events per day and growing daily",
+      "latency_reliability": "SLOs, dashboards, alerts, runbooks, staged rollouts/rollbacks, on-call rotation, incident response"
+    },
+    "hard_skills_must_have": [
+      "software engineering",
+      "model inference",
+      "knowledge bases",
+      "agents/tools",
+      "guardrails",
+      "cost management",
+      "evaluation",
+      "benchmarking",
+      "versioning",
+      "deploy",
+      "analytics",
+      "architecture",
+      "APIs",
+      "code",
+      "tests",
+      "SLOs",
+      "dashboards",
+      "alerts",
+      "runbooks",
+      "staged rollouts",
+      "rollbacks",
+      "on-call",
+      "incident response"
+    ],
+    "hard_skills_nice_to_have": [
+      "coding assistants",
+      "GenAI bots",
+      "automated workflows"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "hands-on leadership",
+      "coaching",
+      "mentoring",
+      "collaboration",
+      "communication",
+      "stakeholder_management",
+      "prioritization",
+      "trade-offs",
+      "navigating ambiguity",
+      "continuous learning"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "boost company productivity with GenAI tools",
+      "increase adoption and understanding of usage patterns",
+      "ship value fast without breaking trust",
+      "drive production readiness and operational excellence",
+      "land to timelines",
+      "co-create a 6-12 month platform roadmap"
+    ],
+    "implied_pain_points": [
+      "build the core building blocks for next-generation AI products",
+      "improve developer productivity across the company",
+      "provide visibility into GenAI platform usage patterns",
+      "deliver secure and compliant enterprise-grade AI capabilities",
+      "coordinate across engineering, product, security, legal, and privacy stakeholders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years software engineering; 2+ years engineering manager",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "692a022645fa3c355f84c228",
+    "title_normalized": "Engineering Manager, GenAI Platform Development Experience",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "almost 3 trillion events per day and growing daily",
+      "latency_reliability": "SLOs, dashboards, alerts, runbooks, staged rollouts/rollbacks, on-call rotation, incident response"
+    },
+    "hard_skills_must_have": [
+      "software engineering",
+      "model inference",
+      "knowledge bases",
+      "agents/tools",
+      "guardrails",
+      "cost management",
+      "evaluation",
+      "benchmarking",
+      "versioning",
+      "deploy",
+      "analytics",
+      "architecture",
+      "APIs",
+      "code",
+      "tests",
+      "SLOs",
+      "dashboards",
+      "alerts",
+      "runbooks",
+      "staged rollouts",
+      "rollbacks",
+      "on-call",
+      "incident response"
+    ],
+    "hard_skills_nice_to_have": [
+      "coding assistants",
+      "GenAI bots",
+      "automated workflows"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "hands-on leadership",
+      "coaching",
+      "mentoring",
+      "collaboration",
+      "communication",
+      "stakeholder_management",
+      "prioritization",
+      "trade-offs",
+      "navigating ambiguity",
+      "continuous learning"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "boost company productivity with GenAI tools",
+      "increase adoption and understanding of usage patterns",
+      "ship value fast without breaking trust",
+      "drive production readiness and operational excellence",
+      "land to timelines",
+      "co-create a 6-12 month platform roadmap"
+    ],
+    "implied_pain_points": [
+      "build the core building blocks for next-generation AI products",
+      "improve developer productivity across the company",
+      "provide visibility into GenAI platform usage patterns",
+      "deliver secure and compliant enterprise-grade AI capabilities",
+      "coordinate across engineering, product, security, legal, and privacy stakeholders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years software engineering; 2+ years engineering manager",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "692a561845fa3c355f84cdc1",
+    "title_normalized": "Engineering Manager, GenAI Platform Development Experience",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "high QPS; millions of requests per day; thousands of enterprise users",
+      "latency_reliability": "SLOs, dashboards, alerts, runbooks, staged rollouts/rollbacks; reliability, latency, and cost awareness"
+    },
+    "hard_skills_must_have": [
+      "distributed systems",
+      "shared services or platforms used by many teams",
+      "multi-tenant concerns",
+      "contracts/SDKs",
+      "permissions",
+      "usage controls",
+      "read/write code",
+      "design",
+      "APIs",
+      "containers",
+      "Kubernetes",
+      "AWS",
+      "GCP",
+      "on-call",
+      "postmortems",
+      "analytics",
+      "evaluation",
+      "benchmarking",
+      "versioning",
+      "deploy",
+      "cost management"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "containers",
+      "Kubernetes"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "cross-functional leadership",
+      "communication",
+      "collaboration",
+      "mentoring",
+      "coaching",
+      "influence without authority",
+      "people-first leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "increase adoption",
+      "understanding of usage patterns",
+      "boost productivity across the entire company",
+      "ship value fast without breaking trust",
+      "production readiness and operational excellence"
+    ],
+    "implied_pain_points": [
+      "build core GenAI platform capabilities for model inference, knowledge bases, agents/tools, guardrails, cost management, and the AI artifact SDLC",
+      "increase company productivity with GenAI tools and automation",
+      "improve platform adoption and usage insight",
+      "deliver secure, compliant, enterprise-grade AI capabilities",
+      "keep reliability and delivery high while operating at scale",
+      "hire, coach, and retain strong cloud engineers"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "692c17f745fa3c355f851793",
+    "title_normalized": "Software Engineering Manager (AI)",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "high-scale; high-load distributed systems",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "high-scale distributed systems",
+      "cloud native architecture",
+      "C#",
+      "JavaScript",
+      "Python",
+      "LLM",
+      "Embeddings",
+      "Vector Databases",
+      "Agile methodologies",
+      "software design",
+      "development",
+      "integration"
+    ],
+    "hard_skills_nice_to_have": [
+      "RAG",
+      "AI Agents",
+      "Azure",
+      "AWS",
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "C#",
+        "JavaScript",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "Azure",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Vector Databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "presentation",
+      "written communication",
+      "leadership",
+      "motivation",
+      "performance management",
+      "feedback",
+      "organizational efficiency"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "foster a high-performance culture",
+      "cost-effective practices",
+      "organizational efficiency",
+      "team's success through Agile principles",
+      "continuous employee development",
+      "strategic vision for the team's domains"
+    ],
+    "implied_pain_points": [
+      "lead and develop teams responsible for Traditional Search and AI enabled Search",
+      "improve effectiveness of search solutions at high scale and high load",
+      "integrate LLMs, embeddings, and vector databases into search work",
+      "drive cost-effective practices and organizational efficiency",
+      "manage hiring and performance for the team"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6931a44845fa3c355f861847",
+    "title_normalized": "Engineering Manager, AI/ML Infrastructure & GenAI Platforms",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "more than 125,000 global brands; billions of customer conversations",
+      "latency_reliability": "reliably and at scale; safe, observable, cost-efficient access to multiple foundation models"
+    },
+    "hard_skills_must_have": [
+      "LLM systems",
+      "GenAI applications",
+      "vector databases",
+      "serving layers",
+      "orchestration tools",
+      "LLM Proxy",
+      "benchmarking framework",
+      "data annotations",
+      "Kubernetes",
+      "Docker",
+      "Kafka",
+      "AWS",
+      "Python"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "Docker",
+      "Kafka"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "explicit",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Vector Databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "mentorship",
+      "inclusion",
+      "technical excellence",
+      "ownership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "build the foundation that powers every AI-driven experience at Zendesk",
+      "safe, observable, and cost-efficient access to multiple foundation models",
+      "scale across use cases and products",
+      "ship architecturally sound software at a regular cadence"
+    ],
+    "implied_pain_points": [
+      "provide the foundation for LLM-based applications across Zendesk",
+      "build safe, observable, cost-efficient access to multiple foundation models",
+      "scale ML/AI platform components across use cases and products",
+      "improve service reliability and delivery cadence",
+      "align platform roadmap with company strategy and partner teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "693aa668c9b1888e56022b7c",
+    "title_normalized": "Senior AI Engineering Manager",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "millions of customers every day; more than 600 million parcels; more than 25,000 lockers; more than 15 countries",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "LangSmith",
+      "Evals stack",
+      "OpenAI",
+      "Gemini",
+      "Databricks",
+      "multi-agent systems",
+      "MCP Servers",
+      "A2A communications",
+      "CI/CD with Evals",
+      "test-sets",
+      "search subsystems",
+      "streaming",
+      "long-running tasks",
+      "procedural UX",
+      "machine learning",
+      "offline datasets",
+      "online experiments",
+      "shipping reliable products",
+      "backend platforms"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": [
+        "Databricks"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": [
+        "LangSmith"
+      ]
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "communication",
+      "mentoring",
+      "stakeholder management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "timely delivery of new features and enhancements",
+      "improved product functionality and customer experience",
+      "shipping reliable products",
+      "new best practices and processes for building AI-Native products"
+    ],
+    "implied_pain_points": [
+      "define AI engineering strategy",
+      "build AI-native development processes",
+      "coordinate multiple teams around consumer AI initiatives",
+      "select and operationalize tools for multi-agent workflows",
+      "balance state-of-the-art approaches with pragmatism"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English (B2 min.)",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "2+ years leading and managing Agile development teams; 7+ years of experience post-BS/MS in an engineering role",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694a4e50056b4548bf97938c",
+    "title_normalized": "Software Engineering Manager, AI Growth",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "hundreds of thousands of signups per month",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "TypeScript",
+      "React",
+      "Node.js",
+      "Next.js",
+      "Go microservices",
+      "MCP servers",
+      "MCP Apps with UIs",
+      "agentic builders",
+      "native integrations",
+      "platform integrations",
+      "A/B tests",
+      "experiment-driven growth",
+      "GrowthBook",
+      "Amplitude",
+      "growth metrics",
+      "developer adoption",
+      "code review",
+      "architecture decisions"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "TypeScript",
+        "Go"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": [
+        "Google Drive",
+        "Dropbox"
+      ]
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "stakeholder management",
+      "pragmatism",
+      "bias for action",
+      "comfort with ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "activation rates",
+      "signups from integrations",
+      "developer adoption",
+      "shipping fast and iterating"
+    ],
+    "implied_pain_points": [
+      "capture growth from the AI developer-tools wave",
+      "improve the MCP server and MCP app experience",
+      "build agentic builders that work through natural language",
+      "drive acquisition through platform integrations",
+      "balance speed with maintainability"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "1+ years of engineering management experience",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694a7915056b4548bf9793a7",
+    "title_normalized": "Technical Engineering Manager (AI Platform)",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "large-scale AI / Data / Cloud platform programs involving multiple cross-functional teams",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "software engineering",
+      "technical management",
+      "delivery management",
+      "AI / Data / Cloud platform programs",
+      "Agile",
+      "CI/CD",
+      "DevSecOps",
+      "distributed system design",
+      "Azure cloud architecture",
+      "GCP cloud architecture",
+      "containerization",
+      "API gateway-based microservice ecosystems",
+      "on-prem solutions",
+      "isolated/air-gaped environments",
+      "Kubernetes",
+      "multi-vendor program governance",
+      "delivery coordination",
+      "RACI ownership",
+      "risk management",
+      "data pipelines",
+      "ingestion frameworks",
+      "AI/ML integration concepts",
+      "communication",
+      "stakeholder management",
+      "analytical skills",
+      "problem-solving",
+      "conflict-resolution",
+      "Generative AI",
+      "AI Agents",
+      "technical leadership",
+      "cross-vendor coordination",
+      "risk mitigation"
+    ],
+    "hard_skills_nice_to_have": [
+      "AI-driven platforms",
+      "AI Agents",
+      "ML based solutions",
+      "Azure AI Foundry",
+      "Google Agentspaces",
+      "cross-organization alignment",
+      "leading engineering teams",
+      "globally distributed teams"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure",
+        "GCP",
+        "Azure AI Foundry",
+        "Google Agentspaces"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "DevSecOps",
+      "containerization",
+      "Kubernetes",
+      "microservices",
+      "API gateway",
+      "on-prem",
+      "air-gaped environments"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "stakeholder management",
+      "analytical",
+      "problem-solving",
+      "conflict-resolution"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "timely and high-quality delivery across multiple workstreams",
+      "maintains synchronization across all partners",
+      "engineering performance through metrics and KPIs",
+      "predictable delivery"
+    ],
+    "implied_pain_points": [
+      "deliver purpose-built AI agents for industrial equipment maintenance and management",
+      "coordinate complex multi-vendor engineering execution",
+      "keep architecture scalable, secure, and policy compliant",
+      "manage capacity, staffing, risks, and dependencies across teams",
+      "support isolated on-prem environments"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years of professional experience in software engineering; 5+ years in technical or delivery management roles",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694a870c056b4548bf9793aa",
+    "title_normalized": "Technical Engineering Manager (AI Platform)",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "large-scale AI / Data / Cloud platform programs",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "software engineering",
+      "technical management",
+      "delivery management",
+      "large-scale AI / Data / Cloud platform programs",
+      "cross-functional team management",
+      "Agile",
+      "CI/CD",
+      "DevSecOps",
+      "distributed system design",
+      "Azure cloud architecture",
+      "GCP cloud architecture",
+      "containerization",
+      "API gateway-based microservice ecosystems",
+      "on-premises solutions",
+      "air-gapped environments",
+      "Kubernetes",
+      "multi-vendor program governance",
+      "delivery coordination",
+      "RACI ownership",
+      "risk management",
+      "data pipelines",
+      "ingestion frameworks",
+      "AI/ML integration concepts"
+    ],
+    "hard_skills_nice_to_have": [
+      "AI-driven platforms",
+      "AI Agents",
+      "ML-based solutions",
+      "Azure AI Foundry",
+      "Google Agentspaces",
+      "leading engineering teams",
+      "globally distributed teams",
+      "cross-organization alignment"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure AI Foundry",
+        "Google Agentspaces"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "DevSecOps",
+      "containerization",
+      "microservices",
+      "Kubernetes",
+      "on-premises",
+      "air-gapped environments"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "stakeholder management",
+      "analytical",
+      "problem-solving",
+      "conflict-resolution"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "timely and high-quality delivery across multiple workstreams",
+      "scalability",
+      "security",
+      "compliance with policies and guardrails",
+      "predictable delivery",
+      "engineering performance metrics and KPIs"
+    ],
+    "implied_pain_points": [
+      "lead execution of a complex AI platform across multiple workstreams",
+      "coordinate dependencies across internal and external teams in a multi-vendor environment",
+      "define engineering standards and architecture guidelines",
+      "support staffing and capacity planning",
+      "manage risks and maintain delivery predictability",
+      "ensure scalable, secure, compliant delivery in on-prem and Kubernetes-based environments"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695a318a6dd552ab7ec2ce5f",
+    "title_normalized": "Software & ML Engineering Manager - New Products",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "~10",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "derived",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "large-scale telematics data; vast fleets",
+      "latency_reliability": "real-time alerting"
+    },
+    "hard_skills_must_have": [
+      "software development experience",
+      "people management experience",
+      "machine learning",
+      "anomaly detection",
+      "large-scale telematics data systems",
+      "real-time alerting",
+      "security and incident workflows",
+      "distributed systems",
+      "data lifecycle management"
+    ],
+    "hard_skills_nice_to_have": [
+      "hands-on ML experience",
+      "building models",
+      "deploying models",
+      "fine-tuning models",
+      "startup DNA",
+      "high-growth environment experience",
+      "LLMs"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "technical judgement",
+      "communication",
+      "mentoring",
+      "customer focus",
+      "collaboration",
+      "curiosity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "detect anomalies across vast fleets",
+      "surface the right incidents to the right operators fast",
+      "ship customer value",
+      "architecture quality",
+      "reliability",
+      "velocity",
+      "direct customer feedback loops"
+    ],
+    "implied_pain_points": [
+      "turn ambiguous new product ideas into a shipped roadmap",
+      "build anomaly detection systems from telematics data at fleet scale",
+      "deliver end-to-end security and incident workflows",
+      "coordinate across Product, Firmware, Design, and Data Science",
+      "grow a small team into a broader org",
+      "maintain engineering quality while moving quickly"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695d39f26dd552ab7ec2d0f0",
+    "title_normalized": "AI Product Manager",
+    "title_family": "other",
+    "seniority": "mid_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "170,000 associates; +750 leading and digital-first brands",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product backlog management",
+      "user story definition",
+      "roadmap alignment",
+      "prioritization",
+      "sprint planning",
+      "scrums",
+      "retrospectives",
+      "agile methodologies",
+      "stakeholder management",
+      "product lifecycle management",
+      "market research",
+      "competitive analysis",
+      "GenAI product delivery"
+    ],
+    "hard_skills_nice_to_have": [
+      "PyTorch",
+      "TensorFlow",
+      "Hugging Face",
+      "Weights & Biases",
+      "MLflow",
+      "Matplotlib",
+      "Power BI",
+      "version control systems",
+      "collaborative development platforms",
+      "French",
+      "Spanish"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "PyTorch",
+        "TensorFlow",
+        "Hugging Face"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "presentation",
+      "public speaking",
+      "analytical",
+      "problem-solving",
+      "collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "alignment with business objectives",
+      "successful delivery",
+      "high-quality products on schedule",
+      "business impact",
+      "ROI",
+      "customer value"
+    ],
+    "implied_pain_points": [
+      "prioritize and manage a GenAI product backlog",
+      "translate product vision and business requirements into actionable backlog items",
+      "coordinate delivery across engineering, data science, and UX/UI",
+      "keep the product lifecycle moving from ideation through continuous improvement",
+      "communicate product updates to stakeholders and company events",
+      "identify AI-driven opportunities and risks"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e163b6dd552ab7ec2d1a1",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management experience",
+      "operations experience",
+      "consulting experience",
+      "0->1 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "analytical skills",
+      "video tools",
+      "design software",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping",
+      "communication with engineers and designers",
+      "market research",
+      "user feedback analysis",
+      "product marketing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial_mindset",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "define and prioritize AI product roadmaps",
+      "turn data and user feedback into actionable product decisions",
+      "prototype, test, and deploy AI product capabilities",
+      "create onboarding guides, training materials, dashboards, and playbooks",
+      "align priorities with engineering, design, leadership, and executives",
+      "drive adoption and end-to-end product outcomes"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e166f6dd552ab7ec2d1a2",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management experience",
+      "operations experience",
+      "consulting experience",
+      "0->1 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "analytical skills",
+      "video tools",
+      "design software",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping",
+      "communication with engineers and designers",
+      "market research",
+      "user feedback analysis",
+      "product marketing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial_mindset",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "define and prioritize AI product roadmaps",
+      "turn data and user feedback into actionable product decisions",
+      "prototype, test, and deploy AI product capabilities",
+      "create onboarding guides, training materials, dashboards, and playbooks",
+      "align priorities with engineering, design, leadership, and executives",
+      "drive adoption and end-to-end product outcomes"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e167e6dd552ab7ec2d1a3",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management experience",
+      "operations experience",
+      "consulting experience",
+      "0->1 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "analytical skills",
+      "video tools",
+      "design software",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping",
+      "communication with engineers and designers",
+      "market research",
+      "user feedback analysis",
+      "product marketing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial_mindset",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "define and prioritize AI product roadmaps",
+      "turn data and user feedback into actionable product decisions",
+      "prototype, test, and deploy AI product capabilities",
+      "create onboarding guides, training materials, dashboards, and playbooks",
+      "align priorities with engineering, design, leadership, and executives",
+      "drive adoption and end-to-end product outcomes"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6b426dd552ab7ec2d279",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "operations",
+      "consulting",
+      "0->1 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "data analysis",
+      "market research",
+      "prototyping",
+      "video tools",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "product marketing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "turning user feedback and data into actionable product strategy",
+      "driving AI product launches from concept to launch",
+      "aligning engineering, design, and leadership around priorities",
+      "improving user adoption through product marketing and onboarding materials",
+      "creating playbooks and dashboards to operationalize product decisions"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6b636dd552ab7ec2d27c",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "operations",
+      "consulting",
+      "0->1 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "data analysis",
+      "market research",
+      "prototyping",
+      "video tools",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "product marketing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "turning user feedback and data into actionable product strategy",
+      "driving AI product launches from concept to launch",
+      "aligning engineering, design, and leadership around priorities",
+      "improving user adoption through product marketing and onboarding materials",
+      "creating playbooks and dashboards to operationalize product decisions"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6bdb6dd552ab7ec2d281",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "operations",
+      "consulting",
+      "0->1 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "data analysis",
+      "market research",
+      "prototyping",
+      "video tools",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "product marketing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "turning user feedback and data into actionable product strategy",
+      "driving AI product launches from concept to launch",
+      "aligning engineering, design, and leadership around priorities",
+      "improving user adoption through product marketing and onboarding materials",
+      "creating playbooks and dashboards to operationalize product decisions"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6cee6dd552ab7ec2d289",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "operations",
+      "consulting",
+      "0\u21921 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "analytical skills",
+      "video tools",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_alignment",
+      "entrepreneurial_mindset",
+      "ownership",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "Need to define and prioritize AI product roadmaps",
+      "Need to turn user and data insights into actionable product decisions",
+      "Need to improve adoption of AI product capabilities",
+      "Need to create onboarding guides, playbooks, and training materials",
+      "Need to align priorities with engineering, design, and leadership"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6d8f6dd552ab7ec2d296",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "operations",
+      "consulting",
+      "0\u21921 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "analytical skills",
+      "video tools",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_alignment",
+      "entrepreneurial_mindset",
+      "ownership",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "Need to define and prioritize AI product roadmaps",
+      "Need to turn user and data insights into actionable product decisions",
+      "Need to improve adoption of AI product capabilities",
+      "Need to create onboarding guides, playbooks, and training materials",
+      "Need to align priorities with engineering, design, and leadership"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6dd56dd552ab7ec2d299",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "operations",
+      "consulting",
+      "0\u21921 product launches",
+      "scaling AI products",
+      "scaling software products",
+      "analytical skills",
+      "video tools",
+      "Canva",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_alignment",
+      "entrepreneurial_mindset",
+      "ownership",
+      "thriving_in_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "Need to define and prioritize AI product roadmaps",
+      "Need to turn user and data insights into actionable product decisions",
+      "Need to improve adoption of AI product capabilities",
+      "Need to create onboarding guides, playbooks, and training materials",
+      "Need to align priorities with engineering, design, and leadership"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6dec6dd552ab7ec2d29c",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "SQL analytics",
+      "video tools",
+      "design software",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping",
+      "product marketing",
+      "market research",
+      "metrics analysis"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "startup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "define and prioritize AI product roadmaps",
+      "turn data and user feedback into product decisions",
+      "drive adoption of AI product capabilities",
+      "create onboarding guides, training resources, and operational playbooks",
+      "align priorities with leadership and executives",
+      "launch and scale 0->1 AI or software products"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6fa46dd552ab7ec2d2b2",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "SQL analytics",
+      "video tools",
+      "design software",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping",
+      "product marketing",
+      "market research",
+      "metrics analysis"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "startup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "define and prioritize AI product roadmaps",
+      "turn data and user feedback into product decisions",
+      "drive adoption of AI product capabilities",
+      "create onboarding guides, training resources, and operational playbooks",
+      "align priorities with leadership and executives",
+      "launch and scale 0->1 AI or software products"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e6fdc6dd552ab7ec2d2b5",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "SQL analytics",
+      "video tools",
+      "design software",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "prototyping",
+      "product marketing",
+      "market research",
+      "metrics analysis"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "startup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "define and prioritize AI product roadmaps",
+      "turn data and user feedback into product decisions",
+      "drive adoption of AI product capabilities",
+      "create onboarding guides, training resources, and operational playbooks",
+      "align priorities with leadership and executives",
+      "launch and scale 0->1 AI or software products"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695e702c6dd552ab7ec2d2b8",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "global clients",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "0->1 product launches",
+      "scaling AI or software products",
+      "analytical skills",
+      "prototyping",
+      "video tools",
+      "design software",
+      "SQL analytics",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "product marketing",
+      "market research"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "comfort_with_ambiguity",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "user adoption",
+      "quality",
+      "delivery",
+      "user impact",
+      "executive-level decisions"
+    ],
+    "implied_pain_points": [
+      "turn AI product ideas into launched products",
+      "convert user feedback and data into product priorities",
+      "improve user adoption through enablement materials and product marketing",
+      "align priorities with engineering, design, and leadership"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69603da46dd552ab7ec2d546",
+    "title_normalized": "Engineering Manager, AI Agents & Platform",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "production, real customers, real scale",
+      "latency_reliability": "reliability, quality"
+    },
+    "hard_skills_must_have": [
+      "LLMs",
+      "AI agents",
+      "evals",
+      "building software",
+      "testing software",
+      "shipping software",
+      "code review",
+      "architectural decision-making",
+      "workflows",
+      "integrations"
+    ],
+    "hard_skills_nice_to_have": [
+      "Claude Code",
+      "Cursor",
+      "modern AI tooling"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "communication",
+      "collaboration",
+      "customer_focus",
+      "comfort_with_ambiguity",
+      "outcome_orientation",
+      "leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "automation rates",
+      "reliability",
+      "quality",
+      "customer outcomes"
+    ],
+    "implied_pain_points": [
+      "lead production AI agent teams in a fast-growing AI-native company",
+      "improve reliability and quality of deployed agents",
+      "translate deployment learnings into platform improvements",
+      "bridge engineering, AI systems, customers, product, and leadership"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696252c86dd552ab7ec2d7af",
+    "title_normalized": "Senior Engineering Manager, AI Applications Platform",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "used across Contentful's products; product teams across Contentful; internal builders; sometimes end customers; multiple teams and business functions",
+      "latency_reliability": "secure, scalable, and reliable AI-powered features"
+    },
+    "hard_skills_must_have": [
+      "technical leadership",
+      "managing software engineering teams",
+      "shared product-platform capabilities",
+      "cloud architectures",
+      "containerization",
+      "scalable APIs",
+      "LLMs",
+      "RAG",
+      "integrations",
+      "web development",
+      "application development"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "containerization"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "derived",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR",
+      "CCPA",
+      "AI transparency requirements"
+    ],
+    "soft_skills": [
+      "stakeholder_management",
+      "collaboration",
+      "mentoring",
+      "coaching",
+      "communication"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "adoption",
+      "measurable business value",
+      "secure AI-powered features",
+      "scalable AI-powered features",
+      "reliable AI-powered features",
+      "traceability"
+    ],
+    "implied_pain_points": [
+      "build reusable AI platform capabilities so product teams can ship AI features quickly and safely",
+      "provide enterprise-ready access to LLMs",
+      "help teams adopt governed agentic solutions",
+      "add traceability, debugging, and run insights to meet regulatory and transparency requirements",
+      "scale AI capabilities across multiple product teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6966abad7edca8b158fc9668",
+    "title_normalized": "Senior AI Engineering Manager",
+    "title_family": "other",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "millions of customers every day; more than 15 countries; more than 600 million parcels; more than 25,000 lockers",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "LangSmith",
+      "Evals stack",
+      "OpenAI",
+      "Gemini",
+      "Databricks",
+      "multi-agent systems",
+      "MCP Servers",
+      "A2A communications",
+      "CI/CD",
+      "Agile",
+      "machine learning",
+      "backend platforms"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": [
+        "LangSmith"
+      ]
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "mentoring",
+      "guidance",
+      "support",
+      "communication",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "timely delivery of new features and enhancements",
+      "improve product functionality and customer experience",
+      "create new best practices and processes for AI-native products",
+      "ship reliable products"
+    ],
+    "implied_pain_points": [
+      "needs to operationalize AI-native product development across multiple teams",
+      "needs to create processes and tooling for multi-agent workflows and AI-native software delivery",
+      "needs to balance state-of-the-art approaches with pragmatism",
+      "needs to improve product functionality and customer experience at scale"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English (B2 min.)",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6975609d5239de5ec057b41c",
+    "title_normalized": "Vice President of Technology",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "4",
+      "hiring": "not_specified",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "microservices",
+      "GraphQL",
+      "RESTful APIs",
+      "AWS",
+      "CI/CD",
+      "data warehouse",
+      "business intelligence",
+      "data modeling",
+      "warehouse schema design",
+      "ETL",
+      "ELT",
+      "frontend architecture",
+      "cybersecurity",
+      "data privacy"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "communication",
+      "collaboration",
+      "ownership",
+      "accountability",
+      "continuous_improvement"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "overall technical execution",
+      "scalability",
+      "reliability",
+      "evolution of the platform",
+      "frequent, reliable deployments",
+      "reduced cycle time",
+      "minimized operational toil",
+      "high-quality user experiences",
+      "secure and compliant platform"
+    ],
+    "implied_pain_points": [
+      "needs to scale and stabilize a sophisticated software platform",
+      "needs to lead a distributed engineering organization across multiple time zones",
+      "needs to build and operationalize a data warehouse and BI platform",
+      "needs to reduce delivery friction and operational toil",
+      "needs to keep the platform secure and compliant"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "698e2e7e7d41dc1e8a638f69a",
+    "title_normalized": "Engineering AI & Data Manager",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "explicit",
+      "org_building": "derived",
+      "budget_pnl": "derived"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "enterprise data management",
+      "DAMA",
+      "DCAM",
+      "CDMP",
+      "CMMI DMM",
+      "PPDM",
+      "NDMO for KSA",
+      "data governance",
+      "metadata management",
+      "data quality",
+      "master data management",
+      "reference data management",
+      "data architecture",
+      "data lineage",
+      "integration",
+      "Collibra",
+      "Informatica Axon",
+      "OneTrust",
+      "Erwin",
+      "Talend",
+      "Alation",
+      "AWS",
+      "Azure",
+      "GCP",
+      "data security",
+      "privacy",
+      "regulatory compliance",
+      "PII handling",
+      "data retention",
+      "access control models"
+    ],
+    "hard_skills_nice_to_have": [
+      "Informatica"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "NDMO for KSA",
+      "PII handling",
+      "data retention",
+      "access control models"
+    ],
+    "soft_skills": [
+      "commercial_acumen",
+      "communication",
+      "presentation",
+      "collaboration",
+      "stakeholder_management",
+      "mentoring"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "revenue uplift",
+      "cost reduction",
+      "safety and operational efficiency",
+      "high-quality proposal content and commercial responses",
+      "delivery under tight deadlines",
+      "quality and risk management",
+      "programme outcomes"
+    ],
+    "implied_pain_points": [
+      "needs to mature enterprise data management capabilities in oil and gas",
+      "needs to align data standards and operating models for clients",
+      "needs to translate between technical and business stakeholders",
+      "needs to design secure and pragmatic operational data solutions",
+      "needs to demonstrate commercial value from data management initiatives"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8-10 years in enterprise data management across the oil and gas industry, with specific recent experience in the Upstream sector",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "698e2e7e7d41dc1e8a638f69",
+    "title_normalized": "Manager, Data Management, AI & Data",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "explicit",
+      "org_building": "not_specified",
+      "budget_pnl": "derived"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "enterprise data management",
+      "oil and gas industry experience",
+      "upstream sector experience",
+      "data management frameworks and standards",
+      "DAMA",
+      "DCAM",
+      "CDMP",
+      "CMMI DMM",
+      "PPDM",
+      "NDMO",
+      "data governance",
+      "metadata management",
+      "data quality",
+      "master data management",
+      "reference data management",
+      "data architecture",
+      "data lineage",
+      "data integration",
+      "governance operating models",
+      "policies",
+      "standards",
+      "business glossaries",
+      "data catalogues",
+      "data dictionaries",
+      "enterprise data models",
+      "stewardship processes",
+      "data management tools and platforms",
+      "Collibra",
+      "Informatica Axon",
+      "OneTrust",
+      "Erwin",
+      "Talend",
+      "Alation",
+      "cloud hyperscaler integration",
+      "AWS",
+      "Azure",
+      "GCP",
+      "data security",
+      "privacy",
+      "regulatory compliance",
+      "PII handling",
+      "data retention",
+      "access control models"
+    ],
+    "hard_skills_nice_to_have": [
+      "Informatica"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "NDMO"
+    ],
+    "soft_skills": [
+      "collaboration",
+      "communication",
+      "presentation",
+      "stakeholder_management",
+      "mentoring",
+      "leadership",
+      "client_engagement",
+      "commercial_acumen",
+      "change_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "revenue uplift",
+      "cost reduction",
+      "safety",
+      "operational efficiency",
+      "measurable value",
+      "support investment decisions",
+      "delivery quality"
+    ],
+    "implied_pain_points": [
+      "Need to design and mature enterprise data management capabilities for oil and gas clients, especially upstream.",
+      "Need to align data management standards and frameworks to client operating models.",
+      "Need to build pragmatic, secure operational data solutions across OT/IT and business teams.",
+      "Need to translate technical data work into business cases and ROI for client investment decisions.",
+      "Need to embed data capabilities into business operations and drive change programs.",
+      "Need to manage senior client expectations and deliver under tight deadlines."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8-10 years in enterprise data management across the oil and gas industry, with recent upstream experience",
+      "research_heavy": false
+    }
+  }
+]

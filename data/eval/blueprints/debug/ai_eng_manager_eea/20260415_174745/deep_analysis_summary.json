@@ -1,0 +1,177 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "do not claim formal product management ownership unless it is directly evidenced.",
+      "count": 3
+    },
+    {
+      "label": "do not claim pricing, gtm, or product marketing ownership without explicit proof.",
+      "count": 3
+    },
+    {
+      "label": "do not claim hands-on use of canva, hubspot, notion, airtable, or asana unless he has actually used them.",
+      "count": 3
+    },
+    {
+      "label": "do not claim people management, hiring, or budget ownership.",
+      "count": 3
+    },
+    {
+      "label": "formal product management ownership of roadmaps and product marketing without clear pm evidence",
+      "count": 3
+    },
+    {
+      "label": "full p and l or pricing ownership",
+      "count": 3
+    },
+    {
+      "label": "direct hiring or performance management of a product organization",
+      "count": 3
+    },
+    {
+      "label": "owning go-to-market strategy or demand generation campaigns as the primary owner",
+      "count": 3
+    },
+    {
+      "label": "formal product manager ownership if the work was actually in engineering leadership rather than pm",
+      "count": 2
+    },
+    {
+      "label": "direct p and l ownership",
+      "count": 2
+    },
+    {
+      "label": "ownership of product marketing end-to-end unless explicitly done",
+      "count": 2
+    },
+    {
+      "label": "people management or hiring responsibility",
+      "count": 2
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "delivery",
+      "count": 17
+    },
+    {
+      "label": "scale",
+      "count": 17
+    },
+    {
+      "label": "evaluation",
+      "count": 15
+    },
+    {
+      "label": "architecture",
+      "count": 11
+    },
+    {
+      "label": "reliability",
+      "count": 4
+    },
+    {
+      "label": "governance",
+      "count": 4
+    },
+    {
+      "label": "hiring",
+      "count": 3
+    },
+    {
+      "label": "cost",
+      "count": 2
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "measurable value",
+      "count": 10
+    },
+    {
+      "label": "quality",
+      "count": 10
+    },
+    {
+      "label": "delivery",
+      "count": 10
+    },
+    {
+      "label": "user impact",
+      "count": 10
+    },
+    {
+      "label": "adoption",
+      "count": 6
+    },
+    {
+      "label": "seamless experiences",
+      "count": 5
+    },
+    {
+      "label": "user adoption",
+      "count": 5
+    },
+    {
+      "label": "company-wide productivity gains from genai tools",
+      "count": 1
+    },
+    {
+      "label": "adoption and understanding of usage patterns",
+      "count": 1
+    },
+    {
+      "label": "ship value fast without breaking trust",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 is the closest match because it is an enterprise ai workflow platform with 2,000 users, 42 plugins, rag, semantic caching, evaluation, and guardrails; that is strong evidence of ai product delivery and adoption.",
+      "count": 3
+    },
+    {
+      "label": "lantern also helps because it shows ai platform thinking around multi-provider routing and reliability, which supports the 'prototype and deploy' part of the role.",
+      "count": 3
+    },
+    {
+      "label": "his prior backend and microservices work is weaker for this role, but it can support the execution and cross-functional credibility parts of the story.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 is the strongest match because it shows an enterprise ai product shipped to 2,000 users with rag, semantic caching, evaluation, and guardrails, which maps well to launch, adoption, and measurable value.",
+      "count": 3
+    },
+    {
+      "label": "lantern maps to prototyping and productizing ai capabilities with multi-provider routing and circuit-breaking, which supports the reliability and execution side of the role.",
+      "count": 3
+    },
+    {
+      "label": "your technical lead and prior distributed-systems work help demonstrate cross-functional execution and the ability to communicate tradeoffs to engineering and leadership.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps best because it is a 0->1 enterprise ai workflow platform with 42 plugins, 2000 users, rag, evaluation, and guardrails, which is close to shipping and iterating ai product capabilities with measurable adoption.",
+      "count": 2
+    },
+    {
+      "label": "lantern maps well because multi-provider routing and circuit breaker design show product-enabling platform thinking, especially around reliability and operational readiness.",
+      "count": 2
+    }
+  ],
+  "native_language_requirements": [],
+  "specific_domain_years": [
+    {
+      "label": "8+ years software engineering and 2+ years engineering manager",
+      "count": 1
+    },
+    {
+      "label": "3-5 years product owner or product manager",
+      "count": 1
+    },
+    {
+      "label": "5+ years of experience in technical leadership managing software engineering teams",
+      "count": 1
+    }
+  ]
+}

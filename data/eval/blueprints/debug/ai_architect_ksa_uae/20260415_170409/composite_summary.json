@@ -1,0 +1,477 @@
+{
+  "signal_strength": {
+    "applied_count": 7,
+    "avg_score": 81.8,
+    "median_score": 85,
+    "score_range": [
+      42,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "solutions_architect": 19,
+      "ai_architect": 11
+    },
+    "top_title_variants": {
+      "AI Solution Architect": 4,
+      "GenAI Solutions Architect": 3,
+      "AI Architect": 2,
+      "Azure AI Solution Architect": 2,
+      "Enterprise Architect - Data, AI & Platforms": 2,
+      "Solution Architect (Data & AI)": 2,
+      "AI/ML Solution Architect": 1,
+      "Enterprise AI Architect": 1
+    },
+    "noisy_title_mode": false
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 27,
+      "mid_ic": 2,
+      "senior_manager": 1
+    },
+    "role_scope_distribution": {
+      "ic": 15,
+      "player_coach": 15
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "performance_management": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "org_building": {
+      "count": 4,
+      "total": 30,
+      "pct": 13.3
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 96.7,
+    "greenfield_split": {
+      "both": 14,
+      "greenfield": 3
+    },
+    "cloud_preference": {
+      "multi_cloud": 12,
+      "Azure": 6
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "mlops",
+      "count": 9,
+      "total": 30,
+      "pct": 30.0
+    },
+    {
+      "label": "rag pipelines",
+      "count": 8,
+      "total": 30,
+      "pct": 26.7
+    },
+    {
+      "label": "kubernetes",
+      "count": 7,
+      "total": 30,
+      "pct": 23.3
+    },
+    {
+      "label": "vector databases",
+      "count": 7,
+      "total": 30,
+      "pct": 23.3
+    },
+    {
+      "label": "azure",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    {
+      "label": "ci/cd",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    {
+      "label": "langchain",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    {
+      "label": "monitoring",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    {
+      "label": "python",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    {
+      "label": "security",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    {
+      "label": "deployment",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    {
+      "label": "generative ai",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    {
+      "label": "llms",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    {
+      "label": "solution design",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    {
+      "label": "aws",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 18,
+      "total": 30,
+      "pct": 60.0
+    },
+    {
+      "label": "stakeholder management",
+      "count": 18,
+      "total": 30,
+      "pct": 60.0
+    },
+    {
+      "label": "communication",
+      "count": 17,
+      "total": 30,
+      "pct": 56.7
+    },
+    {
+      "label": "mentoring",
+      "count": 12,
+      "total": 30,
+      "pct": 40.0
+    },
+    {
+      "label": "leadership",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    {
+      "label": "coaching",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3
+    },
+    {
+      "label": "analytical skills",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0
+    },
+    {
+      "label": "community engagement",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0
+    },
+    {
+      "label": "influence",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0
+    },
+    {
+      "label": "stakeholder engagement",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 7,
+        "total": 30,
+        "pct": 23.3
+      },
+      {
+        "label": "scala",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7
+      },
+      {
+        "label": "sql",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7
+      },
+      {
+        "label": "c#",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3
+      }
+    ],
+    "preferred": [
+      {
+        "label": "python",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 12,
+        "total": 30,
+        "pct": 40.0
+      },
+      "agents_orchestration": {
+        "count": 8,
+        "total": 30,
+        "pct": 26.7
+      },
+      "fine_tuning": {
+        "count": 6,
+        "total": 30,
+        "pct": 20.0
+      },
+      "evaluation_quality": {
+        "count": 2,
+        "total": 30,
+        "pct": 6.7
+      },
+      "guardrails_governance": {
+        "count": 15,
+        "total": 30,
+        "pct": 50.0
+      },
+      "prompt_engineering": {
+        "count": 5,
+        "total": 30,
+        "pct": 16.7
+      },
+      "vector_search": {
+        "count": 5,
+        "total": 30,
+        "pct": 16.7
+      },
+      "model_serving_routing": {
+        "count": 0,
+        "total": 30,
+        "pct": 0.0
+      }
+    },
+    "frameworks": [
+      {
+        "label": "langchain",
+        "count": 7,
+        "total": 30,
+        "pct": 23.3
+      },
+      {
+        "label": "pytorch",
+        "count": 5,
+        "total": 30,
+        "pct": 16.7
+      },
+      {
+        "label": "tensorflow",
+        "count": 5,
+        "total": 30,
+        "pct": 16.7
+      },
+      {
+        "label": "huggingface",
+        "count": 3,
+        "total": 30,
+        "pct": 10.0
+      },
+      {
+        "label": "n8n",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7
+      },
+      {
+        "label": "semantic kernel",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7
+      },
+      {
+        "label": "airflow",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3
+      },
+      {
+        "label": "comfyui",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3
+      },
+      {
+        "label": "dbt",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3
+      },
+      {
+        "label": "hadoop",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3
+      }
+    ],
+    "observability": []
+  },
+  "governance_compliance_top": [
+    {
+      "label": "ai / ml security and compliance",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0
+    },
+    {
+      "label": "gdpr",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0
+    },
+    {
+      "label": "banking regulations",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7
+    },
+    {
+      "label": "data privacy",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7
+    },
+    {
+      "label": "data privacy standards",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7
+    },
+    {
+      "label": "compliance requirements",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3
+    },
+    {
+      "label": "data governance",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3
+    },
+    {
+      "label": "industry regulations",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "design and deploy production-grade ai/ml systems",
+      "count": 2
+    },
+    {
+      "pain_point": "scale and optimize ai on oci and multi-cloud environments",
+      "count": 2
+    },
+    {
+      "pain_point": "align ai architecture with data strategy, devops, and security",
+      "count": 2
+    },
+    {
+      "pain_point": "provide technical governance and program oversight",
+      "count": 2
+    },
+    {
+      "pain_point": "support customer-facing gtm work and proposal development",
+      "count": 2
+    },
+    {
+      "pain_point": "grow the ai practice through coaching and community engagement",
+      "count": 2
+    },
+    {
+      "pain_point": "solving complex problems end-to-end",
+      "count": 1
+    },
+    {
+      "pain_point": "inventing scalable architectures",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "banking": 2,
+      "consulting": 2,
+      "enterprise_saas": 2,
+      "fintech": 2,
+      "ecommerce": 1
+    },
+    "company_stage": {
+      "consultancy": 5,
+      "enterprise": 4,
+      "startup_seed": 2,
+      "scaleup": 1
+    },
+    "collaboration_model": {
+      "onsite": 1
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

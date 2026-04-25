@@ -1,0 +1,10 @@
+# Platform Architect / Platform Lead – Azure Databricks
+
+**Company:** EPERGNE SOLUTIONS
+**Location:** Abu Dhabi, Abu Dhabi Emirate, United Arab Emirates
+**Score:** 42 (Tier D)
+**Status:** N/A
+
+---
+
+Job Role:-Platform Architect / Platform Lead ? Azure DatabricksJob Location:- Abu Dhabi, UAEExperience:-7+ YearsRole SummaryOwn the end-to-end architecture, governance, security, and evolution of anenterprise-scale Azure Databricks Data Intelligence Platform, ensuringscalability, performance, cost optimization, and AI enablement.Key Responsibilities * Define end-to-end Lakehouse architecture covering ingestion, storage, processing, orchestration, analytics, and AI * Design and govern Unity Catalog (catalogs, schemas, access control, lineage, auditing) * Establish standards for declarative pipelines, workflows orchestration, and runtime governance * Define governance framework for ML, Feature Store, AI capabilities, and analytics workloads * Own Azure integrations including identity, networking, key management, and secure data access * Implement compute, cluster, and cost governance (policies, sizing, concurrency, spend control) * Review and approve architecture designs for security, scalability, and cost efficiency * Oversee CI/CD governance and platform change management * Lead performance optimization for Spark, streaming, and AI workloads * Drive controlled adoption of new platform features and best practices * Communicate architectural strategy to technical and business stakeholdersRequired Skills & Experience * Strong expertise in Azure Databricks, Spark, PySpark, and Lakehouse architecture * Deep knowledge of Unity Catalog, Delta Lake, and platform governance frameworks * Experience with orchestration, declarative pipelines, and workload optimization * Hands-on exposure to ML lifecycle management and AI platform integration * Strong understanding of Azure identity, networking, and security architecture * Experience implementing cost governance and performance tuning strategies * CI/CD governance and DevOps best practices experience * Proven ability to design scalable, secure, enterprise-grade data platformsShow more Show less

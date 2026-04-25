@@ -1,0 +1,74 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_global",
+  "job_id": "69da8c2212725d714791b034",
+  "dimension_scores": {
+    "ats_optimization": 7.0,
+    "impact_clarity": 8.0,
+    "jd_alignment": 5.5,
+    "executive_presence": 6.5,
+    "anti_hallucination": 6.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": false,
+    "persona_fit_gate": false
+  },
+  "overall_score": 6.65,
+  "verdict": "WEAK_MATCH",
+  "top_strengths": [
+    "Strong quantified impact: 40% defect reduction, 35% incident reduction, 2000 users served with specific platform metrics refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:8,data/eval/calibration/cvs/69da8c2212725d714791b034.md:12",
+    "Solid AI platform architecture evidence with evaluation frameworks (MRR@k/NDCG@k), guardrails, and hybrid retrieval pipelines refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:10,data/eval/calibration/cvs/69da8c2212725d714791b034.md:27",
+    "Data governance and privacy compliance demonstrated through TCF framework protecting \u20ac30M revenue refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:11,data/eval/calibration/cvs/69da8c2212725d714791b034.md:37",
+    "Cross-functional stakeholder coordination across IT, security, and business teams explicitly documented refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:13,data/eval/calibration/cvs/69da8c2212725d714791b034.md:35"
+  ],
+  "top_failures": [
+    "Experience gap: CV shows 10+ years vs JD requirement of 16+ years refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:8,data/eval/calibration/jds/69da8c2212725d714791b034.md:19",
+    "Missing vendor/contract management experience required by JD refs=data/eval/calibration/jds/69da8c2212725d714791b034.md:14,data/eval/calibration/jds/69da8c2212725d714791b034.md:24",
+    "Limited Master Data Management, Data Lineage, and Risk Scoring Models evidence required by JD refs=data/eval/calibration/jds/69da8c2212725d714791b034.md:38,data/eval/calibration/jds/69da8c2212725d714791b034.md:48,data/eval/calibration/jds/69da8c2212725d714791b034.md:54",
+    "Enterprise-wide organizational scope mismatch: CV shows project/team scope vs JD requiring Authority-wide frameworks refs=data/eval/calibration/jds/69da8c2212725d714791b034.md:6,data/eval/calibration/cvs/69da8c2212725d714791b034.md:33"
+  ],
+  "unsupported_claims": [
+    "Headline claims 'Data & AI Director \u00b7 Head of AI' but actual employer title is 'Technical Lead (Addressable TV)' refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:3,data/eval/calibration/cvs/69da8c2212725d714791b034.md:33"
+  ],
+  "missing_must_haves": [],
+  "persona_fit_notes": [
+    "CV headline uses Director/Head of AI framing without matching employer-given title or scope evidence refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:3,data/eval/calibration/cvs/69da8c2212725d714791b034.md:33",
+    "Actual evidence supports player-coach Technical Lead persona, not executive Director persona refs=data/eval/calibration/cvs/69da8c2212725d714791b034.md:33,data/eval/calibration/cvs/69da8c2212725d714791b034.md:35"
+  ],
+  "representation_gap_hits": [
+    "10+ years experience insufficient for 16+ year JD requirement refs=cv:8,jd:19"
+  ],
+  "curation_gap_hits": [
+    "Vendor contract management experience absent from CV refs=jd:14,jd:24"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:8",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:12",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:10",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:27",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:11",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:37",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:13",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:35",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:19",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:14",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:24",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:38",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:48",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:54",
+    "data/eval/calibration/jds/69da8c2212725d714791b034.md:6",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:33",
+    "data/eval/calibration/cvs/69da8c2212725d714791b034.md:3"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T22:03:14Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/69da8c2212725d714791b034.md",
+    "jd_path": "data/eval/calibration/jds/69da8c2212725d714791b034.md"
+  }
+}

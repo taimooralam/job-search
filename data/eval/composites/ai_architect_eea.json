@@ -1,0 +1,828 @@
+{
+  "category_id": "ai_architect_eea",
+  "category_name": "AI Architect \u2014 EEA",
+  "macro_family": "ai_architect",
+  "priority": "primary_target",
+  "confidence": "medium",
+  "total_jobs": 10,
+  "deep_analysis_count": 10,
+  "tier_breakdown": {
+    "C": 10
+  },
+  "signal_strength": {
+    "applied_count": 0,
+    "avg_score": 85.4,
+    "median_score": 85,
+    "score_range": [
+      75,
+      92
+    ]
+  },
+  "title_variants": {
+    "AI Solution Architect": 2,
+    "Sovereign AI Enterprise Architect": 1,
+    "AI Solution Architect (Power Platform Specialist)": 1,
+    "Platform Architect": 1,
+    "AI & Computer Vision Solution Architect": 1,
+    "Agentic AI Architect": 1,
+    "Enterprise Solutions Architect (AI Focus)": 1,
+    "Enterprise & Agentic AI Solutions Architect": 1,
+    "Senior AI Solutions Architect": 1
+  },
+  "title_families": {
+    "solutions_architect": 6,
+    "ai_architect": 4
+  },
+  "seniority_distribution": {
+    "senior_ic": 6,
+    "senior_manager": 3,
+    "mid_ic": 1
+  },
+  "role_scope_distribution": {
+    "ic": 4,
+    "player_coach": 4,
+    "manager": 2
+  },
+  "hard_skills": [
+    {
+      "skill": "CI/CD",
+      "count": 4,
+      "total": 10,
+      "pct": 40.0,
+      "band": "common"
+    },
+    {
+      "skill": "solution architecture",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Python",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "cost management",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "AI/ML architecture",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "data pipelines",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Docker",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "ALM",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "integration contracts",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "security model",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "environment strategy",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "data loss prevention",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "testing",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "telemetry",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "architecture reviews",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "build-vs-buy decisions",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Azure AI Foundry",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "agent orchestration",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "RAG architecture design",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "retrieval layers",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "grounding sources",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "vector databases",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "knowledge bases",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Microsoft Power Platform",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Microsoft Copilot Studio",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "secrets management",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Microsoft Purview",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Azure Monitor",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Application Insights",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "reference architectures",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "communication",
+      "count": 9,
+      "total": 10,
+      "pct": 90.0,
+      "band": "must_have"
+    },
+    {
+      "skill": "collaboration",
+      "count": 7,
+      "total": 10,
+      "pct": 70.0,
+      "band": "must_have"
+    },
+    {
+      "skill": "stakeholder_management",
+      "count": 5,
+      "total": 10,
+      "pct": 50.0,
+      "band": "common"
+    },
+    {
+      "skill": "mentoring",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "documentation",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "knowledge transfer",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "coaching",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "stakeholder management",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "analytical",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "problem-solving",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "coordination",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "agile ceremonies",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "risk management",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "ownership",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "problem_solving",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 3,
+        "total": 10,
+        "pct": 30.0,
+        "band": "differentiator"
+      },
+      {
+        "skill": "Golang",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "Java",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "JavaScript",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      }
+    ],
+    "preferred": []
+  },
+  "infrastructure": [
+    {
+      "skill": "CI/CD",
+      "count": 3,
+      "total": 10,
+      "pct": 30.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Docker",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "microservices",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "ECS",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "EKS",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Terraform",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "AWS CDK",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "ALM",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Helm",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven systems",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "production pipelines",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "cloud-native imaging stacks",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "distributed systems",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "APIs",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "vector databases",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "knowledge bases",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "PostgreSQL",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "GDPR",
+      "count": 2,
+      "total": 10,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "EU AI Act",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "FedRAMP",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "AWS Well-Architected",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "data loss prevention",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "segregation of duties",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Microsoft Purview",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "HIPAA",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "FDA/CE Class B or C",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "responsible-AI principles",
+      "count": 1,
+      "total": 10,
+      "pct": 10.0,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    "agents_orchestration": {
+      "count": 6,
+      "total": 10,
+      "pct": 60.0
+    },
+    "fine_tuning": {
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    "evaluation_quality": {
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    "guardrails_governance": {
+      "count": 6,
+      "total": 10,
+      "pct": 60.0
+    },
+    "prompt_engineering": {
+      "count": 0,
+      "total": 10,
+      "pct": 0.0
+    },
+    "vector_search": {
+      "count": 2,
+      "total": 10,
+      "pct": 20.0
+    },
+    "model_serving_routing": {
+      "count": 0,
+      "total": 10,
+      "pct": 0.0
+    },
+    "top_frameworks": [
+      {
+        "skill": "Azure AI Foundry",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0,
+        "band": "differentiator"
+      },
+      {
+        "skill": "Microsoft Copilot Studio",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0,
+        "band": "differentiator"
+      },
+      {
+        "skill": "LangChain",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "Microsoft Power Platform",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "TensorFlow",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "PyTorch",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "OpenCV",
+        "count": 1,
+        "total": 10,
+        "pct": 10.0,
+        "band": "rare"
+      }
+    ],
+    "top_observability": [
+      {
+        "skill": "Azure Monitor",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0,
+        "band": "differentiator"
+      },
+      {
+        "skill": "Application Insights",
+        "count": 2,
+        "total": 10,
+        "pct": 20.0,
+        "band": "differentiator"
+      }
+    ]
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    "performance_management": {
+      "count": 1,
+      "total": 10,
+      "pct": 10.0
+    },
+    "org_building": {
+      "count": 3,
+      "total": 10,
+      "pct": 30.0
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 10,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 100.0,
+    "greenfield_split": {
+      "both": 8
+    },
+    "cloud_preference": {
+      "multi_cloud": 5,
+      "Azure": 2,
+      "AWS": 1
+    }
+  },
+  "domain_industry": {
+    "BFSI": 1,
+    "healthcare": 1,
+    "consulting": 1
+  },
+  "company_stage": {
+    "consultancy": 1
+  },
+  "collaboration_model": {
+    "hybrid": 1,
+    "distributed": 1
+  },
+  "pain_points": [
+    {
+      "pain_point": "design sovereign ai solutions that satisfy regulatory and security requirements",
+      "count": 1
+    },
+    {
+      "pain_point": "translate customer vision and complex requirements into actionable roadmaps",
+      "count": 1
+    },
+    {
+      "pain_point": "navigate ai infrastructure complexity while improving performance",
+      "count": 1
+    },
+    {
+      "pain_point": "balance cloud operations leadership with hands-on ai/ml delivery",
+      "count": 1
+    },
+    {
+      "pain_point": "manage aws/gcp partnership programs, funding, and governance work",
+      "count": 1
+    },
+    {
+      "pain_point": "build production-grade ai/ml systems for regulated enterprise clients",
+      "count": 1
+    },
+    {
+      "pain_point": "improve operational efficiency through automation and reusable patterns",
+      "count": 1
+    },
+    {
+      "pain_point": "define a scalable and governed solution blueprint for ai agents and power platform delivery",
+      "count": 1
+    },
+    {
+      "pain_point": "establish reusable reference architectures, alm patterns, and security controls",
+      "count": 1
+    },
+    {
+      "pain_point": "reduce complexity across squads through modularisation and reusability",
+      "count": 1
+    },
+    {
+      "pain_point": "improve architecture consistency, observability, and cost control",
+      "count": 1
+    },
+    {
+      "pain_point": "define the solution blueprint and architecture for ai agents",
+      "count": 1
+    },
+    {
+      "pain_point": "establish governed and cost-efficient platform patterns",
+      "count": 1
+    },
+    {
+      "pain_point": "standardize alm, ci/cd, testing, telemetry, and cost management",
+      "count": 1
+    },
+    {
+      "pain_point": "improve security, dlp, and segregation of duties across squads",
+      "count": 1
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

@@ -1,0 +1,14 @@
+[
+  "top_failures[0] ref not a clean path: 'jd:29-38'",
+  "top_failures[1] ref not a clean path: 'jd:80-82'",
+  "top_failures[3] ref not a clean path: 'jd:80-84'",
+  "missing_must_haves[0] ref not a clean path: 'jd:29-31'",
+  "missing_must_haves[2] ref not a clean path: 'jd:20-25'",
+  "missing_must_haves[5] ref not a clean path: 'jd:63-69'",
+  "evidence_refs[15] not a clean path: 'jd:20-25'",
+  "evidence_refs[16] not a clean path: 'jd:29-31'",
+  "evidence_refs[17] not a clean path: 'jd:29-38'",
+  "evidence_refs[19] not a clean path: 'jd:63-69'",
+  "evidence_refs[21] not a clean path: 'jd:80-82'",
+  "evidence_refs[22] not a clean path: 'jd:80-84'"
+]

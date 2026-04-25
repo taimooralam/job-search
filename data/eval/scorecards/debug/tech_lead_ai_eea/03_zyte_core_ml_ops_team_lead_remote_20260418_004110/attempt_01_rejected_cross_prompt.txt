@@ -1,0 +1,916 @@
+You are a rubric-bound CV evaluator.
+
+You are scoring ONE CV against ONE JD, using the Step 7 category rubric as the scoring source of truth. Return ONE strict JSON scorecard only. No markdown. No preamble.
+
+CATEGORY: tech_lead_ai_eea
+JOB_ID: 6929ad6245fa3c355f84b65a
+JD_PATH: data/eval/raw/tech_lead_ai_eea/jd_texts/03_zyte_core_ml_ops_team_lead_remote.md
+CV_PATH: data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/tech_lead_ai_eea/03_zyte_core_ml_ops_team_lead_remote__generated.md
+
+RAW JOB META (authoritative)
+{
+  "title": "Core & ML Ops Team Lead - Remote",
+  "company": "ZYTE",
+  "location": "",
+  "score": 65,
+  "status": null
+}
+
+NORMALIZED OVERLAY (structured context only; do NOT re-classify)
+{
+  "title_normalized": "Core & ML Ops Team Lead",
+  "title_family": "engineering_manager",
+  "seniority": "manager",
+  "role_scope": "player_coach",
+  "management": {
+    "direct_reports": "not_specified",
+    "hiring": "not_specified",
+    "performance_management": "not_specified",
+    "org_building": "not_specified",
+    "budget_pnl": "not_specified"
+  },
+  "architecture": {
+    "platform_design": "explicit",
+    "greenfield_vs_optimization": "both",
+    "scale_signals": "over 3,000 companies and 1 million developers rely on Zyte's tools and services",
+    "latency_reliability": "health/metrics/tracing/SLOs; circuit breakers; rollback playbooks"
+  },
+  "hard_skills_must_have": [
+    "distributed systems",
+    "MLOps/ML platform engineering",
+    "Linux/OS internals",
+    "networking (TCP/IP, HTTP/2)",
+    "concurrency",
+    "performance profiling",
+    "Kubernetes",
+    "Java",
+    "Rust",
+    "Go",
+    "C++",
+    "Python",
+    "GPU infrastructure",
+    "model platforms in production",
+    "leading technical teams",
+    "organization-wide platform solutions"
+  ],
+  "hard_skills_nice_to_have": [
+    "Mesos",
+    "vert.x",
+    "Netty",
+    "Kafka",
+    "Argo",
+    "Temporal",
+    "Airflow",
+    "eBPF-based observability",
+    "perf tooling",
+    "io_uring"
+  ],
+  "programming_languages": {
+    "required": [
+      "Java",
+      "Rust",
+      "Go",
+      "C++",
+      "Python"
+    ],
+    "preferred": []
+  },
+  "cloud_platform": {
+    "primary": "not_specified",
+    "services_mentioned": []
+  },
+  "ai_ml_stack": {
+    "rag": "not_specified",
+    "agents_orchestration": "not_specified",
+    "fine_tuning": "not_specified",
+    "evaluation_quality": "explicit",
+    "guardrails_governance": "explicit",
+    "prompt_engineering": "not_specified",
+    "vector_search": "not_specified",
+    "model_serving_routing": "not_specified",
+    "frameworks": [],
+    "observability": []
+  },
+  "disqualifiers": {
+    "requires_phd": false,
+    "requires_publications": false,
+    "requires_native_language": "not_specified",
+    "requires_security_clearance": false,
+    "requires_specific_domain_years": "5+ years experience building distributed systems; 3+ years in MLOps/ML platform engineering (or equivalent impact)",
+    "research_heavy": false
+  },
+  "success_metrics": [
+    "build the bedrock infrastructure that powers Zyte at scale",
+    "enable all Zyte teams to build and run their services with confidence",
+    "deliver adoption and rollout plans with product engineering, Prod Ops, and Security",
+    "operate a secure, multi-tenant model registry and training platform",
+    "provide drift and quality monitoring plus rollback playbooks"
+  ]
+}
+
+RUBRIC (source of truth — score against this)
+{
+  "meta": {
+    "category_id": "tech_lead_ai_eea",
+    "category_name": "Tech Lead AI \u2014 EEA",
+    "macro_family": "ai_engineering_adjacent",
+    "priority": "secondary_target",
+    "confidence": "high",
+    "rubric_version": "2026-04-17"
+  },
+  "rubric_identity": {
+    "one_sentence_purpose": "Evaluate CV fit for player-coach AI tech lead roles requiring Python backend architecture, production AI/LLM integration, and mentoring without formal management scope.",
+    "core_persona": "Hands-on technical lead who architects Python backend and AI-enabled platforms, ships production-grade systems, mentors engineers, and leads through code quality and delivery discipline rather than org-chart authority.",
+    "job_overlay_notes": [
+      "Stack variance: Python framework depth (FastAPI vs Flask vs Django) varies by employer; adjust weight if JD specifies one",
+      "Domain variance: enterprise SaaS, media/entertainment, fintech each have different compliance and scale expectations",
+      "AI depth variance: some roles emphasize RAG/evaluation, others want basic LLM API integration only",
+      "Team size variance: player-coach scope ranges from 3-person pods to 15-person distributed teams",
+      "Region variance: EEA roles may require GDPR awareness even when not explicitly stated"
+    ],
+    "citations": [
+      "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+      "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+    ]
+  },
+  "dimension_rubrics": [
+    {
+      "dimension": "ats_optimization",
+      "weight": 20,
+      "category_core": {
+        "what_good_looks_like": [
+          "Python appears 2-3 times across headline, profile, experience, and skills when true",
+          "Tech Lead or Technical Lead title appears in headline rather than Architect or Manager",
+          "Backend architecture and platform design keywords appear 2-3 times",
+          "AI/LLM integration keywords appear alongside backend terms, not standalone",
+          "Production readiness, CI/CD, reliability keywords appear 1-2 times",
+          "Mentoring, collaboration, communication appear as leadership signals",
+          "Secondary stack terms (FastAPI, Kafka, distributed systems) appear once each only when evidenced"
+        ],
+        "common_failures": [
+          "TypeScript or JavaScript dominates when Python should be foregrounded for this category",
+          "Architect headline when Tech Lead better matches 75.6% category title family",
+          "GenAI or AI expert standalone without backend/platform anchoring",
+          "Tool-list stacking: every framework named once without depth proof",
+          "Engineering Manager framing without hiring/performance scope evidence",
+          "Missing production readiness or delivery keywords entirely"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD emphasizes FastAPI, ensure FastAPI appears if evidenced; do not add if not",
+          "If JD names specific cloud (AWS/Azure/GCP), match that cloud in skills; do not claim multi-cloud",
+          "If JD emphasizes evaluation or RAG, surface those terms more prominently",
+          "If JD names specific LLM providers (OpenAI, Anthropic), match only those you used"
+        ],
+        "company_domain_overrides": [
+          "Enterprise SaaS: add integration, workflow, multi-tenant if evidenced",
+          "Media/entertainment: add content, metadata, pipeline if evidenced",
+          "Fintech: add compliance, audit, transaction only if truly relevant"
+        ],
+        "region_overrides": [
+          "EEA roles: GDPR awareness may be implicit; surface data privacy if you have it",
+          "German-speaking markets: German language proficiency worth surfacing if true"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Python, backend, tech lead each appear 2-3 times naturally across CV",
+          "AI/LLM integration keywords paired with architecture and delivery terms",
+          "Production readiness, CI/CD, reliability, mentoring all represented",
+          "No keyword stuffing; each term appears with contextual evidence",
+          "Title framing matches tech_lead family without inflation"
+        ],
+        "7_8": [
+          "Python appears but underweighted relative to TypeScript or other languages",
+          "Most category keywords present but distribution uneven",
+          "Tech Lead title used but architecture or AI terms slightly overemphasized",
+          "Minor keyword gaps in delivery or mentoring signals"
+        ],
+        "5_6": [
+          "Python barely mentioned or absent despite being required",
+          "Architect or Manager title framing without supporting evidence",
+          "AI keywords dominate without backend or platform grounding",
+          "Multiple high-value keywords (production readiness, mentoring) missing"
+        ],
+        "0_4": [
+          "Core keywords (Python, tech lead, backend, AI integration) largely absent",
+          "Title inflation: Director, VP, Head of AI without scope evidence",
+          "Generic developer keywords without category-specific signals",
+          "Keyword stuffing with no contextual backing"
+        ]
+      },
+      "red_flags": [
+        "Engineering Manager headline without hiring/performance evidence",
+        "AI Architect headline when actual work was hands-on tech lead",
+        "Multi-cloud expert claims without evidence for each platform",
+        "Every Python framework named (FastAPI, Django, Flask) without production depth",
+        "GenAI buzzwords without backend or delivery context"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "impact_clarity",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Architecture-led achievements show design decision plus measurable production impact",
+          "Production readiness gains quantified: incident reduction %, uptime, deployment frequency",
+          "Scale and reliability metrics: latency, throughput, availability, error rate",
+          "Delivery metrics: cycle time, estimation accuracy, release predictability",
+          "AI feature impact: adoption rate, quality scores, cost/latency tradeoffs",
+          "Mentoring impact: engineers coached, promotions influenced, team velocity gains",
+          "STAR or ARIS structure: situation/task, action with technical specifics, measurable result"
+        ],
+        "common_failures": [
+          "Architecture described without production outcomes or metrics",
+          "Feature delivery listed without reliability or quality impact",
+          "Led team without delivery or quality outcomes attached",
+          "AI work described without evaluation or production adoption metrics",
+          "Mentoring claimed without engineer outcomes or team improvements",
+          "Vague scale terms (large-scale, enterprise) without numbers"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD emphasizes reliability/SLA: foreground uptime, incident metrics",
+          "If JD emphasizes delivery speed: foreground cycle time, deployment frequency",
+          "If JD emphasizes AI quality: foreground evaluation scores, error reduction",
+          "If JD emphasizes team growth: foreground mentoring outcomes"
+        ],
+        "company_domain_overrides": [
+          "Enterprise B2B: user counts, integration counts, workflow automation rates",
+          "Consumer-facing: DAU/MAU impact, response latency, feature adoption",
+          "Platform/infrastructure: API call volumes, processing throughput, cost efficiency"
+        ],
+        "region_overrides": [
+          "EEA compliance contexts: audit pass rates, compliance metrics if applicable"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every major role has 2+ quantified achievements with STAR structure",
+          "Architecture decisions tied to measurable production impact (latency, uptime, cost)",
+          "AI integration achievements include adoption, quality, or efficiency metrics",
+          "Mentoring shows engineer-level outcomes (promotions, capability gains)",
+          "Delivery achievements show before/after with timeline or velocity metrics"
+        ],
+        "7_8": [
+          "Most roles have quantified achievements but some lack full STAR context",
+          "Architecture impact present but metrics sometimes vague (improved vs 40% reduction)",
+          "AI or mentoring achievements present but not all quantified",
+          "One strong role dominates; earlier roles underdetailed"
+        ],
+        "5_6": [
+          "Some metrics present but many achievements are responsibility descriptions",
+          "Architecture mentioned but production impact unclear",
+          "AI work lacks evaluation or adoption metrics",
+          "Mentoring claimed without specific outcomes"
+        ],
+        "0_4": [
+          "Achievements read as job descriptions rather than impact statements",
+          "No quantified metrics across roles",
+          "Architecture, AI, and leadership claims all unsubstantiated",
+          "Vague terms dominate: improved, enhanced, contributed to"
+        ]
+      },
+      "red_flags": [
+        "Round-number metrics without context (100% improvement, 10x scale)",
+        "Metrics impossible to attribute (company revenue figures for IC role)",
+        "AI impact claims without evaluation or adoption numbers",
+        "Led X engineers without team outcome metrics",
+        "Scale claims without throughput, latency, or availability numbers"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md:77",
+        "data/master-cv/roles/01_seven_one_entertainment.md:103"
+      ]
+    },
+    {
+      "dimension": "jd_alignment",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Python backend leadership prominently surfaced when JD requires Python",
+          "Platform/architecture scope matches JD: enterprise, distributed, microservices",
+          "AI/LLM integration depth matches JD requirements: RAG, evaluation, basic API",
+          "Production readiness evidence matches JD emphasis on reliability, CI/CD",
+          "Player-coach framing matches JD team scope (no manager inflation for IC-heavy roles)",
+          "Domain experience surfaces if JD specifies industry"
+        ],
+        "common_failures": [
+          "Python underweighted when JD explicitly requires Python leadership",
+          "Manager framing when JD describes player-coach or senior IC scope",
+          "Generic AI claims when JD specifies RAG, agents, or evaluation",
+          "Enterprise architecture claims for startup-scale JD or vice versa",
+          "Cloud mismatch: AWS experience for Azure-required role"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Match framework requirements exactly: FastAPI role needs FastAPI evidence",
+          "Match cloud requirements: AWS role should not overstate Azure/GCP",
+          "Match AI depth: evaluation-heavy role needs evaluation evidence foregrounded",
+          "Match team structure: distributed team JD needs distributed collaboration evidence"
+        ],
+        "company_domain_overrides": [
+          "Consultancy: emphasize client delivery, stakeholder management, estimation accuracy",
+          "Product company: emphasize platform ownership, feature delivery, production metrics",
+          "Enterprise: emphasize integration, scale, compliance-adjacent work"
+        ],
+        "region_overrides": [
+          "DACH region: German language skills and local company experience valuable",
+          "UK roles: may have different compliance considerations post-Brexit",
+          "Remote-first EEA: distributed team coordination becomes differentiator"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "CV directly addresses all must-have requirements from JD",
+          "Tech stack matches: Python, cloud, AI tools align with JD specifics",
+          "Scope matches: player-coach evidence for player-coach JD",
+          "Domain match or clearly transferable experience demonstrated",
+          "Differentiators (RAG, evaluation, distributed teams) addressed if in JD"
+        ],
+        "7_8": [
+          "Most must-haves addressed; 1-2 minor gaps in secondary requirements",
+          "Tech stack mostly matches with minor gaps (e.g., FastAPI not explicit)",
+          "Scope alignment good but framing could be tighter",
+          "Domain transferable with clear explanation"
+        ],
+        "5_6": [
+          "Core must-haves present but significant gaps in secondary requirements",
+          "Tech stack has notable mismatches or gaps",
+          "Scope framing misaligned (manager for IC role or vice versa)",
+          "Domain gap without clear transferability story"
+        ],
+        "0_4": [
+          "Multiple must-haves missing or only tangentially addressed",
+          "Tech stack fundamentally mismatched",
+          "Scope wildly misaligned (VP framing for senior IC role)",
+          "No relevant domain experience or transferability"
+        ]
+      },
+      "red_flags": [
+        "Claiming FastAPI/Django/Flask depth when JD requires it but CV lacks it",
+        "Manager title for explicitly IC/player-coach JD",
+        "AWS expertise claimed for Azure-required role without evidence",
+        "Generic AI claims for JD requiring specific RAG or evaluation experience",
+        "Startup-scale evidence only for enterprise-scale JD"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "executive_presence",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "Player-coach authority: technical direction, code review, design decisions",
+          "Mentoring evidence: engineers coached, capability uplift, promotions influenced",
+          "Delivery ownership: estimation accuracy, handoff quality, timeline alignment",
+          "Stakeholder translation: technical debt ROI, architecture decisions explained",
+          "Cross-functional collaboration: distributed teams, client coordination",
+          "Technical vision: north-star decisions, quality standards, engineering excellence"
+        ],
+        "common_failures": [
+          "Manager language without management scope (direct reports, performance reviews)",
+          "VP/Director framing for what is actually player-coach scope",
+          "Pure IC framing that undersells mentoring and technical leadership",
+          "Stakeholder management claimed without specific translation examples",
+          "Led team without delivery or quality outcomes"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD mentions team size: match mentoring evidence to that scale",
+          "If JD emphasizes client-facing: surface stakeholder translation more",
+          "If JD is pure IC with influence: reduce direct leadership claims",
+          "If JD mentions hiring involvement: surface interview participation if true"
+        ],
+        "company_domain_overrides": [
+          "Consultancy: client management and delivery planning become key signals",
+          "Product company: platform ownership and technical vision emphasized",
+          "Startup: 0-to-1 delivery and hands-on breadth valued"
+        ],
+        "region_overrides": [
+          "EEA distributed teams: coordination across time zones becomes differentiator",
+          "German corporate culture: formal stakeholder communication valued"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Clear player-coach evidence: hands-on plus mentoring plus delivery ownership",
+          "Specific mentoring outcomes: engineers promoted, capabilities built",
+          "Technical vision with adoption: standards set and followed",
+          "Stakeholder translation with outcomes: investment secured, alignment achieved",
+          "No management inflation: framing matches actual scope"
+        ],
+        "7_8": [
+          "Player-coach evidence present but mentoring or stakeholder outcomes less specific",
+          "Technical leadership clear but vision/standards not fully articulated",
+          "Scope framing accurate but could be more compelling"
+        ],
+        "5_6": [
+          "Leadership claimed but evidence is thin (worked with not mentored)",
+          "Manager or architect language without matching scope proof",
+          "Delivery involvement unclear: coordinated vs led vs contributed"
+        ],
+        "0_4": [
+          "Unsupported people-management framing (direct reports, performance reviews)",
+          "VP/Director/Head language for clearly IC-scope work",
+          "No leadership evidence: pure IC with no influence signals",
+          "Budget or P&L claims without any supporting evidence"
+        ]
+      },
+      "red_flags": [
+        "Unsupported people-management framing: direct reports, performance reviews, hiring ownership",
+        "Budget or P&L ownership claims for tech lead role",
+        "Org-building or company-wide headcount claims without evidence",
+        "Director/VP/Head titles without matching organizational scope",
+        "Mentored without specific engineer outcomes or numbers"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md:231"
+      ]
+    },
+    {
+      "dimension": "anti_hallucination",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "Every metric is attributable: specific project, role, timeframe",
+          "Titles match actual roles held; no inflation to Manager/Director/Head",
+          "Tech stack claims match actual production use, not tutorials or POCs",
+          "AI/LLM claims specify what was actually built vs theoretical knowledge",
+          "Leadership scope matches reality: mentoring vs managing vs influencing",
+          "Framework claims match actual depth: used vs led vs architected"
+        ],
+        "common_failures": [
+          "Metrics without attribution (80% improvement in what? when? where?)",
+          "Title inflation: Engineering Manager when never had direct reports",
+          "FastAPI/Django/Flask expertise claimed from one-off usage",
+          "Multi-cloud expert from using AWS primarily with minor Azure",
+          "PhD, publication, or research framing when background is industry",
+          "RAG expert from one RAG feature vs full pipeline ownership"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Verify framework claims match JD-required depth, not overclaim",
+          "Ensure cloud claims match JD requirements without overreach",
+          "AI depth claims must be verifiable against JD-specific requirements",
+          "Leadership scope claims must match JD expectations precisely"
+        ],
+        "company_domain_overrides": [
+          "Enterprise roles: do not claim GDPR, PCI, audit expertise unless evidenced",
+          "Fintech roles: do not claim compliance expertise without specific evidence",
+          "Consultancy roles: do not overclaim client scope or engagement size"
+        ],
+        "region_overrides": [
+          "EEA roles: do not claim language proficiency beyond actual capability",
+          "Do not claim native-language fit beyond verified proficiency"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "All metrics tied to specific roles, projects, and timeframes",
+          "Titles exactly match job history; no inflation",
+          "Tech claims verifiable against project descriptions",
+          "AI claims specify exact scope: API integration vs pipeline vs evaluation",
+          "Leadership claims precise: 10 engineers mentored vs managed team of 10",
+          "No unsupported credentials or certifications"
+        ],
+        "7_8": [
+          "Most claims verifiable; 1-2 metrics lack full attribution",
+          "Titles accurate but framing slightly generous",
+          "Tech depth occasionally ambiguous (experienced with vs expert in)",
+          "Leadership scope clear but outcomes not always specific"
+        ],
+        "5_6": [
+          "Multiple metrics lack clear attribution",
+          "Title framing somewhat inflated from actual scope",
+          "Tech claims include frameworks used briefly as if deep expertise",
+          "AI claims vague about actual implementation scope",
+          "Leadership claims ambiguous about direct vs indirect influence"
+        ],
+        "0_4": [
+          "Fabricated or unverifiable metrics",
+          "Title inflation: Manager/Director/Head without scope evidence",
+          "Tech stack overclaims: multi-cloud, every framework, full-stack",
+          "AI claims imply ML research or fine-tuning without evidence",
+          "PhD, publication, or credential claims without basis",
+          "Budget/P&L ownership for category where it appears 0%"
+        ]
+      },
+      "red_flags": [
+        "Unsupported metrics: round numbers, company-level figures for IC role",
+        "Fabricated titles: Head of AI, Director, VP without org scope",
+        "PhD or publication inflation when background is industry engineering",
+        "Budget or P&L ownership claims (0% in this category)",
+        "Formal people management with direct reports unless explicitly evidenced",
+        "Hiring or performance review ownership without supporting detail",
+        "Deep AWS/Azure/GCP platform ownership claimed for each without evidence",
+        "Named FastAPI/Django/Flask production leadership if not actually shown",
+        "Fine-tuning, custom embedding training, or RLHF claims without evidence",
+        "Onshore/offshore leadership at company level without cross-border coordination proof",
+        "GDPR, PCI, audit expertise claimed when each appears only 2.4% in category"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json",
+        "data/master-cv/projects/commander4_skills.json:42"
+      ]
+    }
+  ],
+  "gates": {
+    "must_have_coverage_gate": {
+      "pass_criteria": [
+        "Python backend experience evidenced with production depth",
+        "Platform or backend architecture experience demonstrated",
+        "AI/LLM integration in production systems (not just POC or tutorial)",
+        "Player-coach scope: hands-on technical work plus mentoring or technical leadership",
+        "Production readiness evidence: CI/CD, testing, reliability, or deployment"
+      ],
+      "fail_conditions": [
+        "No Python evidence despite 70.7% required language in category",
+        "Pure frontend or generalist background without backend architecture",
+        "AI work limited to theory, tutorials, or non-production experimentation",
+        "Pure IC with no mentoring, collaboration, or technical leadership signals",
+        "No production delivery evidence: demo-only or research-only work"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ]
+    },
+    "unsafe_claim_gate": {
+      "pass_criteria": [
+        "No budget or P&L ownership claims (0% in category)",
+        "No formal people-management claims without direct-report evidence",
+        "Title framing matches actual scope without Director/VP/Head inflation",
+        "Framework claims match actual production depth",
+        "Cloud claims match actual implementation scope"
+      ],
+      "fail_conditions": [
+        "Budget or P&L ownership claimed",
+        "Formal people management with direct reports claimed without evidence",
+        "Hiring or performance review ownership claimed without supporting detail",
+        "Director/VP/Head of AI title framing for player-coach scope",
+        "Multi-cloud expert claims without evidence for each platform",
+        "FastAPI/Django/Flask leadership claimed without production depth",
+        "PhD, publication, or research positioning for delivery-oriented category"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ]
+    },
+    "persona_fit_gate": {
+      "pass_criteria": [
+        "Player-coach framing: hands-on plus technical leadership plus delivery",
+        "Tech Lead or Technical Lead positioning rather than Architect or Manager",
+        "Backend and AI combined positioning, not standalone AI evangelist",
+        "Production and delivery orientation, not research or experimentation focus",
+        "Mentoring and collaboration as leadership mode, not org-chart authority"
+      ],
+      "fail_conditions": [
+        "Pure manager framing without hands-on technical evidence",
+        "Pure architect framing detached from implementation and delivery",
+        "AI evangelist or GenAI expert framing without backend grounding",
+        "Research scientist or ML researcher positioning (0% research-heavy in category)",
+        "Executive or org-builder positioning with company-wide scope claims"
+      ],
+      "citations": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ]
+    }
+  },
+  "verdict_thresholds": {
+    "strong_match_min": 8.5,
+    "good_match_min": 7.0,
+    "needs_work_min": 5.5,
+    "weak_match_max": 5.49
+  },
+  "scoring_guidance": {
+    "how_to_interpret_executive_presence": "For this tech-lead player-coach category, executive_presence means hands-on team leadership plus delivery ownership. Score based on mentoring outcomes, technical direction, stakeholder translation, and delivery discipline. Penalize unsupported people-management framing (direct reports, performance reviews, budget). Do not expect or reward Director/VP/C-suite signals\u2014this is a player-coach category (90.2% player_coach, 0% budget/P&L).",
+    "how_to_penalize_unsupported_claims": "Apply hard penalties (score 0-4) for: fabricated metrics without attribution, title inflation beyond actual scope, budget/P&L claims, formal management claims without evidence, multi-cloud or multi-framework expertise without depth proof, PhD/publication positioning. Moderate penalties (score 5-6) for: vague metrics, slightly generous framing, ambiguous tech depth. Each unsupported claim in red_flags should reduce dimension score by 1-2 points.",
+    "how_to_handle_category_vs_job_tradeoffs": "Category signals (Python, tech lead title, player-coach, production AI, mentoring) should form the baseline. JD-specific requirements can override within reason: if JD requires FastAPI and CV has it, weight FastAPI; if JD requires Azure and CV has AWS only, note the gap. Never invent claims to fill JD gaps. When JD asks for Manager scope but category is player-coach, verify actual scope in CV before accepting manager framing.",
+    "citations": [
+      "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+      "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+    ]
+  },
+  "scorecard_template_mapping": {
+    "dimension_keys": [
+      "ats_optimization",
+      "impact_clarity",
+      "jd_alignment",
+      "executive_presence",
+      "anti_hallucination"
+    ],
+    "gate_keys": [
+      "must_have_coverage_gate",
+      "unsafe_claim_gate",
+      "persona_fit_gate"
+    ],
+    "required_output_fields": [
+      "overall_score",
+      "verdict",
+      "top_strengths",
+      "top_failures",
+      "unsupported_claims",
+      "missing_must_haves"
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "rubric_rule": "Python must appear 2-3 times across CV when true; Python is 68.3% hard skill and 70.7% required language",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Tech Lead title family preferred over Architect or Manager; tech_lead appears 31/41 (75.6%)",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Player-coach framing required; player_coach scope is 37/41 (90.2%); manager scope is 1/41 (2.4%)",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Budget and P&L claims are unsafe; budget/P&L is 0/41 (0.0%) in category",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Hiring and performance management claims require explicit evidence; hiring 3/41 (7.3%), performance_management 4/41 (9.8%)",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "FastAPI/Django/Flask claims must match production depth; each appears 36-49% but blueprint warns against overclaiming",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "PhD and research positioning unsafe; requires_phd_pct 0.0%, research_heavy_pct 0.0%",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Mentoring and collaboration are table-stakes leadership signals; mentoring 30/41 (73.2%), collaboration 36/41 (87.8%)",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "AI/LLM integration must be production backend work not standalone experimentation; platform_design 95.1%, OpenAI 39.0%, HuggingFace 36.6%",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Evaluation and guardrails are differentiators worth surfacing; evaluation_quality 9/41 (22.0%), guardrails_governance 4/41 (9.8%)",
+      "support": [
+        "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+        "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+      ],
+      "confidence": "medium"
+    }
+  ]
+}
+
+SCORECARD TEMPLATE SHAPE (populate this exact shape; copy all top-level keys verbatim)
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": null,
+  "job_id": null,
+  "dimension_scores": {
+    "ats_optimization": null,
+    "impact_clarity": null,
+    "jd_alignment": null,
+    "executive_presence": null,
+    "anti_hallucination": null
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": null,
+    "unsafe_claim_gate": null,
+    "persona_fit_gate": null
+  },
+  "overall_score": null,
+  "verdict": null,
+  "top_strengths": [],
+  "top_failures": [],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [],
+  "evidence_refs": [],
+  "meta": {
+    "generated_at": null,
+    "scorer_model": null,
+    "rubric_path": null,
+    "blueprint_path": null,
+    "baseline_path": null
+  }
+}
+
+JD TEXT (line-numbered)
+0001: # Core & ML Ops Team Lead - Remote
+0002: 
+0003: **Company:** ZYTE
+0004: **Location:** 
+0005: **Score:** 65 (Tier C)
+0006: **Status:** N/A
+0007: 
+0008: ---
+0009: 
+0010: About UsAt Zyte, we eat data for breakfast and you can eat your breakfast anywhere andwork for Zyte. Founded in 2010, we are a globally distributed team of over 250Zytans working from over 28 countries who are on a mission to enable ourcustomers to extract the data they need to continue to innovate and grow theirbusinesses. We believe that all businesses deserve a smooth pathway to data.For more than a decade, Zyte has led the way in building powerful, easy-to-usetools to collect, format, and deliver web data, quickly, dependably, and atscale. And today, the data we extract helps thousands of organizations makesmarter business decisions, secure competitive advantage, and drive sustainablegrowth. Today, over 3,000 companies and 1 million developers rely on our toolsand services to get the data they need from the web.Zyte is seeking an experienced Team Lead to manage our Core & MLOps Squad,responsible for "Building the bedrock infrastructure that powers Zyte at scale."This hands-on technical leadership role requires expertise across MLOps, systemsprogramming, and orchestration to lead a cross-functional team in designing andmaintaining the scalable foundation that enables all Zyte teams to build and runtheir services with confidence.RequirementsWhat you'll doTechnical Leadership * Design and evolve the core platform (Kubernetes, Mesos, GPU scheduling/autoscaling, distributed compute) * Own the model platform: registry, experiment tracking, training orchestration, evaluation, serving, and monitoring * Build the Golden Path: reference repos, a scaffold CLI, opinionated CI/CD pipelines, runtime contracts (health/metrics/tracing/SLOs), high-performance clients, circuit breakers and other production‑ready defaults MLOps Excellence * Operate a secure, multi‑tenant model registry and training platform with standardized experiment/evaluation harnesses * Provide turnkey serving patterns (online + batch), drift/quality monitoring, and rollback playbooks * Integrate public/open‑source AI capabilities as managed platform services with cost and data‑governance guardrails Team Management * Run the squad: roadmap/prioritization, delivery, mentoring, and high engineering standards * Partner with product engineering (Zyte API, Scrapy Cloud), Prod Ops, and Security on adoption and rollout plans * Mentor the team and foster a platform-thinking mindset Ownership Areas * Container orchestration (Kubernetes/Knative), GPU provisioning & autoscaling, environment & secret management * Operators, sidecars, and internal SDKs/libraries (Go/Rust/Python/Java) that enforce the golden path contract * Model platform: registry, experiment tracking, training orchestration, evaluation framework, serving infra, model monitoring * Observability: logging/metrics/tracing pipelines; * Billing pipeline: metering/events/cost tracking abstractions * Golden Path: Java, Python, ML templates + CI/CD blueprints + docs + scaffold CLI * Reliability enablement (SRE practices), cost governance, supply‑chain security (SBOM, image signing) QualificationsRequired * 5+ years experience building distributed systems; 3+ years in MLOps/ML platform engineering (or equivalent impact) * Knowledge of Linux/OS internals (process model, cgroups/namespaces), networking (TCP/IP, HTTP/2), concurrency, and performance profiling * Deep understanding of Kubernetes (bonus: Mesos) * Proficiency developing high-performance services in Java, Rust, Go or C++ (bonus: familiarity with vert.x and Netty frameworks); strong Python skills * Experience with GPU infrastructure (scheduling, containerization, optimization) * Track record of designing and operating model platforms (registry, training, serving, monitoring) in production * Demonstrated success leading technical teams and implementing organization-wide platform solutions Preferred * Streaming & workflows: Kafka plus Argo/Temporal/Airflow or equivalents * eBPF‑based observability, perf tooling, or io_uring experience * Cost optimization for ML/AI; multi‑tenant quotas and fairness * Hands‑on experience authoring Golden Paths (service chassis/templates, CI/CD blueprints, CLI scaffolds) * SRE practices (SLIs/SLOs, incident management) BenefitsBenefits: * We love fostering and nourishing new ideas and bringing them to market * Become part of a self-motivated, progressive, multi-cultural team * Have the freedom and flexibility to work from where you do your best work, as we are a completely remote company * Get the chance to work with cutting-edge open-source technologies and toolsShow more Show less
+
+CV MARKDOWN (line-numbered)
+0001: # TAIMOOR ALAM
+0002: taimooralam.com · linkedin.com/in/taimooralam · github.com/taimooralam
+0003: ### Platform Tech Lead | MLOps & Distributed Systems
+0004: *alamtaimoor.de@gmail.com · +49 176 2979 3925 · Nationality: German*
+0005: 
+0006: **PROFESSIONAL SUMMARY**
+0007: 
+0008: Platform tech lead with 10+ years building standardized infrastructure patterns and MLOps platforms serving thousands of users. Led cross-organizational platform initiatives reducing fragmentation through reusable patterns, automated workflows, and production-grade observability—transforming how teams deploy and operate distributed systems.
+0009: 
+0010: • Platform lead for enterprise AI workflow platform (Commander-4) serving 2,000 users—architected MLOps infrastructure spanning model registry (42 plugins), standardized deployment patterns, and production observability enabling consistent AI delivery across organizational silos
+0011: • Architected cross-team observability platform processing billions of events daily using OpenSearch on AWS, establishing standardized monitoring patterns and reducing operational costs across multiple teams
+0012: • Led platform standardization initiative transforming fragmented infrastructure into event-driven microservices with reusable patterns, reducing incidents by 75% and enabling autonomous team operations
+0013: • Built CI/CD platform standards enabling automated deployments across teams, reducing release cycles from weeks to days through standardized patterns and tooling
+0014: • Scaled AWS infrastructure with auto-scaling patterns optimizing cost-performance for bursty traffic, reducing missed impressions by 20%
+0015: 
+0016: **CORE COMPETENCIES**
+0017: **Platform & MLOps:** MLOps Infrastructure, Model Registry, Model Serving, Platform Standardization, Infrastructure Patterns, Production AI, LLM Operations, Cost Optimization
+0018: **Technical Excellence:** Python, JavaScript, TypeScript, Node.js, REST API, LLM Integration, NestJS, Monitoring
+0019: **Architecture & Operations:** Distributed Systems, Microservices, Event-Driven Architecture, CQRS, Domain-Driven Design, Platform Operations, Infrastructure Automation
+0020: **Cloud & Infrastructure:** AWS, Observability, CI/CD, Data Pipeline, OpenSearch, Redis, Lambda, ECS, EventBridge
+0021: **Team Leadership:** Cross-Functional Collaboration, Platform Evangelism, Standards Definition, SCRUM, Agile, Blameless Postmortems
+0022: 
+0023: **PROFESSIONAL EXPERIENCE**
+0024: 
+0025: **Seven.One Entertainment Group • Technical Lead (Platform & MLOps)** | Munich, DE | 2020–Present
+0026: 
+0027: • Platform lead for Commander-4 enterprise AI workflow platform—architected MLOps infrastructure serving 2,000 users across 42 workflow plugins including model registry, standardized deployment patterns, and production observability transforming fragmented AI delivery into consistent platform operations
+0028: • Built hybrid retrieval system combining BM25 scoring, vector search, and LLM reranking with two-tier semantic caching (Redis + S3 Vectors), establishing reusable patterns for model serving and inference optimization across organizational teams
+0029: • Designed document ingestion pipeline for model knowledge base processing Confluence/Jira sources with sentence-boundary chunking and RAPTOR hierarchical indexing, enabling standardized content processing patterns for AI workflows
+0030: • Architected cross-organizational observability platform on AWS processing billions of events daily using OpenSearch, establishing monitoring standards and reducing operational costs through consistent patterns adopted by multiple teams
+0031: • Led platform standardization initiative transforming legacy fragmented infrastructure into event-driven microservices with AWS-native patterns (EventBridge choreography, CloudFront caching), reducing incidents by 75% over 3 years
+0032: • Built CI/CD platform standards migrating from Jenkins to GitLab with automated deployment patterns, reducing release cycles from weeks to days and enabling consistent delivery practices across teams
+0033: • Implemented CloudWatch/SNS alerting architecture establishing monitoring standards across platform, significantly reducing MTTR through standardized incident response patterns
+0034: • Scaled AWS infrastructure with Lambda/ECS auto-scaling patterns optimizing cost-performance for bursty traffic, reducing missed impressions by 20% through reusable scaling patterns
+0035: • Defined Domain-Driven Design standards and bounded contexts reducing developer onboarding from 6 to 3 months through consistent architectural patterns, improving velocity by 25%
+0036: **Skills:** Python, MLOps, Platform Operations, TypeScript, JavaScript, Observability, CI/CD, Domain-Driven Design, Event-Driven Architecture, Microservices, Model Registry, Infrastructure Standardization
+0037: 
+0038: **Samdock (Daypaio) • Lead Software Engineer** | Munich, DE | 2019–2020
+0039: 
+0040: • Built CI/CD pipeline reducing deployment time from hours to minutes, enabling daily releases
+0041: • Implemented CQRS/event-sourcing architecture with NestJS and EventStore for multi-tenant CRM platform
+0042: • Designed RESTful APIs with Swagger/OpenAPI documentation enabling 50% faster partner integrations
+0043: • Built multi-tenant CQRS foundation on GCP using NestJS, EventStore, and MongoDB with RxJS pub/sub patterns—enabling 10x horizontal scaling
+0044: • Defined engineering standards for startup codebase, balancing speed with quality through testing discipline
+0045: • Developed talent pipeline through hands-on apprenticeship resulting in successful career progression
+0046: **Skills:** CI/CD, TypeScript, JavaScript, Node.js, NestJS, EventStore, CQRS, Microservices
+0047: 
+0048: **KI Labs • Intermediate Backend Engineer** | Munich, DE | 2018–2019
+0049: 
+0050: • Optimized MongoDB data layer achieving 60% query response time reduction
+0051: • Built Flask REST APIs over large-scale data pipeline using onion architecture with JWT authentication
+0052: • Built pytest-based multi-layered test suite (unit, E2E, snapshot) for API contract verification, reducing production incidents by 35%
+0053: • Built Swagger/OpenAPI documentation system for REST APIs improving developer experience
+0054: • Contributed to agile team dynamics with reliable delivery and quality focus
+0055: **Skills:** Python, Flask, REST API, JWT, APIs, MongoDB, Indexing, Onion Architecture
+0056: 
+0057: **Fortis (Research Project) • Backend Engineer** | Munich, DE | 2018
+0058: 
+0059: • Implemented RabbitMQ pub/sub messaging enabling asynchronous communication between microservices
+0060: • Defined API standards with Swagger/OpenAPI documentation ensuring interface consistency across services
+0061: • Built microservices backend in Node.js with well-defined service interfaces for research platform
+0062: • Participated in SCRUM ceremonies with regular demos adapting to research client feedback
+0063: **Skills:** JavaScript, Node.js, SQL, RabbitMQ, Pub/Sub, Event-Driven Architecture, MongoDB, Microservices
+0064: 
+0065: **OSRAM • Software Engineer (IoT)** | Munich, DE | 2016–2018
+0066: 
+0067: • Developed OpenAIS-compliant CoAP server in Python establishing reusable template adopted by multiple team projects
+0068: • Designed and developed cross-platform Qt/C++ application with QML interface controlling IoT lighting systems via CoAP protocol across mobile and desktop platforms
+0069: • Developed Python-based CoAP server acting as CoAP-to-UDP translation middleware, enabling seamless integration of non-CoAP third-party devices
+0070: • Enhanced Erbium CoAP implementation with OSCOAP security features enabling secure multicast communication in IoT lighting networks
+0071: • Integrated OSRAM legacy lighting products and firmware with modern CoAP OpenAIS ecosystem, ensuring backward compatibility
+0072: • Python middleware bridging CoAP and UDP protocols for third-party device integration
+0073: **Skills:** Python, C++, C, Qt, CoAP, OSCOAP, UDP, REST
+0074: 
+0075: **Clary Icon • Software Engineer** | Islamabad, PK | 2014–2016
+0076: 
+0077: • Delivered features across Node.js backend, Qt C++ desktop, and C# WPF desktop platforms within unified video conferencing product
+0078: • Reverse-engineered OpenPhone SIP client and extended functionality using Qt C++ widget framework for enhanced call management
+0079: • Created C# WPF tutorial system with synthetic voice narration and visual annotations guiding users through video conferencing setup
+0080: • Developed WebRTC video recording system using Licode media server, custom REST APIs, and FFmpeg transcoding pipeline for multi-party call capture
+0081: • Engineered Node.js playback service with WebSocket-based timestamp synchronization handling concurrent video streams for multi-party call replay
+0082: • Node.js video playback service with WebSocket sync for multi-party call review
+0083: **Skills:** JavaScript, Node.js, C++, C#, SQL, WPF, Licode, WebRTC
+0084: 
+0085: **PROJECTS**
+0086: 
+0087: **Commander-4 (Joyia) — Enterprise AI Workflow Platform**
+0088: Enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins - governed structured outputs, MCP integrations, per-silo guardrails/access control, hybrid retrieval, semantic caching, and evaluation harnesses
+0089: *Stack: TypeScript, Python, S3 Vectors, LiteLLM, Redis, DynamoDB, SQS, Vercel AI SDK, Zod, MCP, Vitest, text-embedding-3-small*
+0090: 
+0091: • Designed MLOps infrastructure with governed structured-output architecture using Zod schema validation for all LLM responses, 5 MCP server tools for external integrations, 42 workflow plugins with per-silo guardrail injection via LiteLLM proxy, and access-control-aware workflow behavior
+0092: • Implemented retrieval evaluation harness with MRR@k and NDCG@k (exponential gain) scoring functions, guardrail profiles for per-silo content policy enforcement, and two-tier semantic cache threshold tuning validated against 14 unit tests
+0093: • Built hybrid retrieval pipeline combining BM25 scoring from scratch (no inverted index on S3 Vectors - corpus statistics computed in-memory) with RRF fusion (k=60) and LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.all execution
+0094: • Engineered two-tier semantic caching with L1 exact-match and L2 semantic similarity using Redis TTL plus S3 Vectors cosine search, improving runtime efficiency for repeated and paraphrased prompts
+0095: • Engineered document ingestion pipeline processing Confluence XML (macro stripping, metadata extraction) and Jira ADF to markdown conversion with sentence-boundary chunking (500-token windows, 50-token overlap), SHA-256 change detection for incremental updates, and RAPTOR hierarchical indexing for multi-granularity retrieval
+0096: 
+0097: **Lantern — LLM Quality Gateway**
+0098: Multi-provider LLM gateway with routing/fallback, semantic caching, eval-driven quality gates, and production observability
+0099: *github.com/taimooralam/lantern*
+0100: *Stack: FastAPI, Pydantic V2, LiteLLM, Redis, Qdrant, Docker Compose, Prometheus, Grafana, GitHub Actions | Python 3.11, pytest*
+0101: 
+0102: • Architected multi-provider LLM gateway with LiteLLM routing, model registry, request validation, and automatic fallback across OpenAI, Anthropic, and Azure endpoints
+0103: • Implemented eval-driven quality gates with golden-set evaluation, scoring LLM responses against reference outputs before serving them to downstream consumers and catching regressions earlier
+0104: • Provisioned full observability stack (Prometheus, Grafana, Langfuse tracing) with GitHub Actions CI and VPS deploy workflow for production-grade operations
+0105: • Built semantic caching layer using Redis + Qdrant vector similarity to deduplicate LLM calls, reducing redundant API spend by ~40% in testing
+0106: • Added operational safeguards around multi-provider routing with request ID propagation, retry/backoff behavior, and circuit-breaker protections for degraded provider conditions
+0107: 
+0108: **EDUCATION & CERTIFICATIONS**
+0109: • M.Sc. Computer Science — Technical University of Munich
+0110: • B.Sc. Computer Software Engineering — GIK Institute
+0111: • AWS Essentials
+0112: • ECS & Multi-Region LB
+0113: • Data Scientist's Toolbox
+0114: • R Programming
+0115: 
+0116: **LANGUAGES**
+0117: English (C1), German (B2), Urdu (Native)
+
+STRICT RULES
+- Return ONE JSON object only. No markdown fences. No explanatory text.
+- Populate EVERY key from the scorecard template.
+- `category_id` must equal "tech_lead_ai_eea"; `job_id` must equal "6929ad6245fa3c355f84b65a".
+- `dimension_scores`: numeric floats in [0, 10]. Keys exactly: ats_optimization, impact_clarity, jd_alignment, executive_presence, anti_hallucination.
+- `gate_outcomes`: booleans. Keys exactly: must_have_coverage_gate, unsafe_claim_gate, persona_fit_gate.
+- `overall_score`: weighted sum (20/25/25/15/15); Python will recompute and may override.
+- `verdict`: one of STRONG_MATCH, GOOD_MATCH, NEEDS_WORK, WEAK_MATCH; Python may gate-cap it.
+- `top_strengths`, `top_failures`, `unsupported_claims`, `missing_must_haves`, `persona_fit_notes`: each entry is a compact string ending with refs=<ref[,ref,...]>.
+  Accepted ref shorthands: `cv:<line>` (points to CV_PATH), `jd:<line>` (points to JD_PATH), or a full path `outputs/... :line` / `data/master-cv/... :line` / `data/eval/... :line` / `docs/... :line`.
+  Every entry MUST end with a `refs=...` suffix and at least one ref. Examples:
+    - "Strong architecture framing in opening bullets refs=cv:9,cv:12"
+    - "JD requires Kubernetes but CV silent on K8s refs=jd:45,cv:33"
+- `evidence_refs`: deduped union of all refs cited across qualitative arrays, expanded to full paths, in stable order.
+- `representation_gap_hits`, `curation_gap_hits`: may be empty lists if no gap observed.
+
+SCORING RULES
+- Use the rubric's dimension_rubrics[].score_anchors to pick scores.
+- `executive_presence` is category-relative:
+  * ai_architect_*: architectural authority and system ownership, NOT executive management
+  * staff_*/senior_*/principal_*: senior IC authority, NOT people management
+  * tech_lead_*: hands-on delivery leadership, NOT director/VP framing
+  * head_of_ai_*: player-coach leadership unless stronger management evidence is real
+- Do NOT infer claims from the JD back into the CV. Only credit what the CV actually states.
+- Penalize title inflation, fabricated metrics, unsupported cloud/provider authority, and unsupported people-management scope inside `unsupported_claims` and drop `unsafe_claim_gate` accordingly.
+- If the CV omits rubric must-have coverage items from `gates.must_have_coverage_gate.pass_criteria`, list them in `missing_must_haves` and drop `must_have_coverage_gate`.
+- For IC/player-coach categories, if the CV uses literal Head/VP/Director/Executive framing without direct evidence in the CV text, drop `persona_fit_gate` and list the mismatch in `persona_fit_notes`.
+- Keep qualitative arrays concise — 2-6 items each, not essays.
+
+META
+- Set meta.rubric_path = "data/eval/rubrics/tech_lead_ai_eea_rubric.json"
+- Set meta.blueprint_path = "data/eval/blueprints/tech_lead_ai_eea_blueprint.json"
+- Set meta.baseline_path = "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+- Set meta.scorer_model = "claude-opus-4-5-20251101" (or codex model if provider=codex; Python may overwrite)
+- Set meta.generated_at = ISO-8601 timestamp (Python may overwrite)
+
+OUTPUT: the populated scorecard JSON only.

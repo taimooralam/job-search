@@ -1,0 +1,194 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "claiming direct ownership of security reviews, audits, or compliance assessments without explicit proof",
+      "count": 1
+    },
+    {
+      "label": "claiming enterprise or government platform delivery at scale without concrete evidence",
+      "count": 1
+    },
+    {
+      "label": "claiming production kubernetes governance if the cv only shows adjacent distributed-systems work",
+      "count": 1
+    },
+    {
+      "label": "claiming formal line management of a large engineering organization without explicit proof",
+      "count": 1
+    },
+    {
+      "label": "claiming company-wide ownership of dora rollout or sdlc governance without clear evidence",
+      "count": 1
+    },
+    {
+      "label": "claiming end-to-end monolith to microservices migration leadership if the cv only shows partial architectural influence",
+      "count": 1
+    },
+    {
+      "label": "claiming ownership of a global omnichannel commerce architecture across many countries without direct evidence",
+      "count": 1
+    },
+    {
+      "label": "claiming azure-native enterprise architecture leadership if the cv does not show azure delivery specifically",
+      "count": 1
+    },
+    {
+      "label": "claiming gdpr, pci-dss, or iso 42001 governance ownership without explicit proof",
+      "count": 1
+    },
+    {
+      "label": "claiming department-level hiring, evaluation, or budget accountability at enterprise scope without clear evidence",
+      "count": 1
+    },
+    {
+      "label": "banking or core-banking modernization leadership",
+      "count": 1
+    },
+    {
+      "label": "hands-on mobile app delivery for ios / android / flutter / react native",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 18
+    },
+    {
+      "label": "scale",
+      "count": 17
+    },
+    {
+      "label": "reliability",
+      "count": 15
+    },
+    {
+      "label": "governance",
+      "count": 13
+    },
+    {
+      "label": "evaluation",
+      "count": 9
+    },
+    {
+      "label": "cost",
+      "count": 6
+    },
+    {
+      "label": "hiring",
+      "count": 2
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "operational readiness",
+      "count": 2
+    },
+    {
+      "label": "timely product delivery",
+      "count": 2
+    },
+    {
+      "label": "predictable release pipelines",
+      "count": 2
+    },
+    {
+      "label": "rapid launch of high-impact features",
+      "count": 2
+    },
+    {
+      "label": "resilience",
+      "count": 2
+    },
+    {
+      "label": "security",
+      "count": 2
+    },
+    {
+      "label": "performance",
+      "count": 2
+    },
+    {
+      "label": "winning deals",
+      "count": 2
+    },
+    {
+      "label": "driving the business forward",
+      "count": 2
+    },
+    {
+      "label": "customer success and satisfaction",
+      "count": 2
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4: enterprise ai workflow platform with 2,000 users, 42 plugins, rag, semantic caching, evaluation, and guardrails maps well to architecture, governance, and production readiness.",
+      "count": 1
+    },
+    {
+      "label": "lantern: llm gateway with multi-provider routing and circuit breaker patterns maps well to resilience and operational design.",
+      "count": 1
+    },
+    {
+      "label": "prior cqrs / event-sourcing and microservices / rabbitmq work maps well to distributed architecture and integration design.",
+      "count": 1
+    },
+    {
+      "label": "technical lead at seven.one entertainment group maps well because the role is already player-coach style and requires cross-functional delivery.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps well because it shows enterprise ai platform delivery, governance, evaluation, and guardrails in production.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps well because multi-provider routing and circuit breakers show reliability, latency, and cost-control instincts.",
+      "count": 1
+    },
+    {
+      "label": "prior microservices / rabbitmq and cqrs / event-sourcing work maps well to the backend modernization and distributed-systems side of the role.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps well because it is an enterprise ai workflow platform with 2,000 users, 42 plugins, rag, evaluation, and guardrails.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "english",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "8-10 years in solution or enterprise architecture with large-scale digital commerce or omnichannel transformations",
+      "count": 1
+    },
+    {
+      "label": "10+ years in architecture roles across ai, data, or digital platforms",
+      "count": 1
+    },
+    {
+      "label": "3+ years in cex / dex environments; 5+ years of kimball dimensional modeling",
+      "count": 1
+    },
+    {
+      "label": "6-10 years in solution architecture, systems integration, or platform engineering",
+      "count": 1
+    },
+    {
+      "label": "6+ years of experience in software architecture and large-scale system design",
+      "count": 1
+    },
+    {
+      "label": "4+ years of experience supporting defense and intelligence customers",
+      "count": 1
+    }
+  ]
+}

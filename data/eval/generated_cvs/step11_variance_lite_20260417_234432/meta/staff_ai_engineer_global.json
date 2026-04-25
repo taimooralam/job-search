@@ -1,0 +1,23 @@
+{
+  "category": "staff_ai_engineer_global",
+  "job_id": "694e696d6dd552ab7ec2caf7",
+  "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md",
+  "jd_stem": "03_relativity_staff_ai_software_engineer",
+  "exit_code": 0,
+  "elapsed_seconds": 517.6,
+  "expected_deterministic_path": "outputs/RELATIVITY/cv_Staff_AI_Software_Engineer.md",
+  "pre_state": {
+    "exists": false
+  },
+  "post_state": {
+    "exists": true,
+    "size": 7328,
+    "mtime": 1776464804.1292477,
+    "sha256": "c07c5d06b53c6362ef3a3c89bc7ee3bfd3c62819fa0e4147676a8006ab875ed9"
+  },
+  "resolved_cv_path": "outputs/RELATIVITY/cv_Staff_AI_Software_Engineer.md",
+  "capture_method": "log_parse",
+  "snapshot_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md",
+  "scoreable": true,
+  "log_tail": "  Relativity's Staff AI Software Engineer role addresses a familiar challenge: scaling ML infrastructure while preventing the architectural fragmentation that emerges when teams build in isolation. I ar...\n\n\ud83d\udccb CV:\n  outputs/RELATIVITY/cv_Staff_AI_Software_Engineer.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-18 00:27:44 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+}

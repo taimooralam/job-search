@@ -1,0 +1,45 @@
+{
+  "curated_files": {
+    "roles": [
+      "data/master-cv/roles/01_seven_one_entertainment.md",
+      "data/master-cv/roles/02_samdock_daypaio.md",
+      "data/master-cv/roles/03_ki_labs.md",
+      "data/master-cv/roles/04_fortis.md",
+      "data/master-cv/roles/05_osram.md",
+      "data/master-cv/roles/06_clary_icon.md"
+    ],
+    "projects": [
+      "data/master-cv/projects/commander4.md",
+      "data/master-cv/projects/lantern.md"
+    ],
+    "project_skills": [
+      "data/master-cv/projects/commander4_skills.json",
+      "data/master-cv/projects/lantern_skills.json"
+    ],
+    "role_metadata": "data/master-cv/role_metadata.json",
+    "role_taxonomy": "data/master-cv/role_skills_taxonomy.json"
+  },
+  "upstream_files": [
+    {
+      "path": "docs/archive/knowledge-base.md",
+      "source_type": "claimable_evidence"
+    },
+    {
+      "path": "docs/current/achievement-review-index.md",
+      "source_type": "supporting_context"
+    },
+    {
+      "path": "docs/current/achievement-review-tracker.yaml",
+      "source_type": "supporting_context"
+    },
+    {
+      "path": "docs/current/cv-generation-guide.md",
+      "source_type": "guidance_only"
+    },
+    {
+      "path": "docs/current/prompt-optimization-plan.md",
+      "source_type": "guidance_only"
+    }
+  ],
+  "representation_source_mode": "proxy"
+}

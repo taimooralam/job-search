@@ -1,0 +1,10 @@
+# Engineering Manager - AI Agents & Platform
+
+**Company:** HOWRECRUIT
+**Location:** 
+**Score:** 42 (Tier D)
+**Status:** N/A
+
+---
+
+Engineering Manager - Agents€135000 - €160000 + equityRemoteThis is not a traditional Engineering Manager role.If you don’t actively use AI tools to build, test and ship software, this won’tbe a fit.If you do....keep reading.We’re leading the search for an Engineering Manager for a fast-growing AI-nativecompany building production-grade AI agents used by real customers, at realscale.This role sits at the intersection of engineering, AI systems, and customeroutcomes.You’ll lead engineers, but you’ll also build, deploy, and own what ships.What makes this differentYou will: * Lead teams building and deploying AI agents in production * Own customer outcomes (automation rates, reliability, quality) * Make architectural calls across agents, workflows, integrations and evals * Turn real-world deployment learnings into platform improvements * Work directly with customers, product and leadershipYou’ll still write code (perhaps with the help of Claude code/Cursor)You’ll still review PRs.You’ll still ship.AI skills are a requirementYou don’t need to be an AI researcher, but you do need or want to be AI-native.Ideally you would: * Be comfortable building with modern AI tooling (Claude Code, LLMs, agents) * Use AI as part of your daily development workflow * Understand how agents behave in production (evals, failure modes, reliability)You’ll thrive there if you * Are deeply technical and outcome-driven * Enjoy ambiguity and ownership * Think like a founder, not a caretaker * Care more about impact than processWhy do people enjoy this role * Real ownership, real impact * AI at the core, not a side project * Small, elite team * Competitive salary + equity * Fully remote (UK/EU)Interested...? Click apply or ping me a connection request...or both!Show more Show less

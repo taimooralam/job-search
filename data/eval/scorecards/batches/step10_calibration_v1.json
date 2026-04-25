@@ -1,0 +1,210 @@
+{
+  "batch_id": "step10_calibration_v1",
+  "description": "Step 10 calibration: existing cv_review'd CVs scored with current Step 9 rubric. Compares rubric verdicts vs historical reviewer verdicts on the same CV/JD pairs.",
+  "pairs": [
+    {
+      "category_id": "ai_architect_global",
+      "job_id": "696ff4cb3da7d438ae4f5f49",
+      "jd_path": "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md",
+      "cv_path": "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Agentic AI Solutions Architect",
+        "company": "INTEGRITI GLOBAL",
+        "location": "",
+        "score": 92,
+        "status": "discarded"
+      },
+      "selection_notes": "cv_review=NEEDS_WORK; jd_source=raw; first_imp=6; would_interview=False",
+      "output_subdir": "calibration_v1/ai_architect_global"
+    },
+    {
+      "category_id": "ai_architect_global",
+      "job_id": "697b5d457d41dc1e8a16b99f",
+      "jd_path": "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md",
+      "cv_path": "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Solution Architect - Generative AI and Post-Training, Solution Architect -",
+        "company": "NVIDIA",
+        "location": "",
+        "score": 92,
+        "status": "discarded"
+      },
+      "selection_notes": "cv_review=WEAK_MATCH; jd_source=raw; first_imp=3; would_interview=False",
+      "output_subdir": "calibration_v1/ai_architect_global"
+    },
+    {
+      "category_id": "ai_architect_global",
+      "job_id": "697dd6287d41dc1e8a2136c9",
+      "jd_path": "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md",
+      "cv_path": "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "AI Solution Architect",
+        "company": "TUI",
+        "location": "",
+        "score": 92,
+        "status": "discarded"
+      },
+      "selection_notes": "cv_review=NEEDS_WORK; jd_source=raw; first_imp=6; would_interview=False",
+      "output_subdir": "calibration_v1/ai_architect_global"
+    },
+    {
+      "category_id": "ai_architect_eea",
+      "job_id": "6983466f7d41dc1e8a3a5101",
+      "jd_path": "data/eval/calibration/jds/6983466f7d41dc1e8a3a5101.md",
+      "cv_path": "data/eval/calibration/cvs/6983466f7d41dc1e8a3a5101.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Enterprise & Agentic AI - AI Solutions Architect",
+        "company": "YOURSOFT ALTERNATIVE",
+        "location": "Romania",
+        "score": 92,
+        "status": "discarded"
+      },
+      "selection_notes": "cv_review=NEEDS_WORK; jd_source=raw; first_imp=5; would_interview=False",
+      "output_subdir": "calibration_v1/ai_architect_eea"
+    },
+    {
+      "category_id": "senior_ai_engineer_eea",
+      "job_id": "69da851a12725d71479184bf",
+      "jd_path": "data/eval/calibration/jds/69da851a12725d71479184bf.md",
+      "cv_path": "data/eval/calibration/cvs/69da851a12725d71479184bf.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Senior GenAI Solutions Engineer",
+        "company": "NEBIRU",
+        "location": "Brussels Region, Belgium",
+        "score": 32,
+        "status": "under processing"
+      },
+      "selection_notes": "cv_review=WEAK_MATCH; jd_source=reconstructed; first_imp=3; would_interview=False",
+      "output_subdir": "calibration_v1/senior_ai_engineer_eea"
+    },
+    {
+      "category_id": "head_of_ai_global",
+      "job_id": "69da8c2212725d714791b034",
+      "jd_path": "data/eval/calibration/jds/69da8c2212725d714791b034.md",
+      "cv_path": "data/eval/calibration/cvs/69da8c2212725d714791b034.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Data & AI Director",
+        "company": "Confidential",
+        "location": "Doha, Qatar",
+        "score": 75,
+        "status": "under processing"
+      },
+      "selection_notes": "cv_review=NEEDS_WORK; jd_source=reconstructed; first_imp=6; would_interview=False",
+      "output_subdir": "calibration_v1/head_of_ai_global"
+    },
+    {
+      "category_id": "senior_ai_engineer_eea",
+      "job_id": "69da8c2212725d714791b040",
+      "jd_path": "data/eval/calibration/jds/69da8c2212725d714791b040.md",
+      "cv_path": "data/eval/calibration/cvs/69da8c2212725d714791b040.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Senior AI Product Engineer",
+        "company": "FromHereOn",
+        "location": "Sydney, New South Wales, Australia",
+        "score": 37,
+        "status": "under processing"
+      },
+      "selection_notes": "cv_review=WEAK_MATCH; jd_source=reconstructed; first_imp=3; would_interview=False",
+      "output_subdir": "calibration_v1/senior_ai_engineer_eea"
+    },
+    {
+      "category_id": "tech_lead_ai_eea",
+      "job_id": "69da932a12725d714791dc6e",
+      "jd_path": "data/eval/calibration/jds/69da932a12725d714791dc6e.md",
+      "cv_path": "data/eval/calibration/cvs/69da932a12725d714791dc6e.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Lead Product Designer - Agentic AI",
+        "company": "Pigment",
+        "location": "Paris, \u00cele-de-France, France",
+        "score": 68,
+        "status": "under processing"
+      },
+      "selection_notes": "cv_review=WEAK_MATCH; jd_source=reconstructed; first_imp=2; would_interview=False",
+      "output_subdir": "calibration_v1/tech_lead_ai_eea"
+    },
+    {
+      "category_id": "head_of_ai_eea",
+      "job_id": "69da9a3212725d714792097c",
+      "jd_path": "data/eval/calibration/jds/69da9a3212725d714792097c.md",
+      "cv_path": "data/eval/calibration/cvs/69da9a3212725d714792097c.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Associate Director in Data Science, Digital Health Analytics and Innovation (all genders)",
+        "company": "Merck Healthcare",
+        "location": "Darmstadt, Hesse, Germany",
+        "score": 49,
+        "status": "under processing"
+      },
+      "selection_notes": "cv_review=WEAK_MATCH; jd_source=reconstructed; first_imp=3; would_interview=False",
+      "output_subdir": "calibration_v1/head_of_ai_eea"
+    },
+    {
+      "category_id": "tech_lead_ai_eea",
+      "job_id": "69daa84612725d7147924d49",
+      "jd_path": "data/eval/calibration/jds/69daa84612725d7147924d49.md",
+      "cv_path": "data/eval/calibration/cvs/69daa84612725d7147924d49.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Lead AI Engineer",
+        "company": "Kainos",
+        "location": "The Home, United Kingdom",
+        "score": 76,
+        "status": "applied"
+      },
+      "selection_notes": "cv_review=NEEDS_WORK; jd_source=reconstructed; first_imp=6; would_interview=False",
+      "output_subdir": "calibration_v1/tech_lead_ai_eea"
+    },
+    {
+      "category_id": "ai_architect_eea",
+      "job_id": "69dab65312725d714792968d",
+      "jd_path": "data/eval/calibration/jds/69dab65312725d714792968d.md",
+      "cv_path": "data/eval/calibration/cvs/69dab65312725d714792968d.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "AI Architect",
+        "company": "Paradigma Digital",
+        "location": "Madrid, Community of Madrid, Spain",
+        "score": 44,
+        "status": "discarded"
+      },
+      "selection_notes": "cv_review=NEEDS_WORK; jd_source=reconstructed; first_imp=4; would_interview=False",
+      "output_subdir": "calibration_v1/ai_architect_eea"
+    },
+    {
+      "category_id": "ai_eng_manager_eea",
+      "job_id": "69dab65312725d7147929691",
+      "jd_path": "data/eval/calibration/jds/69dab65312725d7147929691.md",
+      "cv_path": "data/eval/calibration/cvs/69dab65312725d7147929691.md",
+      "cv_source": "historical_cv_review",
+      "skip_jd_resolution": true,
+      "raw_job_meta": {
+        "title": "Sr. Manager Data & AI Tech AI/ML",
+        "company": "dsm-firmenich",
+        "location": "Greater Barcelona Metropolitan Area",
+        "score": 36,
+        "status": "under processing"
+      },
+      "selection_notes": "cv_review=WEAK_MATCH; jd_source=reconstructed; first_imp=4; would_interview=False",
+      "output_subdir": "calibration_v1/ai_eng_manager_eea"
+    }
+  ]
+}

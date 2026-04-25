@@ -1,0 +1,209 @@
+{
+  "pending_curation_signals": [
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+      "why_relevant": "Matches category signals with overlap score 30.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:7"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+      "why_relevant": "Matches category signals with overlap score 27.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "DAYPAIO GmbH \u2014 Senior Software Engineer Full Stack - Tech Lead",
+      "why_relevant": "Matches category signals with overlap score 26.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:734"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+      "why_relevant": "Matches category signals with overlap score 25.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+      "why_relevant": "Matches category signals with overlap score 23.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:98"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+      "why_relevant": "Matches category signals with overlap score 23.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:181"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_11 \u2014 Hiring & Team Building",
+      "why_relevant": "Matches category signals with overlap score 6.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:418"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Samdock/Daypaio (Mid-Senior) - 8 achievements",
+      "why_relevant": "Matches category signals with overlap score 6.",
+      "source_refs": [
+        "docs/current/achievement-review-index.md:136"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_13 \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "why_relevant": "Matches category signals with overlap score 5.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:1051"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_14 \u2014 Risk Management & Strategic Communication",
+      "why_relevant": "Matches category signals with overlap score 5.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:548"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    }
+  ],
+  "ambiguous_signals": [
+    {
+      "signal": "01_seven_one_entertainment_11 \u2014 Hiring & Team Building",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:418"
+      ]
+    },
+    {
+      "signal": "Samdock/Daypaio (Mid-Senior) - 8 achievements",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-index.md:136"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_13 \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:1051"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_14 \u2014 Risk Management & Strategic Communication",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:548"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_4 \u2014 DDD & Engineering Excellence Standards",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:1077"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_7 \u2014 Scalability & Performance Optimization",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:786"
+      ]
+    }
+  ],
+  "guidance_only_items": [
+    {
+      "signal": "1.3 Role-Framing Strategy",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:114"
+      ]
+    },
+    {
+      "signal": "6.1 IC Track (Staff/Principal Engineer)",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:660"
+      ]
+    },
+    {
+      "signal": "1.1 Why Divide-and-Conquer?",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:76"
+      ]
+    },
+    {
+      "signal": "1.4 ATS Optimization Approach",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:129"
+      ]
+    },
+    {
+      "signal": "6.2 Engineering Manager",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:684"
+      ]
+    }
+  ],
+  "upstream_risks": [
+    "Do not promote planning or rubric language into the curated store unless it references actual candidate work.",
+    "Treat achievement-review tracker items as prioritization hints, not verified claims by themselves."
+  ]
+}

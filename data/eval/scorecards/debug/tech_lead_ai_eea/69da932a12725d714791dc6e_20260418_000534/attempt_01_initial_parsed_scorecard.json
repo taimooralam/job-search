@@ -1,0 +1,88 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "tech_lead_ai_eea",
+  "job_id": "69da932a12725d714791dc6e",
+  "dimension_scores": {
+    "ats_optimization": 5.0,
+    "impact_clarity": 7.0,
+    "jd_alignment": 2.0,
+    "executive_presence": 6.0,
+    "anti_hallucination": 3.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": false,
+    "persona_fit_gate": false
+  },
+  "overall_score": 4.6,
+  "verdict": "WEAK_MATCH",
+  "top_strengths": [
+    "Strong quantified impact metrics across multiple roles including 75% incident reduction and 10x scaling refs=cv:12,cv:13",
+    "Production AI/LLM integration evidenced through Commander-4 hybrid retrieval pipeline with BM25, RRF fusion, and evaluation harness refs=cv:23,cv:24,cv:25",
+    "Solid mentoring track record with 10+ engineers coached and 3 promoted to lead positions refs=cv:15",
+    "Event-driven microservices architecture and CQRS expertise demonstrated across multiple roles refs=cv:12,cv:40,cv:41"
+  ],
+  "top_failures": [
+    "Fundamental skill mismatch: JD requires Product Designer with UI/UX portfolio but CV shows Software Engineer/Technical Lead refs=jd:18,jd:20,cv:31,cv:35",
+    "CV headline claims Lead Product Designer title never held in work history - clear title fabrication refs=cv:3,cv:31,cv:35,cv:45",
+    "No product design, UX research, UI design, or design portfolio evidence despite JD requiring 8+ years design experience refs=jd:18,jd:22",
+    "Zero React mentioned despite JD explicitly requiring React expertise refs=jd:23,jd:43"
+  ],
+  "unsupported_claims": [
+    "Lead Product Designer title in headline not supported by any role in work history refs=cv:3,cv:31,cv:35,cv:45,cv:54,cv:62,cv:72",
+    "AI Architect self-designation inflates Technical Lead actual scope refs=cv:3,cv:31"
+  ],
+  "missing_must_haves": [
+    "Product design experience (8+ years required by JD) refs=jd:18",
+    "Agentic AI design experience (explicitly required) refs=jd:19",
+    "UI/UX design portfolio refs=jd:20",
+    "React expertise refs=jd:23,jd:43",
+    "Design leadership and mentoring designers refs=jd:24,jd:12"
+  ],
+  "persona_fit_notes": [
+    "Headline frames as Lead Product Designer but CV demonstrates Technical Lead/Backend Engineer persona refs=cv:3,cv:31",
+    "Engineering-focused career trajectory incompatible with design leadership JD requirements refs=jd:84,cv:29",
+    "No design methodologies, user research, or usability testing experience despite JD requirements refs=jd:7,jd:10"
+  ],
+  "representation_gap_hits": [
+    "JD is Product Designer role but rubric applied is tech_lead_ai_eea creating fundamental evaluation mismatch refs=jd:1"
+  ],
+  "curation_gap_hits": [],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:3",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:12",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:13",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:15",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:23",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:24",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:25",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:31",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:35",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:40",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:41",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:45",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:54",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:62",
+    "data/eval/calibration/cvs/69da932a12725d714791dc6e.md:72",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:1",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:7",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:10",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:12",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:18",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:19",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:20",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:22",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:23",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:24",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:43",
+    "data/eval/calibration/jds/69da932a12725d714791dc6e.md:84"
+  ],
+  "meta": {
+    "generated_at": "2026-04-18T12:00:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/tech_lead_ai_eea_rubric.json",
+    "blueprint_path": "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+    "baseline_path": "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+  }
+}

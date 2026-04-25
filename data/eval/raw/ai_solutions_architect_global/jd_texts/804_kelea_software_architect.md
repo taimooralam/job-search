@@ -1,0 +1,10 @@
+# Software Architect
+
+**Company:** KELEA
+**Location:** 
+**Score:** 85 (Tier C)
+**Status:** N/A
+
+---
+
+👋🏼 ¡Hola Arquitecto de SW!¿Te apetece un reto donde puedas programar mucho, tomar decisiones dearquitectura de verdad y además estar cerca de datos e IA (de la parte que llegaa producción, no solo la teoría)?Lo que harásSerás una pieza clave para construir y evolucionar servicios que habilitanproductos de datos e IA. Diseñarás y desarrollarás servicios backend, definiendoy evolucionando la arquitectura para asegurar escalabilidad, calidad, seguridady observabilidad; además, colaborarás con el equipo de Datos/IA para llevarcasos de uso a producción e impulsarás buenas prácticas de ingeniería.Requisitos:Lo que buscamos de ti * Experiencia sólida como Software Architect con foco backend y responsabilidad técnica real. * Experiencia en desarrollo de modelos con Python. * Diseño de arquitectura en entornos reales: diseño de componentes, integraciones, decisiones tecnológicas, machine learning. * Cultura de ingeniería: testing (unit/integration), automatización, calidad, revisión de código. Suma puntos * Inquietud/experiencia en IA aplicada: integración de modelos, servicios de inferencia, MLOps, o IA generativa (p.ej., RAG, vector DB, evaluaciones). * Experiencia con Cloud (AWS/GCP/Azure) y prácticas modernas. * Mensajería y event-driven. * Experiencia con arquitecturas de datos: exposición de datasets, servicios sobre datos, integración con plataformas analíticas. ¿Por qué unirte a Kelea?Participarás en proyectos donde la forma de trabajar importa tanto como elresultado.Un entorno que fomenta la colaboración, la transparencia y la experimentación.Flexibilidad y confianza: sabemos que el foco está en el valor entregado, no enel control horario.Si te apasiona crear impacto a través de la tecnología y los datos, aquíencontrarás tu lugar.Y por último... descubre los los BENEFICIOS que tendrás en Kelea¿Te apetece conocernos?Show more Show less

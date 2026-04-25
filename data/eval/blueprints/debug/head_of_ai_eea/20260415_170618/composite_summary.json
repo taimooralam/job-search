@@ -1,0 +1,541 @@
+{
+  "signal_strength": {
+    "applied_count": 2,
+    "avg_score": 52.5,
+    "median_score": 82,
+    "score_range": [
+      0,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "senior_engineer": 18,
+      "other": 6,
+      "ai_architect": 4,
+      "engineering_manager": 4,
+      "solutions_architect": 4
+    },
+    "top_title_variants": {
+      "Senior Software Engineer": 5,
+      "Senior Software Engineer, Frontend": 2,
+      "AI Engineer": 1,
+      "Engineering Manager": 1,
+      "Enterprise Architect": 1,
+      "Senior MCP Software Engineer": 1,
+      "Senior Software Engineer (Angular)": 1,
+      "Senior Software Engineer (Data-Focused)": 1
+    },
+    "noisy_title_mode": true
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 33,
+      "manager": 3,
+      "director": 2
+    },
+    "role_scope_distribution": {
+      "ic": 22,
+      "player_coach": 12,
+      "director": 2,
+      "manager": 2
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 2,
+      "total": 38,
+      "pct": 5.3
+    },
+    "performance_management": {
+      "count": 3,
+      "total": 38,
+      "pct": 7.9
+    },
+    "org_building": {
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 38,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 94.7,
+    "greenfield_split": {
+      "both": 20,
+      "greenfield": 2,
+      "optimization": 4
+    },
+    "cloud_preference": {
+      "AWS": 9,
+      "multi_cloud": 9,
+      "Azure": 3,
+      "GCP": 2
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 13,
+      "total": 38,
+      "pct": 34.2
+    },
+    {
+      "label": "aws",
+      "count": 9,
+      "total": 38,
+      "pct": 23.7
+    },
+    {
+      "label": "kubernetes",
+      "count": 9,
+      "total": 38,
+      "pct": 23.7
+    },
+    {
+      "label": "docker",
+      "count": 8,
+      "total": 38,
+      "pct": 21.1
+    },
+    {
+      "label": "java",
+      "count": 8,
+      "total": 38,
+      "pct": 21.1
+    },
+    {
+      "label": "microservices",
+      "count": 8,
+      "total": 38,
+      "pct": 21.1
+    },
+    {
+      "label": "cloud technologies",
+      "count": 6,
+      "total": 38,
+      "pct": 15.8
+    },
+    {
+      "label": "observability",
+      "count": 6,
+      "total": 38,
+      "pct": 15.8
+    },
+    {
+      "label": "php",
+      "count": 5,
+      "total": 38,
+      "pct": 13.2
+    },
+    {
+      "label": "terraform",
+      "count": 5,
+      "total": 38,
+      "pct": 13.2
+    },
+    {
+      "label": "automated testing",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    },
+    {
+      "label": "azure",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    },
+    {
+      "label": "ci / cd pipelines",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    },
+    {
+      "label": "design patterns",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    },
+    {
+      "label": "evaluation frameworks",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 31,
+      "total": 38,
+      "pct": 81.6
+    },
+    {
+      "label": "communication",
+      "count": 26,
+      "total": 38,
+      "pct": 68.4
+    },
+    {
+      "label": "mentoring",
+      "count": 18,
+      "total": 38,
+      "pct": 47.4
+    },
+    {
+      "label": "ownership",
+      "count": 8,
+      "total": 38,
+      "pct": 21.1
+    },
+    {
+      "label": "stakeholder management",
+      "count": 7,
+      "total": 38,
+      "pct": 18.4
+    },
+    {
+      "label": "problem-solving",
+      "count": 6,
+      "total": 38,
+      "pct": 15.8
+    },
+    {
+      "label": "continuous learning",
+      "count": 5,
+      "total": 38,
+      "pct": 13.2
+    },
+    {
+      "label": "technical leadership",
+      "count": 5,
+      "total": 38,
+      "pct": 13.2
+    },
+    {
+      "label": "cross-functional collaboration",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    },
+    {
+      "label": "leadership",
+      "count": 4,
+      "total": 38,
+      "pct": 10.5
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 14,
+        "total": 38,
+        "pct": 36.8
+      },
+      {
+        "label": "java",
+        "count": 8,
+        "total": 38,
+        "pct": 21.1
+      },
+      {
+        "label": "php",
+        "count": 4,
+        "total": 38,
+        "pct": 10.5
+      },
+      {
+        "label": "typescript",
+        "count": 3,
+        "total": 38,
+        "pct": 7.9
+      },
+      {
+        "label": "go",
+        "count": 2,
+        "total": 38,
+        "pct": 5.3
+      },
+      {
+        "label": "golang",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      }
+    ],
+    "preferred": [
+      {
+        "label": "python",
+        "count": 6,
+        "total": 38,
+        "pct": 15.8
+      },
+      {
+        "label": "go",
+        "count": 3,
+        "total": 38,
+        "pct": 7.9
+      },
+      {
+        "label": "typescript",
+        "count": 2,
+        "total": 38,
+        "pct": 5.3
+      },
+      {
+        "label": "bash",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "c",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "golang",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 5,
+        "total": 38,
+        "pct": 13.2
+      },
+      "agents_orchestration": {
+        "count": 5,
+        "total": 38,
+        "pct": 13.2
+      },
+      "fine_tuning": {
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      "evaluation_quality": {
+        "count": 8,
+        "total": 38,
+        "pct": 21.1
+      },
+      "guardrails_governance": {
+        "count": 5,
+        "total": 38,
+        "pct": 13.2
+      },
+      "prompt_engineering": {
+        "count": 2,
+        "total": 38,
+        "pct": 5.3
+      },
+      "vector_search": {
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      "model_serving_routing": {
+        "count": 0,
+        "total": 38,
+        "pct": 0.0
+      }
+    },
+    "frameworks": [
+      {
+        "label": "langchain",
+        "count": 2,
+        "total": 38,
+        "pct": 5.3
+      },
+      {
+        "label": "langgraph",
+        "count": 2,
+        "total": 38,
+        "pct": 5.3
+      },
+      {
+        "label": "tensorflow",
+        "count": 2,
+        "total": 38,
+        "pct": 5.3
+      },
+      {
+        "label": "fastapi",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "fastmcp",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "hugging face transformers",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "pytorch",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "voiceflow",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      }
+    ],
+    "observability": [
+      {
+        "label": "datadog",
+        "count": 3,
+        "total": 38,
+        "pct": 7.9
+      },
+      {
+        "label": "grafana",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "langfuse",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      },
+      {
+        "label": "prometheus",
+        "count": 1,
+        "total": 38,
+        "pct": 2.6
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "data privacy",
+      "count": 2,
+      "total": 38,
+      "pct": 5.3
+    },
+    {
+      "label": "gdpr",
+      "count": 2,
+      "total": 38,
+      "pct": 5.3
+    },
+    {
+      "label": "pci",
+      "count": 2,
+      "total": 38,
+      "pct": 5.3
+    },
+    {
+      "label": "bias mitigation",
+      "count": 1,
+      "total": 38,
+      "pct": 2.6
+    },
+    {
+      "label": "compliance",
+      "count": 1,
+      "total": 38,
+      "pct": 2.6
+    },
+    {
+      "label": "data governance",
+      "count": 1,
+      "total": 38,
+      "pct": 2.6
+    },
+    {
+      "label": "ethical ai",
+      "count": 1,
+      "total": 38,
+      "pct": 2.6
+    },
+    {
+      "label": "fda part 11",
+      "count": 1,
+      "total": 38,
+      "pct": 2.6
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "integrate with global partner apis",
+      "count": 2
+    },
+    {
+      "pain_point": "eliminate obstacles for a remote engineering team",
+      "count": 1
+    },
+    {
+      "pain_point": "improve performance, quality, and communication across departments",
+      "count": 1
+    },
+    {
+      "pain_point": "increase team productivity through process optimization, automation, and efficiency improvements",
+      "count": 1
+    },
+    {
+      "pain_point": "deliver value quickly in a high-growth global environment",
+      "count": 1
+    },
+    {
+      "pain_point": "backlogs expand",
+      "count": 1
+    },
+    {
+      "pain_point": "cycle times stretch across weeks",
+      "count": 1
+    },
+    {
+      "pain_point": "code review devolves into perfunctory approval",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "consulting": 5,
+      "enterprise_saas": 4,
+      "cybersecurity": 3,
+      "fintech": 3,
+      "healthcare": 2
+    },
+    "company_stage": {
+      "enterprise": 7,
+      "consultancy": 3,
+      "scaleup": 3
+    },
+    "collaboration_model": {
+      "remote_first": 19,
+      "hybrid": 3,
+      "distributed": 2
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 10.5
+  }
+}

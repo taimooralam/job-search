@@ -1,0 +1,630 @@
+{
+  "meta": {
+    "category_id": "head_of_ai_eea",
+    "category_name": "Head of AI \u2014 EEA",
+    "macro_family": "ai_leadership",
+    "priority": "primary_target",
+    "confidence": "high",
+    "rubric_version": "2026-04-17"
+  },
+  "rubric_identity": {
+    "one_sentence_purpose": "Evaluate candidate CVs for architecture-heavy, production-focused AI platform roles where senior IC or player-coach scope dominates and delivery, reliability, evaluation, and stakeholder translation matter more than formal org leadership.",
+    "core_persona": "Architect-first player-coach who turns AI concepts into production architecture, integration patterns, and reliable delivery while mentoring and translating across teams without overstating org ownership.",
+    "job_overlay_notes": [
+      "Despite the 'Head of AI' label, this market behaves like Principal/Lead AI Architect roles with senior IC scope in 86.8% of positions.",
+      "Platform design is near-universal at 94.7%, while hiring is only 5.3% and budget/P&L is 0%.",
+      "Adjust for company-specific stack emphasis but do not overfit to any single technology since no hard skill exceeds 36.8% prevalence.",
+      "Remote-first positions represent 50% of the market, so distributed delivery credibility matters.",
+      "Research framing is a minority signal at 10.5%; PhD requirement is 0%."
+    ],
+    "citations": [
+      "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+      "data/eval/baselines/head_of_ai_eea_baseline.json"
+    ]
+  },
+  "dimension_rubrics": [
+    {
+      "dimension": "ats_optimization",
+      "weight": 20,
+      "category_core": {
+        "what_good_looks_like": [
+          "Strongest 4-6 keywords appear 2-3 times across headline, profile, experience, and skills sections.",
+          "Architecture-forward terminology: platform architecture, system design, enterprise architecture, scalability, microservices.",
+          "Production AI quality terms: evaluation, reliability, observability, guardrails, governance.",
+          "Applied AI integration terms: RAG, workflow orchestration, agents, retrieval when true to experience.",
+          "Soft-skill keywords aligned to category: collaboration, communication, stakeholder alignment, mentoring."
+        ],
+        "common_failures": [
+          "Keyword stuffing with technologies not evidenced in the candidate record.",
+          "Missing architecture and platform design terminology despite being 94.7% prevalence signals.",
+          "Over-indexing on a single stack when no technology exceeds 36.8% category prevalence.",
+          "Using executive AI titles when the role scope is senior IC or player-coach.",
+          "Omitting production AI quality terms like evaluation, reliability, and guardrails."
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Match cloud provider terminology to JD requirements: AWS 23.7%, Azure 10.5%, multi-cloud 23.7%.",
+          "Adjust container and orchestration terms based on JD: Kubernetes 23.7%, Docker 21.1%.",
+          "Surface domain-specific compliance terms only when JD explicitly requires them.",
+          "Mirror JD language on AI methods like RAG, agents, or evaluation frameworks when evidenced."
+        ],
+        "company_domain_overrides": [
+          "Consulting roles (13.2%): emphasize stakeholder translation, partner API integration, enterprise systems.",
+          "Enterprise SaaS (10.5%): emphasize scalability, multi-tenant architecture, integration patterns.",
+          "Cybersecurity (7.9%): surface guardrails, policy controls, and auditability when evidenced.",
+          "Fintech (7.9%): include reliability, observability, and any relevant compliance evidence."
+        ],
+        "region_overrides": [
+          "EEA remote-first positions (50%): include distributed delivery and cross-timezone collaboration signals.",
+          "Do not claim broad EEA governance authority without explicit documented ownership.",
+          "GDPR and data privacy terms appear only 5.3% each; use only when directly evidenced."
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "All category table-stakes keywords present with appropriate frequency: architecture, platform design, reliability, collaboration.",
+          "Differentiator keywords strategically placed: evaluation, guardrails, mentoring, delivery.",
+          "Stack terms precisely match evidenced experience and JD requirements.",
+          "No keyword inflation or unsupported technology claims.",
+          "Headline and profile are architecture-forward with production AI platform emphasis."
+        ],
+        "7_8": [
+          "Most category keywords present but frequency or placement could be optimized.",
+          "Architecture and delivery terminology is strong but AI quality terms are underweighted.",
+          "Stack alignment is good but misses 1-2 JD-specific technologies that are evidenced.",
+          "Minor gaps in soft-skill keyword coverage."
+        ],
+        "5_6": [
+          "Core architecture keywords present but production AI quality terms are sparse.",
+          "Keyword placement is inconsistent across sections.",
+          "Some stack terms appear without clear evidence support.",
+          "Missing collaboration or stakeholder alignment terminology."
+        ],
+        "0_4": [
+          "Missing fundamental category keywords like architecture, platform design, or delivery.",
+          "Significant keyword stuffing with unevidenced technologies.",
+          "Executive AI titles used without supporting scope evidence.",
+          "No production AI quality terminology despite being category differentiators."
+        ]
+      },
+      "red_flags": [
+        "Claiming Head of AI, VP of AI, or Chief AI Officer titles without executive scope evidence.",
+        "Keyword stuffing with frontier AI terms like RLHF, custom LLM training without evidence.",
+        "Missing architecture and platform design terms in a 94.7% prevalence category.",
+        "Using research-heavy framing when research roles are only 10.5% of the market.",
+        "Inflating compliance keywords beyond documented GDPR/TCF or policy control experience."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "impact_clarity",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Architecture achievements quantified with systems launched, adoption metrics, latency, throughput, uptime.",
+          "Reliability proof includes incident rate reduction, MTTR, SLO attainment, error budget metrics.",
+          "Evaluation and guardrails achievements show quality score improvement, error reduction, acceptance rates.",
+          "Delivery acceleration metrics: cycle time, lead time, PR turnaround, automation coverage.",
+          "Integration outcomes: partner onboarding time, failure rate reduction, customer adoption.",
+          "Mentoring impact quantified: engineers coached, promotions influenced, design review improvements."
+        ],
+        "common_failures": [
+          "Vague architecture claims without delivery or scale outcomes.",
+          "Reliability work described without operational metrics.",
+          "AI platform achievements missing evaluation or quality control metrics.",
+          "Mentoring described without measurable team impact.",
+          "Integration work lacking throughput or adoption numbers.",
+          "Using relative improvements without baselines or absolute figures."
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Scale metrics to company stage: startup adoption rates vs enterprise tenant counts.",
+          "Emphasize reliability metrics when JD mentions production readiness or operational excellence.",
+          "Foreground evaluation metrics when JD emphasizes AI quality or trustworthy outputs.",
+          "Highlight delivery speed metrics when JD mentions fast iteration or time-to-market."
+        ],
+        "company_domain_overrides": [
+          "Consulting: emphasize client delivery timelines, integration success rates, stakeholder satisfaction.",
+          "Enterprise SaaS: focus on scalability metrics, multi-tenant performance, uptime guarantees.",
+          "Cybersecurity: prioritize guardrail effectiveness, policy violation rates, audit compliance.",
+          "Fintech: emphasize reliability, latency, and regulatory compliance metrics."
+        ],
+        "region_overrides": [
+          "Remote-first (50%): include distributed team delivery metrics, cross-timezone collaboration outcomes.",
+          "EEA compliance: quantify GDPR or privacy compliance outcomes only when directly documented."
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every major achievement includes specific, verifiable metrics.",
+          "Architecture proof shows both delivery and scale outcomes with concrete numbers.",
+          "Reliability achievements include operational metrics: incident reduction, uptime, MTTR.",
+          "AI platform work quantifies evaluation improvements, guardrail effectiveness, adoption.",
+          "Mentoring impact is measurable: promotions, team velocity improvement, quality gains.",
+          "Metrics are appropriately scoped to evidenced responsibilities."
+        ],
+        "7_8": [
+          "Most achievements include metrics but 1-2 key areas lack quantification.",
+          "Architecture and delivery metrics are strong but AI quality metrics are weaker.",
+          "Some metrics use relative improvements without clear baselines.",
+          "Mentoring or leadership impact is described but not fully quantified."
+        ],
+        "5_6": [
+          "Mix of quantified and vague achievements.",
+          "Key category signals like architecture or reliability lack concrete metrics.",
+          "AI platform work is described functionally without quality or adoption outcomes.",
+          "Metrics present but not clearly tied to candidate's direct contribution."
+        ],
+        "0_4": [
+          "Achievements lack meaningful quantification.",
+          "Generic descriptions of architecture or platform work without outcomes.",
+          "Metrics appear inflated or inconsistent with role scope.",
+          "No operational, delivery, or quality metrics despite category requirements."
+        ]
+      },
+      "red_flags": [
+        "Metrics that exceed plausible scope for the role or company size.",
+        "Claiming team-wide or org-wide outcomes without evidence of ownership.",
+        "Inconsistent metrics across similar achievements.",
+        "Business outcome metrics (revenue, P&L) when role scope is senior IC or player-coach.",
+        "Publication or research metrics in a delivery-focused category."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md"
+      ]
+    },
+    {
+      "dimension": "jd_alignment",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Architecture ownership is clearly demonstrated as the primary category signal at 94.7%.",
+          "Production AI platform work includes delivery, reliability, evaluation, and governance evidence.",
+          "Technical depth shows hands-on engineering credibility without overfitting to one language.",
+          "Cross-functional collaboration and communication are prominent as 81.6% and 68.4% signals.",
+          "Mentoring and technical leadership present without overstating people management.",
+          "Greenfield plus optimization experience shows breadth at 52.6% category prevalence."
+        ],
+        "common_failures": [
+          "Missing architecture proof despite being a 94.7% category requirement.",
+          "Framing as pure research or model science in a production-delivery category.",
+          "Claiming executive org leadership when evidence supports player-coach scope.",
+          "Over-emphasizing one technology stack when the category is stack-agnostic.",
+          "Missing reliability or observability evidence despite 81% category weighting.",
+          "No evaluation or guardrails evidence despite being category differentiators."
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Weight architecture vs hands-on coding based on JD emphasis on design vs implementation.",
+          "Adjust AI method depth: RAG, agents, orchestration based on JD-specific requirements.",
+          "Match cloud and container stack to JD requirements when evidenced.",
+          "Emphasize enterprise integration when JD mentions partner APIs or system connectivity.",
+          "Surface domain expertise only when JD explicitly requires it and evidence supports it."
+        ],
+        "company_domain_overrides": [
+          "Consulting (13.2%): foreground stakeholder translation, enterprise integration, partner delivery.",
+          "Enterprise SaaS (10.5%): emphasize multi-tenant architecture, scalability, integration patterns.",
+          "Cybersecurity (7.9%): highlight guardrails, policy controls, security architecture when evidenced.",
+          "Healthcare (5.3%): surface compliance and governance only with direct evidence."
+        ],
+        "region_overrides": [
+          "Remote-first (50%): demonstrate distributed delivery credibility and async collaboration.",
+          "EEA: do not overstate regional compliance authority beyond documented experience.",
+          "Multi-country delivery: show cross-cultural communication when JD emphasizes global teams."
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "All JD must-haves are directly addressed with evidenced achievements.",
+          "Architecture ownership is unmistakably clear with production delivery proof.",
+          "AI platform work includes evaluation, reliability, and governance as appropriate.",
+          "Technical depth matches JD stack requirements without inflation.",
+          "Leadership scope accurately reflects player-coach or architect positioning.",
+          "Domain and region alignment is precise to JD requirements."
+        ],
+        "7_8": [
+          "Most JD requirements addressed but 1-2 areas have weaker coverage.",
+          "Architecture proof is strong but AI quality controls are less prominent.",
+          "Stack alignment is good but misses some JD-specific technologies.",
+          "Leadership framing is appropriate but could be sharper."
+        ],
+        "5_6": [
+          "Core JD requirements partially addressed.",
+          "Architecture evidence exists but is not prominently positioned.",
+          "Mix of aligned and misaligned signals across the CV.",
+          "Some scope inflation or misalignment in leadership framing."
+        ],
+        "0_4": [
+          "Major JD requirements are unaddressed or poorly evidenced.",
+          "Missing architecture proof in a category where it is 94.7% prevalence.",
+          "Significant framing misalignment: research-heavy when delivery is required.",
+          "Executive claims without supporting scope evidence.",
+          "Stack or domain claims that contradict JD requirements."
+        ]
+      },
+      "red_flags": [
+        "Claiming formal people management when JD indicates senior IC or player-coach scope.",
+        "Research or publication framing when JD emphasizes production delivery.",
+        "Missing architecture or platform design evidence for this category.",
+        "Domain expertise claims without supporting evidence.",
+        "Stack claims that contradict or exceed evidenced experience."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "executive_presence",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "Player-coach leadership: combines hands-on technical contribution with team influence.",
+          "Architectural authority: drives design decisions and technical standards across teams.",
+          "Stakeholder translation: communicates technical complexity to business and product partners.",
+          "Mentoring credibility: develops engineers through design review, coaching, and guidance.",
+          "Technical influence: shapes direction without requiring formal reporting lines.",
+          "Risk communication: educates stakeholders on technical debt, tradeoffs, and system health."
+        ],
+        "common_failures": [
+          "Inflating to executive leadership when evidence supports architect or player-coach scope.",
+          "Claiming formal org management without documented reporting lines or hiring authority.",
+          "Missing stakeholder translation evidence despite 81.6% collaboration signal.",
+          "Understating technical leadership when evidence supports architect positioning.",
+          "Using generic leadership language without specific influence examples."
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Increase stakeholder emphasis when JD mentions cross-functional or enterprise alignment.",
+          "Foreground mentoring when JD explicitly mentions team development or coaching.",
+          "Emphasize architectural authority when JD focuses on design leadership or technical vision.",
+          "Include hiring process involvement only when JD mentions team building and evidence supports it."
+        ],
+        "company_domain_overrides": [
+          "Consulting: emphasize client-facing influence and enterprise stakeholder management.",
+          "Enterprise SaaS: highlight cross-team collaboration and platform ownership.",
+          "Startups: show technical leadership breadth without overstating formal hierarchy."
+        ],
+        "region_overrides": [
+          "Remote-first (50%): demonstrate distributed leadership and async decision-making.",
+          "EEA multi-country: show cross-cultural communication when teams span regions."
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Clear player-coach positioning with both technical depth and team influence.",
+          "Stakeholder translation is concrete with specific examples and outcomes.",
+          "Mentoring impact is documented with promotions, skill development, or team growth.",
+          "Architectural authority is evident through design decisions, standards, and technical direction.",
+          "Leadership scope matches evidence without inflation to executive framing."
+        ],
+        "7_8": [
+          "Player-coach elements present but one area (technical or leadership) is stronger.",
+          "Stakeholder translation mentioned but less concretely demonstrated.",
+          "Mentoring evident but impact is less precisely quantified.",
+          "Architectural authority is clear but influence scope could be sharper."
+        ],
+        "5_6": [
+          "Leadership framing is generic without specific player-coach examples.",
+          "Stakeholder translation is implied but not clearly demonstrated.",
+          "Technical or mentoring credibility present but not both.",
+          "Some ambiguity about leadership scope versus formal management."
+        ],
+        "0_4": [
+          "Leadership claims exceed evidenced scope.",
+          "Executive framing used when evidence supports IC or player-coach.",
+          "Missing stakeholder translation despite category requirements.",
+          "No mentoring or technical influence evidence.",
+          "Formal org management claims without documented reporting lines."
+        ]
+      },
+      "red_flags": [
+        "Claiming Head of AI, VP, or Director titles without executive scope evidence.",
+        "Formal people management framing when evidence shows mentoring only.",
+        "Budget or P&L ownership claims when category shows 0% prevalence.",
+        "Org-building claims when hiring is only 5.3% and org_building is 10.5%.",
+        "Unsupported people-management framing that exceeds documented reporting lines.",
+        "Executive boardroom or C-suite language in a player-coach category."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md"
+      ]
+    },
+    {
+      "dimension": "anti_hallucination",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "All metrics are traceable to documented achievements in the master CV.",
+          "Titles match actual positions held; no inflation to executive or research roles.",
+          "AI capabilities are bounded to evidenced work: integration, evaluation, guardrails.",
+          "Technical skills listed are supported by project or role evidence.",
+          "Leadership scope matches documented responsibilities without org-building inflation.",
+          "Domain expertise claims are supported by specific role or project evidence."
+        ],
+        "common_failures": [
+          "Fabricating or inflating metrics beyond documented achievements.",
+          "Using executive titles when evidence supports senior IC or player-coach.",
+          "Claiming custom LLM training, fine-tuning, or RLHF without evidence.",
+          "Overstating compliance or governance authority beyond documented scope.",
+          "Adding PhD or publication credentials that do not exist.",
+          "Claiming formal reporting lines or team sizes without evidence."
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Verify all JD-aligned claims against master CV evidence before including.",
+          "Do not add domain expertise to match JD if not evidenced.",
+          "Do not inflate leadership scope to match JD executive requirements.",
+          "Verify stack claims against documented project and role evidence."
+        ],
+        "company_domain_overrides": [
+          "Do not claim healthcare AI expertise without documented healthcare projects.",
+          "Do not claim fintech regulatory experience without evidenced compliance work.",
+          "Do not overstate cybersecurity credentials beyond documented guardrails work.",
+          "Do not add consulting experience or enterprise scale without evidence."
+        ],
+        "region_overrides": [
+          "Do not claim broad EEA AI governance leadership without documented authority.",
+          "Do not add GDPR expertise beyond documented TCF or privacy compliance work.",
+          "Do not fabricate multi-country leadership scope."
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every claim traces directly to master CV evidence.",
+          "Titles match documented positions exactly.",
+          "Metrics are consistent with role scope and company context.",
+          "AI capabilities bounded to evidenced integration, evaluation, and guardrails work.",
+          "Leadership framing matches documented player-coach or architect scope.",
+          "No unsupported domain, compliance, or technical claims."
+        ],
+        "7_8": [
+          "Nearly all claims are evidenced with minor ambiguities.",
+          "Titles are accurate but framing could imply slightly broader scope.",
+          "Metrics are credible but one or two lack clear provenance.",
+          "AI claims are appropriate but some terminology is slightly forward."
+        ],
+        "5_6": [
+          "Most claims are evidenced but some require inference.",
+          "Title framing is accurate but leadership scope language is ambiguous.",
+          "Some metrics appear plausible but are not directly documented.",
+          "AI or technical claims include some unevidenced capabilities."
+        ],
+        "0_4": [
+          "Multiple claims lack evidence support.",
+          "Title inflation to executive or research roles without evidence.",
+          "Metrics appear fabricated or significantly inflated.",
+          "AI claims include fine-tuning, RLHF, or custom training without evidence.",
+          "Leadership claims include formal org management without documented reports.",
+          "Domain expertise fabricated to match JD requirements."
+        ]
+      },
+      "red_flags": [
+        "Unsourced metrics that cannot be traced to master CV achievements.",
+        "Fabricated titles: Head of AI, VP, Director, Chief AI Officer without evidence.",
+        "PhD or publication inflation in a category with 0% PhD requirement.",
+        "Unsupported scope of direct reports or team sizes.",
+        "Custom LLM training, fine-tuning, or RLHF claims without documentation.",
+        "Full MLOps ownership claims beyond evidenced responsibilities.",
+        "Vector database architecture claims exceeding actual role requirements.",
+        "Mechanistic interpretability or research claims in a delivery-focused category.",
+        "Budget or P&L ownership claims when baseline shows 0% prevalence.",
+        "Broad EEA AI governance claims beyond documented GDPR/TCF work.",
+        "Enterprise AI transformation leader framing without architecture or delivery proof.",
+        "Agentic AI expert claims without shipped orchestration, evaluation, or governance evidence."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json",
+        "data/master-cv/projects/commander4_skills.json",
+        "data/master-cv/projects/lantern_skills.json"
+      ]
+    }
+  ],
+  "gates": {
+    "must_have_coverage_gate": {
+      "pass_criteria": [
+        "Architecture ownership is clearly evidenced as the primary category signal.",
+        "Production AI platform or integration evidence is present.",
+        "Delivery outcomes are quantified with concrete metrics.",
+        "Cross-functional collaboration or stakeholder translation is demonstrated.",
+        "Technical depth is shown through hands-on engineering evidence."
+      ],
+      "fail_conditions": [
+        "No architecture or platform design evidence despite 94.7% category prevalence.",
+        "Missing delivery or production outcome metrics.",
+        "No technical depth evidence; purely management or strategy framing.",
+        "Zero stakeholder translation or collaboration signals.",
+        "Research-only framing without production delivery proof."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json"
+      ]
+    },
+    "unsafe_claim_gate": {
+      "pass_criteria": [
+        "All title claims match documented positions.",
+        "All metrics trace to evidenced achievements.",
+        "AI capabilities are bounded to documented work.",
+        "Leadership scope matches evidenced player-coach or architect positioning.",
+        "Domain and compliance claims are supported by specific evidence."
+      ],
+      "fail_conditions": [
+        "Title inflation to Head of AI, VP, or Director without evidence.",
+        "Metrics that exceed plausible scope for role or company.",
+        "Custom LLM training, fine-tuning, or RLHF claims without documentation.",
+        "Formal org management claims without documented reporting lines.",
+        "Budget or P&L ownership claims in a 0% prevalence category.",
+        "Broad EEA governance authority beyond documented compliance work.",
+        "PhD or publication claims without credentials.",
+        "Enterprise AI transformation claims without architecture or delivery proof."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json",
+        "data/master-cv/projects/commander4_skills.json"
+      ]
+    },
+    "persona_fit_gate": {
+      "pass_criteria": [
+        "Architect-first player-coach positioning is clear.",
+        "Technical depth and leadership influence are balanced appropriately.",
+        "Production delivery emphasis over research or experimental framing.",
+        "Stakeholder translation present without executive business ownership.",
+        "Mentoring credibility without formal people management inflation."
+      ],
+      "fail_conditions": [
+        "Executive or C-suite positioning in a senior IC / player-coach category.",
+        "Research scientist or model owner framing in a delivery-focused market.",
+        "Pure people management framing without technical architecture evidence.",
+        "Business owner or P&L framing when evidence supports technical leadership.",
+        "Strategy-only positioning without hands-on engineering credibility."
+      ],
+      "citations": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json"
+      ]
+    }
+  },
+  "verdict_thresholds": {
+    "strong_match_min": 8.5,
+    "good_match_min": 7.0,
+    "needs_work_min": 5.5,
+    "weak_match_max": 5.49
+  },
+  "scoring_guidance": {
+    "how_to_interpret_executive_presence": "For this architect-first player-coach category, executive_presence measures player-coach AI platform leadership: architectural authority, stakeholder translation, mentoring credibility, and technical influence. Do NOT interpret as literal executive leadership, C-suite presence, boardroom communication, or P&L ownership. Penalize claims of formal org management, budget ownership, or executive titles when evidence supports senior IC or player-coach scope.",
+    "how_to_penalize_unsupported_claims": "Deduct proportionally based on claim severity: fabricated metrics or titles warrant 2-3 point deductions in anti_hallucination; unsupported AI capabilities like custom training or RLHF warrant 1-2 points; scope inflation in leadership or domain expertise warrants 1-2 points. Multiple unsupported claims should compound. Any single egregious fabrication (false credentials, invented metrics, completely fabricated roles) fails the unsafe_claim_gate regardless of other scores.",
+    "how_to_handle_category_vs_job_tradeoffs": "Category signals establish the baseline: architecture 94.7%, delivery 95.2%, reliability 81%, evaluation 52.4%. Job-specific requirements can shift emphasis within these ranges but should not override category fundamentals. If a JD requests executive leadership but the candidate evidence supports player-coach, maintain accurate framing rather than inflating. Stack-specific requirements can be weighted when evidenced but should not dominate over category table-stakes.",
+    "citations": [
+      "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+      "data/eval/baselines/head_of_ai_eea_baseline.json"
+    ]
+  },
+  "scorecard_template_mapping": {
+    "dimension_keys": [
+      "ats_optimization",
+      "impact_clarity",
+      "jd_alignment",
+      "executive_presence",
+      "anti_hallucination"
+    ],
+    "gate_keys": [
+      "must_have_coverage_gate",
+      "unsafe_claim_gate",
+      "persona_fit_gate"
+    ],
+    "required_output_fields": [
+      "overall_score",
+      "verdict",
+      "top_strengths",
+      "top_failures",
+      "unsupported_claims",
+      "missing_must_haves"
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "rubric_rule": "Architecture ownership is the primary category signal at 94.7% prevalence and 100% valued evidence in deep analyses.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Senior IC scope dominates at 86.8% while manager is 5.3% and director is 5.3%, requiring player-coach not executive framing.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Delivery is the second-strongest valued evidence at 95.2% of deep analyses, ahead of most AI-specific methods.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Reliability at 81% and evaluation at 52.4% are category differentiators that distinguish production AI from research framing.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Hiring at 5.3%, org_building at 10.5%, and budget_pnl at 0% establish that formal executive management claims are unsafe.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Research-heavy roles at 10.5% and PhD requirement at 0% mean research or publication framing misaligns with category.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Custom LLM training, fine-tuning, and RLHF are explicitly marked unsafe in the baseline do-not-claim ledger.",
+      "support": [
+        "data/eval/baselines/head_of_ai_eea_baseline.json",
+        "data/master-cv/projects/commander4_skills.json",
+        "data/master-cv/projects/lantern_skills.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "GDPR and data privacy each appear only 5.3%, so broad EEA governance claims exceed safe evidence scope.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json",
+        "data/eval/baselines/head_of_ai_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Collaboration at 81.6% and communication at 68.4% are the strongest soft-skill signals, supporting stakeholder translation emphasis.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "No single technical keyword exceeds 36.8% (Python), so ATS optimization should not overfit to one stack.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Remote-first positions at 50% mean distributed delivery credibility is a material category signal.",
+      "support": [
+        "data/eval/blueprints/head_of_ai_eea_blueprint.json"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "rubric_rule": "Baseline combined fit score of 7.84 establishes GOOD tier with architecture and AI platform as strongest supported signals.",
+      "support": [
+        "data/eval/baselines/head_of_ai_eea_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

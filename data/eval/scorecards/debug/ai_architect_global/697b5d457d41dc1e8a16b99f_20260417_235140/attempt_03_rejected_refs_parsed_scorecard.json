@@ -1,0 +1,78 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "697b5d457d41dc1e8a16b99f",
+  "dimension_scores": {
+    "ats_optimization": 3.5,
+    "impact_clarity": 5.5,
+    "jd_alignment": 2.0,
+    "executive_presence": 6.5,
+    "anti_hallucination": 8.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": false
+  },
+  "overall_score": 4.55,
+  "verdict": "WEAK_MATCH",
+  "top_strengths": [
+    "Solution Architect title aligns with category title family (50% prevalence) refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:3",
+    "Strong quantified platform delivery metrics with billions of events daily and 10x scaling refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:10,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:14",
+    "Clear production delivery proof across AWS and GCP with specific service evidence refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:29,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:39",
+    "Senior IC framing without management inflation matches category persona refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:25,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:35"
+  ],
+  "top_failures": [
+    "Zero GenAI/LLM expertise despite JD requiring deep LLM post-training and alignment refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:1,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5,cv:1-91",
+    "Missing all JD-required ML frameworks: PyTorch, Megatron-LM, Nemo, Transformers, TRL, VeRL refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:27",
+    "No NVIDIA technology experience despite role being NVIDIA-focused refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:16,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:35",
+    "No deep learning, model training, or RLHF/SFT experience refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:26,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [
+    "GenAI stack coverage entirely absent: no agents, RAG, guardrails, or evaluation evidence refs=jd:1-6",
+    "LLM training and finetuning expertise required but not present refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:26",
+    "Deep learning frameworks experience (PyTorch, Megatron-LM, Nemo) missing refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:27",
+    "RLHF and SFT alignment techniques not evidenced refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:6",
+    "Data curation for large-scale model training not present refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:4"
+  ],
+  "persona_fit_notes": [
+    "CV presents traditional software/platform architecture expertise without AI/ML architecture differentiation required for AI Architect category refs=cv:6-21,jd:1-6",
+    "Generic backend architect persona applied to specialized GenAI post-training role refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:18,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:1"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "agents/orchestration gap: JD requires LLM post-training orchestration but CV has zero GenAI orchestration evidence refs=jd:1-6"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:3",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:6-21",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:10",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:14",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:18",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:25",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:29",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:35",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:39",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:1-91",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:1",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:1-6",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:4",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:6",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:16",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:26",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:27",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:35"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:54:17Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md",
+    "jd_path": "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md"
+  }
+}

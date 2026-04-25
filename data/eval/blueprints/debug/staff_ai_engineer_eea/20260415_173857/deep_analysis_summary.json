@@ -1,0 +1,189 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "formal people-management org ownership",
+      "count": 2
+    },
+    {
+      "label": "deep healthcare domain ownership",
+      "count": 1
+    },
+    {
+      "label": "end-to-end hipaa compliance program ownership",
+      "count": 1
+    },
+    {
+      "label": "direct people management or hiring ownership",
+      "count": 1
+    },
+    {
+      "label": "primary ruby on rails and react ownership if not evidenced",
+      "count": 1
+    },
+    {
+      "label": "clinical validation or patient-safety accountability beyond the stated ai platform work",
+      "count": 1
+    },
+    {
+      "label": "hands-on use of grafana, prometheus, loki, tempo, or opentelemetry in production if not evidenced",
+      "count": 1
+    },
+    {
+      "label": "telemetry platform ownership at oracle-scale volume",
+      "count": 1
+    },
+    {
+      "label": "deep oracle cloud infrastructure specialization",
+      "count": 1
+    },
+    {
+      "label": "strategic hiring ownership",
+      "count": 1
+    },
+    {
+      "label": "10+ years focused specifically on observability platforms",
+      "count": 1
+    },
+    {
+      "label": "deep consulting or multi-client delivery background",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 20
+    },
+    {
+      "label": "reliability",
+      "count": 18
+    },
+    {
+      "label": "evaluation",
+      "count": 15
+    },
+    {
+      "label": "scale",
+      "count": 14
+    },
+    {
+      "label": "cost",
+      "count": 11
+    },
+    {
+      "label": "governance",
+      "count": 6
+    },
+    {
+      "label": "hiring",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "security",
+      "count": 2
+    },
+    {
+      "label": "scalability",
+      "count": 2
+    },
+    {
+      "label": "performance",
+      "count": 2
+    },
+    {
+      "label": "resilience",
+      "count": 2
+    },
+    {
+      "label": "reliability",
+      "count": 2
+    },
+    {
+      "label": "operational excellence",
+      "count": 2
+    },
+    {
+      "label": "improving care navigation quality",
+      "count": 1
+    },
+    {
+      "label": "improving care navigation efficiency",
+      "count": 1
+    },
+    {
+      "label": "high availability",
+      "count": 1
+    },
+    {
+      "label": "latency optimization",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 - enterprise ai workflow platform with 42 plugins, 2000 users, rag, semantic caching, evaluation, and guardrails maps directly to production ai product engineering and safe agent workflows.",
+      "count": 1
+    },
+    {
+      "label": "lantern - llm gateway with multi-provider routing and circuit breaker maps to model selection, resilience, and cost / latency control for ai services.",
+      "count": 1
+    },
+    {
+      "label": "technical lead / software architect experience maps to cross-functional platform evolution, ai strategy, and mentoring the broader engineering team.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 - enterprise ai workflow platform maps to agentic workflows, rag, evaluation, guardrails, and production adoption.",
+      "count": 1
+    },
+    {
+      "label": "lantern - llm gateway with multi-provider routing and circuit breaker maps to resilient ai infrastructure, routing, and failover behavior.",
+      "count": 1
+    },
+    {
+      "label": "lead engineer work on cqrs / event-sourcing and the microservices background map to distributed systems, event-driven architecture, and large-scale integration design.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 - enterprise ai workflow platform maps to agentic workflows, rag, grounding, evaluation, and production-grade ai delivery.",
+      "count": 1
+    },
+    {
+      "label": "lantern - llm gateway with multi-provider routing and circuit breaker maps to cloud integration patterns, resilience, and operational reliability.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [],
+  "specific_domain_years": [
+    {
+      "label": "5+ years leading large, multi-team engineering initiatives",
+      "count": 1
+    },
+    {
+      "label": "7+ years developer tooling; 2+ years software development focused on ai and / or ai platform teams; 2+ years tech-leading platform teams on engineering build and delivery problems",
+      "count": 1
+    },
+    {
+      "label": "10+ years python; 8+ years scalable api based services; 5+ years llm / genai; 4+ years agentic process development; 6+ years cloud, mlops, ci / cd, containerization, and production model deployment",
+      "count": 1
+    },
+    {
+      "label": "5+ years in a senior / principal role",
+      "count": 1
+    },
+    {
+      "label": "8+ years in search and recommendation systems; 6+ years in large-scale search relevance and infrastructure systems",
+      "count": 1
+    },
+    {
+      "label": "10+ years in software engineering or data science",
+      "count": 1
+    }
+  ]
+}

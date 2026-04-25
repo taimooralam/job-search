@@ -1,0 +1,10 @@
+# Solution Architect – Kubernetes & AI Platforms
+
+**Company:** MAK TECHNOLOGY
+**Location:** 
+**Score:** 92 (Tier C)
+**Status:** not processed
+
+---
+
+Solution Architect – Kubernetes & AI PlatformsMAK Technology is hiring a Solution Architect to design, deliver, and operateenterprise Kubernetes and GPU-enabled platforms for multinational customersacross global markets.This is a hands-on, customer-facing role focused on production platforms.Role• Lead end-to-end design and delivery of Kubernetes platforms and GPU PaaS• Translate business and technical requirements into production architectures• Design Kubernetes for AI/ML, GPU scheduling, inference, bare-metal, and VMs• Own onboarding, deployment, validation, and platform adoption• Work with customer DevOps, SRE, and infrastructure teams• Troubleshoot across Kubernetes, cloud, networking, storage, and GPU stacks• Act as primary technical advisor and lead deep architecture discussions• Identify risks, drive mitigations, and influence internal roadmaps• Produce reference architectures and deployment documentationRequirements• 3–5+ years in Solution Architecture, Platform Engineering, SRE, or DevOps• Hands-on Kubernetes in production including day-2 operations• Platform-level delivery experience (not app-only)• Kubernetes internals: CNI, CSI, RBAC, policy frameworks• Multi-cluster and multi-tenant Kubernetes architectures• Public or private cloud experience (AWS, Azure, GCP, VMware, OpenStack)• GPU and AI workload exposure including drivers and scheduling• Datacenter fundamentals: compute, storage, networking• Automation using Terraform and Python• Strong troubleshooting across distributed systems• Clear technical communication skillsNice to have• Kubernetes or cloud certifications• CNCF tools: Helm, Argo CD, Prometheus, Istio• AI/ML platforms, MLOps, or AI infrastructure delivery experienceLocation & travel• International, customer-facing role• USA, UAE, KSA, and other Gulf countries• Travel as requiredWhy MAK Technology• Production Kubernetes and AI platforms• Multinational enterprise and government customers• End-to-end ownership * • No slideware. Real delivery.Show more Show less

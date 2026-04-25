@@ -131,12 +131,9 @@ plans/raw_thoughts.md
 data/scout/
 data/linkedin-cookies.txt
 
-# Eval run artifacts (local-only; can be regenerated from scripts/eval_step*.py)
-data/eval/*
-!data/eval/validation/
-data/eval/validation/*
-!data/eval/validation/extraction_4_1_1/
-!data/eval/validation/extraction_4_1_1/**
+# Eval assets are intentionally versioned
+!data/eval/
+!data/eval/**
 
 # Scratch / temp work (ad-hoc queries, codex scratch, throwaway test files)
 .codex-tmp/

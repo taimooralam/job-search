@@ -1,0 +1,10 @@
+# AI Technical Lead
+
+**Company:** ALLIAD
+**Location:** Dubai, Dubai, United Arab Emirates
+**Score:** 50 (Tier C)
+**Status:** applied
+
+---
+
+Key ResponsibilitiesAI Strategy & Deployment * Design and deliver AI/ML models that solve real business challenges. Turn workflows (finance, contracts, bids, procurement, QHSE) into automated,intelligent systems. * Build and maintain a unified price quotation database to compare past and current bids, giving us sharper, data-driven insights. * Centralize company data into a single hub to unlock trend analysis and smarter decision-making across all divisions. Bids, Contracts & Business Development * Work closely with Bids and Contracts teams to unify quotations and ensure every submission is competitive and consistent. * Use predictive analytics to boost accuracy and give us an edge in tenders. * Support leadership in shaping smarter pricing strategies with AI-driven insights. Data, Risk & Compliance * Use AI for smarter forecasting, risk assessments, and performance tracking. * Apply AI tools to review contracts, flag risks, and recommend improvements. * Champion safe, secure, and ethical use of AI across the organization. Training & Workforce Development * Train colleagues to confidently and responsibly use AI tools. * Make AI approachable, showing its opportunities while addressing its limits. * Help us grow a more diverse workforce, with a preference for female leaders in tech. Innovation & R&D * Lead exciting R&D initiatives exploring NLP, computer vision, generative AI, and more. * Run year-round research programs designed to deliver measurable KPIs in areas such as cost savings, meal planning and enhancement, and innovative facilities management methodologies. * Develop and test new approaches that elevate service quality while ensuring strict cost control. * Encourage creative AI applications that improve workflows, customer experiences, and operational excellence. * Run fun, inspiring initiatives like AI hackathons and pilot projects to spark innovation.Show more Show less

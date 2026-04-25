@@ -1,0 +1,43 @@
+{
+  "batch_id": "step9_coverage_batch_v1_generated",
+  "description": "Step 9 coverage batch: remaining 4 categories to complete 12-category eval coverage. Run root data/eval/generated_cvs/step9_coverage_20260417_221712.",
+  "run_root": "data/eval/generated_cvs/step9_coverage_20260417_221712",
+  "pairs": [
+    {
+      "category_id": "head_of_ai_eea",
+      "job_id": "699f001187737d491c3ab803",
+      "jd_path": "data/eval/raw/head_of_ai_eea/jd_texts/38_revolut_head_of_engineering.md",
+      "cv_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_eea/38_revolut_head_of_engineering__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "REVOLUT Head of Engineering \u2014 platform eng lead with AI infrastructure scope; EEA category has known upstream title-noise so picked most senior genuine platform role",
+      "generation_notes": "capture=log_parse; exit=0; sha=e7f4d3602ae66164; elapsed_s=661.1"
+    },
+    {
+      "category_id": "head_of_ai_ksa",
+      "job_id": "6925c1c545fa3c355f83fce1",
+      "jd_path": "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md",
+      "cv_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "MOZN Engineering Manager for Agentic AI \u2014 legitimate AI squad leadership, fraud/AML domain; clean representative of small KSA AI-lead pool (16 jobs)",
+      "generation_notes": "capture=log_parse; exit=0; sha=c41c19f9f9f95ce0; elapsed_s=651.2"
+    },
+    {
+      "category_id": "head_of_ai_uae",
+      "job_id": "6978c1aa7d41dc1e8a0eabe1",
+      "jd_path": "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md",
+      "cv_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "TECHNOLOGY INNOVATION INSTITUTE Senior Architect \u2014 startup-paced AI platform architect (geospatial+LLM/agentic); best player-coach representative in UAE pool",
+      "generation_notes": "capture=log_parse; exit=0; sha=0382afab38520676; elapsed_s=664.4"
+    },
+    {
+      "category_id": "ai_architect_ksa_uae",
+      "job_id": "69296b3b45fa3c355f849ed4",
+      "jd_path": "data/eval/raw/ai_architect_ksa_uae/jd_texts/01_novapilot_fz_llc_software_architect_cloud_ai_distributed_systems.md",
+      "cv_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/ai_architect_ksa_uae/01_novapilot_fz_llc_software_architect_cloud_ai_distributed_systems__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "NOVAPILOT Software Architect Cloud/AI/Distributed \u2014 enterprise AI platform architect with distributed systems + ML design, clean representative",
+      "generation_notes": "capture=log_parse; exit=0; sha=7e35e616fb43efba; elapsed_s=664.8"
+    }
+  ]
+}

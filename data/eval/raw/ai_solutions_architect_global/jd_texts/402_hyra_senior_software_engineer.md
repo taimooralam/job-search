@@ -1,0 +1,10 @@
+# Senior Software Engineer
+
+**Company:** HYRA
+**Location:** United States
+**Score:** 40 (Tier D)
+**Status:** N/A
+
+---
+
+Senior AI Engineer – Remote (US)💻 Remote | 💼 Full-Time Contractor | 💵 $5,000–$8,000/monthJoin micro1 and lead the design and deployment of next-generation Generative AIsystems. This is a hands-on role for engineers passionate about LLMs, RAGpipelines, and autonomous AI workflows, building production-grade solutions atscale.What you’ll do * Architect and implement GenAI systems, including RAG, multi-agent workflows, and agent-to-agent communication * Build scalable APIs and integrate LLM capabilities into production platforms * Optimize data ingestion, embeddings, and retrieval using vector databases * Lead deployments on AWS or Azure with CI/CD and monitoring * Mentor junior engineers and drive best practices in system design * Innovate in emerging AI areas and contribute to technical roadmapsWhat we’re looking for * 4–6+ years experience with Python and API development (FastAPI or equivalent) * Deep expertise with GenAI frameworks: LangChain, LangGraph, LangSmith * RAG pipeline mastery: end-to-end lifecycle management * Strong cloud experience (AWS or Azure), including deployments and monitoring * Architectural thinking: scalability, performance, and reliabilityBonus skills * Emerging AI technologies: MCP, A2A agents * Responsible AI and governance frameworks * Experience with microservices, event-driven systems, or advanced orchestrationWhy micro1 * Fully remote, flexible, impact-driven environment * Work on cutting-edge AI products with global reach * Collaborate with passionate AI professionals to shape the future of AI👉 Apply via Hyra to connect directly and fast-track your application.micro1 is an equal opportunity employer. All qualified applicants will beconsidered fairly.Show more Show less

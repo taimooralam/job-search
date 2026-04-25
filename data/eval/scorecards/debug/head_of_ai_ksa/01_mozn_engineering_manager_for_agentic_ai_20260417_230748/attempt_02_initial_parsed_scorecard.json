@@ -1,0 +1,67 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_ksa",
+  "job_id": "6925c1c545fa3c355f83fce1",
+  "dimension_scores": {
+    "ats_optimization": 7.5,
+    "impact_clarity": 8.0,
+    "jd_alignment": 7.0,
+    "executive_presence": 7.5,
+    "anti_hallucination": 7.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 7.5,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Strong platform architecture proof with Commander-4/Joyia enterprise AI system serving 2,000 users across 42 plugins with governed outputs refs=cv:27,cv:30",
+    "Quantified reliability outcomes: 75% incident reduction, 3 years zero downtime, observability pipeline processing billions of events refs=cv:34,cv:36",
+    "Measured team development: mentored 10+ engineers, promoted 3 to lead positions, established DDD framework cutting onboarding 50% refs=cv:33,cv:35",
+    "Hybrid retrieval architecture with BM25/RRF fusion, LLM-as-judge reranking, semantic caching demonstrates hands-on AI platform delivery refs=cv:28,cv:29"
+  ],
+  "top_failures": [
+    "CV states 10+ years experience but JD requires 12+ years; actual timeline shows ~12 years but summary undersells refs=cv:8,jd:42",
+    "Agentic AI experience is implicit through AI workflow platform but not explicitly framed as multi-agent orchestration refs=cv:27,jd:18",
+    "B2B SaaS experience limited to Samdock CRM; current role is AdTech/media which is B2C-adjacent refs=cv:43,jd:42",
+    "LLM orchestration frameworks mentioned but no explicit multi-agent architecture or conversational AI pipeline evidence refs=cv:18,jd:47"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [
+    "CV headline mirrors JD title 'Engineering Manager for Agentic AI' while actual role is 'Technical Lead' - acceptable positioning convention refs=cv:3,cv:25"
+  ],
+  "curation_gap_hits": [
+    "AML/Fraud/Banking domain experience (JD nice-to-have) absent from CV refs=jd:46"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:3",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:18",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:25",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:28",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:29",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:30",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:33",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:34",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:35",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:36",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:43",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:18",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:42",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:46",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:47"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T22:45:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_ksa_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_ksa_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_ksa_baseline.json"
+  }
+}

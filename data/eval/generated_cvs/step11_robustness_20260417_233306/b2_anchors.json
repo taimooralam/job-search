@@ -1,0 +1,42 @@
+[
+  {
+    "category_id": "ai_architect_eea",
+    "job_id": "69611ba86dd552ab7ec2d671",
+    "jd_path": "data/eval/raw/ai_architect_eea/jd_texts/03_scc_services_romania_ai_solution_architect.md"
+  },
+  {
+    "category_id": "ai_architect_ksa_uae",
+    "job_id": "696d62d13da7d438ae4f5dd4",
+    "jd_path": "data/eval/raw/ai_architect_ksa_uae/jd_texts/07_bytedance_ai_product_solution_architect_byteplus_dubai.md"
+  },
+  {
+    "category_id": "ai_eng_manager_eea",
+    "job_id": "6931a44845fa3c355f861847",
+    "jd_path": "data/eval/raw/ai_eng_manager_eea/jd_texts/06_zendesk_engineering_manager_aiml_infrastructure_genai_platforms.md"
+  },
+  {
+    "category_id": "head_of_ai_eea",
+    "job_id": "69661b3128faeca4ab875245",
+    "jd_path": "data/eval/raw/head_of_ai_eea/jd_texts/05_ciklum_enterprise_architect.md"
+  },
+  {
+    "category_id": "head_of_ai_ksa",
+    "job_id": "6980ab1e7d41dc1e8a2e425b",
+    "jd_path": "data/eval/raw/head_of_ai_ksa/jd_texts/09_adobe_ai_engagement_manager_firefly_services.md"
+  },
+  {
+    "category_id": "head_of_ai_uae",
+    "job_id": "6939d7f6c9b1888e56022b64",
+    "jd_path": "data/eval/raw/head_of_ai_uae/jd_texts/05_planet_solutions_architect_deployment_stategist.md"
+  },
+  {
+    "category_id": "senior_ai_engineer_eea",
+    "job_id": "6957aa7a6dd552ab7ec2ccca",
+    "jd_path": "data/eval/raw/senior_ai_engineer_eea/jd_texts/05_hackerone_senior_software_applied_ai_engineer.md"
+  },
+  {
+    "category_id": "staff_ai_engineer_eea",
+    "job_id": "6957b8f16dd552ab7ec2cd12",
+    "jd_path": "data/eval/raw/staff_ai_engineer_eea/jd_texts/02_zeta_global_principal_aiml_engineer_adtech.md"
+  }
+]

@@ -1,0 +1,94 @@
+[
+  {
+    "category": "ai_architect_eea",
+    "job_id": "69610d7b6dd552ab7ec2d666",
+    "jd_path": "data/eval/raw/ai_architect_eea/jd_texts/02_neurons_lab_ai_solution_architect.md",
+    "jd_stem": "02_neurons_lab_ai_solution_architect",
+    "exit_code": 0,
+    "elapsed_seconds": 887.8,
+    "expected_deterministic_path": "outputs/NEURONS_LAB/cv_AI_Solution_Architect.md",
+    "pre_state": {
+      "exists": false
+    },
+    "post_state": {
+      "exists": true,
+      "size": 8255,
+      "mtime": 1776441455.1038392,
+      "sha256": "ef20dc310c1e900df76aa0408492b32ba7e59e54d7a19535fc8a0dda51d4427d"
+    },
+    "resolved_cv_path": "outputs/NEURONS_LAB/cv_AI_Solution_Architect.md",
+    "capture_method": "log_parse",
+    "snapshot_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/ai_architect_eea/02_neurons_lab_ai_solution_architect__generated.md",
+    "scoreable": true,
+    "log_tail": "  NEURONS LAB's AI Solution Architect position requires a rare combination: hands-on AWS AI/ML implementation depth plus the operational coordination to scale teams and accelerate delivery. At Seven.One...\n\n\ud83d\udccb CV:\n  outputs/NEURONS_LAB/cv_AI_Solution_Architect.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-17 17:58:46 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+  },
+  {
+    "category": "staff_ai_engineer_global",
+    "job_id": "6957aa9a6dd552ab7ec2ccd7",
+    "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md",
+    "jd_stem": "04_zip_co_principal_engineer_generative_agentic_ai",
+    "exit_code": 0,
+    "elapsed_seconds": 1011.7,
+    "expected_deterministic_path": "outputs/ZIP_CO/cv_Principal_Engineer__Generative___Agentic_AI.md",
+    "pre_state": {
+      "exists": false
+    },
+    "post_state": {
+      "exists": true,
+      "size": 9790,
+      "mtime": 1776442479.4613087,
+      "sha256": "50562d9ba5fce2ba17be81fcb6ac26fb33459974ba0e5d389886e42343add113"
+    },
+    "resolved_cv_path": "outputs/ZIP_CO/cv_Principal_Engineer__Generative___Agentic_AI.md",
+    "capture_method": "log_parse",
+    "snapshot_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md",
+    "scoreable": true,
+    "log_tail": "  ZIP CO's Principal Engineer, Generative & Agentic AI role requires what I've delivered at Seven.One Entertainment Group: production-grade agentic systems deployed at enterprise scale. I architect AI p...\n\n\ud83d\udccb CV:\n  outputs/ZIP_CO/cv_Principal_Engineer__Generative___Agentic_AI.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-17 18:15:38 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+  },
+  {
+    "category": "ai_eng_manager_eea",
+    "job_id": "69275eb345fa3c355f8435ab",
+    "jd_path": "data/eval/raw/ai_eng_manager_eea/jd_texts/01_zendesk_engineering_manager_ai_agents.md",
+    "jd_stem": "01_zendesk_engineering_manager_ai_agents",
+    "exit_code": 0,
+    "elapsed_seconds": 612.2,
+    "expected_deterministic_path": "outputs/ZENDESK/cv_Engineering_Manager_AI_Agents.md",
+    "pre_state": {
+      "exists": false
+    },
+    "post_state": {
+      "exists": true,
+      "size": 8741,
+      "mtime": 1776443098.9367151,
+      "sha256": "137a831d8b38ee9c4f1adb012f03d1fa734f9722243940836dd4cde56ea14037"
+    },
+    "resolved_cv_path": "outputs/ZENDESK/cv_Engineering_Manager_AI_Agents.md",
+    "capture_method": "log_parse",
+    "snapshot_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/ai_eng_manager_eea/01_zendesk_engineering_manager_ai_agents__generated.md",
+    "scoreable": true,
+    "log_tail": "  Zendesk's Engineering Manager AI Agents role requires someone who can scale conversational AI while building engineering teams that own quality and delivery. I've navigated this exact challenge leadin...\n\n\ud83d\udccb CV:\n  outputs/ZENDESK/cv_Engineering_Manager_AI_Agents.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-17 18:25:50 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+  },
+  {
+    "category": "senior_ai_engineer_eea",
+    "job_id": "69381c28c9b1888e56022ad3",
+    "jd_path": "data/eval/raw/senior_ai_engineer_eea/jd_texts/01_teamblue_senior_ai_software_engineer.md",
+    "jd_stem": "01_teamblue_senior_ai_software_engineer",
+    "exit_code": 0,
+    "elapsed_seconds": 911.2,
+    "expected_deterministic_path": "outputs/TEAM_BLUE/cv_Senior_AI_Software_Engineer.md",
+    "pre_state": {
+      "exists": false
+    },
+    "post_state": {
+      "exists": true,
+      "size": 7248,
+      "mtime": 1776443952.0211053,
+      "sha256": "437583a7995788bc35273f25b270ea69ece5ecdf68a5f20be35ec21675054cea"
+    },
+    "resolved_cv_path": "outputs/TEAM_BLUE/cv_Senior_AI_Software_Engineer.md",
+    "capture_method": "log_parse",
+    "snapshot_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/senior_ai_engineer_eea/01_teamblue_senior_ai_software_engineer__generated.md",
+    "scoreable": true,
+    "log_tail": "  TEAM.BLUE's 3.5M customers across 60+ brands need production-ready GenAI, not more experimental prototypes. I'm applying for the Senior AI Software Engineer role because I've already solved this trans...\n\n\ud83d\udccb CV:\n  outputs/TEAM_BLUE/cv_Senior_AI_Software_Engineer.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-17 18:41:02 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+  }
+]

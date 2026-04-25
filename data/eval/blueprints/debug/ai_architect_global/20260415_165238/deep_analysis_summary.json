@@ -1,0 +1,202 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "direct public-sector delivery in administration, mobility data platforms, or smart cities",
+      "count": 1
+    },
+    {
+      "label": "german c1 if the cv does not show it explicitly",
+      "count": 1
+    },
+    {
+      "label": "hands-on ownership of dsgvo and eu ai act compliance programs",
+      "count": 1
+    },
+    {
+      "label": "on-prem or hybrid government deployment experience if not evidenced",
+      "count": 1
+    },
+    {
+      "label": "hands-on aws architecture ownership if the cv does not show aws explicitly",
+      "count": 1
+    },
+    {
+      "label": "full-stack delivery if the cv only supports backend and platform work",
+      "count": 1
+    },
+    {
+      "label": "customer-facing solution architecture if the cv does not show client interaction",
+      "count": 1
+    },
+    {
+      "label": "devops or infrastructure ownership if the cv does not support it",
+      "count": 1
+    },
+    {
+      "label": "hands-on aws architecture ownership if not shown explicitly",
+      "count": 1
+    },
+    {
+      "label": "full-stack delivery if the cv is primarily backend / platform work",
+      "count": 1
+    },
+    {
+      "label": "customer or business analyst facilitation if not evidenced",
+      "count": 1
+    },
+    {
+      "label": "infrastructure or devops ownership if not supported",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 19
+    },
+    {
+      "label": "scale",
+      "count": 15
+    },
+    {
+      "label": "reliability",
+      "count": 11
+    },
+    {
+      "label": "evaluation",
+      "count": 11
+    },
+    {
+      "label": "governance",
+      "count": 10
+    },
+    {
+      "label": "cost",
+      "count": 7
+    },
+    {
+      "label": "hiring",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "performance",
+      "count": 5
+    },
+    {
+      "label": "scalability",
+      "count": 3
+    },
+    {
+      "label": "security",
+      "count": 3
+    },
+    {
+      "label": "maintainability",
+      "count": 2
+    },
+    {
+      "label": "production-grade delivery",
+      "count": 2
+    },
+    {
+      "label": "identifying technical debt",
+      "count": 2
+    },
+    {
+      "label": "identifying architectural risks",
+      "count": 2
+    },
+    {
+      "label": "modernization opportunities",
+      "count": 2
+    },
+    {
+      "label": "reliability",
+      "count": 2
+    },
+    {
+      "label": "tragf\u00e4hige zielbilder",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps well because it is an enterprise ai workflow platform with rag, guardrails, evaluation, and production usage, which matches end-to-end ai architecture and rollout.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to llm ecosystem integration and operational architecture because it handles multi-provider routing and circuit breaking.",
+      "count": 1
+    },
+    {
+      "label": "technical lead at seven.one entertainment group maps to architecture leadership, cross-functional coordination, and converting technical design into production systems.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps directly to ai-enabled workflows in production and shows platform-level architecture choices at enterprise scale.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to llm api integration, routing, resilience, and production controls such as circuit breaking.",
+      "count": 1
+    },
+    {
+      "label": "cqrs / event-sourcing, microservices, and rabbitmq experience maps to distributed system design, service boundaries, and fault tolerance.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps to ai-enabled workflows, production delivery, and architecture decisions for a real enterprise platform.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to llm apis, routing, and resilience patterns in production.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "german",
+      "count": 3
+    },
+    {
+      "label": "polish",
+      "count": 1
+    },
+    {
+      "label": "english",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "8+ years of professional software development experience",
+      "count": 2
+    },
+    {
+      "label": "mehrj\u00e4hrige erfahrung in der konzeption und umsetzung datenbasierter l\u00f6sungen; idealerweise public sector",
+      "count": 1
+    },
+    {
+      "label": "10+ years in ict infrastructure, operations and cloud, solution and technical architecture",
+      "count": 1
+    },
+    {
+      "label": "5+ years developing customer-facing ai solutions; preferably 2+ years in a similar role",
+      "count": 1
+    },
+    {
+      "label": "5+ years in cloud architecture, solution architecture, or cloud engineering; 2+ years working with ai / ml workloads on cloud platforms",
+      "count": 1
+    },
+    {
+      "label": "5+ years in ai / ml solution architecture and 1+ year focused on generative ai solution design and delivery",
+      "count": 1
+    }
+  ]
+}

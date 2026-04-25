@@ -1,0 +1,5 @@
+[
+  "overall_score overwritten 6.35 -> 6.4",
+  "unsafe_claim_gate=true contradicts non-empty unsupported_claims",
+  "persona_fit_gate=true contradicts non-empty persona_fit_notes"
+]

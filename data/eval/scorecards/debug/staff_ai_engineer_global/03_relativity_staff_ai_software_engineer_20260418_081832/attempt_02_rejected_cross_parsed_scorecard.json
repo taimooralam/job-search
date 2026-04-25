@@ -1,0 +1,88 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "staff_ai_engineer_global",
+  "job_id": "694e696d6dd552ab7ec2caf7",
+  "dimension_scores": {
+    "ats_optimization": 6.5,
+    "impact_clarity": 7.5,
+    "jd_alignment": 5.5,
+    "executive_presence": 6.5,
+    "anti_hallucination": 8.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 6.73,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Exact Staff AI Software Engineer title match with architecture-first headline positioning refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:3,data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:1",
+    "Quantified scale markers with billions of events daily and production reliability evidence refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:11,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:27",
+    "Strong CI/CD pipeline experience with measurable deployment improvements refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:14,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:29,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:37",
+    "Multi-year technical leadership progression from engineer to Tech Lead without inflation refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:24,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:34,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:44"
+  ],
+  "top_failures": [
+    "Missing Docker, Kubernetes/Helm infrastructure experience explicitly required by JD refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:16",
+    "No Terraform or Pulumi IaC experience despite JD requirement refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:19",
+    "Java/Scala proficiency absent though JD requires expert level refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:48,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:18",
+    "No MLOps-specific tooling (Prefect, Airflow) or model optimization techniques (sparsity, quantization, pruning) refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:50,data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:63,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:17",
+    "Cross-team leadership evidence weak despite JD emphasizing multi-squad direction refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:37,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:24"
+  ],
+  "unsupported_claims": [
+    "MTTR reduction claimed without specific percentage or baseline refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:12,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:28"
+  ],
+  "missing_must_haves": [
+    "Docker containerization experience not evidenced refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49",
+    "Kubernetes/Helm orchestration not mentioned refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49",
+    "Terraform or Pulumi infrastructure-as-code not present refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49",
+    "Java or Scala proficiency not demonstrated refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:48",
+    "ML workflow CI/CD tools (Prefect, Airflow) not evidenced refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:50",
+    "Model optimization techniques (sparsity, quantization, pruning) absent refs=data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:63"
+  ],
+  "persona_fit_notes": [
+    "Appropriate senior IC Technical Lead framing without management inflation refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:24",
+    "Architecture-first positioning aligns with staff engineer persona refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:8,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:10",
+    "Player-coach mentoring evidence implicit but not quantified refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:24"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "CV emphasizes general platform engineering over ML-specific infrastructure despite JD MLOps focus refs=jd:33,cv:10"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:3",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:8",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:10",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:11",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:12",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:14",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:16",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:17",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:18",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:19",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:24",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:27",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:28",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:29",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:34",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:37",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:44",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:1",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:33",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:37",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:48",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:50",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:63"
+  ],
+  "meta": {
+    "generated_at": "2026-04-18T06:20:35Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/staff_ai_engineer_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/staff_ai_engineer_global_baseline.json",
+    "cv_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md",
+    "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md"
+  }
+}

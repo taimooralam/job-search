@@ -1,0 +1,80 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "staff_ai_engineer_global",
+  "job_id": "694e696d6dd552ab7ec2caf7",
+  "dimension_scores": {
+    "ats_optimization": 5.5,
+    "impact_clarity": 7.0,
+    "jd_alignment": 4.5,
+    "executive_presence": 6.0,
+    "anti_hallucination": 8.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": false
+  },
+  "overall_score": 6.08,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong platform scale evidence with billions of events daily processing refs=cv:8,cv:11,cv:27",
+    "Quantified reliability improvements including MTTR reduction and missed impressions reduction refs=cv:26,cv:28",
+    "CI/CD migration experience with measurable cycle time improvements refs=cv:14,cv:29,cv:37",
+    "Recent LLM integration work with guardrails and MCP server tools refs=cv:10,cv:30,cv:31"
+  ],
+  "top_failures": [
+    "No Docker, Kubernetes/Helm experience despite JD explicit requirement refs=jd:49,cv:1-90",
+    "No Java or Scala proficiency shown, JD requires expert level in Python/Java/Scala refs=jd:48,cv:32,cv:51",
+    "No infrastructure-as-code experience (Terraform/Pulumi) despite JD requirement refs=jd:49",
+    "No ML training/inference/monitoring systems experience despite core JD focus refs=jd:40,cv:1-90",
+    "No model optimization techniques (sparsity, quantization, pruning) mentioned refs=jd:42,cv:1-90"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [
+    "Docker and Kubernetes/Helm container orchestration expertise refs=jd:49",
+    "Infrastructure-as-code tools (Terraform or Pulumi) refs=jd:49",
+    "Java or Scala production proficiency refs=jd:48",
+    "ML platform engineering for training, inference, and monitoring systems refs=jd:40",
+    "Model optimization techniques (sparsity, quantization, pruning) refs=jd:42"
+  ],
+  "persona_fit_notes": [
+    "CV persona is backend/platform engineer with recent LLM integration, not ML platform architect as JD requires refs=cv:6-15,jd:36-42",
+    "Cross-team technical leadership at Staff level (4+ years across multiple teams) not demonstrated refs=jd:47,cv:24,cv:34"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "MLOps and ML platform engineering experience underrepresented despite JD core focus refs=jd:38,jd:40"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:6",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:8",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:10",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:11",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:14",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:24",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:26",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:27",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:28",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:30",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:31",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:32",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:34",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:37",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md:51",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:36",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:38",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:40",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:42",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:47",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:48",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md:49"
+  ],
+  "meta": {
+    "generated_at": "2026-04-18T12:00:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/staff_ai_engineer_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+  }
+}

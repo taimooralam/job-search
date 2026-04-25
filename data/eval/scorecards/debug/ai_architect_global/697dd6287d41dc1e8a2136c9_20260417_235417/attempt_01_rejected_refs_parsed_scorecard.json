@@ -1,0 +1,79 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "697dd6287d41dc1e8a2136c9",
+  "dimension_scores": {
+    "ats_optimization": 6.0,
+    "impact_clarity": 7.0,
+    "jd_alignment": 4.5,
+    "executive_presence": 7.5,
+    "anti_hallucination": 6.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 6.1,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong enterprise platform architecture with quantified delivery outcomes (20% missed impressions reduction, 60% query latency reduction) refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:31,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:50",
+    "Stakeholder translation and cross-functional collaboration consistently evidenced across roles refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:13,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:30,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:75",
+    "Title family matches JD (AI Solution Architect) with appropriate senior IC framing refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3,data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:18",
+    "Technical governance and DevSecOps practices with CI/CD pipeline establishment refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:14,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:29,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:40"
+  ],
+  "top_failures": [
+    "Zero GenAI stack experience: no RAG, agents, guardrails, LLMs, or evaluation anywhere in CV refs=cv:17-21,jd:1-5",
+    "No AI platform design evidence despite JD explicitly seeking AI Solution Architect for central AI Platforms refs=jd:18-19,cv:23-76",
+    "Missing AI thought leadership and global tech community involvement that JD requires refs=jd:38-39"
+  ],
+  "unsupported_claims": [
+    "Headline 'AI Solution Architect' without any AI/ML project evidence in experience section refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3,cv:23-76"
+  ],
+  "missing_must_haves": [
+    "GenAI stack component (agents, RAG, guardrails, or evaluation) - 0% coverage refs=jd:1-5",
+    "AI platform architecture experience - JD core requirement refs=jd:18-19",
+    "AI thought leader active in global tech communities refs=data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:38"
+  ],
+  "persona_fit_notes": [
+    "Senior IC/player-coach framing appropriate for category refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:25",
+    "No management inflation; mentoring scope correctly scoped refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:15,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:33",
+    "Enterprise architecture persona strong but AI architect persona absent refs=cv:6-15"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "agents/orchestration identified as curated-but-underrepresented gap in baseline; CV has zero coverage refs=cv:17-21"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:6-15",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:13",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:14",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:15",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:17-21",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:23-76",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:25",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:29",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:30",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:31",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:33",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:40",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:50",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:75",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:1-5",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:18",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:18-19",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:38",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:38-39"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:55:21Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md",
+    "jd_path": "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md"
+  }
+}

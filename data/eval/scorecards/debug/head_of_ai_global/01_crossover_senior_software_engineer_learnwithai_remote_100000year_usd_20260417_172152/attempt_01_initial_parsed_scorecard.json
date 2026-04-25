@@ -1,0 +1,72 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_global",
+  "job_id": "69825fa77d41dc1e8a360e27",
+  "dimension_scores": {
+    "ats_optimization": 7.5,
+    "impact_clarity": 8.5,
+    "jd_alignment": 8.5,
+    "executive_presence": 8.0,
+    "anti_hallucination": 8.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 8.225,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Strong quantified SaaS scaling outcomes including 10x horizontal scaling, 70% modernization, and 40% bug reduction with before/after framing refs=cv:10,cv:11,cv:12,cv:42",
+    "Extensive AI/RAG platform experience with LLM integration, hybrid search, semantic caching, and evaluation metrics directly aligns with JD AI-first methodology refs=cv:30,cv:31,cv:32,jd:10",
+    "Full-stack development evidenced across TypeScript/Python/Node.js with 4+ years SaaS product experience meeting all JD experience requirements refs=cv:8,cv:18,cv:47,jd:39",
+    "Player-coach Technical Lead scope with code review mentoring and event storming leadership matches JD senior IC profile refs=cv:26,cv:45,cv:46"
+  ],
+  "top_failures": [
+    "Remote-first execution context not explicitly stated in CV despite being structural for category (84.3% signal) refs=jd:48,data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "No EdTech domain experience evidenced while JD focuses on educational products (TeachTap, TeachTales, Athena) refs=jd:10,jd:11,jd:12",
+    "Scalability/maintainability keywords could be more prominent in profile section to match JD emphasis refs=jd:10,jd:25,cv:6"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [
+    "Technical Lead and Lead Software Engineer titles appropriately match player-coach persona for this IC-heavy category (54.2% IC signal) refs=cv:26,cv:39,data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "No executive framing or title inflation; mentoring scoped to code review and architectural guidance without org-building claims refs=cv:45,cv:46"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "EdTech domain experience gap - JD is educational platform but CV shows AdTech/CRM/IoT domains refs=jd:10,cv:26,cv:39"
+  ],
+  "evidence_refs": [
+    "cv:6",
+    "cv:8",
+    "cv:10",
+    "cv:11",
+    "cv:12",
+    "cv:18",
+    "cv:26",
+    "cv:30",
+    "cv:31",
+    "cv:32",
+    "cv:39",
+    "cv:42",
+    "cv:45",
+    "cv:46",
+    "cv:47",
+    "jd:10",
+    "jd:11",
+    "jd:12",
+    "jd:25",
+    "jd:39",
+    "jd:48",
+    "data/eval/blueprints/head_of_ai_global_blueprint.json"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T12:45:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_global_baseline.json"
+  }
+}

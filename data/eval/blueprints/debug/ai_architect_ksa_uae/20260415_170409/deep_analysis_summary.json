@@ -1,0 +1,202 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "arabic fluency if not true",
+      "count": 2
+    },
+    {
+      "label": "led azure-native ai platforms at enterprise scale",
+      "count": 1
+    },
+    {
+      "label": "owned budgeting or p and l",
+      "count": 1
+    },
+    {
+      "label": "managed direct reports",
+      "count": 1
+    },
+    {
+      "label": "built compliant ai systems for a regulated azure enterprise if not explicitly evidenced",
+      "count": 1
+    },
+    {
+      "label": "implemented vector database indexing or gpu autoscaling on azure unless directly shown",
+      "count": 1
+    },
+    {
+      "label": "arabic proficiency",
+      "count": 1
+    },
+    {
+      "label": "built gtm motions with channel partners",
+      "count": 1
+    },
+    {
+      "label": "drove overseas commercialization goals",
+      "count": 1
+    },
+    {
+      "label": "owned product revenue or sales pipeline",
+      "count": 1
+    },
+    {
+      "label": "led pre-sales for multimodal image or voice models",
+      "count": 1
+    },
+    {
+      "label": "implemented fine-tuning for production models unless explicitly evidenced",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 20
+    },
+    {
+      "label": "scale",
+      "count": 17
+    },
+    {
+      "label": "governance",
+      "count": 16
+    },
+    {
+      "label": "evaluation",
+      "count": 10
+    },
+    {
+      "label": "reliability",
+      "count": 8
+    },
+    {
+      "label": "cost",
+      "count": 8
+    },
+    {
+      "label": "communication",
+      "count": 1
+    },
+    {
+      "label": "stakeholder management",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "ensure performance, reliability, and cost optimization",
+      "count": 2
+    },
+    {
+      "label": "architect, build, and deploy production-grade ai / ml models",
+      "count": 2
+    },
+    {
+      "label": "engage c-suite stakeholders on priorities, value propositions, and roadmaps",
+      "count": 2
+    },
+    {
+      "label": "lead solution estimation, technical governance, and program oversight",
+      "count": 2
+    },
+    {
+      "label": "continuous improvement",
+      "count": 2
+    },
+    {
+      "label": "successful project delivery",
+      "count": 2
+    },
+    {
+      "label": "measurable business value from data investments",
+      "count": 2
+    },
+    {
+      "label": "architectural integrity",
+      "count": 2
+    },
+    {
+      "label": "scalability",
+      "count": 2
+    },
+    {
+      "label": "compliance with data privacy standards",
+      "count": 2
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps strongly because it is an enterprise ai workflow platform with rag, semantic caching, evaluation, guardrails, and 2000 users, which is close to the job's architecture and governance needs.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to the need for production ai platform design and routing / orchestration patterns, especially if framed as an ai gateway with multi-provider control and reliability features.",
+      "count": 1
+    },
+    {
+      "label": "technical lead experience at seven.one maps to stakeholder communication and solution design, which this role explicitly values.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 is the best mapping for productized ai platform work because it demonstrates an enterprise ai product used by 2000 users, which can support a story about adoption and iteration.",
+      "count": 1
+    },
+    {
+      "label": "lantern can support a narrative about platform-level abstraction and reliability for ai products, but it does not by itself prove commercialization or pre-sales.",
+      "count": 1
+    },
+    {
+      "label": "technical lead work can map to cross-team collaboration and execution, but the cv should not overstate commercial or channel-partner experience.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 is highly relevant because it already includes enterprise ai workflows, rag, evaluation, guardrails, and platform reliability concerns that mirror the job's production ai expectations.",
+      "count": 1
+    },
+    {
+      "label": "lantern is a strong match for the platform-routing and reliability aspects of ai infrastructure, especially where model gateway behavior and resilience matter.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "german and english",
+      "count": 1
+    },
+    {
+      "label": "english and arabic",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "8+ years of experience in ai / ml solution architecture; strong experience in banking or financial services ai platforms",
+      "count": 1
+    },
+    {
+      "label": "12+ years in solutions architecture with emphasis on cloud environments, sovereignty, and compliance",
+      "count": 1
+    },
+    {
+      "label": "5+ years in enterprise architecture",
+      "count": 1
+    },
+    {
+      "label": "10+ years in technology roles; at least 5 years in enterprise architecture",
+      "count": 1
+    },
+    {
+      "label": "5-7 years with microsoft azure; 2-3 years with ai / gen-ai technologies",
+      "count": 1
+    },
+    {
+      "label": "1+ years in videogen / llm / vlm b2b solutions or project management",
+      "count": 1
+    }
+  ]
+}

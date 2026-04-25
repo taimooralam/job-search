@@ -1,0 +1,4 @@
+[
+  "verdict dropped to WEAK_MATCH (unsafe_claim_gate false)",
+  "must_have_coverage_gate=true contradicts non-empty missing_must_haves"
+]

@@ -1,0 +1,496 @@
+{
+  "meta": {
+    "category_id": "ai_architect_global",
+    "category_name": "AI Architect \u2014 Global/Remote",
+    "macro_family": "ai_architect",
+    "priority": "primary_target",
+    "confidence": "high",
+    "total_jobs": 88,
+    "deep_analysis_count": 20,
+    "low_sample_mode": false,
+    "noisy_title_mode": false,
+    "uncertainty_note": "Sample is strong enough for specific guidance, but no single hard technical keyword clears 60%, so do not overfit the CV around one tool or cloud badge alone."
+  },
+  "category_signature": {
+    "one_sentence_summary": "A top-third CV for this category should present a senior hands-on architect who designs and ships production AI platforms and enterprise integrations, translates architecture into delivery, and proves governance, scale, and cross-functional execution without inflating people-management scope.",
+    "distinctive_signals": [
+      "Architecture-first category: platform design appears in 87/88 roles (98.9%), with greenfield plus optimization work more common than pure greenfield (both 42% vs greenfield 7% vs optimization 6%).",
+      "Role shape is senior IC with some player-coach behavior, not people management: senior_ic 79%, ic 49%, player_coach 38%, manager 1%; hiring and performance management each 2/88 (2.3%).",
+      "AI architecture emphasis is production-oriented and enterprise-facing: agents/orchestration 34/88 (38.6%), guardrails/governance 33/88 (37.5%), RAG 25/88 (28.4%), evaluation/quality 18/88 (20.5%), consulting/consultancy signals 20 roles combined."
+    ],
+    "citations": [
+      "platform_design 87/88 (98.9%)",
+      "senior_ic 79%, ic 49%, player_coach 38%, manager 1%",
+      "hiring 2/88 (2.3%), performance_management 2/88 (2.3%)",
+      "agents_orchestration 34/88 (38.6%), guardrails_governance 33/88 (37.5%), rag 25/88 (28.4%), evaluation_quality 18/88 (20.5%)"
+    ]
+  },
+  "headline_pattern": {
+    "recommended_structure": "<Safe architect title family> | Enterprise AI / Solution Architecture | Production GenAI, Agents, Integration, Governance",
+    "safe_title_families": [
+      "AI Architect",
+      "AI Solution Architect",
+      "Solutions Architect"
+    ],
+    "safe_title_variants": [
+      "AI Solution Architect",
+      "Generative AI Solution Architect",
+      "AI Software Architect",
+      "ML/LLM Technical Architect",
+      "Senior Solution Architect"
+    ],
+    "avoid_title_variants": [
+      "Head of AI",
+      "VP AI",
+      "Director of AI",
+      "Chief AI Architect",
+      "AI Research Scientist",
+      "Engineering Manager"
+    ],
+    "evidence_first_rules": [
+      "Use a title family supported by actual prior role scope; solutions_architect titles dominate the sample (50%) and ai_architect titles are also common (37%).",
+      "Pair the title with 2-4 proven architecture keywords, not a long tool list; no hard skill exceeds 60%, so the headline should not hinge on one framework or cloud.",
+      "Only use customer-facing or solution-architecture wording if the CV shows client or stakeholder interaction; stakeholder management appears in 39/88 roles (44.3%), but deep-analysis flags customer-facing claims as unsafe if not evidenced.",
+      "Do not imply people leadership in the headline unless explicit; hiring and performance management are each only 2/88 (2.3%)."
+    ],
+    "citations": [
+      "title_families: solutions_architect 50%, ai_architect 37%",
+      "stakeholder_management 39/88 (44.3%)",
+      "hiring 2/88 (2.3%), performance_management 2/88 (2.3%)",
+      "hard_skills_top: python 29/88 (33.0%) is highest; no hard skill >= 60%"
+    ]
+  },
+  "tagline_profile_angle": {
+    "positioning_angle": [
+      "Position as a hands-on AI architecture lead for enterprise systems: show platform design, system integration, production rollout, and governance rather than pure model research.",
+      "Position as a translator between business/stakeholders and engineering delivery when true: communication 67/88 (76.1%), collaboration 56/88 (63.6%), stakeholder management 39/88 (44.3%)."
+    ],
+    "foreground": [
+      "Show architecture decisions, delivery outcomes, scale, reliability, evaluation, governance, and cost-aware productionization; these evidence types dominate deep analysis: architecture 20, delivery 19, scale 15, reliability 11, evaluation 11, governance 10, cost 7."
+    ],
+    "avoid": [
+      "Avoid presenting as a pure people manager, hiring leader, or org builder; org_building is 10/88 (11.4%) and direct management signals are minimal.",
+      "Avoid research/publication framing; requires_phd is 0/88 (0.0%) and research_heavy is 0/88 (0.0%).",
+      "Avoid generic 'LLM expert' copy without enterprise integration proof, architecture proof, and delivery metrics."
+    ],
+    "safe_positioning": [
+      "Safe: 'Senior AI architect delivering production RAG/agent systems, enterprise integrations, and guardrailed rollout' when those elements are evidenced.",
+      "Safe: 'Hands-on solution architect for AI-enabled platforms across cloud, APIs, and distributed systems' when cloud and integration work are shown.",
+      "Safe: 'Player-coach technical lead' only if mentoring, design reviews, or implementation guidance are evidenced; mentoring appears in 18/88 (20.5%), while formal management is weak."
+    ],
+    "unsafe_positioning": [
+      "Unsafe without evidence: customer-facing solution architecture, full-stack delivery, DevOps/infrastructure ownership, AWS ownership, public-sector specialization, German C1, DSGVO/EU AI Act program ownership.",
+      "Unsafe without evidence: executive ownership of strategy, budget, P&L, or org design; budget_pnl is 0/88 (0.0%)."
+    ],
+    "citations": [
+      "communication 67/88 (76.1%), collaboration 56/88 (63.6%), stakeholder_management 39/88 (44.3%)",
+      "valued_evidence_types: architecture 20, delivery 19, scale 15, reliability 11, evaluation 11, governance 10, cost 7",
+      "org_building 10/88 (11.4%), hiring 2/88 (2.3%), performance_management 2/88 (2.3%), budget_pnl 0/88 (0.0%)",
+      "requires_phd 0/88 (0.0%), research_heavy 0/88 (0.0%)"
+    ]
+  },
+  "core_competency_themes": [
+    {
+      "section_name": "Architecture And Integration",
+      "themes": [
+        {
+          "theme": "Enterprise AI platform and solution architecture",
+          "classification": "table_stakes",
+          "why_it_matters": "This category is architecture-led; show target architectures, system boundaries, platform patterns, and how AI components fit into enterprise stacks. Prove both new design and improvement work, not just prototypes.",
+          "ats_guidance": "Strongest keyword. Mention 'AI architecture' or 'solution architecture' 2-3 times across headline, profile, and experience if true. Pair once with 'platform design' and once with 'enterprise architecture' or 'target architecture' if true.",
+          "citation": "platform_design 87/88 (98.9%); solution architecture 11/88 (12.5%); valued evidence: architecture 20, delivery 19"
+        },
+        {
+          "theme": "Distributed integration across APIs, microservices, and data flows",
+          "classification": "table_stakes",
+          "why_it_matters": "The market expects architects who connect AI into real systems, especially APIs, microservices, and data pipelines rather than isolated notebooks.",
+          "ats_guidance": "Secondary keyword cluster. Mention 1-2 times each for 'APIs', 'microservices', and 'data pipelines' if true. Use niche integration terms once only.",
+          "citation": "apis 10/88 (11.4%); microservices 12/88 (13.6%); data pipelines 15/88 (17.0%); pain points include Java/Spring microservice integration (2 mentions)"
+        },
+        {
+          "theme": "Cloud architecture with flexible provider framing",
+          "classification": "differentiator",
+          "why_it_matters": "Cloud is important, but the evidence does not support over-committing to one provider unless explicitly evidenced; multi-cloud appears more often than a single named cloud.",
+          "ats_guidance": "Use the actual provider once in headline/profile and 1-2 times in experience only if true. Prefer 'cloud architecture' or 'multi-cloud' over forced AWS/Azure repetition when experience spans both.",
+          "citation": "cloud_preference: multi_cloud 29%, Azure 15%, AWS 11%, GCP 1%; aws 14/88 (15.9%); azure 14/88 (15.9%)"
+        }
+      ]
+    },
+    {
+      "section_name": "Production GenAI Systems",
+      "themes": [
+        {
+          "theme": "Agents and orchestration in production",
+          "classification": "differentiator",
+          "why_it_matters": "Agentic delivery is a distinctive signal here and appears more often than many individual tools. Show orchestration patterns, external system connections, and production controls.",
+          "ats_guidance": "Strongest keyword. Mention 'agents' or 'agent orchestration' 2-3 times if true across profile and impact bullets. Name MCP or orchestration frameworks once only if explicitly evidenced.",
+          "citation": "agents_orchestration 34/88 (38.6%); pain points include secure scalable AI agents connecting to external systems through MCP (2 mentions)"
+        },
+        {
+          "theme": "RAG, vector search, and knowledge-grounded workflows",
+          "classification": "differentiator",
+          "why_it_matters": "RAG-style architectures are common enough to materially help positioning, especially when paired with enterprise data integration and retrieval quality.",
+          "ats_guidance": "Strong secondary cluster. Mention 'RAG' 1-2 times and 'vector databases' or 'vector search' 1-2 times if true. Name a framework such as LangChain or LlamaIndex once only if true.",
+          "citation": "rag 25/88 (28.4%); vector_search 19/88 (21.6%); vector databases 21/88 (23.9%); langchain 20/88 (22.7%)"
+        },
+        {
+          "theme": "Evaluation, quality, and guardrails",
+          "classification": "table_stakes",
+          "why_it_matters": "This category values production quality and governance, not just feature shipping. Show evaluation design, risk controls, and measurable quality or safety improvements.",
+          "ats_guidance": "Strongest keyword cluster. Mention 'guardrails', 'evaluation', or 'quality' 2-3 times across profile and experience if true; keep vendor observability tools to once only.",
+          "citation": "guardrails_governance 33/88 (37.5%); evaluation_quality 18/88 (20.5%); valued evidence: evaluation 11, governance 10, reliability 11"
+        }
+      ]
+    },
+    {
+      "section_name": "Delivery And Operationalization",
+      "themes": [
+        {
+          "theme": "Production rollout and reliability",
+          "classification": "table_stakes",
+          "why_it_matters": "Deep analysis prioritizes delivery and reliability evidence. CV bullets should show shipped systems, hardening work, and production outcomes rather than design-only influence.",
+          "ats_guidance": "Use 'production', 'reliability', or 'rollout' 2-3 times across recent experience if true. Quantify uptime, latency, incident reduction, or release stability where possible.",
+          "citation": "valued evidence: delivery 19, reliability 11; success metrics include performance 5, security 3, production-grade delivery 2, reliability 2"
+        },
+        {
+          "theme": "MLOps, CI/CD, Kubernetes, and deployment discipline",
+          "classification": "differentiator",
+          "why_it_matters": "These are recurring operational signals, but none are universal. They strengthen credibility when the candidate truly owned deployment or lifecycle work.",
+          "ats_guidance": "Secondary keyword cluster. Mention each of 'MLOps', 'CI/CD', and 'Kubernetes' 1-2 times if true; do not claim platform ownership if the CV only shows application-layer use.",
+          "citation": "mlops 17/88 (19.3%); kubernetes 16/88 (18.2%); ci/cd 11/88 (12.5%); deep-analysis flags DevOps/infrastructure ownership as unsafe if unsupported"
+        },
+        {
+          "theme": "Cost, scalability, and modernization outcomes",
+          "classification": "differentiator",
+          "why_it_matters": "Architect hires are rewarded for making systems tractable at enterprise scale, reducing risk, and modernizing platforms, not just adding AI features.",
+          "ats_guidance": "Use quantified outcomes in experience bullets. Mention 'scale', 'performance', 'cost', or 'modernization' 1-2 times where backed by numbers.",
+          "citation": "valued evidence: scale 15, cost 7; success metrics include performance 5, scalability 3, technical debt 2, architectural risks 2, modernization opportunities 2"
+        }
+      ]
+    },
+    {
+      "section_name": "Stakeholder Translation And Scope Control",
+      "themes": [
+        {
+          "theme": "Communication and cross-functional translation",
+          "classification": "table_stakes",
+          "why_it_matters": "This category strongly rewards architects who can align technical decisions with delivery stakeholders and adjacent teams.",
+          "ats_guidance": "Mention 'communication' or 'cross-functional collaboration' 2-3 times when true, especially in profile and recent roles. Keep it tied to concrete architecture or delivery outcomes.",
+          "citation": "communication 67/88 (76.1%); collaboration 56/88 (63.6%)"
+        },
+        {
+          "theme": "Stakeholder management without executive inflation",
+          "classification": "differentiator",
+          "why_it_matters": "Stakeholder translation matters, but the sample does not support broad executive or business-ownership claims by default. Keep scope precise.",
+          "ats_guidance": "Mention 'stakeholder management' 1-2 times if true. Use exact stakeholder groups once only, such as product, security, data, or client teams.",
+          "citation": "stakeholder_management 39/88 (44.3%); management_signals_weak true; senior_manager 3%, manager 1%"
+        },
+        {
+          "theme": "Mentoring and design guidance as limited player-coach evidence",
+          "classification": "optional",
+          "why_it_matters": "There is some player-coach behavior, but formal people management is rare. Mentoring can help differentiate if the CV clearly supports it.",
+          "ats_guidance": "Mention 'mentoring' or 'technical guidance' once or twice only if true. Do not repeat manager-language across the CV.",
+          "citation": "player_coach 38%; mentoring 18/88 (20.5%); hiring 2/88 (2.3%); performance_management 2/88 (2.3%)"
+        }
+      ]
+    }
+  ],
+  "key_achievement_archetypes": [
+    {
+      "rank": 1,
+      "archetype": "End-to-end enterprise AI architecture delivered into production",
+      "what_it_proves": "Proves the core category fit: architecture ownership plus delivery, not concept work alone.",
+      "pain_points_addressed": [
+        "need to solve complex enterprise architecture problems end-to-end",
+        "integrate ai and data components into existing enterprise systems",
+        "guide implementation from target architecture to production rollout"
+      ],
+      "metrics_to_include": [
+        "latency reduction",
+        "throughput or concurrency",
+        "adoption across teams or customers",
+        "time-to-production",
+        "availability or error-rate improvement"
+      ],
+      "story_format_guidance": "Use ARIS: Architecture challenge, design decisions, implementation path, shipped outcome. Make the design choice explicit, then quantify the production result.",
+      "citation": "platform_design 87/88 (98.9%); valued evidence: architecture 20, delivery 19; success metrics include performance 5 and production-grade delivery 2"
+    },
+    {
+      "rank": 2,
+      "archetype": "Agentic or RAG system with governance and evaluation controls",
+      "what_it_proves": "Shows modern GenAI architecture depth with the production safeguards this category values.",
+      "pain_points_addressed": [
+        "build secure, scalable AI agents connected to external systems",
+        "apply strong security to agent and MCP integrations",
+        "deliver trustworthy retrieval-grounded workflows"
+      ],
+      "metrics_to_include": [
+        "quality or accuracy lift",
+        "hallucination or failure-rate reduction",
+        "policy or safety incident reduction",
+        "evaluation coverage",
+        "retrieval relevance or response quality"
+      ],
+      "story_format_guidance": "Use STAR with risk emphasis: situation and trust constraints, technical approach for agents/RAG/guardrails, measured quality or safety outcome, and deployment scope.",
+      "citation": "agents_orchestration 34/88 (38.6%); rag 25/88 (28.4%); guardrails_governance 33/88 (37.5%); evaluation_quality 18/88 (20.5%)"
+    },
+    {
+      "rank": 3,
+      "archetype": "Complex integration into APIs, microservices, and enterprise data estates",
+      "what_it_proves": "Demonstrates the category's difference from generic GenAI roles: integration architecture inside real enterprise systems.",
+      "pain_points_addressed": [
+        "integrate ai and data components into java/spring-based microservices",
+        "optimize relational and nosql data access and caching for performance",
+        "connect AI services to existing APIs and platform boundaries"
+      ],
+      "metrics_to_include": [
+        "API latency",
+        "data pipeline throughput",
+        "cache hit rate",
+        "service reliability",
+        "integration lead time"
+      ],
+      "story_format_guidance": "Use STAR. Emphasize the legacy or distributed constraint, the integration pattern chosen, and the measurable operational improvement.",
+      "citation": "microservices 12/88 (13.6%); apis 10/88 (11.4%); data pipelines 15/88 (17.0%); pain points include Java/Spring integration and data access optimization (2 mentions each)"
+    },
+    {
+      "rank": 4,
+      "archetype": "Cloud modernization or multi-cloud architecture improvement",
+      "what_it_proves": "Shows ability to improve existing environments, reduce risk, and scale AI-enabled platforms pragmatically.",
+      "pain_points_addressed": [
+        "need to scale cloud platforms for large enterprise environments",
+        "need to improve existing architectures and algorithms",
+        "reduce architectural risk and technical debt while adding AI capability"
+      ],
+      "metrics_to_include": [
+        "cost reduction",
+        "scalability improvement",
+        "deployment frequency",
+        "infrastructure efficiency",
+        "risk or debt reduction"
+      ],
+      "story_format_guidance": "Use ARIS. Start with platform constraints or debt, show the target-state architecture, then quantify operational or cost impact.",
+      "citation": "cloud_preference: multi_cloud 29%, Azure 15%, AWS 11%; valued evidence: scale 15, cost 7; success metrics include scalability 3, technical debt 2, architectural risks 2, modernization opportunities 2"
+    },
+    {
+      "rank": 5,
+      "archetype": "Technical guidance and cross-functional architecture translation",
+      "what_it_proves": "Adds player-coach credibility without overstating formal management scope.",
+      "pain_points_addressed": [
+        "guide team members through AI integration patterns and code quality",
+        "align engineering, security, product, and stakeholders around architecture decisions",
+        "turn architecture into delivery standards and implementation guidance"
+      ],
+      "metrics_to_include": [
+        "number of teams enabled",
+        "delivery acceleration",
+        "defect reduction",
+        "review turnaround",
+        "standard adoption"
+      ],
+      "story_format_guidance": "Use STAR. Focus on the technical leadership mechanism such as standards, reviews, or mentoring, then quantify delivery or quality impact rather than team-size prestige.",
+      "citation": "communication 67/88 (76.1%); collaboration 56/88 (63.6%); stakeholder_management 39/88 (44.3%); mentoring 18/88 (20.5%); player_coach 38%"
+    }
+  ],
+  "role_weighting_guidance": {
+    "highest_weight_roles": [
+      "Roles with explicit architecture ownership, especially AI Architect, AI Solution Architect, Solutions Architect, or equivalent senior technical architect roles.",
+      "Roles showing end-to-end delivery of AI-enabled platforms, enterprise integrations, distributed systems, or cloud modernization.",
+      "Hands-on technical lead roles should be weighted highly when they show architecture decisions plus delivery outcomes, even if the title is not pure 'architect'."
+    ],
+    "expand_in_work_history": [
+      "Expand roles with architecture proof, production delivery, stakeholder translation, platform design, cloud/system integration, evaluation, governance, or reliability outcomes.",
+      "Expand work that shows enterprise consulting or consultancy context when true, because consulting/consultancy signals recur in 20 roles combined and solution-architecture titles dominate.",
+      "Expand roles where non-AI systems experience maps cleanly to distributed systems, APIs, microservices, data platforms, or resilience patterns, then bridge that work to later AI architecture."
+    ],
+    "compress_in_work_history": [
+      "Compress roles that are mostly people management, generic delivery management, research, or isolated model experimentation without production architecture.",
+      "Compress shallow tool-only roles that cannot show ownership of architecture, integration, or measurable deployment outcomes.",
+      "Compress early roles with limited relevance once 2-4 strong architecture roles are established."
+    ],
+    "how_to_frame_non_ai_experience": [
+      "Frame prior backend, platform, cloud, distributed systems, or data engineering work as the foundation for current AI architecture; emphasize service boundaries, resilience, performance, integration, and modernization.",
+      "Translate non-AI architecture experience into adjacent evidence such as APIs, microservices, CI/CD, Kubernetes, MLOps-like operational discipline, or enterprise target-state design.",
+      "Do not force non-AI roles into GenAI language; instead show continuity from enterprise systems architecture to production AI rollout."
+    ],
+    "citations": [
+      "title_families: solutions_architect 50%, ai_architect 37%",
+      "platform_design 87/88 (98.9%)",
+      "market_context: consulting 17, consultancy 3",
+      "valued evidence: architecture 20, delivery 19, scale 15",
+      "requires_phd 0/88 (0.0%), research_heavy 0/88 (0.0%)"
+    ]
+  },
+  "language_and_tone": {
+    "recommended_tone": "architect",
+    "formality": "high",
+    "preferred_vocabulary": [
+      "architecture",
+      "solution design",
+      "platform design",
+      "enterprise integration",
+      "production delivery",
+      "guardrails",
+      "evaluation",
+      "reliability",
+      "scalability",
+      "target architecture",
+      "technical roadmap",
+      "cross-functional",
+      "stakeholder alignment",
+      "modernization"
+    ],
+    "avoid_vocabulary": [
+      "visionary",
+      "thought leader",
+      "AI evangelist",
+      "ninja",
+      "guru",
+      "best-in-class",
+      "full-stack",
+      "people manager",
+      "P&L owner",
+      "research-driven",
+      "published"
+    ],
+    "citations": [
+      "platform_design 87/88 (98.9%)",
+      "communication 67/88 (76.1%), collaboration 56/88 (63.6%), stakeholder_management 39/88 (44.3%)",
+      "management signals weak: hiring 2/88 (2.3%), performance_management 2/88 (2.3%), budget_pnl 0/88 (0.0%)",
+      "requires_phd 0/88 (0.0%), research_heavy 0/88 (0.0%)"
+    ]
+  },
+  "unsafe_or_weak_framing": {
+    "avoid_claims": [
+      "Customer-facing solution architecture unless client interaction is explicit on the CV.",
+      "AWS or Azure architecture ownership unless the provider is named explicitly in prior work.",
+      "DevOps, infrastructure, or platform ownership unless supported by concrete deployment responsibility.",
+      "Full-stack delivery if the CV mainly shows backend, platform, or architecture work.",
+      "Direct public-sector delivery, smart-city, or government deployment claims unless evidenced.",
+      "German C1, Polish, or other native-language claims unless explicitly shown.",
+      "Hands-on ownership of GDPR, DSGVO, EU AI Act, or responsible-AI programs unless the CV proves delivery scope.",
+      "Formal people management, hiring, org building, budget, or direct-report ownership unless explicitly evidenced."
+    ],
+    "buzzword_patterns": [
+      "Long undifferentiated tool lists without architecture outcomes.",
+      "Generic 'LLM expert' or 'GenAI specialist' wording with no production, governance, or integration proof.",
+      "Leadership-heavy language that does not show mentoring, stakeholder translation, or architecture decisions.",
+      "Cloud badge stacking when multi-cloud or provider-neutral architecture is the safer truth."
+    ],
+    "title_inflation_risks": [
+      "Inflating technical lead or senior engineer roles into director or head titles.",
+      "Using 'Chief' or 'VP' language in a category where senior IC and player-coach signals dominate.",
+      "Using 'manager' framing by default when manager roles are only 1% and senior_manager roles 3%."
+    ],
+    "research_framing_risks": [
+      "Do not add research, publication, or PhD framing as a positive signal in this category.",
+      "Do not describe experimentation alone as category fit; convert it into architecture, delivery, evaluation, and governance evidence or omit it."
+    ],
+    "domain_or_region_risks": [
+      "Do not imply consulting, enterprise SaaS, or public-sector depth unless the CV shows those sectors explicitly.",
+      "Do not imply remote-global breadth or multilingual fluency beyond what the CV supports.",
+      "Do not imply region-specific compliance leadership from isolated exposure."
+    ],
+    "citations": [
+      "deep_analysis unsafe_claims_top includes customer-facing, AWS ownership, DevOps ownership, full-stack, public-sector, German C1, DSGVO/EU AI Act ownership",
+      "senior_ic 79%, player_coach 38%, senior_manager 3%, manager 1%",
+      "hiring 2/88 (2.3%), org_building 10/88 (11.4%), budget_pnl 0/88 (0.0%)",
+      "requires_phd 0/88 (0.0%), research_heavy 0/88 (0.0%)",
+      "native_language_requirements: German 3, Polish 1, English 1"
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "recommendation": "Anchor the CV around hands-on architecture and production delivery rather than executive leadership.",
+      "support": [
+        "platform_design 87/88 (98.9%)",
+        "senior_ic 79%, ic 49%, player_coach 38%, manager 1%",
+        "valued evidence: architecture 20, delivery 19"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Treat communication, collaboration, and stakeholder translation as core signals, but keep management claims narrow.",
+      "support": [
+        "communication 67/88 (76.1%)",
+        "collaboration 56/88 (63.6%)",
+        "stakeholder_management 39/88 (44.3%)",
+        "hiring 2/88 (2.3%), performance_management 2/88 (2.3%)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Use agentic systems, guardrails, governance, and RAG as differentiators when explicitly evidenced.",
+      "support": [
+        "agents_orchestration 34/88 (38.6%)",
+        "guardrails_governance 33/88 (37.5%)",
+        "rag 25/88 (28.4%)",
+        "evaluation_quality 18/88 (20.5%)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Do not overfit the CV around one tool, cloud, or language because the technical stack is fragmented.",
+      "support": [
+        "highest hard skill is python 29/88 (33.0%); programming_languages required python 31/88 (35.2%)",
+        "vector databases 21/88 (23.9%), mlops 17/88 (19.3%), kubernetes 16/88 (18.2%), langchain 20/88 (22.7%)",
+        "cloud_preference: multi_cloud 29%, Azure 15%, AWS 11%"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Weight enterprise integration and modernization stories heavily; this category differs from adjacent AI roles by expecting AI to fit existing systems and architecture constraints.",
+      "support": [
+        "microservices 12/88 (13.6%), apis 10/88 (11.4%), data pipelines 15/88 (17.0%)",
+        "pain points include Java/Spring integration, data access optimization, enterprise architecture problems, and cloud scaling",
+        "valued evidence: scale 15, reliability 11, cost 7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Keep research, publication, PhD, and formal people-management framing inside risk controls rather than positive positioning.",
+      "support": [
+        "requires_phd 0/88 (0.0%)",
+        "research_heavy 0/88 (0.0%)",
+        "budget_pnl 0/88 (0.0%), hiring 2/88 (2.3%), performance_management 2/88 (2.3%)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Use ATS repetition selectively: strongest 4-6 keywords should be architecture, production delivery, agents, guardrails/governance, RAG, and enterprise integration when true.",
+      "support": [
+        "platform_design 87/88 (98.9%)",
+        "agents_orchestration 34/88 (38.6%)",
+        "guardrails_governance 33/88 (37.5%)",
+        "rag 25/88 (28.4%)",
+        "communication 67/88 (76.1%) and collaboration 56/88 (63.6%) support integration/stakeholder wording"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "recommendation": "Use cloud-provider keywords conservatively; prefer provider-neutral architecture unless the CV has named delivery on that platform.",
+      "support": [
+        "cloud_preference: multi_cloud 29% exceeds Azure 15% and AWS 11%",
+        "deep-analysis unsafe claims flag AWS ownership if not shown explicitly"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Mentoring can be presented as limited player-coach evidence, but not as broad team management.",
+      "support": [
+        "player_coach 38%",
+        "mentoring 18/88 (20.5%)",
+        "org_building 10/88 (11.4%), hiring 2/88 (2.3%)"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "recommendation": "This category is distinct from research-heavy AI roles because hiring evidence rewards shipped architecture, reliability, evaluation, governance, and integration over model novelty.",
+      "support": [
+        "valued evidence: architecture 20, delivery 19, reliability 11, evaluation 11, governance 10",
+        "requires_phd 0/88 (0.0%), research_heavy 0/88 (0.0%)"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

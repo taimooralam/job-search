@@ -1,0 +1,10 @@
+# AI PRINCIPAL ARCHITECT
+
+**Company:** DEVOTEAM
+**Location:** 
+**Score:** 85 (Tier C)
+**Status:** discarded
+
+---
+
+Devoteam es una consultora europea líder enfocada en estrategia digital,plataformas tecnológicas, ciberseguridad y transformación empresarial a travésde la tecnología.La Tecnología está en nuestro ADN y creemos en ella como una palanca capaz deimpulsar el cambio para mejorar, manteniendo un equilibrio que nos permiteofrecer a nuestra cartera de clientes herramientas tecnológicas de primer nivelpero siempre con la cercanía y profesionalidad de un equipo que actúa como guíadurante el camino.Devoteam lleva más de 25 años comprometidos con la tecnología al servicio de laspersonas. Con más de 10.000 personas en el grupo, en 20 países de Europa,Oriente Medio y África.Descripción del empleo¡Estamos creciendo y ampliamos nuestro equipo de AI! 🚀Buscamos un AI Principal Architect para liderar técnicamente iniciativas clave ydefinir arquitecturas de alto impacto.🔎 Perfil que buscamos9 a 12 años de experiencia en soluciones de datos y analítica5 a 8 años en roles de arquitecturaSólida experiencia en arquitecturas cloud (preferentemente Azure)Integración de IA/ML, gobierno de datos y liderazgo técnico probadoSi te apasiona diseñar plataformas escalables, impulsar la adopción de IA yguiar equipos hacia la excelencia técnica, ¡queremos conocerte!RequisitosTechnical Skills: Data and Analytics computing methodologies Data and Analytics platforms, tools, and integration processes both on-premand cloud Common integration patterns (batch, micro-batch, near real time, real time) Data Fabric framework Basic Programming skills in Python, SQL Data management and data securityTools Knowledge: Data pipeline tools like ADF, IICS Data platforms: Snowflake, Databricks, BigQuery BI tools: Power BI, Tableau, Looker Cloud platforms: Azure, AWS, GCP Streaming/Event processing and pub/sub software AI/ML Tools like MLOps, Tensorflow, Mosaic AI, AWS Sagemaker, PytorchInformación adicionalCONFIDENCIALShow more Show less

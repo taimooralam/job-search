@@ -1,0 +1,2054 @@
+[
+  {
+    "job_id": "692a561845fa3c355f84cdc1",
+    "title_normalized": "Engineering Manager, GenAI Platform Development Experience",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "SLOs, dashboards, alerts, runbooks, staged rollouts/rollbacks, on-call rotation, incident response"
+    },
+    "hard_skills_must_have": [
+      "distributed systems",
+      "shared services/platforms",
+      "multi-tenant concerns",
+      "contracts/SDKs/permissions/usage controls",
+      "architecture and APIs",
+      "read/write code",
+      "code reviews",
+      "prototyping",
+      "contributing code and tests",
+      "containers",
+      "Kubernetes",
+      "AWS or GCP",
+      "on-call operations",
+      "incident response",
+      "customer-support triage",
+      "bug management",
+      "SLOs",
+      "dashboards",
+      "alerts",
+      "runbooks",
+      "staged rollouts/rollbacks",
+      "cost awareness",
+      "model inference",
+      "knowledge bases",
+      "agents/tools",
+      "guardrails",
+      "cost management",
+      "evaluation",
+      "benchmarking",
+      "versioning",
+      "deploy"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "containers",
+      "Kubernetes"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "collaboration",
+      "cross-functional leadership",
+      "influence_without_authority",
+      "people-first leadership"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "company-wide productivity gains from GenAI tools",
+      "adoption and understanding of usage patterns",
+      "ship value fast without breaking trust",
+      "production readiness",
+      "SLO compliance",
+      "roadmap timelines"
+    ],
+    "implied_pain_points": [
+      "build and operate the core GenAI platform",
+      "increase adoption of internal GenAI tools",
+      "secure and compliant AI delivery",
+      "improve platform analytics and usage insights",
+      "maintain reliability and cost control",
+      "hire and develop the team"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years software engineering and 2+ years engineering manager",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show hands-on engineering leadership on an AI platform, not just people management. The strongest evidence would be an AI workflow or platform launch with real users, plus clear ownership of reliability, evaluation, guardrails, and operating cadence.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "reliability",
+        "delivery",
+        "evaluation",
+        "governance",
+        "scale",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal engineering manager tenure unless he has managed directly",
+        "AWS/GCP or Kubernetes ownership unless already documented",
+        "large-scale QPS or enterprise-user scale unless quantified",
+        "security/compliance ownership in regulated enterprise AI unless explicitly shown",
+        "P&L or budget ownership",
+        "building a production GenAI platform with no evidence of evaluation or guardrails"
+      ],
+      "best_candidate_experience_mapping": [
+        "Technical Lead at Seven.One Entertainment Group: closest fit for hands-on leadership, architecture reviews, and cross-functional execution",
+        "Commander-4: strongest match for the GenAI platform surface area because it includes RAG, semantic caching, evaluation, guardrails, and enterprise adoption",
+        "Lantern: relevant for routing, multi-provider control, and reliability/cost tradeoffs in an AI platform"
+      ]
+    }
+  },
+  {
+    "job_id": "695d39f26dd552ab7ec2d0f0",
+    "title_normalized": "AI Product Manager",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "170,000 associates; 750+ leading and digital-first brands",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product backlog management",
+      "user story writing",
+      "roadmap alignment",
+      "sprint planning",
+      "scrum",
+      "retrospectives",
+      "agile methodologies",
+      "Jira",
+      "Confluence",
+      "product lifecycle management",
+      "business requirements translation",
+      "prioritization",
+      "market research",
+      "competitive analysis",
+      "cross-functional delivery",
+      "AI functionality",
+      "product management tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "PyTorch",
+        "TensorFlow",
+        "Hugging Face"
+      ],
+      "observability": [
+        "Weights & Biases (wandb)",
+        "MLflow"
+      ]
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "presentation",
+      "public_speaking",
+      "stakeholder_management",
+      "collaboration",
+      "prioritization",
+      "analytical_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "business impact",
+      "ROI",
+      "customer value",
+      "successful delivery on schedule",
+      "alignment with business objectives",
+      "high-quality product delivery",
+      "stakeholder updates",
+      "company event presentations"
+    ],
+    "implied_pain_points": [
+      "prioritize and maintain a GenAI product backlog",
+      "translate strategy into actionable backlog items",
+      "coordinate engineering, data science, and UX delivery",
+      "manage product lifecycle from ideation to continuous improvement",
+      "drive adoption and communicate progress to stakeholders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "3-5 years Product Owner or Product Manager",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs clear product ownership signals, not only engineering delivery. The best evidence would be examples of prioritizing a backlog, translating business needs into user stories, coordinating launches, and showing measurable adoption or business impact for an AI product.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal product manager ownership of backlog and roadmap unless explicitly demonstrated",
+        "product marketing or go-to-market ownership unless shown",
+        "hands-on ML framework work if the experience is only platform engineering",
+        "direct customer-facing product leadership at company-event level",
+        "using Jira/Confluence as a PM if not documented"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: closest AI-product proxy because it shows an internal product with real users, adoption concerns, and operational follow-through",
+        "Technical Lead at Seven.One Entertainment Group: useful for cross-functional delivery and turning requirements into shipped systems",
+        "Lantern: relevant for platform thinking and product tradeoffs, but it is weaker than Commander-4 for explicit product-management evidence"
+      ]
+    }
+  },
+  {
+    "job_id": "695e163b6dd552ab7ec2d1a1",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "global clients",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product roadmaps",
+      "user stories",
+      "prototyping",
+      "product marketing assets",
+      "messaging",
+      "demos",
+      "screencasts",
+      "onboarding guides",
+      "training resources",
+      "operational playbooks",
+      "user feedback analysis",
+      "market research",
+      "metrics analysis",
+      "SQL analytics",
+      "video tools",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "communicating with engineers and designers",
+      "end-to-end product ownership",
+      "quality",
+      "delivery",
+      "user impact"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "stakeholder_alignment",
+      "executive_communication",
+      "ownership",
+      "thriving_in_ambiguity",
+      "collaboration",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption",
+      "end-to-end product outcomes"
+    ],
+    "implied_pain_points": [
+      "launch and scale AI products",
+      "turn data and user feedback into product decisions",
+      "create playbooks and training materials for internal and client use",
+      "align engineering, design, and leadership around priorities",
+      "provide executive-ready updates and product messaging"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should prove 0\u21921 execution on an AI or software product, plus enough technical depth to prototype with engineers. It should also show that the candidate can turn user feedback into prioritized decisions, produce enablement material, and communicate clearly to leadership.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal startup founder experience unless explicitly shown",
+        "product marketing ownership unless supported by concrete examples",
+        "SQL-heavy analytics ownership unless he has done it before",
+        "executive-level product influence unless there is proof of that scope",
+        "client-facing enablement work such as demos and screencasts unless already documented"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: best match because it is a real AI product with users, launch decisions, adoption, and platform tradeoffs",
+        "Lantern: useful for productizing infrastructure-style AI capabilities such as routing and reliability",
+        "Technical Lead at Seven.One Entertainment Group: supports the cross-functional execution and technical prototyping side of the role"
+      ]
+    }
+  },
+  {
+    "job_id": "695e6cee6dd552ab7ec2d289",
+    "title_normalized": "AI Product Manager",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI product development",
+      "prototyping",
+      "product marketing",
+      "user feedback analysis",
+      "market research",
+      "SQL analytics",
+      "Canva",
+      "video tools",
+      "design software",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "dashboards",
+      "training materials",
+      "operational playbooks"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "entrepreneurial_mindset",
+      "comfort_with_ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "turn user feedback and data into product decisions",
+      "launch and scale AI products in an ambiguous startup environment",
+      "create enablement assets such as playbooks, training, and dashboards",
+      "align priorities with leadership while balancing hands-on execution"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV needs to show product-minded AI delivery, not just engineering depth: 0 to 1 launches, user adoption, and clear conversion of customer feedback into roadmap decisions. It should also show cross-functional work with design and leadership, plus tangible outcomes from prototypes, playbooks, and analytics.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "evaluation",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal product management ownership of the full roadmap and go-to-market",
+        "deep product marketing leadership across multiple launches",
+        "hands-on ownership of sales and customer-success operations"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match if framed as an AI product launch with adoption metrics, because it shows an enterprise AI workflow platform used by 2000 users.",
+        "Lantern maps well because it shows AI platform thinking, routing, and reliability decisions rather than only feature delivery.",
+        "Technical Lead experience at Seven.One supports cross-functional execution, but the CV should frame it as product ownership and user impact, not just system design."
+      ]
+    }
+  },
+  {
+    "job_id": "696252c86dd552ab7ec2d7af",
+    "title_normalized": "Senior Engineering Manager, AI Applications Platform",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "secure, scalable, and reliable"
+    },
+    "hard_skills_must_have": [
+      "web development",
+      "application development",
+      "cloud architectures",
+      "containerization",
+      "scalable APIs",
+      "LLMs",
+      "RAG",
+      "integrations",
+      "developer-facing debugging",
+      "run insights",
+      "traceability features",
+      "GDPR",
+      "CCPA",
+      "AI transparency requirements",
+      "privacy-by-design"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "containerization"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR",
+      "CCPA",
+      "AI transparency requirements",
+      "privacy-by-design"
+    ],
+    "soft_skills": [
+      "stakeholder_management",
+      "collaboration",
+      "mentoring",
+      "coaching",
+      "communication"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable business value",
+      "adoption",
+      "secure AI-powered features",
+      "scalable AI-powered features",
+      "reliable AI-powered features"
+    ],
+    "implied_pain_points": [
+      "abstract complex AI technologies into reusable platform capabilities",
+      "help product teams ship AI features quickly and safely",
+      "provide enterprise-ready access to LLMs with governance and privacy built in",
+      "improve developer experience and adoption across multiple product teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years of experience in technical leadership managing software engineering teams",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV needs to prove that the candidate can turn complex AI infrastructure into reusable platform capabilities that multiple teams adopt. It should also show governance, privacy, and reliability decisions in production, not just experimentation.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "governance",
+        "delivery",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "running SRE, security operations, or database operations end to end",
+        "formal GDPR or CCPA compliance program ownership at enterprise scale",
+        "managing large engineering teams with significant direct-report depth"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the best match because it already shows reusable AI platform capabilities, RAG, evaluation, guardrails, and adoption by 2000 users.",
+        "Lantern maps strongly to LLM access, multi-provider routing, and reliability patterns such as circuit breaking.",
+        "Prior CQRS/event-sourcing and microservices work supports the architectural abstraction and platform thinking this role needs."
+      ]
+    }
+  },
+  {
+    "job_id": "6975609d5239de5ec057b41c",
+    "title_normalized": "Vice President of Technology",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "4",
+      "hiring": "not_specified",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "scalability, performance, security, maintainability, frequent reliable deployments"
+    },
+    "hard_skills_must_have": [
+      "microservices",
+      "GraphQL",
+      "RESTful APIs",
+      "AWS",
+      "CI_CD",
+      "data warehouse",
+      "data modeling",
+      "warehouse schema design",
+      "ETL_ELT",
+      "external system integrations",
+      "component-based frontend",
+      "data privacy",
+      "cybersecurity",
+      "IT support"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "data warehouse",
+      "data modeling",
+      "warehouse schema design",
+      "ETL_ELT",
+      "business intelligence"
+    ],
+    "governance_compliance": [
+      "data privacy",
+      "cybersecurity"
+    ],
+    "soft_skills": [
+      "leadership",
+      "ownership",
+      "accountability",
+      "collaboration",
+      "mentoring",
+      "continuous_improvement"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "scalability",
+      "reliability",
+      "delivery frequency",
+      "reduced cycle time",
+      "operational improvements",
+      "high-quality user experiences"
+    ],
+    "implied_pain_points": [
+      "lead a distributed engineering organization across time zones and employment models",
+      "improve platform scalability and reliability for a production-grade software system",
+      "build out data warehouse and BI capabilities",
+      "reduce operational toil and cycle time through process and tooling improvements"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should show executive-level technical leadership over complex distributed systems, with evidence of reliability, scale, and cross-functional execution. It also needs to demonstrate people leadership, delivery discipline, and ownership of data-platform or infrastructure modernization work.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "hiring",
+        "architecture",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "VP-level org ownership with direct management of multiple directors",
+        "owning IT, cybersecurity, and infrastructure operations end to end",
+        "large-scale budget or P&L responsibility"
+      ],
+      "best_candidate_experience_mapping": [
+        "The Technical Lead role at Seven.One is the best anchor because it shows engineering leadership on an enterprise AI platform and cross-functional delivery.",
+        "Commander-4 and Lantern provide evidence of platform architecture, reliability thinking, and production AI systems.",
+        "Prior CQRS/event-sourcing and microservices/RabbitMQ work maps to the distributed platform and operational rigor this role needs."
+      ]
+    }
+  },
+  {
+    "job_id": "695e166f6dd552ab7ec2d1a2",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "SQL analytics",
+      "video tools",
+      "design software (e.g., Canva)",
+      "productivity platforms (Asana, Notion, Airtable, HubSpot)",
+      "prototyping",
+      "data analysis",
+      "market research"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_alignment",
+      "ownership",
+      "adaptability",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "needs someone to turn AI product ideas into shipped outcomes from concept to launch",
+      "needs roadmap prioritization based on data and user feedback",
+      "needs stronger adoption through product marketing, onboarding, and playbooks",
+      "needs cross-functional alignment across engineering, design, leadership, and clients"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show ownership of an AI or software product from concept to launch, with evidence of prioritization, user adoption, and measurable outcomes. It should also show comfort working directly with engineers and designers, plus using data to make product decisions.\n",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim formal product management ownership unless it is directly evidenced.",
+        "Do not claim pricing, GTM, or product marketing ownership without explicit proof.",
+        "Do not claim hands-on use of Canva, HubSpot, Notion, Airtable, or Asana unless he has actually used them.",
+        "Do not claim people management, hiring, or budget ownership."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it is an enterprise AI workflow platform with 2,000 users, 42 plugins, RAG, semantic caching, evaluation, and guardrails; that is strong evidence of AI product delivery and adoption.",
+        "Lantern also helps because it shows AI platform thinking around multi-provider routing and reliability, which supports the 'prototype and deploy' part of the role.",
+        "His prior backend and microservices work is weaker for this role, but it can support the execution and cross-functional credibility parts of the story."
+      ]
+    }
+  },
+  {
+    "job_id": "695e167e6dd552ab7ec2d1a3",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "SQL analytics",
+      "video tools",
+      "design software (e.g., Canva)",
+      "productivity platforms (Asana, Notion, Airtable, HubSpot)",
+      "prototyping",
+      "data analysis",
+      "market research"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_alignment",
+      "ownership",
+      "adaptability",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "needs someone to turn AI product ideas into shipped outcomes from concept to launch",
+      "needs roadmap prioritization based on data and user feedback",
+      "needs stronger adoption through product marketing, onboarding, and playbooks",
+      "needs cross-functional alignment across engineering, design, leadership, and clients"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show ownership of an AI or software product from concept to launch, with evidence of prioritization, user adoption, and measurable outcomes. It should also show comfort working directly with engineers and designers, plus using data to make product decisions.\n",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim formal product management ownership unless it is directly evidenced.",
+        "Do not claim pricing, GTM, or product marketing ownership without explicit proof.",
+        "Do not claim hands-on use of Canva, HubSpot, Notion, Airtable, or Asana unless he has actually used them.",
+        "Do not claim people management, hiring, or budget ownership."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it is an enterprise AI workflow platform with 2,000 users, 42 plugins, RAG, semantic caching, evaluation, and guardrails; that is strong evidence of AI product delivery and adoption.",
+        "Lantern also helps because it shows AI platform thinking around multi-provider routing and reliability, which supports the 'prototype and deploy' part of the role.",
+        "His prior backend and microservices work is weaker for this role, but it can support the execution and cross-functional credibility parts of the story."
+      ]
+    }
+  },
+  {
+    "job_id": "695e6b426dd552ab7ec2d279",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "SQL analytics",
+      "video tools",
+      "design software (e.g., Canva)",
+      "productivity platforms (Asana, Notion, Airtable, HubSpot)",
+      "prototyping",
+      "data analysis",
+      "market research"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_alignment",
+      "ownership",
+      "adaptability",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "adoption"
+    ],
+    "implied_pain_points": [
+      "needs someone to turn AI product ideas into shipped outcomes from concept to launch",
+      "needs roadmap prioritization based on data and user feedback",
+      "needs stronger adoption through product marketing, onboarding, and playbooks",
+      "needs cross-functional alignment across engineering, design, leadership, and clients"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show ownership of an AI or software product from concept to launch, with evidence of prioritization, user adoption, and measurable outcomes. It should also show comfort working directly with engineers and designers, plus using data to make product decisions.\n",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim formal product management ownership unless it is directly evidenced.",
+        "Do not claim pricing, GTM, or product marketing ownership without explicit proof.",
+        "Do not claim hands-on use of Canva, HubSpot, Notion, Airtable, or Asana unless he has actually used them.",
+        "Do not claim people management, hiring, or budget ownership."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it is an enterprise AI workflow platform with 2,000 users, 42 plugins, RAG, semantic caching, evaluation, and guardrails; that is strong evidence of AI product delivery and adoption.",
+        "Lantern also helps because it shows AI platform thinking around multi-provider routing and reliability, which supports the 'prototype and deploy' part of the role.",
+        "His prior backend and microservices work is weaker for this role, but it can support the execution and cross-functional credibility parts of the story."
+      ]
+    }
+  },
+  {
+    "job_id": "695e6b636dd552ab7ec2d27c",
+    "title_normalized": "AI Product Manager",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "roadmap prioritization",
+      "user story definition",
+      "0->1 product launches",
+      "scaling AI or software products",
+      "market research",
+      "metrics analysis",
+      "product marketing",
+      "prototyping",
+      "SQL analytics",
+      "video tools",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "ambiguity_tolerance",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "seamless experiences",
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "turn AI product ideas into launched products",
+      "prioritize roadmaps from user feedback, research, and metrics",
+      "drive user adoption with playbooks, training, and product marketing assets",
+      "align engineering, design, leadership, and executive stakeholders",
+      "own outcomes across quality, delivery, and user impact"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show you have taken AI capabilities from concept to shipped product, not just built internal tooling. It should prove you can prioritize roadmaps, work across engineering and design, and translate user feedback and metrics into decisions, playbooks, and adoption gains.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "architecture",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal product management ownership of roadmaps and product marketing without clear PM evidence",
+        "full P&L or pricing ownership",
+        "direct hiring or performance management of a product organization",
+        "owning go-to-market strategy or demand generation campaigns as the primary owner"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match because it shows an enterprise AI product shipped to 2,000 users with RAG, semantic caching, evaluation, and guardrails, which maps well to launch, adoption, and measurable value.",
+        "Lantern maps to prototyping and productizing AI capabilities with multi-provider routing and circuit-breaking, which supports the reliability and execution side of the role.",
+        "Your technical lead and prior distributed-systems work help demonstrate cross-functional execution and the ability to communicate tradeoffs to engineering and leadership."
+      ]
+    }
+  },
+  {
+    "job_id": "695e6bdb6dd552ab7ec2d281",
+    "title_normalized": "AI Product Manager",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "roadmap prioritization",
+      "user story definition",
+      "0->1 product launches",
+      "scaling AI or software products",
+      "market research",
+      "metrics analysis",
+      "product marketing",
+      "prototyping",
+      "SQL analytics",
+      "video tools",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "ambiguity_tolerance",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "seamless experiences",
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "turn AI product ideas into launched products",
+      "prioritize roadmaps from user feedback, research, and metrics",
+      "drive user adoption with playbooks, training, and product marketing assets",
+      "align engineering, design, leadership, and executive stakeholders",
+      "own outcomes across quality, delivery, and user impact"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show you have taken AI capabilities from concept to shipped product, not just built internal tooling. It should prove you can prioritize roadmaps, work across engineering and design, and translate user feedback and metrics into decisions, playbooks, and adoption gains.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "architecture",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal product management ownership of roadmaps and product marketing without clear PM evidence",
+        "full P&L or pricing ownership",
+        "direct hiring or performance management of a product organization",
+        "owning go-to-market strategy or demand generation campaigns as the primary owner"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match because it shows an enterprise AI product shipped to 2,000 users with RAG, semantic caching, evaluation, and guardrails, which maps well to launch, adoption, and measurable value.",
+        "Lantern maps to prototyping and productizing AI capabilities with multi-provider routing and circuit-breaking, which supports the reliability and execution side of the role.",
+        "Your technical lead and prior distributed-systems work help demonstrate cross-functional execution and the ability to communicate tradeoffs to engineering and leadership."
+      ]
+    }
+  },
+  {
+    "job_id": "695e6d8f6dd552ab7ec2d296",
+    "title_normalized": "AI Product Manager",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "roadmap prioritization",
+      "user story definition",
+      "0->1 product launches",
+      "scaling AI or software products",
+      "market research",
+      "metrics analysis",
+      "product marketing",
+      "prototyping",
+      "SQL analytics",
+      "video tools",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "ownership",
+      "ambiguity_tolerance",
+      "entrepreneurial_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "seamless experiences",
+      "measurable value",
+      "quality",
+      "delivery",
+      "user impact",
+      "user adoption"
+    ],
+    "implied_pain_points": [
+      "turn AI product ideas into launched products",
+      "prioritize roadmaps from user feedback, research, and metrics",
+      "drive user adoption with playbooks, training, and product marketing assets",
+      "align engineering, design, leadership, and executive stakeholders",
+      "own outcomes across quality, delivery, and user impact"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show you have taken AI capabilities from concept to shipped product, not just built internal tooling. It should prove you can prioritize roadmaps, work across engineering and design, and translate user feedback and metrics into decisions, playbooks, and adoption gains.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "architecture",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "formal product management ownership of roadmaps and product marketing without clear PM evidence",
+        "full P&L or pricing ownership",
+        "direct hiring or performance management of a product organization",
+        "owning go-to-market strategy or demand generation campaigns as the primary owner"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match because it shows an enterprise AI product shipped to 2,000 users with RAG, semantic caching, evaluation, and guardrails, which maps well to launch, adoption, and measurable value.",
+        "Lantern maps to prototyping and productizing AI capabilities with multi-provider routing and circuit-breaking, which supports the reliability and execution side of the role.",
+        "Your technical lead and prior distributed-systems work help demonstrate cross-functional execution and the ability to communicate tradeoffs to engineering and leadership."
+      ]
+    }
+  },
+  {
+    "job_id": "695e6dd56dd552ab7ec2d299",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "prototyping",
+      "SQL analytics",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "video tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder alignment",
+      "entrepreneurial mindset",
+      "ownership",
+      "ambiguity tolerance"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "seamless experiences",
+      "measurable value",
+      "user adoption",
+      "quality",
+      "delivery",
+      "user impact"
+    ],
+    "implied_pain_points": [
+      "turn AI product ideas from concept to launch",
+      "prioritize product roadmaps and user stories",
+      "convert user feedback and market research into product decisions",
+      "improve adoption through messaging, demos, and training materials",
+      "create playbooks and dashboards for internal and client use",
+      "align product priorities with leadership and executive stakeholders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show that the candidate has led 0->1 AI or software products, worked cross-functionally with engineering/design/leadership, and used data plus customer feedback to make product decisions. It should also show concrete output from product enablement work such as playbooks, training materials, demos, or dashboards, plus clear examples of shipping outcomes with user impact.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "evaluation",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Formal product manager ownership if the work was actually in engineering leadership rather than PM",
+        "Direct P&L ownership",
+        "Ownership of product marketing end-to-end unless explicitly done",
+        "People management or hiring responsibility",
+        "Specific hands-on use of Canva, Asana, Airtable, or HubSpot unless explicitly true"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps best because it is a 0->1 enterprise AI workflow platform with 42 plugins, 2000 users, RAG, evaluation, and guardrails, which is close to shipping and iterating AI product capabilities with measurable adoption.",
+        "Lantern maps well because multi-provider routing and circuit breaker design show product-enabling platform thinking, especially around reliability and operational readiness.",
+        "The Seven.One technical lead role supports the cross-functional engineering leadership and stakeholder collaboration angle needed for an AI product manager."
+      ]
+    }
+  },
+  {
+    "job_id": "695e6dec6dd552ab7ec2d29c",
+    "title_normalized": "Product Manager, AI",
+    "title_family": "other",
+    "seniority": "not_specified",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "product management",
+      "prototyping",
+      "SQL analytics",
+      "Canva",
+      "Asana",
+      "Notion",
+      "Airtable",
+      "HubSpot",
+      "video tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder alignment",
+      "entrepreneurial mindset",
+      "ownership",
+      "ambiguity tolerance"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "seamless experiences",
+      "measurable value",
+      "user adoption",
+      "quality",
+      "delivery",
+      "user impact"
+    ],
+    "implied_pain_points": [
+      "turn AI product ideas from concept to launch",
+      "prioritize product roadmaps and user stories",
+      "convert user feedback and market research into product decisions",
+      "improve adoption through messaging, demos, and training materials",
+      "create playbooks and dashboards for internal and client use",
+      "align product priorities with leadership and executive stakeholders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show that the candidate has led 0->1 AI or software products, worked cross-functionally with engineering/design/leadership, and used data plus customer feedback to make product decisions. It should also show concrete output from product enablement work such as playbooks, training materials, demos, or dashboards, plus clear examples of shipping outcomes with user impact.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "evaluation",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Formal product manager ownership if the work was actually in engineering leadership rather than PM",
+        "Direct P&L ownership",
+        "Ownership of product marketing end-to-end unless explicitly done",
+        "People management or hiring responsibility",
+        "Specific hands-on use of Canva, Asana, Airtable, or HubSpot unless explicitly true"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps best because it is a 0->1 enterprise AI workflow platform with 42 plugins, 2000 users, RAG, evaluation, and guardrails, which is close to shipping and iterating AI product capabilities with measurable adoption.",
+        "Lantern maps well because multi-provider routing and circuit breaker design show product-enabling platform thinking, especially around reliability and operational readiness.",
+        "The Seven.One technical lead role supports the cross-functional engineering leadership and stakeholder collaboration angle needed for an AI product manager."
+      ]
+    }
+  },
+  {
+    "job_id": "692c17f745fa3c355f851793",
+    "title_normalized": "Software Engineering Manager (AI)",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "explicit"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "high-scale, high-load distributed systems",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "C#",
+      "JavaScript",
+      "Python",
+      "cloud native architecture",
+      "high-scale distributed systems",
+      "high-load distributed systems",
+      "LLM",
+      "embeddings",
+      "vector databases",
+      "Agile methodologies"
+    ],
+    "hard_skills_nice_to_have": [
+      "RAG",
+      "AI Agents",
+      "Azure",
+      "AWS",
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "C#",
+        "JavaScript",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure",
+        "AWS",
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "distributed systems"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "communication",
+      "stakeholder management",
+      "mentoring",
+      "performance management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "organizational efficiency",
+      "cost-effective practices",
+      "team success through Agile principles",
+      "continuous employee development"
+    ],
+    "implied_pain_points": [
+      "Traditional Search and AI enabled Search need one team-owned solution",
+      "the team needs cost-effective practices while scaling search infrastructure",
+      "the manager must improve team execution, hiring, and performance under pressure"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show you can lead engineers while staying close enough to the code to shape design and integration decisions. The best proof is a shipped AI/search platform with distributed-systems depth, plus concrete examples of hiring, performance management, and cost-aware execution.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "hiring",
+        "cost",
+        "architecture",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Owning traditional search relevance or retrieval at large scale if you only built adjacent AI workflows",
+        "Managing a large org with budget or P&L responsibility",
+        "Deep C#-first engineering leadership if that is not actually your primary background"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it combines RAG, evaluation, guardrails, plugins, and 2,000 users in an enterprise AI workflow platform",
+        "Lantern maps strongly because multi-provider routing and circuit breaking mirror the reliability and cost-control side of AI infrastructure",
+        "Technical Lead experience at Seven.One supports the hands-on leadership, architecture, and cross-team decision-making expected here"
+      ]
+    }
+  },
+  {
+    "job_id": "6931a44845fa3c355f861847",
+    "title_normalized": "Engineering Manager, AI/ML Infrastructure & GenAI Platforms",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "scale across use cases and products",
+      "latency_reliability": "service reliability"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "LLM systems",
+      "GenAI applications",
+      "vector databases",
+      "serving layers",
+      "orchestration tools",
+      "benchmarking framework",
+      "data annotations",
+      "AWS",
+      "Kubernetes",
+      "Docker",
+      "Kafka",
+      "observability",
+      "security",
+      "cost monitoring"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS"
+      ]
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "Docker",
+      "Kafka"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "derived",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "mentorship",
+      "influence",
+      "inclusion"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deliver the core infrastructure powering LLM-based applications",
+      "safe, observable, cost-efficient access to multiple foundation models",
+      "improve software delivery and service reliability",
+      "ship architecturally sound software at a regular cadence"
+    ],
+    "implied_pain_points": [
+      "the company needs a secure, cost-optimized LLM platform for product teams",
+      "the team needs a reliable internal LLM proxy and orchestration layer",
+      "AI infrastructure must scale across multiple use cases without losing observability"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should prove you can own LLM infrastructure end to end: design, rollout, reliability, observability, and cost control. It should show platform ownership with concrete outcomes around safe model access, evaluation, and production AI tooling at scale.",
+      "most_valued_evidence_types": [
+        "reliability",
+        "cost",
+        "architecture",
+        "evaluation",
+        "scale",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep AWS, Kubernetes, or Kafka ownership if you have not operated that stack in production",
+        "Leading a dedicated ML or AI platform organization at multi-team scale",
+        "Hands-on model training or fine-tuning work if your background is primarily platform and integration"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern is the closest match because it is already an LLM gateway with multi-provider routing and circuit-breaker behavior",
+        "Commander-4 matches the platform and governance side through RAG, evaluation, semantic caching, guardrails, and enterprise deployment",
+        "Technical leadership at Seven.One supports the cross-functional ownership style Zendesk wants"
+      ]
+    }
+  },
+  {
+    "job_id": "694a4e50056b4548bf97938c",
+    "title_normalized": "Software Engineering Manager, AI Growth",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "TypeScript",
+      "React",
+      "Node.js",
+      "Next.js",
+      "Go",
+      "MCP",
+      "MCP server",
+      "agentic builders",
+      "native integrations",
+      "A/B testing",
+      "GrowthBook",
+      "Amplitude"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "TypeScript",
+        "Go"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "MCP"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "stakeholder management",
+      "communication",
+      "bias for action",
+      "comfort with ambiguity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "activation rates",
+      "signups from integrations",
+      "developer adoption",
+      "ship fast and iterate"
+    ],
+    "implied_pain_points": [
+      "the team needs to capture AI developer-tool growth through fast experimentation",
+      "native integrations and agentic builders are needed to improve activation and adoption",
+      "architecture must balance velocity with maintainability across the product surface"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should prove you can ship developer-facing AI tooling, keep product velocity high, and still make durable architecture decisions. The strongest evidence is a product or platform that drove adoption through integrations, plus examples of experimentation, metrics-driven iteration, and cross-functional collaboration.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Owning growth experimentation and funnel optimization if you have not run A/B tests or owned activation metrics",
+        "Deep MCP-specific product experience if you have not actually built MCP servers or MCP apps",
+        "Full-stack leadership in TypeScript, React, and Next.js if your recent work has been mostly backend or platform focused"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest analog to developer tooling because it is an AI workflow platform with plugins, integrations, and user adoption",
+        "Lantern maps to the platform integration and routing side of the role",
+        "Prior microservices and real-time systems work supports the architecture and delivery expectations, even if the growth-experimentation part is weaker"
+      ]
+    }
+  },
+  {
+    "job_id": "695a318a6dd552ab7ec2ce5f",
+    "_extraction_failed": true
+  },
+  {
+    "job_id": "698e2e7e7d41dc1e8a638f69",
+    "_extraction_failed": true
+  },
+  {
+    "job_id": "692a022645fa3c355f84c228",
+    "_extraction_failed": true
+  }
+]

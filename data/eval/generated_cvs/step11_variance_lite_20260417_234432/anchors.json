@@ -1,0 +1,22 @@
+[
+  {
+    "category_id": "ai_architect_global",
+    "job_id": "698dee577d41dc1e8a624f16",
+    "jd_path": "data/eval/raw/ai_architect_global/jd_texts/04_softserve_mlllm_technical_architect.md"
+  },
+  {
+    "category_id": "head_of_ai_global",
+    "job_id": "6941566fba31ffd053ff5d56",
+    "jd_path": "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md"
+  },
+  {
+    "category_id": "tech_lead_ai_eea",
+    "job_id": "6929ad6245fa3c355f84b65a",
+    "jd_path": "data/eval/raw/tech_lead_ai_eea/jd_texts/03_zyte_core_ml_ops_team_lead_remote.md"
+  },
+  {
+    "category_id": "staff_ai_engineer_global",
+    "job_id": "694e696d6dd552ab7ec2caf7",
+    "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md"
+  }
+]

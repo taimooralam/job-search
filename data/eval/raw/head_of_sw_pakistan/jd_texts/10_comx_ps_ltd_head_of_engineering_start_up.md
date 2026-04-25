@@ -1,0 +1,10 @@
+# Head of Engineering - start-up
+
+**Company:** COMX PS LTD
+**Location:** 
+**Score:** 92 (Tier B)
+**Status:** applied
+
+---
+
+Head of Engineering – Remote (UK / Europe)€120k – €170k | Permanent | High-Growth Start-upWe’re hiring a hands-on Head of Engineering to help scale a fast-growingstart-up. This is a builder’s role: you’ll help set the technical vision, leadfrom the front, and evolve a platform that’s already live with customers andready for its next growth phase.You’ll work closely with founders and leadership, taking full ownership ofengineering outcomes - from architecture and delivery to team growth andplatform reliability.What You’ll Do * Own and evolve the technical strategy as the business scales * Lead, coach, and grow a small but high-impact engineering team * Build and scale complex, data-heavy systems end-to-end * Raise engineering standards while maintaining speed and pragmatism * Make clear, well-reasoned technical decisions in an environment with real constraintsWhat You’ll Bring * Experience leading engineering in early-stage or scale-up start-ups * A strong background building and scaling production B2B platforms * Comfort being hands-on while setting direction and standards * Ability to improve team output without slowing momentum * Clear communication style and a strong sense of ownershipTech Stack * Frontend: React, TypeScript, Tailwind * Backend: Python (Flask / FastAPI), PostgreSQL * Infrastructure: Docker, CI/CD (GitHub Actions), Cloud (GCP preferred) * Bonus: Telecom integrations, usage-based billing, data pipelinesWhy Join * Lead engineering at a pivotal growth stage * Shape architecture and technical foundations for scale * Work directly with founders and influence company direction * Balance speed, quality, and technical debt in a real start-up environmentApply directly or reach out to chris.bryan@comxps.com for more details.Show more Show less

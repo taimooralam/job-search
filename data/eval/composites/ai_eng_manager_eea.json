@@ -1,0 +1,765 @@
+{
+  "category_id": "ai_eng_manager_eea",
+  "category_name": "AI Engineering Manager \u2014 EEA",
+  "macro_family": "ai_engineering_adjacent",
+  "priority": "secondary_target",
+  "confidence": "high",
+  "total_jobs": 31,
+  "deep_analysis_count": 17,
+  "tier_breakdown": {
+    "C": 23,
+    "D": 2,
+    "B": 5
+  },
+  "signal_strength": {
+    "applied_count": 5,
+    "avg_score": 78.4,
+    "median_score": 82,
+    "score_range": [
+      22,
+      85
+    ]
+  },
+  "title_variants": {
+    "Product Manager, AI": 13,
+    "Engineering Manager, GenAI Platform Development Experience": 3,
+    "Senior AI Engineering Manager": 2,
+    "Technical Engineering Manager (AI Platform)": 2,
+    "Engineering Manager, AI Agents": 1,
+    "Software Engineering Manager (AI)": 1,
+    "Engineering Manager, AI/ML Infrastructure & GenAI Platforms": 1,
+    "Software Engineering Manager, AI Growth": 1,
+    "Software & ML Engineering Manager - New Products": 1,
+    "AI Product Manager": 1
+  },
+  "title_families": {
+    "other": 23,
+    "engineering_manager": 8
+  },
+  "seniority_distribution": {
+    "manager": 10,
+    "senior_manager": 6,
+    "mid_ic": 1,
+    "senior_ic": 7,
+    "executive": 1
+  },
+  "role_scope_distribution": {
+    "manager": 14,
+    "player_coach": 5,
+    "ic": 11,
+    "executive": 1
+  },
+  "hard_skills": [
+    {
+      "skill": "video tools",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "SQL analytics",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "Asana",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "Notion",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "Airtable",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "HubSpot",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "prototyping",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9,
+      "band": "common"
+    },
+    {
+      "skill": "Canva",
+      "count": 12,
+      "total": 31,
+      "pct": 38.7,
+      "band": "common"
+    },
+    {
+      "skill": "market research",
+      "count": 11,
+      "total": 31,
+      "pct": 35.5,
+      "band": "common"
+    },
+    {
+      "skill": "product marketing",
+      "count": 10,
+      "total": 31,
+      "pct": 32.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "scaling AI products",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "scaling software products",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "analytical skills",
+      "count": 8,
+      "total": 31,
+      "pct": 25.8,
+      "band": "differentiator"
+    },
+    {
+      "skill": "0->1 product launches",
+      "count": 7,
+      "total": 31,
+      "pct": 22.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "design software",
+      "count": 7,
+      "total": 31,
+      "pct": 22.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "product management",
+      "count": 7,
+      "total": 31,
+      "pct": 22.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "operations",
+      "count": 6,
+      "total": 31,
+      "pct": 19.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "consulting",
+      "count": 6,
+      "total": 31,
+      "pct": 19.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "AWS",
+      "count": 5,
+      "total": 31,
+      "pct": 16.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "software engineering",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "Python",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "cost management",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "evaluation",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "benchmarking",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "versioning",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "deploy",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "analytics",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "APIs",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "communication",
+      "count": 30,
+      "total": 31,
+      "pct": 96.8,
+      "band": "must_have"
+    },
+    {
+      "skill": "collaboration",
+      "count": 27,
+      "total": 31,
+      "pct": 87.1,
+      "band": "must_have"
+    },
+    {
+      "skill": "stakeholder_management",
+      "count": 17,
+      "total": 31,
+      "pct": 54.8,
+      "band": "common"
+    },
+    {
+      "skill": "ownership",
+      "count": 16,
+      "total": 31,
+      "pct": 51.6,
+      "band": "common"
+    },
+    {
+      "skill": "mentoring",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "thriving_in_ambiguity",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "entrepreneurial_mindset",
+      "count": 7,
+      "total": 31,
+      "pct": 22.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "leadership",
+      "count": 6,
+      "total": 31,
+      "pct": 19.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "coaching",
+      "count": 5,
+      "total": 31,
+      "pct": 16.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "presentation",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "stakeholder management",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "analytical",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "problem-solving",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "stakeholder_alignment",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "entrepreneurial mindset",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 3,
+        "total": 31,
+        "pct": 9.7,
+        "band": "rare"
+      },
+      {
+        "skill": "C#",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      },
+      {
+        "skill": "JavaScript",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      },
+      {
+        "skill": "Go",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      }
+    ],
+    "preferred": []
+  },
+  "infrastructure": [
+    {
+      "skill": "CI_CD",
+      "count": 5,
+      "total": 31,
+      "pct": 16.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "microservices",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9,
+      "band": "rare"
+    },
+    {
+      "skill": "containerization",
+      "count": 3,
+      "total": 31,
+      "pct": 9.7,
+      "band": "rare"
+    },
+    {
+      "skill": "DevSecOps",
+      "count": 2,
+      "total": 31,
+      "pct": 6.5,
+      "band": "rare"
+    },
+    {
+      "skill": "containers",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "Docker",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "Kafka",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "API gateway",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "on-prem",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "air-gaped environments",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "on-premises",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "air-gapped environments",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "Vector Databases",
+      "count": 2,
+      "total": 31,
+      "pct": 6.5,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "GDPR",
+      "count": 10,
+      "total": 31,
+      "pct": 32.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CCPA",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "AI transparency requirements",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "NDMO for KSA",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "PII handling",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "data retention",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "access control models",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    },
+    {
+      "skill": "NDMO",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 2,
+      "total": 31,
+      "pct": 6.5
+    },
+    "agents_orchestration": {
+      "count": 8,
+      "total": 31,
+      "pct": 25.8
+    },
+    "fine_tuning": {
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    "evaluation_quality": {
+      "count": 7,
+      "total": 31,
+      "pct": 22.6
+    },
+    "guardrails_governance": {
+      "count": 6,
+      "total": 31,
+      "pct": 19.4
+    },
+    "prompt_engineering": {
+      "count": 0,
+      "total": 31,
+      "pct": 0.0
+    },
+    "vector_search": {
+      "count": 2,
+      "total": 31,
+      "pct": 6.5
+    },
+    "model_serving_routing": {
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    "top_frameworks": [
+      {
+        "skill": "PyTorch",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      },
+      {
+        "skill": "TensorFlow",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      },
+      {
+        "skill": "Hugging Face",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2,
+        "band": "rare"
+      }
+    ],
+    "top_observability": [
+      {
+        "skill": "LangSmith",
+        "count": 2,
+        "total": 31,
+        "pct": 6.5,
+        "band": "rare"
+      }
+    ]
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 8,
+      "total": 31,
+      "pct": 25.8
+    },
+    "performance_management": {
+      "count": 8,
+      "total": 31,
+      "pct": 25.8
+    },
+    "org_building": {
+      "count": 12,
+      "total": 31,
+      "pct": 38.7
+    },
+    "budget_pnl": {
+      "count": 2,
+      "total": 31,
+      "pct": 6.5
+    },
+    "direct_reports_samples": [
+      "6-8",
+      "~10",
+      "4"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 54.8,
+    "greenfield_split": {
+      "both": 19,
+      "greenfield": 4,
+      "optimization": 1
+    },
+    "cloud_preference": {
+      "multi_cloud": 5,
+      "AWS": 2,
+      "Azure": 1
+    }
+  },
+  "domain_industry": {
+    "enterprise_saas": 4,
+    "consulting": 1
+  },
+  "company_stage": {
+    "enterprise": 5,
+    "startup": 3,
+    "consultancy": 2
+  },
+  "collaboration_model": {
+    "remote_first": 17,
+    "distributed": 3,
+    "hybrid": 2
+  },
+  "pain_points": [
+    {
+      "pain_point": "define and prioritize ai product roadmaps",
+      "count": 6
+    },
+    {
+      "pain_point": "turn data and user feedback into actionable product decisions",
+      "count": 3
+    },
+    {
+      "pain_point": "prototype, test, and deploy ai product capabilities",
+      "count": 3
+    },
+    {
+      "pain_point": "create onboarding guides, training materials, dashboards, and playbooks",
+      "count": 3
+    },
+    {
+      "pain_point": "align priorities with engineering, design, leadership, and executives",
+      "count": 3
+    },
+    {
+      "pain_point": "drive adoption and end-to-end product outcomes",
+      "count": 3
+    },
+    {
+      "pain_point": "turning user feedback and data into actionable product strategy",
+      "count": 3
+    },
+    {
+      "pain_point": "driving ai product launches from concept to launch",
+      "count": 3
+    },
+    {
+      "pain_point": "aligning engineering, design, and leadership around priorities",
+      "count": 3
+    },
+    {
+      "pain_point": "improving user adoption through product marketing and onboarding materials",
+      "count": 3
+    },
+    {
+      "pain_point": "creating playbooks and dashboards to operationalize product decisions",
+      "count": 3
+    },
+    {
+      "pain_point": "need to define and prioritize ai product roadmaps",
+      "count": 3
+    },
+    {
+      "pain_point": "need to turn user and data insights into actionable product decisions",
+      "count": 3
+    },
+    {
+      "pain_point": "need to improve adoption of ai product capabilities",
+      "count": 3
+    },
+    {
+      "pain_point": "need to create onboarding guides, playbooks, and training materials",
+      "count": 3
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

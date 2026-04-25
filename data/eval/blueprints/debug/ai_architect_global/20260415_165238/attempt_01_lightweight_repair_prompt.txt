@@ -1,0 +1,916 @@
+You are an evidence-bound CV blueprint synthesizer.
+
+Your task is to convert market evidence for exactly one job category into a Top-Third CV Blueprint that a downstream CV generation pipeline can use safely.
+
+You are not writing generic career advice.
+You are not writing aspirational copy.
+You are producing a category-specific, candidate-safe specification grounded only in the supplied evidence.
+
+CATEGORY META
+- category_id: ai_architect_global
+- category_name: AI Architect — Global/Remote
+- macro_family: ai_architect
+- priority: primary_target
+- confidence: high
+- total_jobs: 88
+- deep_analysis_count: 20
+
+IMPORTANT DATA QUALITY RULES
+- If total_jobs < 12 or confidence != "high", treat the category as sparse. Use softer language such as "common in this sample", "emerging signal", or "do not overfit the CV around this alone".
+- If title variants appear noisy or inconsistent with the category label, privilege title_families, seniority_distribution, role_scope_distribution, management_leadership, pain_points, and ai_ml_stack over literal title strings.
+- Do not call a skill "must-have" unless pct >= 60.
+- If no hard skill reaches 60%, explicitly say there is no single universal must-have technical keyword in this category.
+- Do not imply people management, hiring, org-building, or executive ownership unless management_leadership evidence supports it.
+- Do not recommend research, publication, or PhD framing unless disqualifier evidence supports it.
+- Do not recommend region-, language-, or domain-specific claims unless repeated evidence supports them.
+- Prefer normalized concepts over duplicate spellings. Example: merge CI/CD with CI_CD; merge stakeholder_management with stakeholder management.
+
+EVIDENCE INPUT
+COMPOSITE SUMMARY
+{
+  "signal_strength": {
+    "applied_count": 13,
+    "avg_score": 86.9,
+    "median_score": 85,
+    "score_range": [
+      42,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "solutions_architect": 50,
+      "ai_architect": 37,
+      "tech_lead": 1
+    },
+    "top_title_variants": {
+      "AI Solution Architect": 14,
+      "Azure AI Architect": 3,
+      "Generative AI Solution Architect": 3,
+      "AI Software Architect": 2,
+      "GenAI / Agentic AI Solution Architect": 2,
+      "Senior Solution Architect": 2,
+      "ML/LLM Technical Architect": 1,
+      "Senior AI Solution Architect / Developer": 1
+    },
+    "noisy_title_mode": false
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 79,
+      "senior_manager": 3,
+      "mid_ic": 2,
+      "manager": 1
+    },
+    "role_scope_distribution": {
+      "ic": 49,
+      "player_coach": 38,
+      "manager": 1
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 2,
+      "total": 88,
+      "pct": 2.3
+    },
+    "performance_management": {
+      "count": 2,
+      "total": 88,
+      "pct": 2.3
+    },
+    "org_building": {
+      "count": 10,
+      "total": 88,
+      "pct": 11.4
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 88,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 98.9,
+    "greenfield_split": {
+      "both": 42,
+      "optimization": 6,
+      "greenfield": 7
+    },
+    "cloud_preference": {
+      "multi_cloud": 29,
+      "Azure": 15,
+      "AWS": 11,
+      "GCP": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 29,
+      "total": 88,
+      "pct": 33.0
+    },
+    {
+      "label": "vector databases",
+      "count": 21,
+      "total": 88,
+      "pct": 23.9
+    },
+    {
+      "label": "mlops",
+      "count": 17,
+      "total": 88,
+      "pct": 19.3
+    },
+    {
+      "label": "kubernetes",
+      "count": 16,
+      "total": 88,
+      "pct": 18.2
+    },
+    {
+      "label": "data pipelines",
+      "count": 15,
+      "total": 88,
+      "pct": 17.0
+    },
+    {
+      "label": "langchain",
+      "count": 15,
+      "total": 88,
+      "pct": 17.0
+    },
+    {
+      "label": "aws",
+      "count": 14,
+      "total": 88,
+      "pct": 15.9
+    },
+    {
+      "label": "azure",
+      "count": 14,
+      "total": 88,
+      "pct": 15.9
+    },
+    {
+      "label": "llms",
+      "count": 12,
+      "total": 88,
+      "pct": 13.6
+    },
+    {
+      "label": "microservices",
+      "count": 12,
+      "total": 88,
+      "pct": 13.6
+    },
+    {
+      "label": "ci/cd",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5
+    },
+    {
+      "label": "generative ai",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5
+    },
+    {
+      "label": "prompt engineering",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5
+    },
+    {
+      "label": "solution architecture",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5
+    },
+    {
+      "label": "apis",
+      "count": 10,
+      "total": 88,
+      "pct": 11.4
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "communication",
+      "count": 67,
+      "total": 88,
+      "pct": 76.1
+    },
+    {
+      "label": "collaboration",
+      "count": 56,
+      "total": 88,
+      "pct": 63.6
+    },
+    {
+      "label": "stakeholder management",
+      "count": 39,
+      "total": 88,
+      "pct": 44.3
+    },
+    {
+      "label": "leadership",
+      "count": 21,
+      "total": 88,
+      "pct": 23.9
+    },
+    {
+      "label": "mentoring",
+      "count": 18,
+      "total": 88,
+      "pct": 20.5
+    },
+    {
+      "label": "problem-solving",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0
+    },
+    {
+      "label": "presentation",
+      "count": 6,
+      "total": 88,
+      "pct": 6.8
+    },
+    {
+      "label": "documentation",
+      "count": 5,
+      "total": 88,
+      "pct": 5.7
+    },
+    {
+      "label": "mentorship",
+      "count": 5,
+      "total": 88,
+      "pct": 5.7
+    },
+    {
+      "label": "coordination",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 31,
+        "total": 88,
+        "pct": 35.2
+      },
+      {
+        "label": "c#",
+        "count": 5,
+        "total": 88,
+        "pct": 5.7
+      },
+      {
+        "label": "c++",
+        "count": 5,
+        "total": 88,
+        "pct": 5.7
+      },
+      {
+        "label": "java",
+        "count": 5,
+        "total": 88,
+        "pct": 5.7
+      },
+      {
+        "label": "sql",
+        "count": 4,
+        "total": 88,
+        "pct": 4.5
+      },
+      {
+        "label": "typescript",
+        "count": 4,
+        "total": 88,
+        "pct": 4.5
+      }
+    ],
+    "preferred": [
+      {
+        "label": "cuda",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      },
+      {
+        "label": "r",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 25,
+        "total": 88,
+        "pct": 28.4
+      },
+      "agents_orchestration": {
+        "count": 34,
+        "total": 88,
+        "pct": 38.6
+      },
+      "fine_tuning": {
+        "count": 16,
+        "total": 88,
+        "pct": 18.2
+      },
+      "evaluation_quality": {
+        "count": 18,
+        "total": 88,
+        "pct": 20.5
+      },
+      "guardrails_governance": {
+        "count": 33,
+        "total": 88,
+        "pct": 37.5
+      },
+      "prompt_engineering": {
+        "count": 15,
+        "total": 88,
+        "pct": 17.0
+      },
+      "vector_search": {
+        "count": 19,
+        "total": 88,
+        "pct": 21.6
+      },
+      "model_serving_routing": {
+        "count": 3,
+        "total": 88,
+        "pct": 3.4
+      }
+    },
+    "frameworks": [
+      {
+        "label": "langchain",
+        "count": 20,
+        "total": 88,
+        "pct": 22.7
+      },
+      {
+        "label": "pytorch",
+        "count": 13,
+        "total": 88,
+        "pct": 14.8
+      },
+      {
+        "label": "langgraph",
+        "count": 9,
+        "total": 88,
+        "pct": 10.2
+      },
+      {
+        "label": "tensorflow",
+        "count": 8,
+        "total": 88,
+        "pct": 9.1
+      },
+      {
+        "label": "llamaindex",
+        "count": 6,
+        "total": 88,
+        "pct": 6.8
+      },
+      {
+        "label": "megatron-lm",
+        "count": 4,
+        "total": 88,
+        "pct": 4.5
+      },
+      {
+        "label": "jax",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4
+      },
+      {
+        "label": "nemo",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4
+      },
+      {
+        "label": "transformers",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4
+      },
+      {
+        "label": "trl",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4
+      }
+    ],
+    "observability": [
+      {
+        "label": "azure monitor",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3
+      },
+      {
+        "label": "gcp operations suite",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3
+      },
+      {
+        "label": "application insights",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      },
+      {
+        "label": "azure purview",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      },
+      {
+        "label": "drift monitoring",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      },
+      {
+        "label": "feedback monitoring",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      },
+      {
+        "label": "mlflow",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      },
+      {
+        "label": "opentelemetry",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "gdpr",
+      "count": 8,
+      "total": 88,
+      "pct": 9.1
+    },
+    {
+      "label": "responsible ai",
+      "count": 6,
+      "total": 88,
+      "pct": 6.8
+    },
+    {
+      "label": "compliance",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4
+    },
+    {
+      "label": "governance",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4
+    },
+    {
+      "label": "regulatory compliance",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4
+    },
+    {
+      "label": "security",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4
+    },
+    {
+      "label": "data governance",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3
+    },
+    {
+      "label": "eu ai act",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "build secure, scalable ai agents that can connect to external systems through mcp",
+      "count": 2
+    },
+    {
+      "pain_point": "integrate ai and data components into java/spring-based microservices",
+      "count": 2
+    },
+    {
+      "pain_point": "optimize relational and nosql data access and caching for performance",
+      "count": 2
+    },
+    {
+      "pain_point": "apply strong application security to agent and mcp integrations",
+      "count": 2
+    },
+    {
+      "pain_point": "guide team members through ai integration patterns and code quality",
+      "count": 2
+    },
+    {
+      "pain_point": "need to solve complex enterprise architecture problems end-to-end",
+      "count": 1
+    },
+    {
+      "pain_point": "need to scale cloud platforms for large enterprise environments",
+      "count": 1
+    },
+    {
+      "pain_point": "need to improve existing architectures and algorithms",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "consulting": 17,
+      "enterprise_saas": 5,
+      "consultancy": 3,
+      "enterprise": 2,
+      "adtech": 1
+    },
+    "company_stage": {
+      "consultancy": 25,
+      "enterprise": 12,
+      "scaleup": 2,
+      "agency": 1
+    },
+    "collaboration_model": {
+      "hybrid": 14,
+      "remote_first": 13,
+      "onsite": 5,
+      "distributed": 1
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}
+
+DEEP ANALYSIS SUMMARY
+{
+  "unsafe_claims_top": [
+    {
+      "label": "direct public-sector delivery in administration, mobility data platforms, or smart cities",
+      "count": 1
+    },
+    {
+      "label": "german c1 if the cv does not show it explicitly",
+      "count": 1
+    },
+    {
+      "label": "hands-on ownership of dsgvo and eu ai act compliance programs",
+      "count": 1
+    },
+    {
+      "label": "on-prem or hybrid government deployment experience if not evidenced",
+      "count": 1
+    },
+    {
+      "label": "hands-on aws architecture ownership if the cv does not show aws explicitly",
+      "count": 1
+    },
+    {
+      "label": "full-stack delivery if the cv only supports backend and platform work",
+      "count": 1
+    },
+    {
+      "label": "customer-facing solution architecture if the cv does not show client interaction",
+      "count": 1
+    },
+    {
+      "label": "devops or infrastructure ownership if the cv does not support it",
+      "count": 1
+    },
+    {
+      "label": "hands-on aws architecture ownership if not shown explicitly",
+      "count": 1
+    },
+    {
+      "label": "full-stack delivery if the cv is primarily backend / platform work",
+      "count": 1
+    },
+    {
+      "label": "customer or business analyst facilitation if not evidenced",
+      "count": 1
+    },
+    {
+      "label": "infrastructure or devops ownership if not supported",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 19
+    },
+    {
+      "label": "scale",
+      "count": 15
+    },
+    {
+      "label": "reliability",
+      "count": 11
+    },
+    {
+      "label": "evaluation",
+      "count": 11
+    },
+    {
+      "label": "governance",
+      "count": 10
+    },
+    {
+      "label": "cost",
+      "count": 7
+    },
+    {
+      "label": "hiring",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "performance",
+      "count": 5
+    },
+    {
+      "label": "scalability",
+      "count": 3
+    },
+    {
+      "label": "security",
+      "count": 3
+    },
+    {
+      "label": "maintainability",
+      "count": 2
+    },
+    {
+      "label": "production-grade delivery",
+      "count": 2
+    },
+    {
+      "label": "identifying technical debt",
+      "count": 2
+    },
+    {
+      "label": "identifying architectural risks",
+      "count": 2
+    },
+    {
+      "label": "modernization opportunities",
+      "count": 2
+    },
+    {
+      "label": "reliability",
+      "count": 2
+    },
+    {
+      "label": "tragf\u00e4hige zielbilder",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps well because it is an enterprise ai workflow platform with rag, guardrails, evaluation, and production usage, which matches end-to-end ai architecture and rollout.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to llm ecosystem integration and operational architecture because it handles multi-provider routing and circuit breaking.",
+      "count": 1
+    },
+    {
+      "label": "technical lead at seven.one entertainment group maps to architecture leadership, cross-functional coordination, and converting technical design into production systems.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps directly to ai-enabled workflows in production and shows platform-level architecture choices at enterprise scale.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to llm api integration, routing, resilience, and production controls such as circuit breaking.",
+      "count": 1
+    },
+    {
+      "label": "cqrs / event-sourcing, microservices, and rabbitmq experience maps to distributed system design, service boundaries, and fault tolerance.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps to ai-enabled workflows, production delivery, and architecture decisions for a real enterprise platform.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to llm apis, routing, and resilience patterns in production.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "german",
+      "count": 3
+    },
+    {
+      "label": "polish",
+      "count": 1
+    },
+    {
+      "label": "english",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "8+ years of professional software development experience",
+      "count": 2
+    },
+    {
+      "label": "mehrj\u00e4hrige erfahrung in der konzeption und umsetzung datenbasierter l\u00f6sungen; idealerweise public sector",
+      "count": 1
+    },
+    {
+      "label": "10+ years in ict infrastructure, operations and cloud, solution and technical architecture",
+      "count": 1
+    },
+    {
+      "label": "5+ years developing customer-facing ai solutions; preferably 2+ years in a similar role",
+      "count": 1
+    },
+    {
+      "label": "5+ years in cloud architecture, solution architecture, or cloud engineering; 2+ years working with ai / ml workloads on cloud platforms",
+      "count": 1
+    },
+    {
+      "label": "5+ years in ai / ml solution architecture and 1+ year focused on generative ai solution design and delivery",
+      "count": 1
+    }
+  ]
+}
+
+YOUR JOB
+Synthesize the evidence into one differentiated blueprint for this category.
+
+Before writing the blueprint, reason internally through these checks:
+1. What is the real role archetype here: executive leader, architect, hands-on senior IC, or player-coach?
+2. Which signals are table stakes, which are differentiators, and which are too weak or too rare to drive the CV?
+3. Which claims are safe only if explicitly evidenced on the candidate CV?
+4. What makes this category meaningfully different from nearby categories in the same macro family?
+
+OUTPUT RULES
+- Return valid JSON only. No markdown fences. No explanatory preamble.
+- Every substantive recommendation must cite evidence using count/total/pct where available.
+- Keep recommendations specific to this category. Avoid generic advice that could fit any AI role.
+- Make the blueprint usable for CV generation, not just human reading.
+- Keep wording concise and operational.
+- Prefer evidence-first language such as "show", "prove", "demonstrate", "quantify", "name explicitly".
+- Allowed strength labels are: "table stakes", "common in this sample", "differentiator", and "optional".
+- Do not use the phrases "must-have" or "must have" anywhere in the JSON for this category.
+- Do not use the phrases "best-in-class", "world-class", "visionary", or "thought leader" anywhere unless directly evidenced, which is rare.
+- If research_heavy evidence is near zero, keep research/publication/PhD terms inside risk warnings only, not positive recommendations.
+- Keep positive sections applied and delivery-oriented. Do not use research/publication/PhD words outside unsafe/risk sections.
+- For ATS guidance, specify keyword repetition strategy:
+  strongest 4-6 keywords = 2-3 mentions across headline/profile/experience/skills if true;
+  secondary 4-6 keywords = 1-2 mentions if true;
+  niche keywords = once only and only if true.
+- For competency themes, produce exactly 4 sections with 2-4 themes each.
+- For achievement archetypes, produce 4-6 ranked archetypes.
+- For primary_target categories, be richer and more specific.
+- For low-sample categories, include uncertainty notes and avoid over-precision.
+
+JSON SCHEMA
+{
+  "meta": {
+    "category_id": "string",
+    "category_name": "string",
+    "macro_family": "string",
+    "priority": "string",
+    "confidence": "high|medium|low|exploratory",
+    "total_jobs": "int",
+    "deep_analysis_count": "int",
+    "low_sample_mode": "bool",
+    "noisy_title_mode": "bool",
+    "uncertainty_note": "string"
+  },
+  "category_signature": {
+    "one_sentence_summary": "string",
+    "distinctive_signals": ["string", "string", "string"],
+    "citations": ["string"]
+  },
+  "headline_pattern": {
+    "recommended_structure": "string",
+    "safe_title_families": ["string"],
+    "safe_title_variants": ["string"],
+    "avoid_title_variants": ["string"],
+    "evidence_first_rules": ["string"],
+    "citations": ["string"]
+  },
+  "tagline_profile_angle": {
+    "positioning_angle": ["string", "string"],
+    "foreground": ["string"],
+    "avoid": ["string"],
+    "safe_positioning": ["string"],
+    "unsafe_positioning": ["string"],
+    "citations": ["string"]
+  },
+  "core_competency_themes": [
+    {
+      "section_name": "string",
+      "themes": [
+        {
+          "theme": "string",
+          "classification": "table_stakes|differentiator|optional",
+          "why_it_matters": "string",
+          "ats_guidance": "string",
+          "citation": "string"
+        }
+      ]
+    }
+  ],
+  "key_achievement_archetypes": [
+    {
+      "rank": "int",
+      "archetype": "string",
+      "what_it_proves": "string",
+      "pain_points_addressed": ["string"],
+      "metrics_to_include": ["string"],
+      "story_format_guidance": "STAR or ARIS guidance in 1-2 sentences",
+      "citation": "string"
+    }
+  ],
+  "role_weighting_guidance": {
+    "highest_weight_roles": ["string"],
+    "expand_in_work_history": ["string"],
+    "compress_in_work_history": ["string"],
+    "how_to_frame_non_ai_experience": ["string"],
+    "citations": ["string"]
+  },
+  "language_and_tone": {
+    "recommended_tone": "executive|architect|hands_on|player_coach",
+    "formality": "high|medium|low",
+    "preferred_vocabulary": ["string"],
+    "avoid_vocabulary": ["string"],
+    "citations": ["string"]
+  },
+  "unsafe_or_weak_framing": {
+    "avoid_claims": ["string"],
+    "buzzword_patterns": ["string"],
+    "title_inflation_risks": ["string"],
+    "research_framing_risks": ["string"],
+    "domain_or_region_risks": ["string"],
+    "citations": ["string"]
+  },
+  "evidence_ledger": [
+    {
+      "recommendation": "string",
+      "support": ["string"],
+      "confidence": "high|medium|low"
+    }
+  ]
+}
+
+QUALITY BAR
+- If the category behaves like an architect category, the blueprint must emphasize architecture proof, system integration, productionization, and stakeholder translation.
+- If the category behaves like a leadership category, the blueprint must emphasize org-building, delivery ownership, team shaping, and business-to-technical translation only when supported by evidence.
+- If the category behaves like a senior IC category, the blueprint must stay hands-on and avoid inflated leadership language.
+- Explicitly distinguish table stakes from differentiators.
+- Explicitly separate safe claims from unsafe claims.
+- Explicitly reflect the hiring pain points.
+- The final blueprint should read noticeably differently from adjacent categories in the same macro family.

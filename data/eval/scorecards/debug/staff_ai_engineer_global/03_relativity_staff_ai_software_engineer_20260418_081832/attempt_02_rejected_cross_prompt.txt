@@ -1,0 +1,868 @@
+You are a rubric-bound CV evaluator.
+
+You are scoring ONE CV against ONE JD, using the Step 7 category rubric as the scoring source of truth. Return ONE strict JSON scorecard only. No markdown. No preamble.
+
+CATEGORY: staff_ai_engineer_global
+JOB_ID: 694e696d6dd552ab7ec2caf7
+JD_PATH: data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md
+CV_PATH: data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md
+
+RAW JOB META (authoritative)
+{
+  "title": "Staff AI Software Engineer",
+  "company": "RELATIVITY",
+  "location": "",
+  "score": 71,
+  "status": null
+}
+
+NORMALIZED OVERLAY (structured context only; do NOT re-classify)
+{
+  "title_normalized": "Staff AI Software Engineer",
+  "title_family": "staff_engineer",
+  "seniority": "senior_ic",
+  "role_scope": "player_coach",
+  "management": {
+    "direct_reports": "not_specified",
+    "hiring": "not_specified",
+    "performance_management": "not_specified",
+    "org_building": "not_specified",
+    "budget_pnl": "not_specified"
+  },
+  "architecture": {
+    "platform_design": "explicit",
+    "greenfield_vs_optimization": "both",
+    "scale_signals": "billions of documents; global scale",
+    "latency_reliability": "secure, reliable, and cost-effective at global scale"
+  },
+  "hard_skills_must_have": [
+    "Python",
+    "Java",
+    "Scala",
+    "Docker",
+    "Kubernetes",
+    "Helm",
+    "Terraform",
+    "Pulumi",
+    "CI/CD pipelines for ML",
+    "MLOps",
+    "training systems",
+    "inference systems",
+    "monitoring systems",
+    "sparsity",
+    "quantization",
+    "pruning",
+    "data protection",
+    "responsible AI practices"
+  ],
+  "hard_skills_nice_to_have": [],
+  "programming_languages": {
+    "required": [
+      "Python",
+      "Java",
+      "Scala"
+    ],
+    "preferred": []
+  },
+  "cloud_platform": {
+    "primary": "not_specified",
+    "services_mentioned": []
+  },
+  "ai_ml_stack": {
+    "rag": "not_specified",
+    "agents_orchestration": "not_specified",
+    "fine_tuning": "not_specified",
+    "evaluation_quality": "not_specified",
+    "guardrails_governance": "explicit",
+    "prompt_engineering": "not_specified",
+    "vector_search": "not_specified",
+    "model_serving_routing": "not_specified",
+    "frameworks": [],
+    "observability": []
+  },
+  "disqualifiers": {
+    "requires_phd": false,
+    "requires_publications": false,
+    "requires_native_language": "not_specified",
+    "requires_security_clearance": false,
+    "requires_specific_domain_years": "not_specified",
+    "research_heavy": false
+  },
+  "success_metrics": [
+    "secure, reliable, and cost-effective at global scale",
+    "meet demanding timelines",
+    "extensibility, performance, and scale goals",
+    "minimizing risks and maximizing opportunities"
+  ]
+}
+
+RUBRIC (source of truth — score against this)
+{
+  "meta": {
+    "category_id": "staff_ai_engineer_global",
+    "category_name": "Staff AI Engineer \u2014 Global/Remote",
+    "macro_family": "ai_engineering_adjacent",
+    "priority": "secondary_target",
+    "confidence": "high",
+    "rubric_version": "2026-04-17"
+  },
+  "rubric_identity": {
+    "one_sentence_purpose": "Evaluate CVs for hands-on Staff/Principal AI Engineer roles requiring architecture ownership, production AI platform delivery, and player-coach influence without formal management scope.",
+    "core_persona": "Architecture-first senior IC who ships production AI platforms and distributed backend systems, demonstrates reliability judgment, and influences engineering standards through mentoring and technical leadership rather than people management.",
+    "job_overlay_notes": [
+      "Stack requirements vary: Python dominates at 32% but no single skill exceeds one-third of roles; adjust keyword density based on JD-specific stack signals",
+      "Agent orchestration (48%) and RAG (36%) are differentiators not table stakes; only emphasize when JD explicitly requests and CV evidence supports",
+      "Player-coach scope (44%) varies by company; some roles are pure IC (56%), adjust leadership framing accordingly",
+      "Domain requirements are fragmented (fintech, healthcare, enterprise SaaS each ~8%); do not assume domain expertise unless JD specifies",
+      "Remote-first collaboration model dominates; emphasize async communication and cross-functional stakeholder alignment"
+    ],
+    "citations": [
+      "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+      "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+    ]
+  },
+  "dimension_rubrics": [
+    {
+      "dimension": "ats_optimization",
+      "weight": 20,
+      "category_core": {
+        "what_good_looks_like": [
+          "Headline uses Staff/Principal AI Engineer title family matching 96% of roles that use principal_engineer or staff_engineer titles",
+          "Architecture and production scope keywords appear before tool names since platform design is 24/25 (96%) while no hard skill exceeds 32%",
+          "2-3 mentions of platform architecture, system design, AI platform across headline/profile/experience/skills",
+          "1-2 mentions of distributed systems, reliability, observability as secondary keywords",
+          "Agent orchestration, RAG, evaluation, guardrails terminology used only when CV evidence supports shipped systems"
+        ],
+        "common_failures": [
+          "Using generic Software Engineer or ML Engineer titles that miss Staff/Principal seniority signal",
+          "Leading with tool/framework lists instead of architecture and production delivery outcomes",
+          "Over-indexing on provider brand names (OpenAI, Anthropic) without shipped platform evidence",
+          "Missing collaboration and cross-functional keywords despite 92% role prevalence",
+          "Using Head of AI, Director, or VP titles that trigger persona inflation for IC roles"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Match exact title family from JD (Staff vs Principal vs Staff Software Engineer AI/ML)",
+          "Increase Python/distributed systems mentions if JD emphasizes backend foundations",
+          "Add Kubernetes/CI-CD keywords (each 16%) only if JD infrastructure-heavy",
+          "Include specific framework names (LangChain 20%, vector databases 20%) only when JD lists them and CV proves usage"
+        ],
+        "company_domain_overrides": [
+          "Fintech: add reliability, compliance, governance keywords if JD mentions regulated environment",
+          "Healthcare: include HIPAA/PHI only if CV proves direct delivery in that environment",
+          "Enterprise SaaS: emphasize multi-tenant, integration, enterprise systems terminology"
+        ],
+        "region_overrides": [
+          "No native language requirements detected in category; English technical communication sufficient",
+          "Remote-first model dominates; emphasize async collaboration and distributed team experience"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Headline uses exact Staff/Principal AI Engineer title family with architecture focus",
+          "All table-stakes keywords (platform architecture, production AI, distributed systems, reliability) present with appropriate density",
+          "Differentiator keywords (agent orchestration, RAG, evaluation, guardrails) precisely matched to CV evidence and JD requirements",
+          "No tool-brand stuffing without shipped system context"
+        ],
+        "7_8": [
+          "Title family correct but supporting keywords slightly misaligned to JD emphasis",
+          "Core architecture and production keywords present but could be better distributed",
+          "Minor over/under-indexing on differentiator terminology relative to evidence strength"
+        ],
+        "5_6": [
+          "Title uses generic engineer framing missing Staff/Principal seniority signal",
+          "Architecture keywords present but buried below tool lists",
+          "Missing collaboration or cross-functional terminology despite category prevalence",
+          "Some keyword mismatches between CV claims and JD requirements"
+        ],
+        "0_4": [
+          "Title implies management scope (Director, Head of, VP) inappropriate for senior IC category",
+          "Heavy tool/framework keyword stuffing without production context",
+          "Missing fundamental category signals: platform architecture, production, reliability",
+          "Keywords suggest research/academic positioning despite 0% research_heavy requirement"
+        ]
+      },
+      "red_flags": [
+        "Head of AI, Director, VP, or Engineering Manager titles for IC-scoped roles",
+        "Tool-brand keyword lists without system-level outcomes",
+        "Research-heavy or PhD-style framing when category shows 0% research requirement",
+        "Multi-cloud expertise claims without JD requirement or CV evidence",
+        "Agentic AI buzzwords without architecture or evaluation proof"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ]
+    },
+    {
+      "dimension": "impact_clarity",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Quantified platform delivery: users served, integrations shipped, workflows enabled with specific numbers",
+          "Reliability metrics: uptime percentages, incident reduction rates, MTTR improvements, latency stability",
+          "Scale markers: events processed, requests handled, teams adopting standards",
+          "AI system quality: evaluation pass rates, retrieval quality scores (MRR, NDCG), hallucination reduction",
+          "Team multiplier effects: engineers mentored, promotions enabled, onboarding time reduced"
+        ],
+        "common_failures": [
+          "Vague platform claims without adoption or usage metrics",
+          "Missing reliability outcomes despite category valuing production stability",
+          "AI work described as exploration/POC without production deployment evidence",
+          "Leadership claims without quantified team or org impact",
+          "Scale language (millions, billions) without supporting context or evidence"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD emphasizes greenfield: highlight time-to-production and adoption ramp metrics",
+          "If JD emphasizes modernization: emphasize legacy system transformation metrics (incident reduction, tech debt elimination)",
+          "If JD emphasizes reliability: foreground uptime, SLO attainment, MTTR over feature delivery metrics",
+          "If JD emphasizes AI quality: emphasize evaluation harness metrics, guardrail effectiveness, structured output validation rates"
+        ],
+        "company_domain_overrides": [
+          "Fintech: availability and transaction reliability metrics carry extra weight",
+          "Healthcare: compliance-passing milestones and audit outcomes relevant if CV supports",
+          "Startup stage: velocity and time-to-market metrics more relevant than enterprise scale"
+        ],
+        "region_overrides": [
+          "Global/remote roles value async delivery outcomes and cross-timezone collaboration metrics"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every major achievement includes specific, verifiable metrics tied to business or technical outcomes",
+          "Reliability and production stability quantified with multiple proof points (uptime, incidents, latency)",
+          "AI system quality demonstrated with evaluation metrics (MRR@k, NDCG@k, retrieval accuracy, guardrail catch rates)",
+          "Team multiplier effects quantified (engineers mentored with outcomes, standards adoption rates)",
+          "Scale appropriate to role scope without inflation beyond documented evidence"
+        ],
+        "7_8": [
+          "Most achievements quantified but one or two key areas lack specific metrics",
+          "Reliability outcomes mentioned with numbers but could include additional proof points",
+          "AI quality claims supported but evaluation methodology could be clearer",
+          "Team impact mentioned with some quantification"
+        ],
+        "5_6": [
+          "Achievements present but metrics scattered or inconsistent",
+          "Reliability mentioned without specific numbers (e.g., 'improved uptime' without percentage)",
+          "AI delivery claims lack evaluation or quality metrics",
+          "Leadership impact asserted without quantified outcomes"
+        ],
+        "0_4": [
+          "Achievements described qualitatively without metrics",
+          "No reliability or production stability evidence despite category requirement",
+          "AI work appears exploratory without deployment or adoption proof",
+          "Team claims unsubstantiated or inflated beyond reasonable inference"
+        ]
+      },
+      "red_flags": [
+        "Millions-scale user claims without supporting platform context",
+        "Revenue impact claims without clear causal chain to individual contribution",
+        "Time savings or efficiency gains without baseline comparison methodology",
+        "Evaluation metrics cited without explaining measurement approach",
+        "Incident reduction percentages that imply sole credit for systemic improvements"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md:77"
+      ]
+    },
+    {
+      "dimension": "jd_alignment",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Platform architecture evidence for roles where platform design appears in 96% of JDs",
+          "Distributed systems and backend foundations demonstrated for roles emphasizing system depth",
+          "Agent orchestration and RAG evidence when JD explicitly requests (48% and 36% respectively)",
+          "Reliability, observability, and production hardening proof for all roles given category-wide signal",
+          "Collaboration and mentoring evidence for player-coach scoped roles (44%)"
+        ],
+        "common_failures": [
+          "Emphasizing pure AI/ML research for a production-delivery focused category",
+          "Missing architecture evidence for a category where 96% of roles require platform design",
+          "Over-claiming agent or RAG experience when JD doesn't require it",
+          "Under-emphasizing collaboration despite 92% category prevalence",
+          "Mismatched seniority framing (too junior or too management-heavy)"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Greenfield roles (32%): emphasize architecture decision-making and system design from scratch",
+          "Mixed greenfield/optimization roles (48%): balance new-build and modernization evidence",
+          "Pure IC roles (56%): emphasize individual technical contribution over team leadership",
+          "Player-coach roles (44%): include mentoring and standards-setting with hands-on delivery",
+          "Observability-heavy roles (24%): elevate monitoring, alerting, and instrumentation experience"
+        ],
+        "company_domain_overrides": [
+          "B2B enterprise: emphasize multi-tenant architecture, integration complexity, enterprise stakeholder alignment",
+          "Consumer tech: emphasize scale and performance if CV supports consumer-level throughput",
+          "Healthcare/fintech: include governance and compliance only if CV proves that environment"
+        ],
+        "region_overrides": [
+          "US-based companies with global teams: emphasize timezone-spanning collaboration patterns",
+          "EU companies: no specific regulatory framing unless JD mentions GDPR or data residency"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "CV addresses every must-have signal from JD with specific evidence",
+          "Differentiators (agent orchestration, RAG, evaluation) precisely matched when JD requests them",
+          "Seniority framing exactly matches role scope (IC vs player-coach)",
+          "Experience chronology and depth aligned to years-of-experience requirements",
+          "Tech stack alignment clear without over-claiming unmentioned technologies"
+        ],
+        "7_8": [
+          "Core JD requirements addressed with strong evidence",
+          "Minor gaps in differentiator coverage or slight over/under-emphasis",
+          "Seniority framing appropriate with minor adjustments possible",
+          "Most tech stack requirements covered with evidence"
+        ],
+        "5_6": [
+          "Table-stakes requirements addressed but differentiators weak or missing",
+          "Evidence present but not well-mapped to JD priorities",
+          "Seniority framing slightly misaligned (e.g., too IC for player-coach role)",
+          "Some tech stack gaps between CV claims and JD requirements"
+        ],
+        "0_4": [
+          "Missing evidence for fundamental category signals (platform architecture, production delivery)",
+          "Seniority dramatically mismatched (junior framing for Staff role or VP framing for IC role)",
+          "Tech stack claims don't support JD requirements",
+          "CV optimized for different category (research, management, different domain)"
+        ]
+      },
+      "red_flags": [
+        "Research-first framing for production-delivery focused roles",
+        "Management-heavy positioning for IC-scoped roles",
+        "Domain expertise claims without JD requirement or CV evidence",
+        "Stack claims (Go, specific cloud providers) without supporting delivery proof",
+        "Ignoring explicit JD requirements while emphasizing CV strengths"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ]
+    },
+    {
+      "dimension": "executive_presence",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "Senior IC authority demonstrated through architecture decisions and technical direction",
+          "Cross-team influence shown via standards adoption, code review impact, and design reviews",
+          "Stakeholder translation: converting technical complexity into business-aligned communication",
+          "Mentoring and enablement: elevating team capability without claiming management authority",
+          "Technical vision: establishing north stars and roadmaps within IC scope"
+        ],
+        "common_failures": [
+          "Inflating player-coach influence into people management claims",
+          "Using Director, Head of, VP language for IC-scoped contributions",
+          "Claiming hiring authority beyond interview participation (hiring appears in only 8% of roles)",
+          "Describing org-building as primary focus when delivery should lead",
+          "Missing collaboration evidence despite 92% category prevalence"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Player-coach roles (44%): include mentoring and standards-setting with hands-on delivery emphasis",
+          "Pure IC roles (56%): emphasize technical judgment and architecture ownership over team leadership",
+          "Roles with org_building signal (36%): can include enablement and internal platform work as secondary",
+          "Roles without explicit mentoring requirement: keep leadership claims minimal and delivery-focused"
+        ],
+        "company_domain_overrides": [
+          "Startups: IC authority through shipping velocity and founder-level technical dialogue",
+          "Enterprise: influence through stakeholder alignment and cross-functional coordination",
+          "Platform teams: authority demonstrated through adoption metrics and developer experience improvements"
+        ],
+        "region_overrides": [
+          "Remote-first: emphasize async influence patterns and written technical communication"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Technical authority evident through architecture decisions with org-wide impact",
+          "Cross-team influence documented with specific outcomes (standards adopted, practices changed)",
+          "Stakeholder translation demonstrated with concrete business-technical bridging examples",
+          "Mentoring quantified (engineers developed, promotions enabled) without management inflation",
+          "All influence claims scoped appropriately for senior IC role"
+        ],
+        "7_8": [
+          "Technical authority clear with evidence of architecture ownership",
+          "Some cross-team influence documented but could be more specific",
+          "Mentoring mentioned with reasonable quantification",
+          "Influence claims appropriate for IC scope with minor adjustments possible"
+        ],
+        "5_6": [
+          "Technical contribution evident but authority/influence understated",
+          "Cross-team impact mentioned without specific outcomes",
+          "Leadership role implied but not well-documented",
+          "Some risk of under-claiming appropriate senior IC authority"
+        ],
+        "0_4": [
+          "Influence claims inflated to management/director scope for IC role",
+          "Hiring authority claimed beyond evidence (only 8% of roles involve hiring)",
+          "Org-building positioned as primary focus over delivery",
+          "No evidence of technical authority or cross-team influence",
+          "Persona mismatch: management-first framing for architecture-first category"
+        ]
+      },
+      "red_flags": [
+        "People management framing without documented management authority",
+        "Director/Head/VP title claims for IC-scoped work",
+        "Hiring authority claims beyond interview participation (hiring only 8%)",
+        "Performance management claims without formal scope (only 4% of roles)",
+        "Budget/P&L ownership claims (0% of roles)",
+        "Company-wide ownership claims without adoption metrics or scope evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md:231"
+      ]
+    },
+    {
+      "dimension": "anti_hallucination",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "All metrics traceable to specific projects and timeframes",
+          "Title claims match documented role history without inflation",
+          "Tech stack claims limited to technologies with shipped production evidence",
+          "Scale claims proportionate to documented platform scope",
+          "Leadership scope matches organizational evidence (IC vs manager vs player-coach)"
+        ],
+        "common_failures": [
+          "Unsourced percentage improvements without baseline context",
+          "Title inflation from Staff to Director/Head without documented transition",
+          "Go language claims without production evidence (common unsafe claim in category)",
+          "SLO/incident response program ownership without operational scope proof",
+          "Multi-cloud implementation claims when work was single-cloud"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD requires specific provider experience (MCP, OpenAI, Anthropic): verify integration vs platform development distinction",
+          "If JD requires multi-cloud: verify breadth of cloud evidence, not just LLM provider routing",
+          "If JD requires HIPAA/healthcare: verify direct delivery in regulated environment vs general security practice",
+          "If JD requires formal leadership: verify management scope vs player-coach influence"
+        ],
+        "company_domain_overrides": [
+          "Healthcare companies: HIPAA/PHI claims require direct delivery evidence in that environment",
+          "Enterprise SaaS: multi-tenant claims require architectural proof, not just deployment context"
+        ],
+        "region_overrides": [
+          "No region-specific compliance claims unless CV proves that regulatory environment"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every quantified claim traceable to specific project with measurement context",
+          "Titles exactly match documented role progression without inflation",
+          "Tech claims limited to demonstrated production usage",
+          "Scale claims supported by platform scope evidence",
+          "No unsafe claims from category blueprint appear without supporting evidence"
+        ],
+        "7_8": [
+          "Most claims well-sourced with minor attribution gaps",
+          "Titles accurate with perhaps slight variation in exact wording",
+          "Tech claims supported but one or two could be more precisely scoped",
+          "No major red-flag claims from unsafe list"
+        ],
+        "5_6": [
+          "Some metrics lack clear source or methodology",
+          "Title framing slightly elevated beyond documented scope",
+          "Tech breadth claims exceed demonstrated depth in some areas",
+          "One minor unsafe claim present but not central to positioning"
+        ],
+        "0_4": [
+          "Metrics appear fabricated or dramatically inflated",
+          "Title inflation from IC to management scope without evidence",
+          "Critical tech claims (Go, multi-cloud, specific providers) unsupported",
+          "Multiple unsafe claims from category blueprint present",
+          "PhD/publication/research credentials added for category where 0% require them"
+        ]
+      },
+      "red_flags": [
+        "Go language depth claims without production evidence",
+        "SLO/SLI program ownership without direct operational scope documentation",
+        "Direct MCP/OpenAI/Anthropic platform engineering claims when work was integration only",
+        "Multi-cloud infrastructure claims when work was single-cloud with multi-provider LLM routing",
+        "Formal people management or hiring authority claims without documented scope",
+        "Fine-tuning, custom embedding training, or RLHF claims without explicit project evidence",
+        "Millions-scale user claims when documented scope is thousands",
+        "PhD or publication framing for category with 0% research requirement",
+        "Company-wide AI tooling ownership claims without adoption metrics",
+        "HIPAA/PHI/healthcare compliance ownership without direct delivery evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json",
+        "data/master-cv/projects/commander4_skills.json:42"
+      ]
+    }
+  ],
+  "gates": {
+    "must_have_coverage_gate": {
+      "pass_criteria": [
+        "Platform architecture evidence present (required in 96% of roles)",
+        "Production delivery evidence with reliability or scale markers",
+        "Senior IC seniority clearly established (required in 100% of roles)",
+        "Distributed systems or backend engineering foundation demonstrated",
+        "Collaboration or cross-functional evidence present (required in 92% of roles)"
+      ],
+      "fail_conditions": [
+        "No platform or system architecture evidence for architecture-required category",
+        "No production delivery evidence (pure research or POC-only positioning)",
+        "Seniority unclear or appears junior to Staff/Principal level",
+        "No backend/systems foundation (pure frontend or data-only background)",
+        "Zero collaboration or stakeholder alignment evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+      ]
+    },
+    "unsafe_claim_gate": {
+      "pass_criteria": [
+        "All metrics traceable to documented projects",
+        "Titles match role history without inflation to management scope",
+        "Tech claims limited to technologies with production evidence",
+        "Leadership claims scoped appropriately for IC role",
+        "No red-flag claims from category unsafe_or_weak_framing list"
+      ],
+      "fail_conditions": [
+        "Director/Head/VP title claims for IC-scoped work",
+        "Go language depth claimed without production evidence",
+        "Multi-cloud implementation claimed when work was single-cloud",
+        "SLO program ownership claimed without operational scope evidence",
+        "People management authority claimed without documented scope",
+        "Fine-tuning/RLHF/custom embedding claims without explicit project evidence",
+        "PhD/publication/research framing for production-delivery category"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ]
+    },
+    "persona_fit_gate": {
+      "pass_criteria": [
+        "Architecture-first positioning with production delivery emphasis",
+        "Senior IC authority framing without management inflation",
+        "Player-coach influence (if claimed) scoped to mentoring and standards, not people management",
+        "Technical vocabulary matches architect tone with high formality",
+        "Collaboration emphasis appropriate for 92% category prevalence"
+      ],
+      "fail_conditions": [
+        "Management-first positioning for IC-scoped category",
+        "Research/academic framing for production-delivery category",
+        "Consumer-scale claims without supporting enterprise platform evidence",
+        "Tool-evangelist positioning without shipped system outcomes",
+        "Hiring-leader or org-owner framing beyond documented scope"
+      ],
+      "citations": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ]
+    }
+  },
+  "verdict_thresholds": {
+    "strong_match_min": 8.5,
+    "good_match_min": 7.0,
+    "needs_work_min": 5.5,
+    "weak_match_max": 5.49
+  },
+  "scoring_guidance": {
+    "how_to_interpret_executive_presence": "For this senior IC category, executive_presence means architectural authority, technical judgment, cross-team influence, and mentoring impact WITHOUT formal management scope. Score highly for standards adoption, design review influence, and player-coach enablement. Penalize people-management framing, hiring authority claims, budget ownership, or Director/VP/Head positioning as persona inflation. The category shows hiring at 8%, performance_management at 4%, and budget_pnl at 0% \u2014 claims beyond these frequencies require explicit evidence.",
+    "how_to_penalize_unsupported_claims": "Apply graduated penalties: minor deductions (0.5-1.0 points) for vague metrics lacking methodology; moderate deductions (1.0-2.0 points) for tech claims exceeding demonstrated depth; severe deductions (2.0-3.0 points) for title inflation, fabricated credentials, or claims matching category red_flags (Go depth, SLO ownership, multi-cloud, people management). Any claim on the unsafe_claims_top list without explicit CV evidence should trigger anti_hallucination deduction AND may fail unsafe_claim_gate.",
+    "how_to_handle_category_vs_job_tradeoffs": "Category signals (platform architecture 96%, collaboration 92%, production reliability) take precedence over JD-specific nice-to-haves. However, when JD explicitly requires a differentiator (agent orchestration 48%, RAG 36%, specific stack), penalize jd_alignment if CV doesn't address it. For table-stakes requirements appearing in >50% of roles, treat JD omission as implicit inclusion. For differentiators (<50%), only require evidence when JD explicitly requests.",
+    "citations": [
+      "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+      "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+    ]
+  },
+  "scorecard_template_mapping": {
+    "dimension_keys": [
+      "ats_optimization",
+      "impact_clarity",
+      "jd_alignment",
+      "executive_presence",
+      "anti_hallucination"
+    ],
+    "gate_keys": [
+      "must_have_coverage_gate",
+      "unsafe_claim_gate",
+      "persona_fit_gate"
+    ],
+    "required_output_fields": [
+      "overall_score",
+      "verdict",
+      "top_strengths",
+      "top_failures",
+      "unsupported_claims",
+      "missing_must_haves"
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "rubric_rule": "Platform architecture evidence required as table stakes for 96% role prevalence",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Staff/Principal title family required matching 96% combined prevalence (principal_engineer 52% + staff_engineer 44%)",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Senior IC framing required for 100% senior_ic prevalence with player-coach (44%) vs pure IC (56%) split",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Agent orchestration (48%) and RAG (36%) are differentiators requiring explicit JD match and CV evidence",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/master-cv/projects/commander4.md:8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Collaboration evidence required for 92% category prevalence",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Reliability and observability outcomes valued with reliability in 18 deep-analysis samples and observability in 24%",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/master-cv/roles/01_seven_one_entertainment.md:77"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "People management claims penalized as persona inflation (hiring 8%, performance_management 4%, budget_pnl 0%)",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Research/PhD framing penalized for category with 0% research_heavy and 0% requires_phd",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Go language claims flagged as unsafe without production evidence per category unsafe_claims_top",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Multi-cloud implementation claims require breadth evidence beyond single-cloud with multi-provider LLM routing",
+      "support": [
+        "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+        "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
+
+SCORECARD TEMPLATE SHAPE (populate this exact shape; copy all top-level keys verbatim)
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": null,
+  "job_id": null,
+  "dimension_scores": {
+    "ats_optimization": null,
+    "impact_clarity": null,
+    "jd_alignment": null,
+    "executive_presence": null,
+    "anti_hallucination": null
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": null,
+    "unsafe_claim_gate": null,
+    "persona_fit_gate": null
+  },
+  "overall_score": null,
+  "verdict": null,
+  "top_strengths": [],
+  "top_failures": [],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [],
+  "evidence_refs": [],
+  "meta": {
+    "generated_at": null,
+    "scorer_model": null,
+    "rubric_path": null,
+    "blueprint_path": null,
+    "baseline_path": null
+  }
+}
+
+PREVIOUS ATTEMPT FAILED VALIDATION
+Fix EVERY issue below in the next JSON response:
+- top_failures[0] ref not a clean path: 'cv:16-21'
+
+JD TEXT (line-numbered)
+0001: # Staff AI Software Engineer
+0002: 
+0003: **Company:** RELATIVITY
+0004: **Location:** 
+0005: **Score:** 71 (Tier C)
+0006: **Status:** N/A
+0007: 
+0008: ---
+0009: 
+0010: Posting TypeRemoteJob OverviewAbout AI at RelativityIn the past two years, billions of documents have already benefited from theinsights of Relativity AI – and we are just getting started on our journey touse AI to improve each user experience, product, matter, and investigation atRelativity. We are focused on helping our users discover the truth more quickly,and act on data with confidence. * We are focused on algorithm excellence, to provide the most robust and trusted experience possible. * We are creating a world-class toolset to solve complex challenges quickly and iteratively. * AI will be leveraged everywhere, in all stages of the discovery process to better manage cases and to optimize product operations. As a team, we believe in exploration, experimentation, and bringing yourcuriosity to work every day. We know that you can’t innovate withoutexperimentation — and a little failure happens on the path to invention. We usethe latest and greatest to ensure we are the best. We strive to experiment,ship, and learn every day.About Data Science At RelativityRelativity’s scale and breadth create tremendous variety for rich dataexploration and insights; our market position and scaled products mean ourmodels and insights can quickly be in the hands of our users. Great insightscan’t happen without great data, and the best insights come from massive data.Our data infrastructure and engineering ensure that the breadth of Relativitydata is available for insights, confidential data is kept confidential, data isalways protected, and we are investing heavily in data-pipeline and data-laketechnology moving forward.If you’re looking for a data-rich environment that is already heavily using AI,with at-scale challenge and a ton of innovation and experimentation ahead, youwill find yourself at home on the AI team within Relativity.About The Staff AI Engineer RoleStaff AI Engineers at Relativity operate as domain architects and strategicaccelerators. You will work across multiple engineering and data-science teams,defining the long-term vision for Relativity’s ML platform, guiding high-impactprojects from concept to production, and ensuring that our AI capabilitiesremain secure, reliable, and cost-effective at global scale.ResponsibilitiesJob Description and Requirements * Technical Vision & Strategy. Define and evangelize the multi-year technical roadmap for ML Ops, aligning platform architecture with product and research needs. * Cross-Team Leadership. Provide technical direction and mentorship across several engineering squads—an evolution of the senior expectation to “work with a team of engineers” and the lead mandate to “lead a team of engineers” . * Platform Architecture Ownership. Drive the design of training, inference, and monitoring systems that meet demanding timelines, extensibility, performance, and scale goals. * Program Management. Partner with product, program, and science leaders to scope and deliver cross-functional roadmaps, minimizing risks and maximizing opportunities. * Innovation & Standards. Evaluate emerging ML Ops tooling, establish engineering standards, and champion advanced optimization techniques (sparsity, quantization, pruning) for cost and performance gains. * Governance & Compliance. Collaborate with security teams to uphold robust data protection and responsible AI practices at scale. * Community & Mentorship. Foster a culture of learning by leading architecture reviews, publishing best practices, and mentoring senior and lead engineers organization wide. Minimum Qualifications * 8+ years of professional software engineering experience, including 5+ years in ML/AI or big-data environments and 4+ years of technical leadership across multiple teams. * Expert level proficiency in Python, Java, or Scala for production systems. * Deep hands-on experience with Docker, Kubernetes/Helm, and infrastructure-as-code tools such as Terraform or Pulumi. * Proven track record building and operating CI/CD pipelines for ML workflows (e.g., Prefect, Airflow) and deploying secure, monitored services on AWS, Azure, or GCP. * Demonstrated ability to mentor senior engineers, influence technical direction, and drive cross-team initiatives to completion. Preferred Qualifications * Master’s or PhD in Computer Science, Engineering, Mathematics, or related field. * Recognized thought leadership through open-source contributions, conference talks, or publications. * Experience scaling ML platforms that leverage distributed data frameworks such as Spark or Kafka. * Expertise in implementing advanced model-optimization techniques (compression, pruning, quantization) in production environments. Relativity is a diverse workplace with different skills and life experiences—andwe love and celebrate those differences. We believe that employees are happiestwhen they're empowered to be their full, authentic selves, regardless how youidentify.Benefit HighlightsComprehensive health, dental, and vision plansParental leave for primary and secondary caregiversFlexible work arrangementsTwo, week-long company breaks per yearAdditional time offLong-term incentive programTraining investment programAll qualified applicants will receive consideration for employment withoutregard to race, color, religion, sex, sexual orientation, gender identity, ornational origin, disability or protected veteran status, or any other legallyprotected basis, in accordance with applicable law.Relativity is committed to competitive, fair, and equitable compensationpractices.This position is eligible for total compensation which includes a competitivebase salary, an annual performance bonus, and long-term incentives.The expected salary range for this role is between following values:300 000 and 450 000PLNThe final offered salary will be based on several factors, including but notlimited to the candidate's depth of experience, skill set, qualifications, andinternal pay equity. Hiring at the top end of the range would not be typical, toallow for future meaningful salary growth in this position.Suggested SkillsAlgorithms, Automation, Debugging, Distributed Systems, Performance Tuning,Problem Solving, Project Management, Software Development, System Designs,Technical LeadershipShow more Show less
+
+CV MARKDOWN (line-numbered)
+0001: # TAIMOOR ALAM
+0002: taimooralam.com · linkedin.com/in/taimooralam · github.com/taimooralam
+0003: ### Staff AI Software Engineer
+0004: *alamtaimoor.de@gmail.com · +49 176 2979 3925 · Nationality: German*
+0005: 
+0006: **PROFESSIONAL SUMMARY**
+0007: 
+0008: Platform architect with 10+ years driving technical strategy across distributed systems processing billions of daily events, establishing ML platform standards and cost-conscious optimization at infrastructure scale.
+0009: 
+0010: • Architected Enterprise AI Platform with composable Guardrail Profiles, 5 MCP server tools for external integrations, per-silo guardrail injection via LiteLLM proxy, and type-safe structured output pipelines with access-control-aware behavior
+0011: • Designed Data Pipeline processing billions of events daily using OpenSearch on AWS, transforming operational visibility and reducing costs across multiple dimensions
+0012: • Established CloudWatch and SNS monitoring system with Slack alerting integration, significantly reducing MTTR as part of platform reliability transformation
+0013: • Built custom S3VectorSemanticCache Python class for LiteLLM, implementing SHA-256 exact-match (L1, ~2ms) and S3 Vectors cosine similarity (L2, ≥0.95, ~200ms) with Redis TTL expiration
+0014: • Drove Jenkins to GitLab CI/CD migration, enabling faster automated deployments and reducing release cycles from weeks to days
+0015: 
+0016: **CORE COMPETENCIES**
+0017: **System Architecture:** Event-Driven Architecture, CQRS, Domain-Driven Design, Microservices, REST API, WebSocket, Innovation, HbbTV, Agile, LLM Integration
+0018: **Technical Excellence:** JavaScript, Python, TypeScript, Node.js, Enterprise AI Platform, E2E, APIs, MCP Server, Event-Driven, Jest
+0019: **Cloud Platform:** AWS, CI/CD, Observability, System Architecture, SQL, FFmpeg, Desktop, Middleware, Project Management, CoAP
+0020: **Technical Influence:** C, ORM, Flask, IoT, Documentation, C#, SCRUM, AdTech, Semantic Caching, Redis
+0021: 
+0022: **PROFESSIONAL EXPERIENCE**
+0023: 
+0024: **Seven.One Entertainment Group • Technical Lead (Addressable TV)** | Munich, DE | 2020–Present
+0025: 
+0026: • Scaled AWS infrastructure for bursty traffic using Lambda and ECS auto-scaling, reducing missed impressions by 20%
+0027: • Architected OpenSearch-based observability pipeline on AWS processing billions of events daily, transforming operational visibility and reducing costs across multiple dimensions
+0028: • Implemented CloudWatch and SNS-based monitoring system with Slack alerting integration, significantly reducing MTTR as part of platform reliability transformation
+0029: • Facilitated Jenkins to GitLab CI migration, enabling faster automated deployments and reducing release cycles from weeks to days
+0030: • Implemented Zod schema validation for all LLM outputs, 5 MCP server tools for external integrations, composable guardrail profiles, per-silo guardrail injection via LiteLLM proxy, and type-safe structured output pipelines with access-control-aware behavior
+0031: • Built custom S3VectorSemanticCache Python class for LiteLLM, implementing SHA-256 exact-match (L1, ~2ms) and S3 Vectors cosine similarity (L2, ≥0.95, ~200ms) with Redis TTL expiration
+0032: **Skills:** Python, CI/CD, TypeScript, JavaScript, Domain-Driven Design, Event-Driven Architecture, Microservices, CQRS
+0033: 
+0034: **Samdock (Daypaio) • Lead Software Engineer** | Munich, DE | 2019–2020
+0035: 
+0036: • Implemented CQRS/event-sourcing architecture with NestJS and EventStore for multi-tenant CRM platform
+0037: • Built CI/CD pipeline reducing deployment time from hours to minutes, enabling daily releases
+0038: • Designed RESTful APIs with Swagger/OpenAPI documentation enabling 50% faster partner integrations
+0039: • Built multi-tenant CQRS foundation on GCP using NestJS, EventStore, and MongoDB with RxJS pub/sub patterns—enabling 10x horizontal scaling
+0040: • Created reusable Angular component library standardizing UI development across platform
+0041: • Designed architecture balancing startup agility with enterprise scalability for 10x growth
+0042: **Skills:** CI/CD, TypeScript, JavaScript, Node.js, NestJS, EventStore, CQRS, Microservices
+0043: 
+0044: **KI Labs • Intermediate Backend Engineer** | Munich, DE | 2018–2019
+0045: 
+0046: • Built Flask REST APIs over large-scale data pipeline using onion architecture with JWT authentication
+0047: • Built Swagger/OpenAPI documentation system for REST APIs improving developer experience
+0048: • Built pytest-based multi-layered test suite (unit, E2E, snapshot) for API contract verification, reducing production incidents by 35%
+0049: • Optimized MongoDB data layer achieving 60% query response time reduction
+0050: • Contributed to agile team dynamics with reliable delivery and quality focus
+0051: **Skills:** Python, AWS, Flask, REST API, JWT, APIs, MongoDB, Indexing
+0052: 
+0053: **Fortis (Research Project) • Backend Engineer** | Munich, DE | 2018
+0054: 
+0055: • Built microservices backend in Node.js with well-defined service interfaces for research platform
+0056: • Implemented RabbitMQ pub/sub messaging enabling asynchronous communication between microservices
+0057: • Defined API standards with Swagger/OpenAPI documentation ensuring interface consistency across services
+0058: • SCRUM collaboration with research client demos and feedback integration
+0059: **Skills:** JavaScript, Node.js, SQL, RabbitMQ, Pub/Sub, Event-Driven Architecture, MongoDB, Microservices
+0060: 
+0061: **OSRAM • Software Engineer (IoT)** | Munich, DE | 2016–2018
+0062: 
+0063: • Developed OpenAIS-compliant CoAP server in Python establishing reusable template adopted by multiple team projects
+0064: • Integrated OSRAM legacy lighting products and firmware with modern CoAP OpenAIS ecosystem, ensuring backward compatibility
+0065: • Developed Python-based CoAP server acting as CoAP-to-UDP translation middleware, enabling seamless integration of non-CoAP third-party devices
+0066: • Enhanced Erbium CoAP implementation with OSCOAP security features enabling secure multicast communication in IoT lighting networks
+0067: • Designed and developed cross-platform Qt/C++ application with QML interface controlling IoT lighting systems via CoAP protocol across mobile and desktop platforms
+0068: • Created comprehensive development and installation documentation that became team reference material
+0069: **Skills:** Python, C++, C, Qt, CoAP, OSCOAP, UDP, REST
+0070: 
+0071: **Clary Icon • Software Engineer** | Islamabad, PK | 2014–2016
+0072: 
+0073: • Engineered Node.js playback service with WebSocket-based timestamp synchronization handling concurrent video streams for multi-party call replay
+0074: • Delivered features across Node.js backend, Qt C++ desktop, and C# WPF desktop platforms within unified video conferencing product
+0075: • Created C# WPF tutorial system with synthetic voice narration and visual annotations guiding users through video conferencing setup
+0076: • Developed WebRTC video recording system using Licode media server, custom REST APIs, and FFmpeg transcoding pipeline for multi-party call capture
+0077: • Reverse-engineered OpenPhone SIP client and extended functionality using Qt C++ widget framework for enhanced call management
+0078: • Direct client engagement for requirements, demos, and feedback integration
+0079: **Skills:** JavaScript, Node.js, C++, C#, SQL, WPF, Licode, WebRTC
+0080: 
+0081: **EDUCATION & CERTIFICATIONS**
+0082: • M.Sc. Computer Science — Technical University of Munich
+0083: • B.Sc. Computer Software Engineering — GIK Institute
+0084: • AWS Essentials
+0085: • ECS & Multi-Region LB
+0086: • Data Scientist's Toolbox
+0087: • R Programming
+0088: 
+0089: **LANGUAGES**
+0090: English (C1), German (B2), Urdu (Native)
+
+STRICT RULES
+- Return ONE JSON object only. No markdown fences. No explanatory text.
+- Populate EVERY key from the scorecard template.
+- `category_id` must equal "staff_ai_engineer_global"; `job_id` must equal "694e696d6dd552ab7ec2caf7".
+- `dimension_scores`: numeric floats in [0, 10]. Keys exactly: ats_optimization, impact_clarity, jd_alignment, executive_presence, anti_hallucination.
+- `gate_outcomes`: booleans. Keys exactly: must_have_coverage_gate, unsafe_claim_gate, persona_fit_gate.
+- `overall_score`: weighted sum (20/25/25/15/15); Python will recompute and may override.
+- `verdict`: one of STRONG_MATCH, GOOD_MATCH, NEEDS_WORK, WEAK_MATCH; Python may gate-cap it.
+- `top_strengths`, `top_failures`, `unsupported_claims`, `missing_must_haves`, `persona_fit_notes`: each entry is a compact string ending with refs=<ref[,ref,...]>.
+  Accepted ref shorthands: `cv:<line>` (points to CV_PATH), `jd:<line>` (points to JD_PATH), or a full path `outputs/... :line` / `data/master-cv/... :line` / `data/eval/... :line` / `docs/... :line`.
+  Every entry MUST end with a `refs=...` suffix and at least one ref. Examples:
+    - "Strong architecture framing in opening bullets refs=cv:9,cv:12"
+    - "JD requires Kubernetes but CV silent on K8s refs=jd:45,cv:33"
+- `evidence_refs`: deduped union of all refs cited across qualitative arrays, expanded to full paths, in stable order.
+- `representation_gap_hits`, `curation_gap_hits`: may be empty lists if no gap observed.
+
+SCORING RULES
+- Use the rubric's dimension_rubrics[].score_anchors to pick scores.
+- `executive_presence` is category-relative:
+  * ai_architect_*: architectural authority and system ownership, NOT executive management
+  * staff_*/senior_*/principal_*: senior IC authority, NOT people management
+  * tech_lead_*: hands-on delivery leadership, NOT director/VP framing
+  * head_of_ai_*: player-coach leadership unless stronger management evidence is real
+- Do NOT infer claims from the JD back into the CV. Only credit what the CV actually states.
+- Penalize title inflation, fabricated metrics, unsupported cloud/provider authority, and unsupported people-management scope inside `unsupported_claims` and drop `unsafe_claim_gate` accordingly.
+- If the CV omits rubric must-have coverage items from `gates.must_have_coverage_gate.pass_criteria`, list them in `missing_must_haves` and drop `must_have_coverage_gate`.
+- For IC/player-coach categories, if the CV uses literal Head/VP/Director/Executive framing without direct evidence in the CV text, drop `persona_fit_gate` and list the mismatch in `persona_fit_notes`.
+- Keep qualitative arrays concise — 2-6 items each, not essays.
+
+META
+- Set meta.rubric_path = "data/eval/rubrics/staff_ai_engineer_global_rubric.json"
+- Set meta.blueprint_path = "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+- Set meta.baseline_path = "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+- Set meta.scorer_model = "claude-opus-4-5-20251101" (or codex model if provider=codex; Python may overwrite)
+- Set meta.generated_at = ISO-8601 timestamp (Python may overwrite)
+
+OUTPUT: the populated scorecard JSON only.

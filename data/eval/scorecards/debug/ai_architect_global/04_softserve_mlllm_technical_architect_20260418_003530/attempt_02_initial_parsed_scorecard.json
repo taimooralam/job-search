@@ -1,0 +1,61 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "698dee577d41dc1e8a624f16",
+  "dimension_scores": {
+    "ats_optimization": 7.5,
+    "impact_clarity": 8.5,
+    "jd_alignment": 7.0,
+    "executive_presence": 7.5,
+    "anti_hallucination": 8.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 7.7,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Exact headline match ML/LLM Technical Architect with strong enterprise GenAI platform evidence refs=cv:3,jd:1",
+    "Strong production delivery proof with quantified outcomes: 2,000 users, billions of events, 20% improvement refs=cv:10,cv:11,cv:14",
+    "Comprehensive GenAI stack coverage: RAG pipeline, guardrails, evaluation harness (MRR@k, NDCG@k), hybrid retrieval refs=cv:12,cv:13,cv:19",
+    "AWS infrastructure experience with ECS, Lambda, EventBridge at production scale with MLOps/LLMOps pipelines refs=cv:14,cv:18,cv:32"
+  ],
+  "top_failures": [
+    "Missing JD-required AWS AI services: SageMaker, Bedrock, Kendra, Glue, Kinesis, Athena, Redshift not mentioned refs=jd:13,cv:18",
+    "No Amazon Bedrock Agents experience despite JD emphasis on Agentic AI with this specific framework refs=jd:16,cv:19",
+    "Limited customer-facing consulting and pre-sales evidence despite JD requiring advisory confidence refs=jd:22,cv:83"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "Agentic AI mentioned but without JD-required Bedrock Agents framework evidence refs=cv:19,jd:16"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:3",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:10",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:11",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:12",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:13",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:14",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:18",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:19",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:32",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md:83",
+    "data/eval/raw/ai_architect_global/jd_texts/04_softserve_mlllm_technical_architect.md:1",
+    "data/eval/raw/ai_architect_global/jd_texts/04_softserve_mlllm_technical_architect.md:13",
+    "data/eval/raw/ai_architect_global/jd_texts/04_softserve_mlllm_technical_architect.md:16",
+    "data/eval/raw/ai_architect_global/jd_texts/04_softserve_mlllm_technical_architect.md:22"
+  ],
+  "meta": {
+    "generated_at": "2026-04-18T10:30:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json"
+  }
+}

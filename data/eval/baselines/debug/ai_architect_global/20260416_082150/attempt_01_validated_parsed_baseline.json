@@ -1,0 +1,627 @@
+{
+  "meta": {
+    "category_id": "ai_architect_global",
+    "category_name": "AI Architect \u2014 Global/Remote",
+    "macro_family": "ai_architect",
+    "priority": "primary_target",
+    "confidence": "high",
+    "representation_proxy_mode": true
+  },
+  "overall_assessment": {
+    "combined_fit_score": 7.3,
+    "readiness_tier": "GOOD",
+    "one_sentence_verdict": "Baseline fit is good: the evidence already proves senior architecture ownership, modernization, enterprise integration, and production GenAI platform delivery, but the current master-CV framing still undersells the candidate as a generic engineering leader instead of an architect-first AI platform builder.",
+    "uncertainty_note": "Confidence is high at the category level, but the representation layer is proxy-derived and the strongest AI-specific proof is concentrated in Seven.One/Commander-4 plus Lantern; title-family fit and some stakeholder/greenfield signals are stronger in upstream materials than in the curated store.",
+    "citations": [
+      "data/master-cv/role_metadata.json:3",
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:123",
+      "data/master-cv/roles/01_seven_one_entertainment.md:282",
+      "data/master-cv/projects/commander4.md:8",
+      "data/master-cv/projects/commander4.md:9",
+      "data/master-cv/projects/lantern.md:7",
+      "Blueprint: Platform design 87/88 (98.9%); architecture valued evidence 20/20; delivery valued evidence 19/20.",
+      "Blueprint: Agents/orchestration 34/88 (38.6%); guardrails/governance 33/88 (37.5%); RAG 25/88 (28.4%); evaluation/quality 18/88 (20.5%)."
+    ]
+  },
+  "score_breakdown": {
+    "candidate_evidence_coverage_score": 8.2,
+    "evidence_curation_completeness_score": 6.9,
+    "master_cv_representation_quality_score": 5.6,
+    "ai_architecture_fit_score": 7.9,
+    "leadership_scope_fit_score": 8,
+    "impact_proof_strength_score": 7.5,
+    "weighted_score_explanation": [
+      "Coverage is strong because the curated store already contains enterprise architecture modernization, AI workflow platform delivery, retrieval/evaluation/guardrails evidence, and greenfield architecture foundations from Daypaio.",
+      "Curation completeness is lower because architect-title framing and some high-value stakeholder/greenfield details are still stronger in upstream STAR records than in the promoted metadata and top-line curated summaries.",
+      "Representation quality is the main drag: the current headline and summary in metadata still lead with 'Engineering Leader / Software Architect' and AdTech modernization instead of AI architect language and enterprise GenAI platform proof.",
+      "AI architecture fit is good because the evidence supports enterprise AI platform design, workflow/tool integration, RAG, evaluation, structured outputs, guardrails, semantic caching, and multi-provider gateway design.",
+      "Leadership fit is good for this category because the record reads as senior IC/player-coach with mentoring and stakeholder translation, but it should not be represented as formal people-management ownership.",
+      "Impact proof is solid on reliability, scale, and delivery metrics, though AI-specific business outcome metrics remain lighter than the underlying architecture proof."
+    ],
+    "citations": [
+      "data/master-cv/role_metadata.json:3",
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:54",
+      "data/master-cv/roles/01_seven_one_entertainment.md:71",
+      "data/master-cv/roles/01_seven_one_entertainment.md:123",
+      "data/master-cv/roles/01_seven_one_entertainment.md:182",
+      "data/master-cv/roles/01_seven_one_entertainment.md:233",
+      "data/master-cv/roles/01_seven_one_entertainment.md:282",
+      "data/master-cv/roles/02_samdock_daypaio.md:27",
+      "data/master-cv/roles/02_samdock_daypaio.md:44",
+      "data/master-cv/roles/02_samdock_daypaio.md:142",
+      "data/master-cv/projects/commander4.md:8",
+      "data/master-cv/projects/commander4.md:9",
+      "data/master-cv/projects/lantern.md:7",
+      "data/master-cv/projects/lantern.md:8",
+      "data/master-cv/projects/lantern.md:9",
+      "data/master-cv/projects/lantern.md:10",
+      "docs/archive/knowledge-base.md:7",
+      "docs/archive/knowledge-base.md:98",
+      "docs/archive/knowledge-base.md:181",
+      "docs/archive/knowledge-base.md:734",
+      "Blueprint: Platform design 87/88 (98.9%); architecture valued evidence 20/20; delivery valued evidence 19/20.",
+      "Blueprint: Senior_ic 79%; IC 49%; player_coach 38%; manager 1%."
+    ]
+  },
+  "strongest_supported_signals": [
+    {
+      "signal": "Enterprise architecture ownership with measurable modernization outcomes",
+      "why_it_matters_for_category": "This category rewards architects who design target-state systems and carry them into production with reliability, scalability, and modernization proof.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/01_seven_one_entertainment.md:54",
+        "data/master-cv/roles/01_seven_one_entertainment.md:71",
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "citation": "Supported by Seven.One modernization, observability, and DDD achievements; this maps directly to architecture-plus-delivery demand in the category."
+    },
+    {
+      "signal": "Production enterprise AI platform delivery",
+      "why_it_matters_for_category": "A top-third profile for this category needs shipped enterprise AI systems, not only platform modernization or generic backend leadership.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "citation": "Supported by Commander-4/Joyia evidence showing an enterprise AI workflow platform serving 2,000 users with 42 plugins, evaluation, guardrails, structured outputs, and access control."
+    },
+    {
+      "signal": "RAG, retrieval quality, and evaluation-loop depth",
+      "why_it_matters_for_category": "The category explicitly values RAG, vector search, and evaluation as architectural components rather than narrow prompt work.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:7"
+      ],
+      "citation": "Supported by hybrid retrieval, BM25+RRF, LLM-as-judge reranking, MRR/NDCG evaluation, and search quality optimization evidence."
+    },
+    {
+      "signal": "Guardrails, structured outputs, and secure tool integration",
+      "why_it_matters_for_category": "Production GenAI architect roles increasingly filter for governance, guardrails, policy enforcement, and enterprise-safe integrations.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:332",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "citation": "Supported by Zod validation, per-silo guardrail injection, per-silo access control, and 5 MCP server tools for external integrations."
+    },
+    {
+      "signal": "Greenfield plus modernization architecture range",
+      "why_it_matters_for_category": "The market prefers architects who can modernize complex estates and also build new platforms from zero to production.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/02_samdock_daypaio.md:27",
+        "data/master-cv/roles/02_samdock_daypaio.md:142"
+      ],
+      "citation": "Supported by Seven.One legacy transformation and Daypaio 0\u21921 event-sourced CRM plus scalability architecture evidence."
+    },
+    {
+      "signal": "Stakeholder translation and player-coach technical leadership",
+      "why_it_matters_for_category": "The role is senior IC/player-coach, so architecture leadership must include stakeholder alignment and technical guidance without drifting into executive management claims.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123",
+        "data/master-cv/roles/01_seven_one_entertainment.md:182",
+        "data/master-cv/roles/01_seven_one_entertainment.md:250",
+        "data/master-cv/roles/01_seven_one_entertainment.md:266",
+        "data/master-cv/roles/02_samdock_daypaio.md:44"
+      ],
+      "citation": "Supported by technical north-star work, mentoring, stakeholder collaboration, risk communication, and event-storming facilitation."
+    }
+  ],
+  "gap_analysis": [
+    {
+      "signal": "Architect-title framing at Seven.One is stronger upstream than in the curated metadata",
+      "gap_type": "supported_upstream_pending_curation",
+      "why_it_matters": "Title-family fit matters in this category because solutions architect / AI architect families dominate and the current metadata headline is too generic.",
+      "current_state": "The representation layer leads with 'Engineering Leader / Software Architect' and the current curated role title is 'Technical Lead (Addressable TV)'.",
+      "safe_interpretation": "The record can safely support architect-family framing, but the specific 'Technical Architect' alias should be promoted from upstream evidence with provenance rather than assumed from the current metadata alone.",
+      "recommended_action": "Promote the upstream 'Lead Software Engineer / Technical Architect' / 'Technical Lead - Addressable TV' role framing into role metadata as an evidenced alias or targeting variant, while keeping the contractual title traceable.",
+      "evidence_refs": [
+        "data/master-cv/role_metadata.json:3",
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:98",
+        "docs/archive/knowledge-base.md:181",
+        "docs/archive/knowledge-base.md:268",
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "citation": "Upstream STAR records repeatedly use architect-heavy role framing; the representation layer does not."
+    },
+    {
+      "signal": "AI architect headline and summary positioning",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "This category wants architect-first enterprise AI positioning, but the current master-CV proxy still reads as generic engineering leadership plus AdTech modernization.",
+      "current_state": "The metadata headline is 'Engineering Leader / Software Architect' and the summary foregrounds AdTech modernization only, despite curated AI platform evidence.",
+      "safe_interpretation": "The evidence safely supports AI architect / AI solution architect headline families anchored in enterprise AI platforms, integration, evaluation, and guardrails.",
+      "recommended_action": "Surface Commander-4 and AI platform architecture proof in the headline and opening summary before the legacy-modernization narrative.",
+      "evidence_refs": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "citation": "Curated AI platform proof exists, but the current top-line representation does not lead with it."
+    },
+    {
+      "signal": "Workflow orchestration and enterprise tool-integration story",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "The category values agents/orchestration and enterprise system connectivity, but overclaiming 'agentic' leadership is risky unless the underlying tool/workflow evidence is surfaced precisely.",
+      "current_state": "Current projects show MCP Tool Design and plugins, but the master-CV proxy does not foreground orchestration or enterprise integrations as a core architect signal.",
+      "safe_interpretation": "The safest claim is workflow orchestration, structured tool calling, and MCP-enabled enterprise integration rather than broad 'agentic AI leader' branding.",
+      "recommended_action": "Surface the 5 MCP tools, 42 workflow plugins, structured outputs, and per-silo controls as enterprise orchestration evidence in summary and project ordering.",
+      "evidence_refs": [
+        "data/master-cv/projects/commander4.md:9",
+        "data/master-cv/roles/01_seven_one_entertainment.md:332",
+        "data/master-cv/role_metadata.json:3"
+      ],
+      "citation": "The evidence supports orchestration and tool integration, but not inflated agentic branding."
+    },
+    {
+      "signal": "Greenfield plus modernization pairing",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "The category explicitly rewards architects who can modernize complex estates and also design greenfield systems.",
+      "current_state": "The representation layer leads almost entirely with Seven.One modernization and does not combine it with Daypaio 0\u21921 platform evidence.",
+      "safe_interpretation": "The candidate can safely claim both modernization and greenfield architecture experience, with Daypaio as the greenfield anchor and Seven.One as the modernization anchor.",
+      "recommended_action": "Add Daypaio 0\u21921 event-sourced CRM and scalability architecture to the summary or top role selection for AI architect targeting.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/02_samdock_daypaio.md:27",
+        "data/master-cv/roles/02_samdock_daypaio.md:142",
+        "data/master-cv/role_metadata.json:3"
+      ],
+      "citation": "The evidence is already curated, but the current representation does not pair the two modes."
+    },
+    {
+      "signal": "Consulting-style stakeholder workshops and client alignment",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Global/remote AI architect roles often reward consulting-flavored stakeholder translation, workshops, and proposal-to-delivery continuity.",
+      "current_state": "Stakeholder and client-facing evidence exists across multiple roles, but it is not surfaced as a coherent architect signal in the master-CV proxy.",
+      "safe_interpretation": "The record safely supports stakeholder workshops, domain discovery, client communication, and technical translation, but not broad customer-facing solution-architect ownership by default.",
+      "recommended_action": "Surface one or two explicit workshop/client-translation examples from Daypaio, Seven.One, Clary, or Fortis in the summary or supporting bullets.",
+      "evidence_refs": [
+        "data/master-cv/roles/02_samdock_daypaio.md:44",
+        "data/master-cv/roles/01_seven_one_entertainment.md:250",
+        "data/master-cv/roles/01_seven_one_entertainment.md:266",
+        "data/master-cv/roles/06_clary_icon.md:103",
+        "data/master-cv/roles/04_fortis.md:75"
+      ],
+      "citation": "This signal is already curated across roles but is currently scattered and underweighted."
+    },
+    {
+      "signal": "AI operationalization and production controls",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Architect roles value deployable operating models, observability, CI/CD, and quality gates, not only architecture diagrams or retrieval mechanics.",
+      "current_state": "The projects and Seven.One role contain observability, monitoring, CI/CD, and eval-gate evidence, but the representation layer foregrounds tools more than production operating discipline.",
+      "safe_interpretation": "The candidate can safely claim AI platform operationalization support, observability, quality gates, and deployment automation as part of architect delivery scope.",
+      "recommended_action": "Raise observability, CI/CD, and eval-gate bullets in both Seven.One and Lantern when targeting this category.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:71",
+        "data/master-cv/roles/01_seven_one_entertainment.md:163",
+        "data/master-cv/roles/01_seven_one_entertainment.md:233",
+        "data/master-cv/projects/lantern.md:9",
+        "data/master-cv/projects/lantern.md:10"
+      ],
+      "citation": "Operationalization evidence is present but not yet a top-line differentiator in the master-CV proxy."
+    },
+    {
+      "signal": "Formal people-management or executive ownership",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "This category is predominantly senior IC/player-coach, so overrepresenting management scope would reduce fit and create credibility risk.",
+      "current_state": "The current headline uses 'Engineering Leader' and some role skill inventories include people-management language, but the strongest underlying evidence is mentoring, hiring participation, and technical guidance.",
+      "safe_interpretation": "Use architect-first player-coach language; keep mentoring and hiring secondary; avoid Head/Director/VP framing and avoid implying performance-management ownership.",
+      "recommended_action": "De-emphasize generic management labels in headline, summary, and skills for this category.",
+      "evidence_refs": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/roles/01_seven_one_entertainment.md:182",
+        "data/master-cv/roles/01_seven_one_entertainment.md:217"
+      ],
+      "citation": "The evidence supports mentoring and some hiring involvement, not executive or formal people-management default claims."
+    },
+    {
+      "signal": "AWS/Azure or multi-cloud authority as a default brand",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "Provider branding should be supporting evidence only when delivered work clearly supports it; overstating provider authority weakens architect credibility.",
+      "current_state": "AWS delivery is clearly evidenced at Seven.One, and Lantern supports multi-provider LLM gateway routing including Azure endpoints, but there is not enough evidence for broad Azure or multi-cloud architect authority.",
+      "safe_interpretation": "Claim AWS delivery and multi-provider LLM gateway design; do not brand the profile as an AWS/Azure authority or multi-cloud architect by default.",
+      "recommended_action": "Keep cloud/provider language secondary and tied to delivered examples.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/01_seven_one_entertainment.md:71",
+        "data/master-cv/projects/lantern.md:7"
+      ],
+      "citation": "The evidence supports delivered AWS and multi-provider gateway work, not broad provider authority branding."
+    },
+    {
+      "signal": "Advanced ML research, fine-tuning, custom embedding training, or RLHF",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "This category is delivery-led, and unsupported advanced-ML claims would be both risky and unnecessary.",
+      "current_state": "The evidence model explicitly flags these items as do-not-claim.",
+      "safe_interpretation": "Stay with production GenAI architecture, retrieval, evaluation, guardrails, and platform integration.",
+      "recommended_action": "Keep research-heavy and tuning-heavy claims out of headline, summary, and skills.",
+      "evidence_refs": [
+        "data/master-cv/projects/commander4_skills.json:42",
+        "data/master-cv/projects/lantern_skills.json:49"
+      ],
+      "citation": "These capabilities are explicitly excluded by the evidence model."
+    },
+    {
+      "signal": "AI compliance-program ownership or EU AI Act authority",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "Governance evidence helps in this category, but overstating compliance ownership without AI-specific proof creates a false specialization.",
+      "current_state": "There is real GDPR/TCF delivery evidence in AdTech and real AI guardrail/access-control evidence, but there is no explicit AI compliance ownership or EU AI Act delivery evidence.",
+      "safe_interpretation": "Use guardrails, access control, policy enforcement, and per-silo governance language; do not imply AI compliance-program ownership.",
+      "recommended_action": "Keep governance phrasing technical and delivery-bound rather than legal/compliance-owner framing.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:106",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "citation": "The record supports technical controls and prior regulatory delivery, but not AI compliance-program authority."
+    }
+  ],
+  "safe_claims_now": {
+    "headline_safe": [
+      "AI Architect | Enterprise AI Platforms, RAG, Evaluation & Guardrails",
+      "AI Solution Architect | Workflow Orchestration, Enterprise Integration & Platform Modernization",
+      "Software Architect / Technical Lead | Enterprise AI Platform Delivery, Event-Driven Systems & AWS"
+    ],
+    "profile_safe": [
+      "Designed and shipped an enterprise AI workflow platform serving 2,000 users with 42 plugins, including hybrid retrieval, structured outputs, guardrails, access control, and evaluation.",
+      "Combines legacy modernization and greenfield platform design: transformed a fragile AdTech estate into event-driven AWS microservices and previously launched a 0\u21921 event-sourced CRM platform to production.",
+      "Architect-first player-coach who aligns stakeholders, sets target architecture, facilitates domain discovery, and mentors engineers while staying hands-on with delivery.",
+      "Can safely claim workflow/tool integration, RAG, LLM gateway design, semantic caching, evaluation harnesses, observability, and deployment automation as part of production AI delivery."
+    ],
+    "experience_safe": [
+      "Transformed a legacy AdTech platform into autonomous event-driven TypeScript microservices on AWS, reducing incidents by 75% and sustaining 3 years with no downtime.",
+      "Led Commander-4/Joyia platform work for 2,000 users and 42 plugins, including BM25+RRF hybrid retrieval, LLM-as-judge reranking, semantic caching, and retrieval evaluation.",
+      "Designed structured output and tool-calling architecture with Zod validation, 5 MCP tools, per-silo guardrail injection, and per-silo access control.",
+      "Architected and launched a 0\u21921 event-sourced CRM platform with CQRS/EventStore and 25 production tenants, balancing startup speed with enterprise scalability."
+    ],
+    "leadership_safe": [
+      "Use senior IC or player-coach framing supported by technical vision, mentoring, stakeholder collaboration, and event-storming facilitation.",
+      "Mention mentoring 10+ engineers and promotion of 3 to lead roles as secondary leadership proof, not as primary manager branding.",
+      "Claim stakeholder translation through technical-debt ROI discussions, risk communication, and workshop-style domain discovery, all tied to delivered architecture outcomes."
+    ],
+    "unsafe_or_too_weak": [
+      "Head of AI, Director of AI, VP AI, or Engineering Manager default branding.",
+      "Formal performance-management, org-building, or hiring-owner claims beyond the narrow evidence currently curated.",
+      "AWS/Azure authority, multi-cloud architect branding, or cloud-provider thought-leader framing.",
+      "AI research, fine-tuning pipelines, custom embedding training, RLHF, or publication-led positioning.",
+      "AI compliance-program ownership, EU AI Act authority, or responsible-AI expert branding beyond guardrails and access-control delivery.",
+      "Customer-facing solution architect by default; the safer claim is stakeholder-facing technical translation supported by workshops, demos, and alignment work.",
+      "German-language claims stronger than the metadata-supported level."
+    ],
+    "citations": [
+      "data/master-cv/role_metadata.json:3",
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:106",
+      "data/master-cv/roles/01_seven_one_entertainment.md:123",
+      "data/master-cv/roles/01_seven_one_entertainment.md:182",
+      "data/master-cv/roles/01_seven_one_entertainment.md:217",
+      "data/master-cv/roles/01_seven_one_entertainment.md:250",
+      "data/master-cv/roles/01_seven_one_entertainment.md:266",
+      "data/master-cv/roles/01_seven_one_entertainment.md:282",
+      "data/master-cv/roles/02_samdock_daypaio.md:27",
+      "data/master-cv/roles/02_samdock_daypaio.md:44",
+      "data/master-cv/projects/commander4.md:8",
+      "data/master-cv/projects/commander4.md:9",
+      "data/master-cv/projects/lantern.md:7",
+      "data/master-cv/projects/lantern.md:9",
+      "data/master-cv/projects/commander4_skills.json:42",
+      "data/master-cv/projects/lantern_skills.json:49"
+    ]
+  },
+  "representation_diagnosis": {
+    "well_represented_now": [
+      "Architecture-led modernization with concrete reliability and delivery metrics is already prominent in the current summary and top Seven.One bullets.",
+      "Projects already surface credible AI-specific mechanics such as hybrid retrieval, evaluation, semantic caching, MCP integrations, and guardrails.",
+      "The current representation does show strong architecture tooling depth across TypeScript, Python, AWS, LiteLLM, Redis, and event-driven systems."
+    ],
+    "underrepresented_now": [
+      "AI architect headline family and enterprise AI platform positioning are not leading the document despite curated proof.",
+      "Commander-4 is strong enough to be a top-line summary anchor but is currently subordinate to generic modernization framing.",
+      "Greenfield 0\u21921 architecture from Daypaio is missing from the opening narrative, which weakens the 'greenfield plus modernization' category pattern.",
+      "Stakeholder workshops, event storming, and client/stakeholder translation are present in the evidence but not organized into a visible consulting-friendly architect signal.",
+      "Operationalization proof for AI systems such as observability, eval gates, CI/CD, and production controls is present but not foregrounded."
+    ],
+    "overstated_risk_now": [
+      "The 'Engineering Leader' headline can pull the profile toward manager/executive interpretation instead of senior architect/player-coach fit.",
+      "Role-level skill inventories include broad people-management and executive-style terms that exceed the strongest evidence for this category.",
+      "Cloud/provider and compliance cues could be overread if they are left unqualified by delivered-scope wording."
+    ],
+    "representation_priorities": [
+      "Re-anchor the headline and summary around AI architect / AI solution architect language backed by Commander-4 plus Seven.One architecture proof.",
+      "Move one Commander-4 architecture bullet into the opening summary or top role bullets so AI platform delivery is visible before generic leadership framing.",
+      "Add one greenfield architecture proof point from Daypaio and one stakeholder-translation proof point from Daypaio/Seven.One/Clary to balance the current modernization-heavy narrative.",
+      "Rebalance skills toward architecture outcomes and platform capabilities rather than a long tool list or generic management vocabulary."
+    ],
+    "citations": [
+      "data/master-cv/role_metadata.json:3",
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:71",
+      "data/master-cv/roles/01_seven_one_entertainment.md:282",
+      "data/master-cv/roles/02_samdock_daypaio.md:27",
+      "data/master-cv/roles/02_samdock_daypaio.md:44",
+      "data/master-cv/roles/06_clary_icon.md:103",
+      "data/master-cv/projects/commander4.md:2",
+      "data/master-cv/projects/commander4.md:7",
+      "data/master-cv/projects/commander4.md:8",
+      "data/master-cv/projects/commander4.md:9",
+      "data/master-cv/projects/lantern.md:7",
+      "data/master-cv/projects/lantern.md:10"
+    ]
+  },
+  "curation_priorities": [
+    {
+      "priority_rank": 1,
+      "action": "Promote the upstream Seven.One architect-title framing into curated metadata as an evidenced alias or targeting variant.",
+      "why_now": "This is the cleanest way to close the title-family gap for an architect-led category without fabricating a title change.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:98",
+        "docs/archive/knowledge-base.md:181",
+        "docs/archive/knowledge-base.md:268",
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "expected_category_impact": "Improves headline safety, title-family fit, and summary alignment for AI architect targeting.",
+      "citation": "Upstream STAR records repeatedly describe the current role with explicit architect-heavy framing."
+    },
+    {
+      "priority_rank": 2,
+      "action": "Promote Daypaio greenfield platform-launch evidence and event-storming facilitation into higher-salience curated variants for architect targeting.",
+      "why_now": "The category explicitly rewards greenfield-plus-modernization range, and Daypaio is the best curated counterweight to Seven.One modernization.",
+      "target_files": [
+        "data/master-cv/roles/02_samdock_daypaio.md",
+        "data/master-cv/role_metadata.json"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:734"
+      ],
+      "expected_category_impact": "Strengthens greenfield architecture, stakeholder workshop, and player-coach signals without relying only on the current role.",
+      "citation": "STAR record #9 adds stronger end-to-end architecture and market-launch framing than the current top-line representation."
+    },
+    {
+      "priority_rank": 3,
+      "action": "Promote a curated Seven.One variant that explicitly ties AI platform work to architecture ownership, governance controls, and enterprise integration rather than search mechanics alone.",
+      "why_now": "Commander-4 is the strongest AI-specific proof and should carry more category weight than it currently does.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:360",
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "expected_category_impact": "Improves AI architect fit by turning strong technical AI evidence into clearer architecture ownership language.",
+      "citation": "The upstream current-role records are the highest-overlap pending-curation signals for this category."
+    },
+    {
+      "priority_rank": 4,
+      "action": "Run targeted review on the low-performing but strategically important Seven.One stakeholder and scalability achievements to add category-relevant keywords and measurable framing.",
+      "why_now": "These achievements are already curated but flagged as underperforming for this target; they can materially strengthen stakeholder-translation and performance-at-scale signals with tighter framing.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md"
+      ],
+      "source_refs": [
+        "docs/current/achievement-review-index.md:43",
+        "docs/current/achievement-review-tracker.yaml:786",
+        "docs/current/achievement-review-tracker.yaml:1051"
+      ],
+      "expected_category_impact": "Raises conversion of already-true evidence into more reusable architect-aligned bullets.",
+      "citation": "The tracker items are prioritization hints, not direct claim sources, but they identify the most leverageable curation work."
+    },
+    {
+      "priority_rank": 5,
+      "action": "Run targeted review on Samdock API/scalability items to make partner integration, service-boundary, and enterprise-scale framing more reusable for architect roles.",
+      "why_now": "These items are marked critical in the review index yet are highly transferable to enterprise AI architect positioning when phrased around integration and scale.",
+      "target_files": [
+        "data/master-cv/roles/02_samdock_daypaio.md"
+      ],
+      "source_refs": [
+        "docs/current/achievement-review-index.md:136"
+      ],
+      "expected_category_impact": "Improves enterprise integration and scalability support without adding new claims.",
+      "citation": "The review index marks Samdock API and scalability achievements as high-leverage improvement areas for this category."
+    }
+  ],
+  "master_cv_upgrade_actions": [
+    {
+      "priority_rank": 1,
+      "action": "Replace the current generic headline with an architect-first AI headline that names enterprise AI platforms and integration/governance outcomes, not management identity.",
+      "section": "headline",
+      "why_now": "The headline is the largest current representation mismatch for this category.",
+      "supported_by": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "citation": "The evidence supports AI architect branding more safely than the current 'Engineering Leader' default."
+    },
+    {
+      "priority_rank": 2,
+      "action": "Rewrite the opening summary to start with Commander-4 plus enterprise architecture delivery, then fold in Seven.One modernization and Daypaio greenfield range.",
+      "section": "summary",
+      "why_now": "The summary currently spends its opening capital on legacy modernization only and misses the strongest category-specific AI proof.",
+      "supported_by": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/roles/02_samdock_daypaio.md:27"
+      ],
+      "citation": "A category-targeted summary should show AI platform design and production delivery before generic modernization."
+    },
+    {
+      "priority_rank": 3,
+      "action": "Reorder top Seven.One bullets so one AI platform architecture bullet and one modernization/scale bullet appear before secondary leadership or process bullets.",
+      "section": "role_bullets",
+      "why_now": "This category scores architecture-plus-delivery and AI-platform proof more highly than generic leadership/process bullets.",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/01_seven_one_entertainment.md:71",
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/roles/01_seven_one_entertainment.md:332"
+      ],
+      "citation": "The current role has enough evidence to front-load both AI platform architecture and enterprise modernization."
+    },
+    {
+      "priority_rank": 4,
+      "action": "Treat Commander-4 and Lantern as a compact AI architecture proof block emphasizing gateway design, evals, guardrails, observability, and enterprise integrations rather than long tool lists.",
+      "section": "projects",
+      "why_now": "The project layer is already the strongest AI-specific evidence source, but it needs architecture-outcome framing more than mechanics density.",
+      "supported_by": [
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9",
+        "data/master-cv/projects/lantern.md:7",
+        "data/master-cv/projects/lantern.md:9",
+        "data/master-cv/projects/lantern.md:10"
+      ],
+      "citation": "These projects already prove the right category signals; representation should compress them into architect-readable outcomes."
+    },
+    {
+      "priority_rank": 5,
+      "action": "Rebalance the skills block toward architecture capabilities and delivery systems, and demote generic people-management and tool-noise terms.",
+      "section": "skills",
+      "why_now": "The current skills priority surfaces many tools but not enough architect-language such as enterprise AI platform design, workflow orchestration, evaluation, guardrails, enterprise integration, observability, and CI/CD.",
+      "supported_by": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9",
+        "data/master-cv/projects/lantern.md:10"
+      ],
+      "citation": "The skills layer should reinforce architect fit rather than invite manager or tool-collector interpretations."
+    }
+  ],
+  "evidence_ledger": [
+    {
+      "recommendation": "Lead with architect-family branding rather than manager branding for this category.",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "docs/archive/knowledge-base.md:7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Center enterprise AI platform delivery as a primary proof point.",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Use modernization plus greenfield range as a key differentiation pattern.",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/02_samdock_daypaio.md:27",
+        "data/master-cv/roles/02_samdock_daypaio.md:142"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Surface workflow orchestration, tool-calling, and enterprise integrations with safe wording.",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:332",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Use evaluation, guardrails, and structured outputs as production-maturity differentiators.",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9",
+        "data/master-cv/projects/lantern.md:9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Surface observability, CI/CD, and production controls as supporting architecture evidence.",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:71",
+        "data/master-cv/roles/01_seven_one_entertainment.md:163",
+        "data/master-cv/roles/01_seven_one_entertainment.md:233",
+        "data/master-cv/projects/lantern.md:10"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Promote upstream architect-title aliases with provenance before using them in downstream generation.",
+      "classification": "supported_upstream_pending_curation",
+      "support": [
+        "docs/archive/knowledge-base.md:98",
+        "docs/archive/knowledge-base.md:181",
+        "docs/archive/knowledge-base.md:268",
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Keep formal management, executive, and org-building claims secondary or out.",
+      "classification": "unsupported_or_unsafe",
+      "support": [
+        "data/master-cv/role_metadata.json:3",
+        "data/master-cv/roles/01_seven_one_entertainment.md:182",
+        "data/master-cv/roles/01_seven_one_entertainment.md:217"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Do not claim advanced ML research, fine-tuning, custom embedding training, or RLHF.",
+      "classification": "unsupported_or_unsafe",
+      "support": [
+        "data/master-cv/projects/commander4_skills.json:42",
+        "data/master-cv/projects/lantern_skills.json:49"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Do not imply AI compliance ownership from governance and prior GDPR/TCF delivery alone.",
+      "classification": "unsupported_or_unsafe",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:106",
+        "data/master-cv/projects/commander4.md:8",
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "confidence": "medium"
+    }
+  ]
+}

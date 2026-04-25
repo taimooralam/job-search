@@ -1,0 +1,462 @@
+{
+  "signal_strength": {
+    "applied_count": 2,
+    "avg_score": 73.1,
+    "median_score": 85,
+    "score_range": [
+      22,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "solutions_architect": 7,
+      "engineering_manager": 5,
+      "other": 3,
+      "tech_lead": 1
+    },
+    "top_title_variants": {
+      "Associate Engineering Manager / Engineering Manager": 2,
+      "Engineering Manager, Agentic AI": 2,
+      "Dean, Academics": 1,
+      "Dean, Computer Department": 1,
+      "Enterprise Architect": 1,
+      "Enterprise Data Architect": 1,
+      "HiAgent Product Solutions Architect": 1,
+      "Senior Data Architect": 1
+    },
+    "noisy_title_mode": true
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 7,
+      "manager": 6,
+      "executive": 2,
+      "director": 1
+    },
+    "role_scope_distribution": {
+      "manager": 6,
+      "ic": 5,
+      "executive": 2,
+      "player_coach": 2,
+      "director": 1
+    },
+    "management_signals_weak": false
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 4,
+      "total": 16,
+      "pct": 25.0
+    },
+    "performance_management": {
+      "count": 6,
+      "total": 16,
+      "pct": 37.5
+    },
+    "org_building": {
+      "count": 7,
+      "total": 16,
+      "pct": 43.8
+    },
+    "budget_pnl": {
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    "direct_reports_samples": [
+      "multiple",
+      "multiple",
+      "multiple"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 87.5,
+    "greenfield_split": {
+      "both": 10,
+      "optimization": 3
+    },
+    "cloud_preference": {
+      "multi_cloud": 3,
+      "Azure": 2,
+      "GCP": 2
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "ci/cd",
+      "count": 5,
+      "total": 16,
+      "pct": 31.2
+    },
+    {
+      "label": "kubernetes",
+      "count": 5,
+      "total": 16,
+      "pct": 31.2
+    },
+    {
+      "label": "testing",
+      "count": 5,
+      "total": 16,
+      "pct": 31.2
+    },
+    {
+      "label": "code reviews",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "containers",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "generative ai tools",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "golang",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "observability",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "openstack",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "platform tooling",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "python",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "sql",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "system design",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "virtual machines",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "academic administration",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 13,
+      "total": 16,
+      "pct": 81.2
+    },
+    {
+      "label": "leadership",
+      "count": 10,
+      "total": 16,
+      "pct": 62.5
+    },
+    {
+      "label": "communication",
+      "count": 9,
+      "total": 16,
+      "pct": 56.2
+    },
+    {
+      "label": "mentoring",
+      "count": 8,
+      "total": 16,
+      "pct": 50.0
+    },
+    {
+      "label": "stakeholder management",
+      "count": 6,
+      "total": 16,
+      "pct": 37.5
+    },
+    {
+      "label": "adaptability",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "coaching",
+      "count": 3,
+      "total": 16,
+      "pct": 18.8
+    },
+    {
+      "label": "cultural intelligence",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "decisiveness",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "organizational skills",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 4,
+        "total": 16,
+        "pct": 25.0
+      },
+      {
+        "label": "sql",
+        "count": 3,
+        "total": 16,
+        "pct": 18.8
+      },
+      {
+        "label": "java",
+        "count": 2,
+        "total": 16,
+        "pct": 12.5
+      },
+      {
+        "label": "java or scala",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      }
+    ],
+    "preferred": [
+      {
+        "label": "golang",
+        "count": 3,
+        "total": 16,
+        "pct": 18.8
+      },
+      {
+        "label": "scala",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      "agents_orchestration": {
+        "count": 2,
+        "total": 16,
+        "pct": 12.5
+      },
+      "fine_tuning": {
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      "evaluation_quality": {
+        "count": 2,
+        "total": 16,
+        "pct": 12.5
+      },
+      "guardrails_governance": {
+        "count": 2,
+        "total": 16,
+        "pct": 12.5
+      },
+      "prompt_engineering": {
+        "count": 0,
+        "total": 16,
+        "pct": 0.0
+      },
+      "vector_search": {
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      "model_serving_routing": {
+        "count": 0,
+        "total": 16,
+        "pct": 0.0
+      }
+    },
+    "frameworks": [
+      {
+        "label": "coze",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      {
+        "label": "crew.ai",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      {
+        "label": "dify",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      {
+        "label": "hiagent",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      {
+        "label": "langchain",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      {
+        "label": "langgraph",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      },
+      {
+        "label": "n8n",
+        "count": 1,
+        "total": 16,
+        "pct": 6.2
+      }
+    ],
+    "observability": []
+  },
+  "governance_compliance_top": [
+    {
+      "label": "ncaaa",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "pearson btec",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "qaa",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "rqf",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "tvtc",
+      "count": 2,
+      "total": 16,
+      "pct": 12.5
+    },
+    {
+      "label": "data privacy regulations",
+      "count": 1,
+      "total": 16,
+      "pct": 6.2
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "build a brand new agentic ai squad",
+      "count": 2
+    },
+    {
+      "pain_point": "embed agentic ai capabilities into core tools",
+      "count": 2
+    },
+    {
+      "pain_point": "scale and manage a cross-functional engineering organization",
+      "count": 2
+    },
+    {
+      "pain_point": "keep the saas product performant, reliable, and maintainable",
+      "count": 2
+    },
+    {
+      "pain_point": "align engineering objectives and roadmap with business goals",
+      "count": 2
+    },
+    {
+      "pain_point": "strengthen research and industry partnerships",
+      "count": 2
+    },
+    {
+      "pain_point": "managing inventory and lifecycle complexity across a large compute platform",
+      "count": 2
+    },
+    {
+      "pain_point": "improving platform reliability and observability",
+      "count": 2
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "enterprise_saas": 2,
+      "consultancy": 1,
+      "consulting": 1
+    },
+    "company_stage": {
+      "enterprise": 8,
+      "scaleup": 3,
+      "consultancy": 1
+    },
+    "collaboration_model": {
+      "hybrid": 1,
+      "remote_first": 1
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 12.5,
+    "research_heavy_pct": 0.0
+  }
+}

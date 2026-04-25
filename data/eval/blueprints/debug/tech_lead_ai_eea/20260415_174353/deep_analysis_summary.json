@@ -1,0 +1,198 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "budget or p and l ownership",
+      "count": 12
+    },
+    {
+      "label": "formal people management with direct reports",
+      "count": 3
+    },
+    {
+      "label": "hiring or performance review ownership",
+      "count": 3
+    },
+    {
+      "label": "deep aws / azure / gcp platform ownership if not already evidenced",
+      "count": 3
+    },
+    {
+      "label": "specific fastapi or django production leadership if not shown",
+      "count": 3
+    },
+    {
+      "label": "direct people management or performance reviews",
+      "count": 3
+    },
+    {
+      "label": "hiring ownership",
+      "count": 3
+    },
+    {
+      "label": "hands-on experience with every named stack item unless explicitly evidenced",
+      "count": 3
+    },
+    {
+      "label": "formal ownership of onshore / offshore team coordination at company level",
+      "count": 3
+    },
+    {
+      "label": "formal people management with direct reports or performance reviews unless explicitly shown",
+      "count": 3
+    },
+    {
+      "label": "named python framework depth in fastapi, django, or flask unless the cv shows it",
+      "count": 3
+    },
+    {
+      "label": "distributed onshore / offshore leadership unless the cv shows global team coordination",
+      "count": 3
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "reliability",
+      "count": 20
+    },
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 19
+    },
+    {
+      "label": "scale",
+      "count": 17
+    },
+    {
+      "label": "evaluation",
+      "count": 12
+    },
+    {
+      "label": "governance",
+      "count": 2
+    },
+    {
+      "label": "cost",
+      "count": 2
+    },
+    {
+      "label": "hiring",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "accurate estimations",
+      "count": 13
+    },
+    {
+      "label": "production readiness",
+      "count": 13
+    },
+    {
+      "label": "smooth handoffs",
+      "count": 11
+    },
+    {
+      "label": "timeline alignment",
+      "count": 11
+    },
+    {
+      "label": "manage delivery",
+      "count": 9
+    },
+    {
+      "label": "ensure technical quality",
+      "count": 9
+    },
+    {
+      "label": "code quality",
+      "count": 6
+    },
+    {
+      "label": "testing",
+      "count": 6
+    },
+    {
+      "label": "delivery roadmaps",
+      "count": 4
+    },
+    {
+      "label": "technical quality",
+      "count": 4
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps to enterprise ai workflow platforms, rag, guardrails, evaluation, and production-scale delivery.",
+      "count": 3
+    },
+    {
+      "label": "lantern maps to llm gateway design, multi-provider routing, and resilience patterns such as circuit breakers.",
+      "count": 3
+    },
+    {
+      "label": "cqrs and event-sourcing work maps to backend architecture, distributed systems, and event-driven design.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps strongly because it is an enterprise ai workflow platform with rag, semantic caching, evaluation, and guardrails, which matches the ai / llm backend integration and production-readiness angle.",
+      "count": 3
+    },
+    {
+      "label": "lantern maps strongly because multi-provider routing and circuit breaking are relevant to production ai / llm backend architecture and reliability.",
+      "count": 3
+    },
+    {
+      "label": "lead engineer work on cqrs / event-sourcing maps to scalable backend architecture and distributed systems design.",
+      "count": 3
+    },
+    {
+      "label": "backend engineer work with flask / mongodb and microservices / rabbitmq maps directly to the python backend, api, and message-queue expectations.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps strongly: enterprise ai workflow platform, 42 plugins, 2,000 users, rag, evaluation, and guardrails align with backend ai integration, production readiness, and scalable platform design.",
+      "count": 3
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "english",
+      "count": 2
+    },
+    {
+      "label": "polish",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "10+ years backend engineering",
+      "count": 5
+    },
+    {
+      "label": "10+ years of backend engineering experience",
+      "count": 2
+    },
+    {
+      "label": "5+ years in ml / ai engineering or mlops",
+      "count": 1
+    },
+    {
+      "label": "7+ years building and scaling production-grade web applications in a senior or lead engineering role",
+      "count": 1
+    },
+    {
+      "label": "10+ years in ai / ml / computer vision, with 8+ years in technical leadership roles",
+      "count": 1
+    },
+    {
+      "label": "5+ years production-grade ai / ml systems",
+      "count": 1
+    }
+  ]
+}

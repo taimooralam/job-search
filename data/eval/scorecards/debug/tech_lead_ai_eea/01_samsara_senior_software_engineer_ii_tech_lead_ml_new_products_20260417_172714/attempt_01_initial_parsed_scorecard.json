@@ -1,0 +1,78 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "tech_lead_ai_eea",
+  "job_id": "6925a6c845fa3c355f83f8ec",
+  "dimension_scores": {
+    "ats_optimization": 7.5,
+    "impact_clarity": 8.5,
+    "jd_alignment": 7.0,
+    "executive_presence": 8.5,
+    "anti_hallucination": 9.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 8.0,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Strong quantified impact: billions of events daily, 10+ engineers mentored with 3 promoted to lead, release cycles weeks-to-days refs=cv:8,cv:13,cv:14",
+    "Direct IoT experience at OSRAM with CoAP protocol transfers to Samsara IoT platform refs=cv:67,cv:69,jd:42",
+    "Production AI/LLM platform leadership with Commander-4 serving 2,000 users, hybrid retrieval, evaluation harnesses refs=cv:29,cv:30",
+    "Player-coach framing matches JD with hands-on architecture plus mentoring outcomes refs=cv:32,jd:53",
+    "Data modeling expertise demonstrated via CQRS/event-sourcing and domain-driven design refs=cv:42,cv:46,jd:48"
+  ],
+  "top_failures": [
+    "GoLang required by JD tech stack but absent from CV refs=jd:57,cv:19",
+    "GraphQL mentioned in JD stack but not evidenced in CV refs=jd:57,cv:19",
+    "TypeScript dominates over Python despite Python being category priority refs=cv:19,cv:38",
+    "No explicit vehicle telematics or automotive domain experience refs=jd:25,jd:42",
+    "Mobile development minimal despite JD full-stack with ReactNative refs=jd:57,cv:69"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [
+    "GoLang experience explicitly required by JD but not present refs=jd:57"
+  ],
+  "persona_fit_notes": [
+    "Tech Lead headline matches 75.6% category title family preference refs=cv:3",
+    "Player-coach evidence strong: hands-on plus mentoring with promotion outcomes refs=cv:32",
+    "No manager inflation\u2014Lead Software Engineer and Technical Lead titles appropriate refs=cv:27,cv:40"
+  ],
+  "representation_gap_hits": [
+    "Python present but secondary to TypeScript in emphasis refs=cv:19,cv:38"
+  ],
+  "curation_gap_hits": [
+    "JD-specific GoLang requirement not addressed despite being listed in tech stack refs=jd:57"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:3",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:8",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:13",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:14",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:19",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:27",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:29",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:30",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:32",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:38",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:40",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:42",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:46",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:67",
+    "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md:69",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:25",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:42",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:48",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:53",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:57"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T12:50:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/tech_lead_ai_eea_rubric.json",
+    "blueprint_path": "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+    "baseline_path": "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+  }
+}

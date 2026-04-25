@@ -1,0 +1,10 @@
+# Automation Anywhere Technical Architect
+
+**Company:** MRP-GLOBAL
+**Location:** Abu Dhabi Emirate, United Arab Emirates
+**Score:** 85 (Tier B)
+**Status:** applied
+
+---
+
+We are looking for an Automation Anywhere Technical Architect to join a leadingclient in Abu Dhabi.The focus of the role will be the design and implementation of a Standard DA ,Gen AI-powered OCR solution integration with RPA for document processing , GENAI and Agentic automation projects.12-24 month contracts, excellent monthly rates (including visas, insurances,annual leave and air tickets).Key Responsibilities * Design and review end-to-end architecture for Gen AI + OCR + Agentic LLM solution integrated with Automation Anywhere. * Design and Review prompt engineering strategies and fine-tuning approaches for LLMs to handle unstructured/semi-structured data. * Collaborate with RPA teams to integrate OCR + Gen AI and Agentic LLM outputs into automation workflows * Executing and supporting the team in conducting POCs to validate new features and assess feasibility for Use Case requirements. * Ownership of product-related artifacts along with coordination with the Automation Anywhere Product team for required technical guidance and resolution support.Must-Have Skills * Strong understanding of Document Automation and LLMs (OpenAI, Azure OpenAI) and prompt engineering * Experience with document intelligence use cases using Gen AI. * Knowledge of model fine-tuning and custom LLM deployment.Required Experience * Experience working as an Automation Anywhere Technical Architect. * Hands on experience working on end-to-end architecture for Gen AI + OCR + Agentic LLM solution with Automation Anywhere. * Experience working with Document Automation and LLMs (OpenAI, Azure OpenAI) and prompt engineering.Show more Show less

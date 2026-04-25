@@ -1,0 +1,38 @@
+{
+  "batch_id": "step9_anchor_batch_v1",
+  "description": "First rubric-based CV scoring batch — 4 anchor categories. Uses existing outputs with ambiguous provenance (accepted tradeoff). All 4 pairs use jobs_all[0] from each category as the JD exemplar. The scorer will catch category/persona mismatch via rubric-grounded penalties, which is the validation signal this batch is meant to produce.",
+  "pairs": [
+    {
+      "category_id": "ai_architect_global",
+      "job_id": "696808c4515e64c5ca05acee",
+      "jd_path": "data/eval/raw/ai_architect_global/jd_texts/01_algominds_software_architect_cloud_ai_distributed_systems.md",
+      "cv_path": "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md",
+      "cv_source": "existing_output_ambiguous",
+      "selection_notes": "No architect-first AI CV exists in outputs/. Using cMatter 'Head of Engineering — AI Platform' CV: closest available persona (platform/AI framing). Scorer should flag persona inflation (Head vs architect), weak AI architecture specifics, and title mismatch for this IC architect category. This is deliberate signal, not a clean fit."
+    },
+    {
+      "category_id": "head_of_ai_global",
+      "job_id": "69825fa77d41dc1e8a360e27",
+      "jd_path": "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md",
+      "cv_path": "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md",
+      "cv_source": "existing_output_plausible",
+      "selection_notes": "cMatter 'Head of Engineering — AI Platform' CV has the closest persona match to head_of_ai_global (architect-first player-coach-safe per rubric). JD is a senior engineer ML role (category has weak title homogeneity, flagged upstream); scorer should still evaluate against the category rubric's player-coach framing."
+    },
+    {
+      "category_id": "staff_ai_engineer_eea",
+      "job_id": "6957aaad6dd552ab7ec2ccd8",
+      "jd_path": "data/eval/raw/staff_ai_engineer_eea/jd_texts/01_reddit_inc_staff_software_engineer_ml_search.md",
+      "cv_path": "outputs/5V_Video/cv_Principal_Engineer_-_Streaming_Platform.md",
+      "cv_source": "existing_output_weak_fit",
+      "selection_notes": "5V 'Principal Engineer — Streaming Platform' CV is senior IC in persona (matches staff/principal rubric framing) but streaming-platform scope is weak fit for ML/search JD. Scorer should penalize JD alignment while crediting IC-authority executive_presence. Deliberate mismatch to validate anti-hallucination and JD-alignment scoring."
+    },
+    {
+      "category_id": "tech_lead_ai_eea",
+      "job_id": "6925a6c845fa3c355f83f8ec",
+      "jd_path": "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md",
+      "cv_path": "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md",
+      "cv_source": "existing_output_plausible",
+      "selection_notes": "KAIZEN 'Software Engineering Team Lead — Backend' CV matches player-coach tech-lead persona. JD is Samsara ML tech-lead role; CV lacks explicit ML/AI signal, so scorer should flag JD-alignment gaps without penalizing persona framing."
+    }
+  ]
+}

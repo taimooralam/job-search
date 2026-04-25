@@ -1,0 +1,12 @@
+[
+  "top_failures[0] ref not a clean path: 'cv:1-90'",
+  "top_failures[1] ref not a clean path: 'cv:1-90'",
+  "top_failures[2] ref not a clean path: 'cv:1-90'",
+  "top_failures[3] ref not a clean path: 'cv:1-90'",
+  "top_failures[4] ref not a clean path: 'cv:1-90'",
+  "missing_must_haves[0] ref not a clean path: 'cv:1-90'",
+  "missing_must_haves[1] ref not a clean path: 'cv:1-90'",
+  "missing_must_haves[2] ref not a clean path: 'cv:1-90'",
+  "missing_must_haves[3] ref not a clean path: 'cv:1-90'",
+  "missing_must_haves[4] ref not a clean path: 'cv:1-90'"
+]

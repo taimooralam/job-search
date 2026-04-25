@@ -1,0 +1,190 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "budget or p and l ownership",
+      "count": 3
+    },
+    {
+      "label": "deep microsoft power platform or copilot studio ownership at enterprise scale unless explicitly evidenced",
+      "count": 2
+    },
+    {
+      "label": "formal hiring or performance management responsibility",
+      "count": 2
+    },
+    {
+      "label": "hands-on purview / dlp administration unless clearly documented",
+      "count": 2
+    },
+    {
+      "label": "deep hands-on architecture across aws, azure, google cloud, and ibm cloud if the cv does not explicitly show those platforms.",
+      "count": 1
+    },
+    {
+      "label": "formal ownership of ai governance, privacy, or regulatory programs without direct evidence.",
+      "count": 1
+    },
+    {
+      "label": "model training or fine-tuning pipeline ownership if the cv only shows inference, workflow, or platform work.",
+      "count": 1
+    },
+    {
+      "label": "client consulting delivery at enterprise scale if that context is not explicitly documented.",
+      "count": 1
+    },
+    {
+      "label": "direct people management, performance reviews, or pip ownership if the cv does not explicitly show it.",
+      "count": 1
+    },
+    {
+      "label": "bfsi or financial-services client delivery experience if it is not explicitly documented.",
+      "count": 1
+    },
+    {
+      "label": "business development, upsell, or account-expansion ownership without clear evidence.",
+      "count": 1
+    },
+    {
+      "label": "formal consultancy leadership across multiple teams if the cv only shows technical lead scope.",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 10
+    },
+    {
+      "label": "delivery",
+      "count": 9
+    },
+    {
+      "label": "reliability",
+      "count": 9
+    },
+    {
+      "label": "governance",
+      "count": 8
+    },
+    {
+      "label": "evaluation",
+      "count": 7
+    },
+    {
+      "label": "scale",
+      "count": 5
+    },
+    {
+      "label": "cost",
+      "count": 4
+    },
+    {
+      "label": "hiring",
+      "count": 2
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "security",
+      "count": 2
+    },
+    {
+      "label": "scalability",
+      "count": 2
+    },
+    {
+      "label": "scalable delivery",
+      "count": 2
+    },
+    {
+      "label": "governed platform",
+      "count": 2
+    },
+    {
+      "label": "cost-efficient platform",
+      "count": 2
+    },
+    {
+      "label": "resilient platform",
+      "count": 2
+    },
+    {
+      "label": "clear boundaries between product teams and shared services",
+      "count": 2
+    },
+    {
+      "label": "accelerate all future squads",
+      "count": 2
+    },
+    {
+      "label": "measure outcomes",
+      "count": 2
+    },
+    {
+      "label": "continuous improvement",
+      "count": 2
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps directly to enterprise ai workflow architecture, rag, guardrails, evaluation, and user-scale delivery.",
+      "count": 2
+    },
+    {
+      "label": "lantern maps to multi-provider routing, resilience patterns, and cost-aware platform design.",
+      "count": 2
+    },
+    {
+      "label": "technical lead experience at seven.one supports reference architecture, coaching, and cross-squad delivery.",
+      "count": 2
+    },
+    {
+      "label": "commander-4 maps well because it is an enterprise ai workflow platform with 42 plugins, 2,000 users, rag, semantic caching, evaluation, and guardrails.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps well because multi-provider routing and circuit breaking show production ai platform thinking and reliability design.",
+      "count": 1
+    },
+    {
+      "label": "technical lead at seven.one entertainment group maps well because it demonstrates enterprise context and technical leadership across ai platform work.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 is the best fit because it proves enterprise ai platform delivery, evaluation, and guardrails in a real production setting.",
+      "count": 1
+    },
+    {
+      "label": "technical lead at seven.one entertainment group is relevant because it shows senior technical leadership in an enterprise environment.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "english",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "7+ years hands-on ai / ml solutions development; 3+ years technical leadership in ai project delivery; 2+ years team management and performance development",
+      "count": 1
+    },
+    {
+      "label": "5+ years cloud architecture, solution architecture, or cloud engineering; 2+ years working with ai / ml workloads on cloud platforms",
+      "count": 1
+    },
+    {
+      "label": "7+ years in ai / ml with at least 4 years focused on computer vision and deep learning",
+      "count": 1
+    },
+    {
+      "label": "10+ years of professional experience in software engineering with at least 5 years in an architecture-focused role",
+      "count": 1
+    },
+    {
+      "label": "10+ years in enterprise it, cloud, ai / ml, or data / analytics",
+      "count": 1
+    }
+  ]
+}

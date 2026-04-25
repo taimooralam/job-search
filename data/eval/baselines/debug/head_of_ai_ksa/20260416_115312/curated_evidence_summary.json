@@ -1,0 +1,944 @@
+{
+  "role_evidence": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 11
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "text": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "leadership",
+        "talent development",
+        "team building",
+        "culture",
+        "retention",
+        "career growth",
+        "people management",
+        "performance management",
+        "code review"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 7
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "keywords": [
+        "Domain-Driven Design",
+        "DDD",
+        "bounded contexts",
+        "ubiquitous language",
+        "engineering standards",
+        "onboarding",
+        "velocity",
+        "code review",
+        "architectural review"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Hiring & Team Building",
+      "text": "Led hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments. Scaled delivery across matrixed cross-functional engineering teams.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:217"
+      ],
+      "keywords": [
+        "hiring",
+        "recruitment",
+        "interviews",
+        "technical assessments",
+        "team building",
+        "cross-functional",
+        "scaling"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "keywords": [
+        "legacy modernization",
+        "microservices",
+        "TypeScript",
+        "AWS Lambda",
+        "EventBridge",
+        "ECS",
+        "CloudFront",
+        "event-driven architecture",
+        "choreography",
+        "monolith decomposition",
+        "AdTech",
+        "distributed systems",
+        "large-scale",
+        "system design",
+        "scalability",
+        "mixed-criticality",
+        "infrastructure-first",
+        "tech debt"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Monitoring & Incident Management",
+      "text": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platform reliability transformation.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:163"
+      ],
+      "keywords": [
+        "monitoring",
+        "alerting",
+        "MTTR",
+        "incident management",
+        "postmortems",
+        "operational excellence",
+        "automation",
+        "CloudWatch",
+        "SNS",
+        "Slack",
+        "AWS",
+        "alerting strategy"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "text": "Consulted as subject matter expert on technical challenges in Addressable TV domain. Collaborated with product owners, enterprise architects, and stakeholders to identify core business metrics and led their realization across technical stack.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:250"
+      ],
+      "keywords": [
+        "subject matter expert",
+        "SME",
+        "Addressable TV",
+        "AdTech",
+        "stakeholder collaboration",
+        "business metrics"
+      ],
+      "score": 4
+    }
+  ],
+  "project_evidence": [
+    {
+      "kind": "project_bullet",
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "text": "Implemented retrieval evaluation harness with MRR@k and NDCG@k (exponential gain) scoring functions, guardrail profiles for per-silo content policy enforcement, and two-tier semantic cache threshold tuning validated against 14 unit tests.",
+      "refs": [
+        "data/master-cv/projects/commander4.md:8"
+      ],
+      "keywords": [],
+      "score": 3
+    },
+    {
+      "kind": "project_bullet",
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "text": "Designed structured output architecture using Zod schema validation for all LLM responses, 5 MCP server tools for external integrations, 42 workflow plugins with per-silo guardrail injection via LiteLLM proxy, and per-silo access control.",
+      "refs": [
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "keywords": [],
+      "score": 3
+    }
+  ],
+  "verified_skills": [
+    {
+      "label": "Enterprise AI Platform",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "API Gateway Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "API Gateway Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Guardrail Engineering",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "integration tests",
+      "ref": "data/master-cv/projects/lantern_skills.json:7",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "LLM Gateway Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "LLM Gateway Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "LLM-as-Judge Evaluation",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "LLM-as-Judge Evaluation",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "MCP Tool Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Retrieval Evaluation (MRR, NDCG)",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Search Quality Optimization",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    }
+  ],
+  "supporting_skills": [
+    {
+      "label": "Prompt Engineering",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Prompt Engineering",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Eval Harness Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Eval Harness Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Faithfulness Evaluation",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Faithfulness Evaluation",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "SLO/SLI Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "SLO/SLI Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    }
+  ],
+  "do_not_claim": [
+    {
+      "label": "fine-tuning pipeline",
+      "ref": "data/master-cv/projects/commander4_skills.json:42",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "custom embedding training",
+      "ref": "data/master-cv/projects/commander4_skills.json:42",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "RLHF",
+      "ref": "data/master-cv/projects/commander4_skills.json:42",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "fine-tuning pipeline",
+      "ref": "data/master-cv/projects/lantern_skills.json:49",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "load balancing",
+      "ref": "data/master-cv/projects/lantern_skills.json:49",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "admin dashboard",
+      "ref": "data/master-cv/projects/lantern_skills.json:49",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    }
+  ],
+  "leadership_signals": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 11
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "text": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "leadership",
+        "talent development",
+        "team building",
+        "culture",
+        "retention",
+        "career growth",
+        "people management",
+        "performance management",
+        "code review"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 7
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "keywords": [
+        "Domain-Driven Design",
+        "DDD",
+        "bounded contexts",
+        "ubiquitous language",
+        "engineering standards",
+        "onboarding",
+        "velocity",
+        "code review",
+        "architectural review"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Hiring & Team Building",
+      "text": "Led hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments. Scaled delivery across matrixed cross-functional engineering teams.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:217"
+      ],
+      "keywords": [
+        "hiring",
+        "recruitment",
+        "interviews",
+        "technical assessments",
+        "team building",
+        "cross-functional",
+        "scaling"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "text": "Consulted as subject matter expert on technical challenges in Addressable TV domain. Collaborated with product owners, enterprise architects, and stakeholders to identify core business metrics and led their realization across technical stack.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:250"
+      ],
+      "keywords": [
+        "subject matter expert",
+        "SME",
+        "Addressable TV",
+        "AdTech",
+        "stakeholder collaboration",
+        "business metrics"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "KI Labs \u2014 Agile Delivery",
+      "text": "Collaborated in agile team with bi-weekly sprints, consistently delivering features on time with high quality standards.",
+      "refs": [
+        "data/master-cv/roles/03_ki_labs.md:93"
+      ],
+      "keywords": [
+        "agile",
+        "SCRUM",
+        "sprints",
+        "delivery",
+        "consulting",
+        "teamwork"
+      ],
+      "score": 3
+    }
+  ],
+  "architecture_signals": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 11
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "text": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "leadership",
+        "talent development",
+        "team building",
+        "culture",
+        "retention",
+        "career growth",
+        "people management",
+        "performance management",
+        "code review"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 7
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "keywords": [
+        "Domain-Driven Design",
+        "DDD",
+        "bounded contexts",
+        "ubiquitous language",
+        "engineering standards",
+        "onboarding",
+        "velocity",
+        "code review",
+        "architectural review"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "keywords": [
+        "legacy modernization",
+        "microservices",
+        "TypeScript",
+        "AWS Lambda",
+        "EventBridge",
+        "ECS",
+        "CloudFront",
+        "event-driven architecture",
+        "choreography",
+        "monolith decomposition",
+        "AdTech",
+        "distributed systems",
+        "large-scale",
+        "system design",
+        "scalability",
+        "mixed-criticality",
+        "infrastructure-first",
+        "tech debt"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Monitoring & Incident Management",
+      "text": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platform reliability transformation.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:163"
+      ],
+      "keywords": [
+        "monitoring",
+        "alerting",
+        "MTTR",
+        "incident management",
+        "postmortems",
+        "operational excellence",
+        "automation",
+        "CloudWatch",
+        "SNS",
+        "Slack",
+        "AWS",
+        "alerting strategy"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "text": "Consulted as subject matter expert on technical challenges in Addressable TV domain. Collaborated with product owners, enterprise architects, and stakeholders to identify core business metrics and led their realization across technical stack.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:250"
+      ],
+      "keywords": [
+        "subject matter expert",
+        "SME",
+        "Addressable TV",
+        "AdTech",
+        "stakeholder collaboration",
+        "business metrics"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "project_bullet",
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "text": "Designed structured output architecture using Zod schema validation for all LLM responses, 5 MCP server tools for external integrations, 42 workflow plugins with per-silo guardrail injection via LiteLLM proxy, and per-silo access control.",
+      "refs": [
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "keywords": [],
+      "score": 3
+    }
+  ],
+  "impact_metrics": [
+    {
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "metrics": [
+        "10+ ",
+        "3 "
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "metrics": [
+        "4",
+        "1 ",
+        "2,000 ",
+        "42 ",
+        "1",
+        "60"
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "metrics": [
+        "6 ",
+        "3 ",
+        "25%, ",
+        "40"
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "metrics": [
+        "2015-",
+        "75% ",
+        "3 "
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ]
+    },
+    {
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "metrics": [
+        "14 "
+      ],
+      "refs": [
+        "data/master-cv/projects/commander4.md:8"
+      ]
+    },
+    {
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "metrics": [
+        "5 ",
+        "42 "
+      ],
+      "refs": [
+        "data/master-cv/projects/commander4.md:9"
+      ]
+    }
+  ],
+  "governance_reliability_signals": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 11
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 7
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "keywords": [
+        "legacy modernization",
+        "microservices",
+        "TypeScript",
+        "AWS Lambda",
+        "EventBridge",
+        "ECS",
+        "CloudFront",
+        "event-driven architecture",
+        "choreography",
+        "monolith decomposition",
+        "AdTech",
+        "distributed systems",
+        "large-scale",
+        "system design",
+        "scalability",
+        "mixed-criticality",
+        "infrastructure-first",
+        "tech debt"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Monitoring & Incident Management",
+      "text": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platform reliability transformation.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:163"
+      ],
+      "keywords": [
+        "monitoring",
+        "alerting",
+        "MTTR",
+        "incident management",
+        "postmortems",
+        "operational excellence",
+        "automation",
+        "CloudWatch",
+        "SNS",
+        "Slack",
+        "AWS",
+        "alerting strategy"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "project_bullet",
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "text": "Implemented retrieval evaluation harness with MRR@k and NDCG@k (exponential gain) scoring functions, guardrail profiles for per-silo content policy enforcement, and two-tier semantic cache threshold tuning validated against 14 unit tests.",
+      "refs": [
+        "data/master-cv/projects/commander4.md:8"
+      ],
+      "keywords": [],
+      "score": 3
+    },
+    {
+      "kind": "project_bullet",
+      "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform bullet",
+      "text": "Designed structured output architecture using Zod schema validation for all LLM responses, 5 MCP server tools for external integrations, 42 workflow plugins with per-silo guardrail injection via LiteLLM proxy, and per-silo access control.",
+      "refs": [
+        "data/master-cv/projects/commander4.md:9"
+      ],
+      "keywords": [],
+      "score": 3
+    }
+  ],
+  "evidence_density_notes": {
+    "role_count": 6,
+    "project_count": 2,
+    "current_role_present": true,
+    "verified_skill_count": 133,
+    "supporting_skill_count": 32,
+    "do_not_claim_count": 6,
+    "candidate_anchor": {
+      "title_base": "Engineering Leader / Software Architect",
+      "years_experience": 11
+    }
+  }
+}

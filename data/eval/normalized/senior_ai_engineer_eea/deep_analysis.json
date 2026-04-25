@@ -1,0 +1,874 @@
+[
+  {
+    "job_id": "69580cd76dd552ab7ec2cd63",
+    "title_normalized": "Senior Software Engineer, AI Developer Tools",
+    "title_family": "senior_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "20 million monthly users; 20 billion image pulls",
+      "latency_reliability": "rate limiting; performance optimization"
+    },
+    "hard_skills_must_have": [
+      "production LLM systems",
+      "AI agents",
+      "prompt engineering",
+      "agent orchestration",
+      "AI system evaluation",
+      "LLM APIs",
+      "response parsing",
+      "error handling",
+      "rate limiting",
+      "cost management",
+      "performance optimization",
+      "tool calling",
+      "context management",
+      "agent-to-agent communication"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "deployment pipelines",
+      "observability integration",
+      "security controls",
+      "operational tooling"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "communication",
+      "ownership",
+      "product_thinking"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accelerate developer productivity",
+      "build and ship production-ready AI agents and tools",
+      "enable teams across Docker to rapidly build and deploy their own AI developer tools",
+      "transform AI developer tools into commercial offerings",
+      "maintain high quality bars"
+    ],
+    "implied_pain_points": [
+      "developers need AI tools to speed up code review, test generation, deployment diagnostics, and on-call assistance",
+      "Docker needs a self-service platform for internal teams to create and deploy AI developer tools quickly",
+      "AI systems must be production-ready, reliable, and cost-controlled"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV needs evidence of shipping production LLM or agent systems, not just prototypes, and should show ownership from design through operations. It should also demonstrate prompt engineering, evaluation, cost/rate control, and platform thinking for reusable AI tooling.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "evaluation",
+        "cost",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Built AI developer tools specifically for code review, test generation, deployment diagnostics, or on-call assistance if that was not done",
+        "Led adoption of Claude Code, Cursor, or Warp across an engineering organization unless explicitly proven",
+        "Owned Docker-scale internal AI tooling infrastructure without direct evidence of that scale"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: enterprise AI workflow platform with 42 plugins and 2,000 users; strongest proof of production LLM/agent delivery, orchestration, and evaluation",
+        "Lantern: LLM gateway with multi-provider routing and circuit breaking; matches LLM integration, cost/performance control, and resilience",
+        "Guardrails, semantic caching, and operational ownership; maps well to the self-service AI developer tools platform"
+      ]
+    }
+  },
+  {
+    "job_id": "69381c28c9b1888e56022ad3",
+    "title_normalized": "Senior AI Software Engineer",
+    "title_family": "senior_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "3.5 million SMB customers; 60+ brands across 22 European countries",
+      "latency_reliability": "performance optimization"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "FastAPI",
+      "Flask",
+      "microservices architecture",
+      "event-driven architecture",
+      "Kafka",
+      "SSE",
+      "WebSocket",
+      "Large Language Models",
+      "fine-tuning",
+      "prompt engineering",
+      "GPT",
+      "Claude",
+      "Gemini",
+      "vector databases",
+      "OpenSearch",
+      "FAISS",
+      "RAG architectures",
+      "agentic frameworks",
+      "MCP servers",
+      "OpenAI Chat Completion endpoints",
+      "OpenAI Assistant endpoints",
+      "conversational AI systems"
+    ],
+    "hard_skills_nice_to_have": [
+      "RAG techniques"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven architecture",
+      "Kafka",
+      "SSE",
+      "WebSocket"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "OpenSearch",
+      "FAISS"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "documentation",
+      "collaboration",
+      "problem_solving"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "unlock the potential of GenAI across the team.blue group",
+      "design scalable AI powered software solutions",
+      "ensure seamless operation and performance optimization",
+      "test and deploy software solutions that meet business needs",
+      "deliver innovative AI solutions"
+    ],
+    "implied_pain_points": [
+      "team.blue needs to introduce GenAI across many existing brands and workflows",
+      "AI features must integrate into current environments without disrupting operations",
+      "RAG and agentic systems need to work reliably in production for SMB-facing products"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show production RAG or agentic systems built in Python, integrated into existing products or workflows rather than isolated demos. It should also show experience with vector search, OpenAI-style APIs, and cross-functional delivery in a product environment.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Fine-tuned foundation models in production unless that work actually happened",
+        "Built MCP server-based agent systems if there is no direct evidence",
+        "Scaled OpenSearch or FAISS-backed retrieval systems for customer-facing production use unless proven"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: RAG, evaluation, guardrails, and enterprise workflow automation; strongest match for scalable AI products and production RAG",
+        "Lantern: multi-provider routing and circuit breaker; useful for AI API integration and reliability",
+        "CQRS/event-sourcing and microservices background; shows backend product integration into existing environments"
+      ]
+    }
+  },
+  {
+    "job_id": "6953148b6dd552ab7ec2cb7c",
+    "title_normalized": "Senior Agentic AI & LLM Engineer",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "high-performance deployments"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "agentic AI systems",
+      "autonomous orchestration",
+      "multi-agent orchestration",
+      "open-source LLMs",
+      "Qwen",
+      "Llama",
+      "Mistral",
+      "LangChain",
+      "LangGraph",
+      "vLLM",
+      "TGI",
+      "embeddings",
+      "vector search",
+      "LLM integration patterns",
+      "scalable production-grade LLM pipelines"
+    ],
+    "hard_skills_nice_to_have": [
+      "multi-agent architectures for analytics or automation",
+      "RAG pipelines",
+      "model evaluation frameworks",
+      "custom tool creation",
+      "model-controller interfaces",
+      "GDPR compliance"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "vLLM",
+      "TGI",
+      "model deployment"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "LangGraph"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR"
+    ],
+    "soft_skills": [
+      "leadership",
+      "architectural_decision_making"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "startup_b",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "design and deploy agentic systems and AI pipelines",
+      "ensure high-performance deployments of LLMs in production environments",
+      "build scalable production-grade LLM pipelines",
+      "guide architectural decisions"
+    ],
+    "implied_pain_points": [
+      "the company needs real-world agentic AI applications and multi-agent orchestration",
+      "LLM deployments must be production-grade and high-performing",
+      "architectural decisions need to be guided by a hands-on lead working directly with the CTO"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV should show hands-on agentic system design, open-source LLM deployment, and practical use of LangChain or LangGraph in production. It should also demonstrate architectural leadership, vector search, and operating model-serving stacks rather than only API usage.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "evaluation",
+        "scale",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Experience deploying with vLLM or TGI if that was not actually done",
+        "Hands-on production work with Qwen, Llama, or Mistral if those models were not used",
+        "Direct people management or formal CTO-level reporting responsibilities if unsupported",
+        "GDPR compliance ownership beyond what is explicitly proven"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: multi-plugin agent platform with orchestration and evaluation; closest match to agentic systems and production LLM pipelines",
+        "Lantern: multi-provider routing and circuit breaker; useful for production deployment and reliability thinking",
+        "Engineering leader / software architect background; supports the architectural decision-making and hands-on leadership expectation"
+      ]
+    }
+  },
+  {
+    "job_id": "6957aa7a6dd552ab7ec2ccca",
+    "title_normalized": "Senior Software Applied AI Engineer",
+    "title_family": "senior_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "thousands of customers",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Agentic AI design patterns",
+      "AI orchestration",
+      "Memory systems",
+      "RAG",
+      "Long horizon tasks",
+      "LLM-based models",
+      "AI red teaming",
+      "evaluation tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "enhance vulnerability discovery",
+      "improve security analysis workflows",
+      "expand how thousands of customers detect and respond to emerging threats",
+      "identify risks in LLMs and applied AI systems"
+    ],
+    "implied_pain_points": [
+      "build safer AI-powered security workflows into the platform",
+      "operationalize agentic AI for security use cases",
+      "add memory, orchestration, and long-horizon reasoning to Hai",
+      "support AI red teaming and model risk evaluation"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show shipped AI platform work, not just prototypes. It should prove experience building agentic or LLM-powered systems with clear evidence of secure workflows, evaluation, and production deployment at meaningful customer scale.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "evaluation",
+        "scale",
+        "reliability",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "led a security research org",
+        "owned budget or P&L",
+        "managed direct reports",
+        "built AI red teaming systems without clear evidence",
+        "shipped security-specific AI workflows at enterprise scale without explicit proof"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps well because it shows enterprise AI workflow platform experience with RAG, evaluation, and guardrails.",
+        "Lantern maps well because it demonstrates multi-provider routing and circuit-breaker style reliability for LLM systems.",
+        "The candidate's software architect and technical lead background fits the platform-oriented, cross-functional nature of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "6953e7946dd552ab7ec2cbc9",
+    "title_normalized": "Senior AI/ML Developer",
+    "title_family": "senior_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "scalability, performance, and reliability of AI systems"
+    },
+    "hard_skills_must_have": [
+      "LLM integration",
+      "prompt engineering",
+      "embeddings",
+      "vector databases",
+      "semantic search",
+      "conversational AI",
+      "AI agents",
+      "JavaScript",
+      "TypeScript",
+      "SQL",
+      "API development",
+      "serverless/edge functions architecture",
+      "cloud-native development patterns",
+      "cloud-based AI services",
+      "agentic AI patterns",
+      "tool-calling frameworks",
+      "context management",
+      "conversation state",
+      "RAG systems",
+      "document parsing",
+      "chunking",
+      "structuring",
+      "knowledge base organization and retrieval"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "JavaScript",
+        "TypeScript",
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "serverless",
+      "edge functions"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "team",
+    "success_metrics": [
+      "design and implement AI-powered features for Stella",
+      "build production-ready systems that integrate LLMs with platform functionality",
+      "process and structure knowledge base content for AI consumption",
+      "develop context-aware AI capabilities that understand user workflows",
+      "ensure scalability, performance, and reliability of AI systems"
+    ],
+    "implied_pain_points": [
+      "turn LLM ideas into production product features",
+      "make knowledge base content usable by AI systems",
+      "build context-aware assistants that understand user workflows",
+      "keep AI systems scalable and reliable in production"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show production LLM feature work, not just experimentation. It should prove the candidate can build retrieval, context management, and agentic workflows that survive real user traffic and operational constraints.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "evaluation",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep JavaScript/TypeScript production ownership if the evidence is thin",
+        "expertise in tool-calling frameworks without a concrete implementation",
+        "ownership of serverless edge architectures without explicit project proof",
+        "formal team management experience"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it shows enterprise AI workflow delivery, RAG, evaluation, semantic caching, and guardrails.",
+        "Lantern maps strongly because it shows multi-provider LLM infrastructure and routing reliability.",
+        "The candidate's architect-level experience maps well to the role's need for production AI systems and platform integration."
+      ]
+    }
+  },
+  {
+    "job_id": "695d6f916dd552ab7ec2d132",
+    "title_normalized": "Senior AI Data Engineer",
+    "title_family": "senior_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "GCP",
+      "BigQuery",
+      "Vertex AI",
+      "Dataflow",
+      "Pub/Sub",
+      "Cloud Functions",
+      "dbt",
+      "Salesforce Data Cloud",
+      "LLMOps",
+      "LangChain",
+      "LlamaIndex",
+      "vector databases",
+      "SQL",
+      "Python",
+      "RAG",
+      "production AI services",
+      "model deployment",
+      "monitoring",
+      "scaling models and LLMs"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "SQL",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": [
+        "BigQuery",
+        "Vertex AI",
+        "Dataflow",
+        "Pub/Sub",
+        "Cloud Functions"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "LlamaIndex"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "BigQuery",
+      "Salesforce Data Cloud",
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "team",
+    "success_metrics": [
+      "bridge experimental notebooks and production-grade AI services",
+      "deploy, monitor, and scale bespoke models and LLMs",
+      "design and implement RAG architectures",
+      "own the data lifecycle within Google Cloud Platform",
+      "integrate Salesforce Data Cloud with internal AI engines to drive hyper-personalized user experiences"
+    ],
+    "implied_pain_points": [
+      "move AI work from experimentation into production",
+      "create real-time, high-quality context for LLMs from proprietary data",
+      "operationalize AI data pipelines on GCP",
+      "connect CRM data with AI systems for personalization"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show production data and AI platform work on a cloud stack, especially where data pipelines feed LLM systems. It should prove hands-on ownership of scalable architecture, retrieval pipelines, and model serving or orchestration in a real business setting.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "reliability",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep GCP ownership if the evidence is limited to adjacent cloud experience",
+        "hands-on Vertex AI or BigQuery expertise without direct project proof",
+        "Salesforce Data Cloud integration experience without explicit evidence",
+        "formal ownership of a data engineering org"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps well because it shows production AI workflow delivery, RAG, and data-driven orchestration.",
+        "Lantern maps well because it shows infrastructure for routing and controlling LLM access in production.",
+        "The candidate's backend and microservices background supports the operational and integration aspects of the role, though the GCP-specific parts must be evidenced carefully."
+      ]
+    }
+  },
+  {
+    "job_id": "69417295ba31ffd053ff5d5c",
+    "title_normalized": "Senior ML Software Engineer",
+    "title_family": "senior_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "Supports more than 28,000 organizations; the broader Sophos portfolio defends more than 600,000 organizations worldwide.",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "RDBMS",
+      "SQL",
+      "AWS cloud services",
+      "ML operations",
+      "AWS SageMaker",
+      "WandB",
+      "Agile software development",
+      "SCRUM",
+      "source control",
+      "static analysis",
+      "issue tracking"
+    ],
+    "hard_skills_nice_to_have": [
+      "Snowflake",
+      "C",
+      "C++"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": [
+        "C",
+        "C++"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "Fargate",
+        "CodeBuild",
+        "Batch",
+        "SageMaker"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": [
+        "WandB"
+      ]
+    },
+    "data_stack": [
+      "Snowflake"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "cooperation",
+      "collaboration",
+      "problem_solving",
+      "troubleshooting",
+      "communication"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "model accuracy",
+      "model comparison",
+      "engineering metrics",
+      "traceability",
+      "reproducibility",
+      "cost-efficient deliverables"
+    ],
+    "implied_pain_points": [
+      "Need to automate and maintain ML operations and training pipelines.",
+      "Need to improve monitoring, QA, and reproducibility of retrained models.",
+      "Need to integrate models into multiple products reliably at scale.",
+      "Need to keep AI delivery high quality while controlling costs.",
+      "Need to coordinate work across global teams."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show ownership of an AI or ML platform, especially where Python services, SQL-backed systems, and automated pipelines were built and maintained in AWS. It should also show measurable improvements in model quality, monitoring, reproducibility, or delivery efficiency across a cross-functional environment.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "evaluation",
+        "delivery",
+        "cost",
+        "architecture"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Full ownership of an MLOps stack unless the CV shows training pipeline automation and model monitoring work",
+        "Deep hands-on experience with AWS Fargate, CodeBuild, Batch, or SageMaker unless those services are explicitly on the CV",
+        "Snowflake production experience if the candidate only shows generic SQL or other databases",
+        "C or C++ expertise if that work is not explicitly demonstrated",
+        "Formal model benchmarking or ML evaluation ownership if the CV only shows application-level AI features"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match because it is an enterprise AI workflow platform with RAG, evaluation, guardrails, semantic caching, and 2,000 users, which aligns with ML operations, quality, and product integration.",
+        "Lantern is relevant for dependable AI infrastructure patterns such as multi-provider routing and circuit breaking, which supports the reliability angle of the role.",
+        "Earlier backend and microservices work maps to the Python, SQL, maintainable-code, and service-delivery expectations, but it is secondary to the AI platform experience."
+      ]
+    }
+  }
+]

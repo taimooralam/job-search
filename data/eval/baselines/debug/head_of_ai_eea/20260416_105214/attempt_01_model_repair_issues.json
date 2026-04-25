@@ -1,0 +1,10 @@
+[
+  "evidence_ledger[0] supported_and_curated must cite curated refs",
+  "evidence_ledger[1] supported_and_curated must cite curated refs",
+  "evidence_ledger[2] curated_but_underrepresented must cite curated refs",
+  "evidence_ledger[3] curated_but_underrepresented must cite curated refs",
+  "evidence_ledger[4] pending_curation must cite upstream refs",
+  "evidence_ledger[5] curated_but_underrepresented must cite curated refs",
+  "evidence_ledger[9] curated_but_underrepresented must cite curated refs",
+  "reject research/publication/PhD framing because research_heavy_pct is near zero"
+]

@@ -1,0 +1,23 @@
+{
+  "category": "staff_ai_engineer_eea",
+  "job_id": "6957aaad6dd552ab7ec2ccd8",
+  "jd_path": "data/eval/raw/staff_ai_engineer_eea/jd_texts/01_reddit_inc_staff_software_engineer_ml_search.md",
+  "jd_stem": "01_reddit_inc_staff_software_engineer_ml_search",
+  "exit_code": 0,
+  "elapsed_seconds": 1354.0,
+  "expected_deterministic_path": "outputs/REDDIT__INC_/cv_Staff_Software_Engineer__ML_Search.md",
+  "pre_state": {
+    "exists": false
+  },
+  "post_state": {
+    "exists": true,
+    "size": 9775,
+    "mtime": 1776437255.4023209,
+    "sha256": "ceafeb998bec2a7762ff128478795e4a9d77be684f6ab7f6c9fb283e80792251"
+  },
+  "resolved_cv_path": "outputs/REDDIT__INC_/cv_Staff_Software_Engineer__ML_Search.md",
+  "capture_method": "log_parse",
+  "snapshot_path": "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/staff_ai_engineer_eea/01_reddit_inc_staff_software_engineer_ml_search__generated.md",
+  "scoreable": true,
+  "log_tail": "  Reddit's search infrastructure serves 110M+ daily users navigating the world's largest conversation corpus\u2014a scale challenge that demands both deep ML systems expertise and production infrastructure r...\n\n\ud83d\udccb CV:\n  outputs/REDDIT__INC_/cv_Staff_Software_Engineer__ML_Search.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-17 16:48:47 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+}

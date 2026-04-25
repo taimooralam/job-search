@@ -1,0 +1,2472 @@
+[
+  {
+    "job_id": "69713def3da7d438ae4f5fef",
+    "title_normalized": "Head of Software Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "launched in 10+ countries; serves 50+ paying B2B customers; connect 100+ operators",
+      "latency_reliability": "reliability, data consistency, billing correctness, stable, secure, and compliant"
+    },
+    "hard_skills_must_have": [
+      "platform architecture",
+      "complex systems end to end",
+      "reliability-critical platforms",
+      "Python",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Docker",
+      "CI/CD",
+      "cloud platforms"
+    ],
+    "hard_skills_nice_to_have": [
+      "React",
+      "TypeScript",
+      "Tailwind",
+      "telecom integrations",
+      "usage data pipelines",
+      "billing systems",
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "CI/CD",
+      "GitHub Actions"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "quality",
+      "performance",
+      "coaching",
+      "communication",
+      "decision-making",
+      "collaboration",
+      "stakeholder_management",
+      "transparency"
+    ],
+    "domain_industry": "telecom",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "delivery is predictable, stable, and transparent",
+      "engineering foundation remains stable, secure, and compliant",
+      "ability to connect 100+ operators"
+    ],
+    "implied_pain_points": [
+      "fragmented telecom systems across countries",
+      "reliability and data consistency break across borders",
+      "billing correctness and operational trust need a coherent global foundation"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show end-to-end ownership of production platforms, not just people leadership. It needs concrete evidence of scaling a team, setting architecture, and keeping reliability and delivery under control while working with founders or other stakeholders. The best version also shows hiring and coaching examples, because this role explicitly asks for team growth.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "hiring",
+        "architecture",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct telecom industry leadership if not already proven",
+        "ownership of billing systems or telecom operators",
+        "GCP hands-on depth if it is not real",
+        "explicit management of a 5-15 person team if that scale was not actually reached",
+        "compliance ownership for regulated telecom environments"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match: it demonstrates platform ownership, many integrations, evaluation, guardrails, and production usage at scale.",
+        "Lantern maps well to reliability and routing decisions because it shows multi-provider routing and circuit-breaker style resilience.",
+        "The earlier CQRS/event-sourcing and microservices work supports the systems-thinking and architecture depth this role needs."
+      ]
+    }
+  },
+  {
+    "job_id": "697764fcbd1bc3db54464ecd",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "platform already live with customers; ready for next growth phase; complex, data-heavy systems; high-volume data pipelines",
+      "latency_reliability": "platform reliability; real constraints across regulatory, vendor, and operational environments"
+    },
+    "hard_skills_must_have": [
+      "telecom industry experience",
+      "deep telco integrations",
+      "usage-based billing",
+      "high-volume data pipelines",
+      "Python",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Docker",
+      "CI/CD",
+      "cloud platforms"
+    ],
+    "hard_skills_nice_to_have": [
+      "React",
+      "TypeScript",
+      "Tailwind",
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "CI/CD",
+      "GitHub Actions"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "communication",
+      "ownership",
+      "pragmatism",
+      "speed",
+      "clear decision-making"
+    ],
+    "domain_industry": "telecom",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "engineering outcomes across architecture, delivery, team growth, and platform reliability",
+      "improve team output without slowing momentum",
+      "maintain speed and pragmatism while scaling"
+    ],
+    "implied_pain_points": [
+      "scale a live telecom platform into its next growth phase",
+      "handle regulatory, vendor, and operational constraints",
+      "raise standards and reliability without losing momentum"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of building and operating live systems that can absorb growth while staying reliable. It should show leadership across architecture, delivery, and team development, plus concrete evidence that the candidate can work in constraint-heavy environments with real operational trade-offs. The best version also shows telco or telco-adjacent integrations explicitly, because that is a stated requirement here.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "delivery",
+        "architecture",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "proven telecom industry experience if that has not been done",
+        "ownership of usage-based billing in telco if not real",
+        "carrier, MVNO, or CPaaS integrations if absent",
+        "GCP expertise if it was not hands-on",
+        "managing a larger engineering org than was actually led"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern is the closest analogue to the telco integration and reliability problem because it shows multi-provider routing, failover, and operational safeguards.",
+        "Commander-4 demonstrates operating a live platform with many plugins, governance, and real users, which maps to the live-customer scale requirement.",
+        "The microservices, RabbitMQ, and real-time/WebRTC background supports the complex, data-heavy systems angle, but it does not substitute for explicit telecom experience."
+      ]
+    }
+  },
+  {
+    "job_id": "69779d5d7d41dc1e8a0c71bf",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "up to five product teams",
+      "hiring": "not_specified",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "explicit"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "several thousand sellers; millions of products; Tech & Product Team of about 400 experts; up to five product teams",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "PHP",
+      "JavaScript",
+      "scalable web applications"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "PHP",
+        "JavaScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "passion",
+      "drive",
+      "communication",
+      "mentoring",
+      "feedback",
+      "alignment",
+      "transparency",
+      "commitment",
+      "execution"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deliver products customers love",
+      "deliver business value",
+      "raise the engineering bar",
+      "improve guidelines",
+      "define how we work as an organization",
+      "balance time, budget, and quality"
+    ],
+    "implied_pain_points": [
+      "need stronger team alignment and transparency across multiple product teams",
+      "need roadblocks removed so product teams can deliver faster",
+      "need to raise engineering standards inside a large organization"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs evidence of leading multiple teams or team leads, raising engineering standards, and balancing delivery with quality and budget. It should also show enough hands-on technical depth to stay close to the product while building alignment, coaching people, and improving how an organization works. Because this role is in PHP and JavaScript, the CV would need real web-product examples in those languages to be convincing.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "scale",
+        "mentoring",
+        "architecture",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "hands-on PHP and JavaScript depth if that work was not done",
+        "direct e-commerce marketplace ownership if not present",
+        "managing up to five product teams if that structure was not actually led",
+        "budget ownership if no budget responsibility exists",
+        "remote leadership in a large international product org if not proven"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is useful as evidence of product-platform ownership, team enablement, and cross-functional delivery, though the domain and stack differ.",
+        "The CQRS/event-sourcing and microservices work is the best technical analogue for scalable web applications.",
+        "Lantern supports the leadership narrative around reliability and production ownership, but the CV will still need to bridge a noticeable PHP/JavaScript and e-commerce gap."
+      ]
+    }
+  },
+  {
+    "job_id": "69844dca7d41dc1e8a3f3634",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "up to five product teams",
+      "hiring": "not_specified",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "several thousand sellers; millions of products; Tech & Product Team of about 400 experts",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "PHP",
+      "JavaScript",
+      "scalable web applications"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "PHP",
+        "JavaScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "ownership",
+      "mentoring",
+      "transparency",
+      "alignment",
+      "honest feedback",
+      "execution"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "build and empower high-performing teams that deliver products customers love",
+      "deliver product value while balancing time, budget, and quality",
+      "raise the engineering bar",
+      "improve guidelines",
+      "define how we work as an organization"
+    ],
+    "implied_pain_points": [
+      "need a leader who can remove blockers and create alignment across multiple product teams",
+      "need stronger engineering standards and org-wide ways of working",
+      "need hands-on leadership that can translate technology choices into customer and business value"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should show that you can lead multiple product teams without losing delivery focus, and that you know how to turn technical decisions into customer and business outcomes. It should also prove hands-on web engineering credibility, people development, and the ability to improve engineering standards in a large e-commerce environment.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "scale",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim deep PHP and JavaScript production ownership unless your CV can show it.",
+        "Do not claim responsibility for five product teams or budget ownership unless that is explicitly supported.",
+        "Do not claim German-market or relocation experience if it is not on the CV."
+      ],
+      "best_candidate_experience_mapping": [
+        "Technical Lead at Seven.One Entertainment Group is the closest leadership match because it shows hands-on engineering leadership and cross-functional delivery.",
+        "Commander-4 can support the story of building a customer-facing platform with evaluation and guardrails, but it is not a direct PHP/JavaScript match.",
+        "CQRS/event-sourcing and microservices/RabbitMQ work helps evidence scalable systems thinking and operational ownership."
+      ]
+    }
+  },
+  {
+    "job_id": "699f546687737d491c3c782f",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "close to 20m+ active users",
+      "latency_reliability": "stability, reliability, efficiency"
+    },
+    "hard_skills_must_have": [
+      "stable platforms",
+      "scalable platforms",
+      "code quality",
+      "security",
+      "operational excellence",
+      "engineering practices",
+      "documentation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "mentoring",
+      "accountability",
+      "knowledge sharing",
+      "stakeholder management",
+      "communication",
+      "ownership",
+      "collaboration",
+      "documentation"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "scaleup",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "own overall stability, reliability, and efficiency of core technology",
+      "keep the platform running smoothly while evolving iteratively",
+      "ensure teams can onboard quickly and rotate between projects",
+      "keep the machine well oiled despite ongoing growth",
+      "maintain a high bar for code quality, security, and operational excellence",
+      "keep the organization lean and efficient"
+    ],
+    "implied_pain_points": [
+      "need to preserve platform stability while the marketplace continues to grow",
+      "need stronger documentation and knowledge continuity across team changes",
+      "need a leader who can improve engineering practices without over-scaling headcount"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV needs to prove that you can keep a fast-growing platform stable, documented, and lean while mentoring senior engineers and managers. Concrete examples of reliability work, engineering process improvements, and cross-functional prioritization matter more than generic leadership language.",
+      "most_valued_evidence_types": [
+        "reliability",
+        "architecture",
+        "governance",
+        "delivery",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim ownership of a 20m-user platform unless you can show it.",
+        "Do not claim multi-year engineering-manager org scaling if the CV does not explicitly show it.",
+        "Do not claim deep security or compliance leadership without concrete examples."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 and Lantern together show end-to-end platform ownership, reliability patterns, and pragmatic architecture choices.",
+        "CQRS/event-sourcing plus microservices/RabbitMQ is a strong fit for stable distributed systems and operational discipline.",
+        "Technical Lead at Seven.One is the best support for stakeholder alignment and engineering process improvement, if the CV can show those responsibilities clearly."
+      ]
+    }
+  },
+  {
+    "job_id": "6929643c45fa3c355f849d73",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "derived",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI pipelines",
+      "evals",
+      "integrations",
+      "multi-agent orchestration",
+      "Cursor",
+      "Claude Code",
+      "Codex",
+      "Lovable",
+      "v0",
+      "conversational AI",
+      "event-driven systems",
+      "LLM applications",
+      "API integrations"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "high agency",
+      "communication",
+      "collaboration",
+      "customer-facing",
+      "coaching",
+      "culture building",
+      "ambiguity",
+      "leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "startup_b",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "set technical roadmap aligned to business goals",
+      "make build vs buy decisions at company level",
+      "double the engineering team over 12-18 months",
+      "ship weekly",
+      "cut scope based on learning",
+      "maintain velocity during high growth",
+      "build culture that attracts top talent",
+      "develop leaders"
+    ],
+    "implied_pain_points": [
+      "need a technical leader who can define AI strategy and make company-level build vs buy calls",
+      "need to scale a small team without losing speed or culture",
+      "need someone who can stay hands-on while operating as a peer to other functional leaders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should show that you can set AI technical strategy and still ship. The best evidence is real systems work across AI pipelines, evals, orchestration, and routing, plus a record of growing teams or leading highly leveraged engineering efforts.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "evaluation",
+        "delivery",
+        "scale",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim 30+ team scaling unless your CV explicitly proves it.",
+        "Do not claim board-level or revenue leadership without direct evidence.",
+        "Do not claim broad enterprise CX ownership beyond the systems you actually shipped."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match: enterprise AI workflow platform with RAG, semantic caching, evaluation, and guardrails maps directly to AI pipeline leadership.",
+        "Lantern maps to the build-vs-buy and model-routing side of the role because it is an LLM gateway with multi-provider routing and a circuit breaker.",
+        "Technical Lead experience at Seven.One supports the hands-on prototyping and cross-functional leadership expectations."
+      ]
+    }
+  },
+  {
+    "job_id": "694aca4c056b4548bf9793ba",
+    "title_normalized": "Head of Engineering - Payments",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "billions of dollars; tens of thousands of businesses worldwide",
+      "latency_reliability": "zero customer disruption; monitoring and reliability practices"
+    },
+    "hard_skills_must_have": [
+      "payment systems",
+      "payment processor integrations",
+      "authorization",
+      "capture",
+      "refunds",
+      "webhooks",
+      "tokenization",
+      "fraud prevention",
+      "PCI DSS compliance",
+      "distributed systems architecture",
+      "microservices",
+      "AWS cloud architecture",
+      "cloud security",
+      "networking",
+      "infrastructure as code",
+      "CI/CD",
+      "high-volume transaction systems"
+    ],
+    "hard_skills_nice_to_have": [
+      "Node.js",
+      "TypeScript",
+      "feature flags",
+      "gradual rollouts"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "Node.js",
+        "TypeScript"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "EC2",
+        "Lambda",
+        "RDS",
+        "S3"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD",
+      "serverless",
+      "feature_flags"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "PCI DSS"
+    ],
+    "soft_skills": [
+      "ownership",
+      "mentoring",
+      "leadership",
+      "collaboration"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "department",
+    "success_metrics": [
+      "process billions of dollars for tens of thousands of businesses worldwide",
+      "reduce PCI DSS compliance scope",
+      "support multiple payment processors with a unified API",
+      "handle high-volume transactions at scale",
+      "deliver incrementally",
+      "execute a phased rollout strategy",
+      "establish monitoring and reliability practices",
+      "zero customer disruption"
+    ],
+    "implied_pain_points": [
+      "migrate from monolithic PHP to distributed Node/TypeScript microservices",
+      "build a standalone modern payment platform from scratch",
+      "reduce PCI DSS compliance scope",
+      "integrate multiple payment processors behind one API",
+      "ship a careful rollout without customer disruption"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "3-5+ years engineering leadership",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV must show ownership of high-volume transaction platforms, distributed system design, and disciplined rollout/reliability practices in regulated environments. It should also prove you can lead and develop multiple teams while still being credible in hands-on technical decisions.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "hiring",
+        "governance",
+        "architecture",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Direct ownership of payment processing, PCI DSS scope reduction, or processor integrations unless the CV has explicit payment experience.",
+        "Running 3 teams or hiring for multiple teams unless the CV shows people leadership at that scale.",
+        "AWS production architecture for regulated payment systems unless directly evidenced."
+      ],
+      "best_candidate_experience_mapping": [
+        "Lead Engineer work on CQRS/event-sourcing and microservices/RabbitMQ maps well to distributed systems architecture and backend reliability.",
+        "Technical Lead on Commander-4 maps to platform ownership, architecture decisions, guardrails, evaluation, and operating a production system.",
+        "Lantern maps to multi-provider routing and circuit-breaker style resilience, which is useful for abstracting payment processors and protecting uptime."
+      ]
+    }
+  },
+  {
+    "job_id": "696e0e5b3da7d438ae4f5e3b",
+    "title_normalized": "Head of Engineering - E-Commerce",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "millions of customers globally; ~250-person global engineering organization",
+      "latency_reliability": "scalability, performance, reliability; checkout performance"
+    },
+    "hard_skills_must_have": [
+      "large-scale distributed platforms",
+      "headless architecture",
+      "composable architecture",
+      "API-first architecture",
+      "microservices",
+      "frontend performance",
+      "platform architecture",
+      "complex system integrations",
+      "headless CMS",
+      "commerce / experience platforms",
+      "CDP-driven personalization and activation",
+      "UX/UI optimization",
+      "experimentation",
+      "continuous improvement",
+      "AI-enabled use cases in production",
+      "search",
+      "personalization",
+      "recommendations",
+      "content automation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "leadership"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "improve speed, quality, cost efficiency, and alignment with commercial priorities",
+      "improve platform scalability, performance, and reliability",
+      "drive measurable improvements in UX/UI efficiency, checkout performance, and conversion",
+      "strengthen engineering governance, standards, and delivery predictability",
+      "optimize the internal / external engineering mix for efficiency and long-term sustainability",
+      "leverage data and AI to increase customer engagement and operational efficiency"
+    ],
+    "implied_pain_points": [
+      "modernize a large-scale e-commerce platform",
+      "improve engineering operating model across distributed teams",
+      "raise platform scalability, performance, and reliability",
+      "increase UX and checkout conversion",
+      "tighten governance and delivery predictability",
+      "balance internal and external delivery capacity",
+      "connect engineering strategy to business outcomes"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years software engineering; 5+ years senior engineering leadership",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV must show large-scale platform modernization with measurable business outcomes such as conversion, performance, cost efficiency, and delivery predictability. It should also prove executive-level influence across distributed teams, partners, and C-level stakeholders.",
+      "most_valued_evidence_types": [
+        "scale",
+        "delivery",
+        "cost",
+        "architecture",
+        "governance",
+        "collaboration"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Leading a 250-person e-commerce organization or owning a retail transformation at million-customer scale unless the CV explicitly shows it.",
+        "Direct ownership of frontend performance, checkout conversion, or headless/composable commerce unless clearly evidenced.",
+        "Production AI personalization, search, or recommendation systems in e-commerce unless the CV directly supports that claim."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 shows the ability to ship and operate a governed platform with 2,000 users, which supports platform modernization thinking but not e-commerce scale.",
+        "Lantern shows routing, circuit breakers, and multi-provider abstraction, which maps to complex integrations and resilience.",
+        "Lead Engineer and technical-lead experience can support transformation and distributed systems leadership, but the CV still needs explicit e-commerce, conversion, and large-org evidence."
+      ]
+    }
+  },
+  {
+    "job_id": "694bc63b056b4548bf9793e8",
+    "title_normalized": "Head of Software Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "reliable data ingestion, transformation, and validation"
+    },
+    "hard_skills_must_have": [
+      "cloud-native SaaS platform architecture",
+      "cloud environments",
+      "DevOps",
+      "CI/CD",
+      "security",
+      "scalability",
+      "microservices",
+      "API design",
+      "security best practices",
+      "ML-specific architecture",
+      "data pipelines",
+      "Airflow",
+      "Snowflake",
+      "dbt",
+      "custom ETL",
+      "Python",
+      "TensorFlow",
+      "PyTorch",
+      "Scikit-learn",
+      "JAX",
+      "prototyping",
+      "coding",
+      "code reviews",
+      "enterprise customer integrations",
+      "secure data transfer",
+      "data formatting"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "DevOps",
+      "CI_CD",
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "TensorFlow",
+        "PyTorch",
+        "Scikit-learn",
+        "JAX"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "Airflow",
+      "Snowflake",
+      "dbt",
+      "custom ETL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "mentoring",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "technical excellence",
+      "quality",
+      "scalability",
+      "maintainability",
+      "reliable data ingestion, transformation, and validation",
+      "ensure external engineering work aligns with product goals and user experience standards",
+      "solutions meet scientific, technical, and business needs",
+      "secure configurations and data pipelines"
+    ],
+    "implied_pain_points": [
+      "design and evolve a cloud-native SaaS architecture",
+      "coordinate outsourced development partners",
+      "translate scientific and customer needs into software",
+      "build reliable data engineering pipelines",
+      "support enterprise customer integrations and secure data transfer",
+      "mentor and level up junior in-house developers"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years software engineering",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV must show cloud-native SaaS architecture, reliable data pipelines, and credible hands-on delivery in an AI-adjacent environment. It should also prove you can work with scientists, customers, and outsourced partners without losing technical control.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "evaluation",
+        "collaboration"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Python and ML framework depth, scientific modeling, or data-pipeline ownership unless explicitly shown in the CV.",
+        "Customer-facing biotech integration or outsourced partner oversight unless directly evidenced.",
+        "Claiming full SaaS platform leadership from AI workflow work alone without clear customer delivery evidence."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly to AI workflow platform ownership, including RAG, evaluation, and guardrails, which is relevant to the AI-adjacent part of the role.",
+        "Lantern maps to gateway/routing/circuit-breaker patterns and can support the integration and reliability side of the platform.",
+        "Flask and microservices/RabbitMQ experience can support backend and integration work, but the CV should only claim Python and ML depth if those are directly evidenced."
+      ]
+    }
+  },
+  {
+    "job_id": "6981d5107d41dc1e8a3375de",
+    "title_normalized": "Deputy Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "long-term scalability; high-traffic applications",
+      "latency_reliability": "backend latency for high-traffic applications"
+    },
+    "hard_skills_must_have": [
+      "Node.js",
+      "Next.js",
+      "TypeScript",
+      "AWS",
+      "Cloudflare",
+      "Postgres",
+      "Supabase",
+      "Drizzle",
+      "Prisma",
+      "Growthbook",
+      "Mixpanel",
+      "Google Analytics",
+      "GTM",
+      "OWASP",
+      "WAF",
+      "CI/CD"
+    ],
+    "hard_skills_nice_to_have": [
+      "Model Context Protocol (MCP)",
+      "Web Vitals tuning",
+      "backend latency optimization",
+      "custom AI agents",
+      "complex RAG systems"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "Cloudflare",
+        "RDS",
+        "Supabase"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "WAF"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Postgres",
+      "Supabase"
+    ],
+    "governance_compliance": [
+      "OWASP"
+    ],
+    "soft_skills": [
+      "communication",
+      "mentoring",
+      "feedback",
+      "conflict resolution",
+      "resilience"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "architectural integrity",
+      "security",
+      "technical excellence",
+      "long-term scalability",
+      "high code quality",
+      "correct project bootstrapping from day one",
+      "accurate data tracking",
+      "developer productivity"
+    ],
+    "implied_pain_points": [
+      "inconsistent architecture across projects",
+      "need for stricter code review and quality control",
+      "new projects may be bootstrapped incorrectly",
+      "security and hosting protections need tightening",
+      "AI-driven workflows and MCP adoption are desired",
+      "analytics and A/B testing tracking need to be accurate",
+      "the team needs to scale with hiring and mentoring"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show hands-on technical leadership, architecture ownership, and repeated delivery of production systems with quality and security standards. It should also show that the candidate can raise team bar through code review, hiring, mentoring, and practical engineering processes.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "reliability",
+        "hiring",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep Node.js/Next.js ownership with SSR/ISR optimization",
+        "3+ years directly managing engineering teams",
+        "hands-on ownership of Cloudflare, WAF, Growthbook, Mixpanel, and GTM in production",
+        "deep Postgres migration and ORM ownership with Drizzle/Prisma at scale",
+        "practical MCP implementation leadership"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps well to AI-driven workflows, guardrails, evaluation, and developer productivity at scale across 2,000 users and 42 plugins.",
+        "Lantern maps well to production reliability, multi-provider routing, and circuit-breaker style resilience.",
+        "His Technical Lead and backend/microservices background supports the architecture review, bootstrapping, and quality-control parts of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "6981f11e7d41dc1e8a33f45e",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "early-stage products into mature platforms",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "modern system design",
+      "backend architecture",
+      "engineering best practices",
+      "code review",
+      "debugging",
+      "prototyping",
+      "engineering processes"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "communication",
+      "collaboration",
+      "strategic thinking",
+      "cross-functional communication",
+      "clarity"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "startup_a",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "high performance",
+      "scalability",
+      "maintainability",
+      "clean releases",
+      "high code quality",
+      "rapid iteration",
+      "alignment with company strategy",
+      "alignment with product goals",
+      "high-performing engineering team"
+    ],
+    "implied_pain_points": [
+      "need to scale early-stage products into mature platforms",
+      "engineering needs stronger process and quality discipline",
+      "architecture must stay clear while the company moves fast",
+      "technical roadmap must be aligned with strategy and product",
+      "remote async collaboration needs to stay effective",
+      "team performance depends on strong technical guidance"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show shipping high-quality software at scale, architecture ownership, and a record of making technical decisions that improved delivery speed and system quality. It should also show leadership that is hands-on enough to guide code, processes, and cross-functional execution.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "delivery",
+        "reliability",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep B2B SaaS or enterprise automation platform leadership",
+        "running a remote-first engineering org end-to-end",
+        "owning company strategy and product roadmap",
+        "successful scale from early-stage to mature platform in an AI automation product",
+        "deep async-first operating model leadership"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to building and scaling a complex AI workflow platform with strong architecture, evaluation, and quality controls.",
+        "Lantern maps to reliability, multi-provider routing, and production hardening.",
+        "His Technical Lead experience at Seven.One and prior backend architecture work maps to the hands-on leadership and engineering-process parts of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "698a9efd7d41dc1e8a51fe4f",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "backend and systems experience",
+      "Flutter",
+      "React",
+      "Java",
+      "AWS",
+      "healthcare systems integrations",
+      "automated testing",
+      "logging/monitoring tools",
+      "AI-assisted development tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Java"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "HIPAA"
+    ],
+    "soft_skills": [
+      "collaboration",
+      "communication",
+      "planning",
+      "estimation"
+    ],
+    "domain_industry": "healthcare",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "enhanced patient care",
+      "improved clinical workflows",
+      "HIPAA-compliance",
+      "strong data privacy/security",
+      "balanced speed and scalability with security and compliance",
+      "optimized cloud spend",
+      "sound planning and estimation"
+    ],
+    "implied_pain_points": [
+      "healthcare integrations are central and likely complex",
+      "platform needs to be built quickly without sacrificing compliance",
+      "cloud spend must be controlled",
+      "small team needs disciplined execution rhythm",
+      "AI-assisted tools should raise quality without lowering standards",
+      "product and clinical workflows need to improve together"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show hands-on engineering leadership, architecture ownership, and the ability to ship production code while managing reliability, security, and cost tradeoffs. It should also show comfort using AI tools in the development loop and a track record of coordinating execution with cross-functional partners.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "reliability",
+        "cost",
+        "delivery",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep Flutter, React, and Java product delivery",
+        "healthcare or digital health platform leadership",
+        "HIPAA compliance ownership",
+        "cloud spend optimization responsibility in AWS",
+        "direct management of a healthcare engineering team"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to AI-assisted tooling, workflow automation, production quality, evaluation, and guardrails.",
+        "Lantern maps to routing, resilience, and production system hardening.",
+        "His CQRS, event-sourcing, microservices, and real-time work map to backend systems and platform integration, but there is no direct healthcare evidence."
+      ]
+    }
+  },
+  {
+    "job_id": "699f000887737d491c3ab7b2",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "70+ million customers; 13,000+ people globally",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "building and leading a software engineering team within a scaling organisation",
+      "software architecture",
+      "scalable distributed systems",
+      "quality control",
+      "code optimisation"
+    ],
+    "hard_skills_nice_to_have": [
+      "JVM languages",
+      "startup or scale-up environment",
+      "operating AI infrastructure",
+      "optimising LLM inference and training at scale",
+      "GPU architecture",
+      "CUDA programming"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "JVM languages"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "mentoring",
+      "communication",
+      "collaboration"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "company projects and goals are achieved",
+      "increase the quality of engineering",
+      "raise the bar on quality and efficiency",
+      "quality control",
+      "code optimisation"
+    ],
+    "implied_pain_points": [
+      "engineering quality and consistency need to improve while the org continues to scale",
+      "architecture and technical decisions need to stay aligned with business goals",
+      "teams need stronger process discipline and higher efficiency",
+      "hiring and leadership need to support continued growth"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show that the candidate has led engineering teams in a scaling environment and made architectural decisions that improved quality, efficiency, and delivery. It should also show cross-functional leadership, hiring involvement, and measurable impact on systems that needed to stay reliable as they grew.",
+      "most_valued_evidence_types": [
+        "scale",
+        "architecture",
+        "delivery",
+        "hiring",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "I have led a large banking engineering organization at Revolut scale",
+        "I have operated AI infrastructure and optimized LLM training or inference on GPUs at production scale",
+        "I have deep hands-on CUDA or GPU architecture experience",
+        "I have managed a head-of-engineering org with many direct reports"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps best because it demonstrates AI platform ownership, architecture, governance, and delivery of a complex system with many plugins and users.",
+        "Lantern maps well because it shows multi-provider routing, circuit breaking, and platform-level reliability decisions.",
+        "The Technical Lead and prior Lead Engineer roles support team leadership, distributed systems, CQRS/event sourcing, and architecture ownership."
+      ]
+    }
+  },
+  {
+    "job_id": "697338285239de5ec057b384",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "15-40 engineers",
+      "latency_reliability": "production stability, incident readiness, major release preparation, cost-optimized system performance"
+    },
+    "hard_skills_must_have": [
+      "backend engineering experience with Node.js, Java, Go, Python or similar",
+      "modern frontend development with JavaScript and TypeScript",
+      "distributed systems",
+      "microservices",
+      "APIs",
+      "event-driven architectures",
+      "cloud platforms",
+      "PostgreSQL or MySQL",
+      "Redis",
+      "messaging systems",
+      "CI/CD pipelines",
+      "infrastructure as code",
+      "observability tooling",
+      "container ecosystems",
+      "Kubernetes",
+      "ECS",
+      "ability to contribute code to critical paths"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Node.js",
+        "Java",
+        "Go",
+        "Python",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD",
+      "infrastructure as code",
+      "observability tooling",
+      "Kubernetes",
+      "ECS",
+      "container ecosystems",
+      "testing",
+      "release workflows"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "messaging systems"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "communication",
+      "cross-functional collaboration",
+      "mentoring"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "predictable delivery",
+      "production stability",
+      "incident readiness",
+      "major release preparation",
+      "cost-optimized system performance",
+      "improved efficiency"
+    ],
+    "implied_pain_points": [
+      "multiple concurrent workstreams need coordination and blocker removal",
+      "engineering teams need stronger processes and clearer career paths",
+      "core systems need to remain reliable, scalable, and cost efficient",
+      "the organization needs a leader who can balance hands-on coding with people management"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show hands-on backend and architecture ownership, plus evidence of leading teams through delivery pressure, operational stability, and process improvement. It should also show that the candidate can still code on critical paths while mentoring engineers and keeping systems reliable at scale.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "reliability",
+        "scale",
+        "cost",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "I have led 15-40 engineer orgs as a people manager",
+        "I have strong frontend leadership across large JavaScript and TypeScript teams",
+        "I have direct iGaming domain leadership experience",
+        "I have deep AWS or GCP platform ownership across all listed operational tooling"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it shows platform architecture, operational reliability, governance, and delivery across many integrated components.",
+        "Lantern maps well because multi-provider routing and circuit breaker patterns fit the role's resilience and performance focus.",
+        "The CQRS/event-sourcing lead role and microservices/RabbitMQ work map directly to distributed systems, event-driven architecture, and backend leadership."
+      ]
+    }
+  },
+  {
+    "job_id": "697210f83da7d438ae4f612c",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "derived",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "1.8 million members globally across the UK, India, Germany and France",
+      "latency_reliability": "fast, efficient onboarding; scales commercially"
+    },
+    "hard_skills_must_have": [
+      "architecture and scalability",
+      "distributed architectures",
+      "customer-facing applications on mobile and web",
+      "software engineering",
+      "security",
+      "system design",
+      "cross-platform",
+      "payments systems"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "constructive collaboration",
+      "data-driven decisions",
+      "mentoring",
+      "communication",
+      "product mindset",
+      "adaptability",
+      "comfort with fast change and intensity"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "fast, efficient onboarding",
+      "commercial scaling of onboarding",
+      "member activation and retention",
+      "incremental delivery against the product vision"
+    ],
+    "implied_pain_points": [
+      "Need to globalize and keep improving the onboarding experience while preserving speed and scale.",
+      "Need to coordinate engineering across onboarding, referrals, partnerships, subscriptions, billing, rewards, personalisation, and marketing systems.",
+      "Need hands-on architecture leadership that also covers security and system design.",
+      "Need to work across product, design, and business to turn strategy into delivered outcomes."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV needs to show senior hands-on leadership over customer-facing platforms, with measurable impact on onboarding or engagement systems at meaningful scale. It should prove the candidate can set technical direction, work across product/design/business, and mentor engineering managers while keeping security and system design strong.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "architecture",
+        "delivery",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Led a fintech or banking engineering organization",
+        "Owned onboarding for 1.8 million members",
+        "Managed engineering managers at this scale",
+        "Ran budgets or P&L for a banking product"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest fit because it proves platform ownership, hands-on architecture, evaluation/guardrails thinking, and delivery of a customer-facing system used by 2,000 users.",
+        "Lantern maps well to system design, resilience, and integration-heavy architecture through multi-provider routing and circuit breaking.",
+        "Technical Lead at Seven.One shows cross-functional technical leadership and the ability to shape engineering direction.",
+        "CQRS/event-sourcing and microservices/RabbitMQ experience supports the distributed architecture side of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "694e40406dd552ab7ec2caf0",
+    "title_normalized": "Consumer AI Co-Founder / Head of Engineering",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "ownership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "product-market-fit",
+      "scale to \u20ac100M+ in revenues",
+      "build a \u20ac1B+ company",
+      "secure a multi-million euro funding round within 12 months"
+    ],
+    "implied_pain_points": [
+      "Need a founder who can turn an idea into a real startup and carry full responsibility.",
+      "Need to recruit talent quickly and build the team around the product.",
+      "Need to reach product-market-fit and then scale the business aggressively.",
+      "Need to build out sales and marketing capability alongside product development."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV needs to prove zero-to-one ownership: building, shipping, and iterating a product from scratch to traction. It also needs evidence of recruiting talent, driving execution under uncertainty, and thinking commercially about product-market-fit, funding, and growth.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "scale",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Founded and scaled a consumer AI startup",
+        "Raised venture funding",
+        "Built a sales or marketing engine",
+        "Owned company P&L or revenue growth as a startup founder"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it demonstrates zero-to-one platform ownership, shipping a complex product, and growing usage to 2,000 users.",
+        "Lantern shows productized infrastructure thinking, multi-provider routing, and operational ownership that translates well to early-stage startup building.",
+        "Technical Lead at Seven.One proves hands-on leadership and the ability to drive execution across product and engineering.",
+        "CQRS/event-sourcing and microservices/RabbitMQ experience supports the 'build it from scratch' part of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "695c26226dd552ab7ec2cfaf",
+    "title_normalized": "Head of Engineering (Credit)",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "65+ million customers",
+      "latency_reliability": "performance, scalability, and reliability"
+    },
+    "hard_skills_must_have": [
+      "backend systems",
+      "microservices",
+      "distributed architectures",
+      "product architecture",
+      "solution architecture",
+      "code quality",
+      "code optimisation",
+      "performance",
+      "scalability",
+      "reliability",
+      "building products from scratch",
+      "scaling products for millions of users"
+    ],
+    "hard_skills_nice_to_have": [
+      "credit products",
+      "lending platforms",
+      "BNPL services",
+      "global distributed engineering organisation",
+      "modern fintech compliance",
+      "security",
+      "risk frameworks"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "data-driven decision-making",
+      "communication",
+      "influence across teams and levels of seniority",
+      "leading by example",
+      "clarity in ambiguous environments",
+      "speed",
+      "impact"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deliver scalable, secure, high-impact credit features",
+      "ship value fast",
+      "increase the quality of engineering",
+      "build products from scratch",
+      "scale products for millions of users",
+      "improve team performance",
+      "align tech efforts with business goals"
+    ],
+    "implied_pain_points": [
+      "Need to launch and scale a complex credit vertical from scratch.",
+      "Need to balance speed with quality, reliability, and code optimization across distributed teams.",
+      "Need to align engineering with Product, Data, and Operations in a fast-moving environment.",
+      "Need to raise engineering standards while keeping bureaucracy low."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A top CV needs to show ownership of distributed backend systems and product architecture, ideally in a high-growth environment where performance and reliability matter. It should also prove the candidate can scale teams, ship quickly without losing quality, and make metric-driven tradeoffs.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "architecture",
+        "delivery",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Led credit, lending, or BNPL products",
+        "Owned fintech compliance or risk programs",
+        "Scaled products to 65 million customers",
+        "Managed engineering teams across multiple countries at Revolut scale"
+      ],
+      "best_candidate_experience_mapping": [
+        "CQRS/event-sourcing and microservices/RabbitMQ are the best direct match for the distributed backend and architecture requirements.",
+        "Technical Lead at Seven.One maps to cross-functional leadership, roadmap execution, and engineering quality leadership.",
+        "Commander-4 and Lantern show platform ownership, reliability thinking, and operational rigor through evaluation, guardrails, routing, and circuit breaking.",
+        "The candidate's broader architecture background is relevant, but there is no direct credit or regulated-fintech evidence."
+      ]
+    }
+  },
+  {
+    "job_id": "6964b80b6dd552ab7ec2d85a",
+    "title_normalized": "Deputy Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "long-term scalability; high-traffic applications",
+      "latency_reliability": "SSR/ISR performance optimization; Web Vitals; backend latency"
+    },
+    "hard_skills_must_have": [
+      "Node.js",
+      "Next.js",
+      "TypeScript",
+      "AWS",
+      "Cloudflare",
+      "PostgreSQL",
+      "Supabase",
+      "Drizzle",
+      "Prisma",
+      "Growthbook",
+      "Mixpanel",
+      "Google Analytics",
+      "GTM",
+      "OWASP",
+      "WAF",
+      "CI/CD",
+      "A/B testing"
+    ],
+    "hard_skills_nice_to_have": [
+      "MCP",
+      "AI-driven workflows",
+      "custom AI agents",
+      "complex RAG systems",
+      "performance tuning",
+      "Web Vitals",
+      "backend latency"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "RDS",
+        "Cloudflare"
+      ]
+    },
+    "infrastructure": [
+      "Cloudflare",
+      "AWS",
+      "CI/CD",
+      "WAF"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "leadership",
+      "mentoring",
+      "conflict_management",
+      "resilience"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "architectural integrity",
+      "code quality",
+      "security",
+      "technical excellence",
+      "long-term scalability",
+      "accurate data tracking",
+      "systematic A/B testing",
+      "team scaling"
+    ],
+    "implied_pain_points": [
+      "enforce architecture across multiple projects",
+      "improve code review rigor",
+      "bootstrap new projects correctly from day 1",
+      "raise security posture at code and hosting layers",
+      "adopt AI and MCP workflows for developer productivity",
+      "make growth analytics reliable",
+      "scale the engineering team"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show you have owned architecture and code quality on a Node/Next stack, not just contributed to it. It should also prove you can set up secure deployments, enforce review standards, and lead hiring and mentoring while keeping analytics and AI adoption practical.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "governance",
+        "hiring",
+        "delivery",
+        "reliability",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep production ownership of Node.js/Next.js SSR/ISR and Web Vitals optimization if that is not directly evidenced",
+        "Hands-on ownership of Cloudflare WAF, AWS RDS networking, and CI/CD bootstrapping if not proven",
+        "Formal performance-management scope over multiple engineers if you only led technically",
+        "Growthbook, Mixpanel, and GTM instrumentation ownership at system-owner level if not shown",
+        "Custom MCP implementation if your experience is only adjacent"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: strongest match for architectural guardrails, evaluation/guardrails thinking, and AI-driven workflow adoption",
+        "Lantern: relevant to routing, resilience, and platform control patterns that mirror technical governance",
+        "Technical Lead and Lead Engineer roles: evidence for code review rigor, mentoring, and bridging strategy with execution"
+      ]
+    }
+  },
+  {
+    "job_id": "6966b1ec7edca8b158fc9692",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "larger single-tenant enterprise deployments; multiple AWS accounts and environments",
+      "latency_reliability": "high availability; uptime; reliability; scalability; environment consistency"
+    },
+    "hard_skills_must_have": [
+      "Java Spring Boot",
+      "Python",
+      "PHP",
+      "AWS",
+      "ECS",
+      "RDS",
+      "S3",
+      "CloudFront",
+      "IAM",
+      "networking fundamentals",
+      "CloudFormation",
+      "secure coding",
+      "DevOps",
+      "SRE",
+      "CI/CD",
+      "logging",
+      "monitoring",
+      "observability",
+      "incident response"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Java",
+        "Python",
+        "PHP"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "ECS",
+        "RDS",
+        "S3",
+        "CloudFront",
+        "IAM"
+      ]
+    },
+    "infrastructure": [
+      "AWS",
+      "CloudFormation",
+      "CI/CD",
+      "IaC"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "leadership",
+      "mentoring",
+      "coordination",
+      "collaboration"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "technical delivery",
+      "reliability",
+      "evolution of the application and AWS infrastructure",
+      "sprint commitments met",
+      "code quality",
+      "secure coding",
+      "high availability",
+      "uptime",
+      "scalability",
+      "environment consistency",
+      "cost-efficient operations"
+    ],
+    "implied_pain_points": [
+      "reduce dependence on the CTO",
+      "coordinate internal, outsourced, and CloudOps teams",
+      "stabilize multi-account AWS operations",
+      "improve CI/CD and QA workflows",
+      "increase observability maturity",
+      "support enterprise deployment growth"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show hands-on engineering leadership in cloud-hosted production systems, with clear evidence of reliability and delivery ownership. It should also show that you can work across developers, QA, and operations while still contributing code and improving architecture.",
+      "most_valued_evidence_types": [
+        "reliability",
+        "delivery",
+        "architecture",
+        "cost",
+        "governance",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep Java Spring Boot and PHP production ownership if your strongest record is elsewhere",
+        "Direct multi-account AWS CloudFormation leadership and incident command ownership without proof",
+        "Financial-institution or payments compliance ownership if not explicitly demonstrated",
+        "Managing outsourced teams and vendor governance if you have not actually done it",
+        "Cloud cost optimization at AWS account level if not evidenced"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lead Engineer (CQRS/event-sourcing): strongest fit for architecture, delivery discipline, and leadership across services",
+        "Microservices and RabbitMQ work: relevant to distributed systems, operational reliability, and cross-team integration",
+        "Technical Lead / software architecture work: best evidence for code review standards, mentoring, and bridging leadership with execution"
+      ]
+    }
+  },
+  {
+    "job_id": "696e38913da7d438ae4f5e5c",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "already live with customers; next growth phase; complex, data-heavy systems end-to-end",
+      "latency_reliability": "platform reliability"
+    },
+    "hard_skills_must_have": [
+      "React",
+      "TypeScript",
+      "Tailwind",
+      "Python",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Docker",
+      "CI/CD",
+      "GitHub Actions"
+    ],
+    "hard_skills_nice_to_have": [
+      "telecom integrations",
+      "usage-based billing",
+      "data pipelines",
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "CI/CD",
+      "GitHub Actions"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "ownership",
+      "coaching",
+      "leadership"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "technical strategy as the business scales",
+      "engineering outcomes",
+      "team growth",
+      "engineering standards",
+      "speed",
+      "pragmatism",
+      "platform reliability",
+      "architecture for scale",
+      "team output"
+    ],
+    "implied_pain_points": [
+      "scale a live customer-facing platform",
+      "grow and coach a small team",
+      "improve output without slowing momentum",
+      "manage technical debt while preserving speed",
+      "set technical direction under real constraints"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show leadership over live production platforms, with concrete architecture decisions, team growth, and delivery under constraints. It should also show the ability to build data-heavy systems, keep reliability high, and make pragmatic tradeoffs between speed and quality.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "reliability",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep React, Tailwind, Flask, or FastAPI ownership on a customer-facing product if not directly shown",
+        "Experience in telecom integrations, usage-based billing, or data pipelines if you have not actually done it",
+        "Founder-level startup leadership if your experience is primarily internal or platform-focused",
+        "GCP-native operations and GitHub Actions ownership if not evidenced",
+        "Direct responsibility for engineering P and L or revenue outcomes"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: strongest proof of building a live platform, shipping new capabilities, and balancing guardrails with delivery",
+        "Lantern: relevant to platform reliability, multi-provider control, and pragmatic infrastructure decisions",
+        "Lead Engineer and microservices work: best evidence for end-to-end system design, distributed systems, and production operations"
+      ]
+    }
+  }
+]

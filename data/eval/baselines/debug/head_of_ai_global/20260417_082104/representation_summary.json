@@ -1,0 +1,83 @@
+{
+  "representation_proxy_mode": true,
+  "headline_current_state": {
+    "text": "Technical Architect / AI Platform Architect",
+    "refs": [
+      "data/master-cv/role_metadata.json:4"
+    ]
+  },
+  "summary_current_state": {
+    "text": "Hands-on technical architect and player-coach with 11 years building distributed systems, modernizing revenue-critical platforms, and shipping production AI platforms. At Seven.One, combines large-scale platform modernization with enterprise AI workflow delivery across retrieval quality, evaluation harnesses, guardrails, structured outputs, MCP integrations, semantic caching, observability, and reliability. Earlier Daypaio work adds 0\u21921 event-sourced SaaS architecture, event storming, and scalable product launch experience.",
+    "refs": [
+      "data/master-cv/role_metadata.json:5"
+    ]
+  },
+  "role_priority_current_state": [
+    {
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users across 42 plugins, personally engineered the retrieval-quality and runtime-control layer in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available) with RRF fusion (k=60); (2) LLM-as-judge reranking via Claude Sonnet through the LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests, improving search quality while strengthening latency, cost, and production readiness.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:28"
+    },
+    {
+      "text": "Designed the governed structured-output and tool-calling architecture for Commander-4 (Joyia), implementing Zod schema validation for all LLM responses to ensure type-safe outputs, 5 MCP server tools for external system integrations, composable guardrail profiles across 42 workflow plugins, and per-silo guardrail injection via LiteLLM proxy with access-control-aware behavior, enabling policy-safe AI workflows across organizational boundaries.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:55"
+    },
+    {
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:77"
+    },
+    {
+      "text": "Led initiative to architect and realize data observability pipeline channeling billions of events daily to OpenSearch on AWS. Real-time dashboards uncovered issues and debug scenarios previously invisible, increasing shipping speed, faster issue resolution, and significant revenue increase.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:103"
+    }
+  ],
+  "project_priority_current_state": [
+    {
+      "text": "Enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins - governed structured outputs, MCP integrations, per-silo guardrails/access control, hybrid retrieval, semantic caching, and evaluation harnesses",
+      "ref": "data/master-cv/projects/commander4.md:2"
+    },
+    {
+      "text": "Designed governed structured-output architecture using Zod schema validation for all LLM responses, 5 MCP server tools for external integrations, 42 workflow plugins with per-silo guardrail injection via LiteLLM proxy, and access-control-aware workflow behavior.",
+      "ref": "data/master-cv/projects/commander4.md:6"
+    },
+    {
+      "text": "Implemented retrieval evaluation harness with MRR@k and NDCG@k (exponential gain) scoring functions, guardrail profiles for per-silo content policy enforcement, and two-tier semantic cache threshold tuning validated against 14 unit tests.",
+      "ref": "data/master-cv/projects/commander4.md:7"
+    },
+    {
+      "text": "Multi-provider LLM gateway with routing/fallback, semantic caching, eval-driven quality gates, and production observability",
+      "ref": "data/master-cv/projects/lantern.md:2"
+    },
+    {
+      "text": "Architected multi-provider LLM gateway with LiteLLM routing, model registry, request validation, and automatic fallback across OpenAI, Anthropic, and Azure endpoints.",
+      "ref": "data/master-cv/projects/lantern.md:7"
+    },
+    {
+      "text": "Implemented eval-driven quality gates with golden-set evaluation, scoring LLM responses against reference outputs before serving them to downstream consumers and catching regressions earlier.",
+      "ref": "data/master-cv/projects/lantern.md:8"
+    }
+  ],
+  "skills_priority_current_state": [
+    "Hybrid Search",
+    "RAG Pipeline",
+    "Document Ingestion Pipeline",
+    "Retrieval Evaluation (MRR, NDCG)",
+    "Semantic Caching",
+    "LLM-as-Judge Evaluation",
+    "Structured Outputs",
+    "MCP Tool Design",
+    "TypeScript",
+    "Python",
+    "S3 Vectors",
+    "LiteLLM",
+    "Redis",
+    "DynamoDB",
+    "SQS",
+    "Vercel AI SDK",
+    "LLM Gateway Design",
+    "Provider Fallback Chain"
+  ],
+  "underrepresented_signals": [],
+  "overstated_risks": [
+    "Representation is proxy-derived; treat headline and summary fit as provisional until a canonical master CV artifact exists."
+  ]
+}

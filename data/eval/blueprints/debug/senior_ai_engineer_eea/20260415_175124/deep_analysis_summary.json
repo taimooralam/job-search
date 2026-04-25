@@ -1,0 +1,156 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "built ai developer tools specifically for code review, test generation, deployment diagnostics, or on-call assistance if that was not done",
+      "count": 1
+    },
+    {
+      "label": "led adoption of claude code, cursor, or warp across an engineering organization unless explicitly proven",
+      "count": 1
+    },
+    {
+      "label": "owned docker-scale internal ai tooling infrastructure without direct evidence of that scale",
+      "count": 1
+    },
+    {
+      "label": "fine-tuned foundation models in production unless that work actually happened",
+      "count": 1
+    },
+    {
+      "label": "built mcp server-based agent systems if there is no direct evidence",
+      "count": 1
+    },
+    {
+      "label": "scaled opensearch or faiss-backed retrieval systems for customer-facing production use unless proven",
+      "count": 1
+    },
+    {
+      "label": "experience deploying with vllm or tgi if that was not actually done",
+      "count": 1
+    },
+    {
+      "label": "hands-on production work with qwen, llama, or mistral if those models were not used",
+      "count": 1
+    },
+    {
+      "label": "direct people management or formal cto-level reporting responsibilities if unsupported",
+      "count": 1
+    },
+    {
+      "label": "gdpr compliance ownership beyond what is explicitly proven",
+      "count": 1
+    },
+    {
+      "label": "led a security research org",
+      "count": 1
+    },
+    {
+      "label": "owned budget or p and l",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 7
+    },
+    {
+      "label": "delivery",
+      "count": 7
+    },
+    {
+      "label": "reliability",
+      "count": 7
+    },
+    {
+      "label": "scale",
+      "count": 7
+    },
+    {
+      "label": "evaluation",
+      "count": 6
+    },
+    {
+      "label": "cost",
+      "count": 4
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "accelerate developer productivity",
+      "count": 1
+    },
+    {
+      "label": "build and ship production-ready ai agents and tools",
+      "count": 1
+    },
+    {
+      "label": "enable teams across docker to rapidly build and deploy their own ai developer tools",
+      "count": 1
+    },
+    {
+      "label": "transform ai developer tools into commercial offerings",
+      "count": 1
+    },
+    {
+      "label": "maintain high quality bars",
+      "count": 1
+    },
+    {
+      "label": "unlock the potential of genai across the team.blue group",
+      "count": 1
+    },
+    {
+      "label": "design scalable ai powered software solutions",
+      "count": 1
+    },
+    {
+      "label": "ensure seamless operation and performance optimization",
+      "count": 1
+    },
+    {
+      "label": "test and deploy software solutions that meet business needs",
+      "count": 1
+    },
+    {
+      "label": "deliver innovative ai solutions",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4: enterprise ai workflow platform with 42 plugins and 2,000 users; strongest proof of production llm / agent delivery, orchestration, and evaluation",
+      "count": 1
+    },
+    {
+      "label": "lantern: llm gateway with multi-provider routing and circuit breaking; matches llm integration, cost / performance control, and resilience",
+      "count": 1
+    },
+    {
+      "label": "guardrails, semantic caching, and operational ownership; maps well to the self-service ai developer tools platform",
+      "count": 1
+    },
+    {
+      "label": "commander-4: rag, evaluation, guardrails, and enterprise workflow automation; strongest match for scalable ai products and production rag",
+      "count": 1
+    },
+    {
+      "label": "lantern: multi-provider routing and circuit breaker; useful for ai api integration and reliability",
+      "count": 1
+    },
+    {
+      "label": "cqrs / event-sourcing and microservices background; shows backend product integration into existing environments",
+      "count": 1
+    },
+    {
+      "label": "commander-4: multi-plugin agent platform with orchestration and evaluation; closest match to agentic systems and production llm pipelines",
+      "count": 1
+    },
+    {
+      "label": "lantern: multi-provider routing and circuit breaker; useful for production deployment and reliability thinking",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [],
+  "specific_domain_years": []
+}

@@ -1,0 +1,10 @@
+# Solution Architect (Cloud & AI)
+
+**Company:** CODENINJA INC.
+**Location:** 
+**Score:** 92 (Tier B)
+**Status:** applied
+
+---
+
+About the CompanyCodeNinja is a global AI and engineering services company helping enterprisesbuild, scale, and operate intelligent systems. With 350+ engineers across fourcontinents and 400+ successful deployments, CodeNinja enables organizations toharness artificial intelligence through Global Capability Centers, Work AI,Physical AI, and AI Labs. Recognized among Pakistan’s fastest-growing AI firmsand a multi-award recipient on Clutch, CodeNinja empowers over 250 clientsworldwide to innovate, automate, and compete in the intelligence economy.About The RoleWe are hiring a senior, software-first Solutions Architect who has built realsystems, can design scalable cloud-native applications, and knows how tothoughtfully integrate AI into products while working closely with customers andengineering teams.Qualifications * 8+ years of professional software development experience, primarily in backend or full-stack engineering roles. * Proven experience designing and delivering production-grade distributed systems, not just proof-of-concept architectures. * Strong understanding of application architecture including APIs, data modeling, system integration, scalability, and fault tolerance. * Hands-on experience with cloud-native application design on AWS, with clear separation from infrastructure or DevOps ownership. * Experience integrating AI/GenAI into software applications, including LLM APIs, data pipelines, or AI-enabled workflows (training and MLOps not required).Disclaimer * CodeNinja is an equal opportunity employer. We celebrate diversity and are committed to creating an inclusive environment for all employees. All aspects of employment including the decision to hire, promote, discipline, or discharge, will be based on merit, competence, and performance. Female and minorities are strongly encouraged and preferred to apply for the role.Show more Show less

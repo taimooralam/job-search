@@ -1,0 +1,76 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_uae",
+  "job_id": "6978c1aa7d41dc1e8a0eabe1",
+  "dimension_scores": {
+    "ats_optimization": 7.5,
+    "impact_clarity": 8.0,
+    "jd_alignment": 6.5,
+    "executive_presence": 6.5,
+    "anti_hallucination": 8.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 7.38,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Senior Architect headline matches JD exactly with strong platform architecture keyword coverage refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:3,data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:1",
+    "Production AI delivery evidenced through Commander-4 platform (2,000 users, 42 plugins) with evaluation harness and guardrails refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:10,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:32",
+    "Strong quantified impact with before/after context: 20% missed impressions reduction, 10x horizontal scaling, weeks-to-days release cycles refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:27,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:40,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:29",
+    "Platform infrastructure transformation with IaC (Terraform), event-driven architecture, and CI/CD modernization matching JD requirements refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:28,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:29,data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:35"
+  ],
+  "top_failures": [
+    "No geospatial/GIS experience despite JD core focus on spatial databases, tiling, indexing, and spatial queries refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:21,data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:22",
+    "Kubernetes not explicitly mentioned though JD lists container platforms refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:35,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:20",
+    "Weak stakeholder translation evidence; only cv:79 mentions client engagement refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:79,data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:25",
+    "No explicit mentoring or recruiting contribution evidence despite JD requiring interview and onboarding involvement refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:26"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [
+    "Geospatial workflows and GIS services experience refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:10,data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:21",
+    "Spatial databases, tiling, indexing, and spatial queries refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:22",
+    "Explicit Kubernetes/container platform evidence refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:35",
+    "Recruiting and technical interview participation refs=data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:26"
+  ],
+  "persona_fit_notes": [
+    "Architect-first persona with Technical Lead title aligns well with category player-coach expectation refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:25,data/eval/blueprints/head_of_ai_uae_blueprint.json",
+    "Production delivery orientation demonstrated through platform modernization and AI infrastructure work refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:27,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:32"
+  ],
+  "representation_gap_hits": [
+    "GIS/geospatial domain expertise gap represents significant JD-specific misalignment refs=jd:10,jd:21,jd:22"
+  ],
+  "curation_gap_hits": [],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:3",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:10",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:20",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:25",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:27",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:28",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:29",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:32",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:40",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md:79",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:1",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:10",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:21",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:22",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:25",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:26",
+    "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md:35",
+    "data/eval/blueprints/head_of_ai_uae_blueprint.json"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:10:56Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_uae_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_uae_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_uae_baseline.json",
+    "cv_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_uae/16_technology_innovation_institute_senior_architect__generated.md",
+    "jd_path": "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md"
+  }
+}

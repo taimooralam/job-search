@@ -1,0 +1,935 @@
+OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/ala0001t/pers/projects/job-search
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR, /Users/ala0001t/.codex/memories]
+reasoning effort: high
+reasoning summaries: none
+session id: 019d91d0-30a5-79d1-9640-9b814ef670cb
+--------
+user
+You are an evidence-bound CV blueprint synthesizer.
+
+Your task is to convert market evidence for exactly one job category into a Top-Third CV Blueprint that a downstream CV generation pipeline can use safely.
+
+You are not writing generic career advice.
+You are not writing aspirational copy.
+You are producing a category-specific, candidate-safe specification grounded only in the supplied evidence.
+
+CATEGORY META
+- category_id: tech_lead_ai_eea
+- category_name: Tech Lead AI — EEA
+- macro_family: ai_engineering_adjacent
+- priority: secondary_target
+- confidence: high
+- total_jobs: 41
+- deep_analysis_count: 20
+
+IMPORTANT DATA QUALITY RULES
+- If total_jobs < 12 or confidence != "high", treat the category as sparse. Use softer language such as "common in this sample", "emerging signal", or "do not overfit the CV around this alone".
+- If title variants appear noisy or inconsistent with the category label, privilege title_families, seniority_distribution, role_scope_distribution, management_leadership, pain_points, and ai_ml_stack over literal title strings.
+- Do not call a skill "must-have" unless pct >= 60.
+- If no hard skill reaches 60%, explicitly say there is no single universal must-have technical keyword in this category.
+- Do not imply people management, hiring, org-building, or executive ownership unless management_leadership evidence supports it.
+- Do not recommend research, publication, or PhD framing unless disqualifier evidence supports it.
+- Do not recommend region-, language-, or domain-specific claims unless repeated evidence supports them.
+- Prefer normalized concepts over duplicate spellings. Example: merge CI/CD with CI_CD; merge stakeholder_management with stakeholder management.
+
+EVIDENCE INPUT
+COMPOSITE SUMMARY
+{
+  "signal_strength": {
+    "applied_count": 1,
+    "avg_score": 62.0,
+    "median_score": 72,
+    "score_range": [
+      0,
+      85
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "tech_lead": 31,
+      "engineering_manager": 7,
+      "ai_architect": 2,
+      "staff_engineer": 1
+    },
+    "top_title_variants": {
+      "AI/ML Python Team Lead": 11,
+      "Technical Lead, Backend AI Python": 3,
+      "Lead Software Engineer": 2,
+      "Product AI Engineering Lead": 2,
+      "Senior Software Engineer II (Tech Lead) - ML, New Products": 2,
+      "AI Tech Lead / Senior Full Stack Engineer": 1,
+      "Core & ML Ops Team Lead": 1,
+      "Core & MLOps Team Lead": 1
+    },
+    "noisy_title_mode": false
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 32,
+      "manager": 5,
+      "senior_manager": 4
+    },
+    "role_scope_distribution": {
+      "player_coach": 37,
+      "ic": 3,
+      "manager": 1
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 3,
+      "total": 41,
+      "pct": 7.3
+    },
+    "performance_management": {
+      "count": 4,
+      "total": 41,
+      "pct": 9.8
+    },
+    "org_building": {
+      "count": 8,
+      "total": 41,
+      "pct": 19.5
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 41,
+      "pct": 0.0
+    },
+    "direct_reports_samples": [
+      "3-5",
+      "5-10 engineers",
+      "3-5"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 95.1,
+    "greenfield_split": {
+      "both": 18,
+      "optimization": 2,
+      "greenfield": 2
+    },
+    "cloud_preference": {
+      "multi_cloud": 18,
+      "AWS": 9,
+      "GCP": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 28,
+      "total": 41,
+      "pct": 68.3
+    },
+    {
+      "label": "aws",
+      "count": 21,
+      "total": 41,
+      "pct": 51.2
+    },
+    {
+      "label": "fastapi",
+      "count": 20,
+      "total": 41,
+      "pct": 48.8
+    },
+    {
+      "label": "ci/cd",
+      "count": 19,
+      "total": 41,
+      "pct": 46.3
+    },
+    {
+      "label": "distributed systems",
+      "count": 19,
+      "total": 41,
+      "pct": 46.3
+    },
+    {
+      "label": "flask",
+      "count": 17,
+      "total": 41,
+      "pct": 41.5
+    },
+    {
+      "label": "microservices",
+      "count": 17,
+      "total": 41,
+      "pct": 41.5
+    },
+    {
+      "label": "kafka",
+      "count": 16,
+      "total": 41,
+      "pct": 39.0
+    },
+    {
+      "label": "openai",
+      "count": 16,
+      "total": 41,
+      "pct": 39.0
+    },
+    {
+      "label": "azure",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6
+    },
+    {
+      "label": "caching",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6
+    },
+    {
+      "label": "django",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6
+    },
+    {
+      "label": "gcp",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6
+    },
+    {
+      "label": "huggingface",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6
+    },
+    {
+      "label": "sqs",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 36,
+      "total": 41,
+      "pct": 87.8
+    },
+    {
+      "label": "mentoring",
+      "count": 30,
+      "total": 41,
+      "pct": 73.2
+    },
+    {
+      "label": "communication",
+      "count": 29,
+      "total": 41,
+      "pct": 70.7
+    },
+    {
+      "label": "leadership",
+      "count": 21,
+      "total": 41,
+      "pct": 51.2
+    },
+    {
+      "label": "stakeholder management",
+      "count": 12,
+      "total": 41,
+      "pct": 29.3
+    },
+    {
+      "label": "problem-solving",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8
+    },
+    {
+      "label": "curiosity",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3
+    },
+    {
+      "label": "growth mindset",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3
+    },
+    {
+      "label": "ownership",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3
+    },
+    {
+      "label": "team player",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 29,
+        "total": 41,
+        "pct": 70.7
+      },
+      {
+        "label": "c++",
+        "count": 4,
+        "total": 41,
+        "pct": 9.8
+      },
+      {
+        "label": "java",
+        "count": 3,
+        "total": 41,
+        "pct": 7.3
+      },
+      {
+        "label": "go",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      },
+      {
+        "label": "rust",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      },
+      {
+        "label": "typescript",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      }
+    ],
+    "preferred": [
+      {
+        "label": "go",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "php",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "python",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "typescript",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 9,
+        "total": 41,
+        "pct": 22.0
+      },
+      "agents_orchestration": {
+        "count": 6,
+        "total": 41,
+        "pct": 14.6
+      },
+      "fine_tuning": {
+        "count": 5,
+        "total": 41,
+        "pct": 12.2
+      },
+      "evaluation_quality": {
+        "count": 9,
+        "total": 41,
+        "pct": 22.0
+      },
+      "guardrails_governance": {
+        "count": 4,
+        "total": 41,
+        "pct": 9.8
+      },
+      "prompt_engineering": {
+        "count": 6,
+        "total": 41,
+        "pct": 14.6
+      },
+      "vector_search": {
+        "count": 4,
+        "total": 41,
+        "pct": 9.8
+      },
+      "model_serving_routing": {
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      }
+    },
+    "frameworks": [
+      {
+        "label": "huggingface",
+        "count": 15,
+        "total": 41,
+        "pct": 36.6
+      },
+      {
+        "label": "pytorch",
+        "count": 9,
+        "total": 41,
+        "pct": 22.0
+      },
+      {
+        "label": "tensorflow",
+        "count": 7,
+        "total": 41,
+        "pct": 17.1
+      },
+      {
+        "label": "langchain",
+        "count": 4,
+        "total": 41,
+        "pct": 9.8
+      },
+      {
+        "label": "anthropic",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      },
+      {
+        "label": "fastapi",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      },
+      {
+        "label": "hugging face",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      },
+      {
+        "label": "openai",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9
+      },
+      {
+        "label": "jax",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "nvidia nemo",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      }
+    ],
+    "observability": [
+      {
+        "label": "datadog",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "grafana",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "langfuse",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "logging",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "metrics",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "tracing",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      },
+      {
+        "label": "weights and biases",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "audit logging",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "data governance",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "data privacy",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "gdpr",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "il5",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "il6",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "image signing",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    {
+      "label": "pci",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "need to drive backend architecture for enterprise systems",
+      "count": 3
+    },
+    {
+      "pain_point": "need to integrate ai/llm capabilities into backend applications",
+      "count": 3
+    },
+    {
+      "pain_point": "need to coordinate work across onshore/offshore teams",
+      "count": 3
+    },
+    {
+      "pain_point": "need to manage client requirements and delivery planning",
+      "count": 3
+    },
+    {
+      "pain_point": "need to maintain code quality, testing, ci/cd, and production readiness",
+      "count": 3
+    },
+    {
+      "pain_point": "drive backend architecture",
+      "count": 3
+    },
+    {
+      "pain_point": "lead development teams across onshore/offshore groups",
+      "count": 3
+    },
+    {
+      "pain_point": "integrate ai/llm capabilities into enterprise systems",
+      "count": 3
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "enterprise_saas": 3,
+      "consultancy": 2,
+      "consulting": 1,
+      "defense": 1,
+      "fintech": 1
+    },
+    "company_stage": {
+      "consultancy": 5,
+      "enterprise": 2,
+      "scaleup": 2,
+      "startup_b": 2
+    },
+    "collaboration_model": {
+      "distributed": 18,
+      "remote_first": 12
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}
+
+DEEP ANALYSIS SUMMARY
+{
+  "unsafe_claims_top": [
+    {
+      "label": "budget or p and l ownership",
+      "count": 12
+    },
+    {
+      "label": "formal people management with direct reports",
+      "count": 3
+    },
+    {
+      "label": "hiring or performance review ownership",
+      "count": 3
+    },
+    {
+      "label": "deep aws / azure / gcp platform ownership if not already evidenced",
+      "count": 3
+    },
+    {
+      "label": "specific fastapi or django production leadership if not shown",
+      "count": 3
+    },
+    {
+      "label": "direct people management or performance reviews",
+      "count": 3
+    },
+    {
+      "label": "hiring ownership",
+      "count": 3
+    },
+    {
+      "label": "hands-on experience with every named stack item unless explicitly evidenced",
+      "count": 3
+    },
+    {
+      "label": "formal ownership of onshore / offshore team coordination at company level",
+      "count": 3
+    },
+    {
+      "label": "formal people management with direct reports or performance reviews unless explicitly shown",
+      "count": 3
+    },
+    {
+      "label": "named python framework depth in fastapi, django, or flask unless the cv shows it",
+      "count": 3
+    },
+    {
+      "label": "distributed onshore / offshore leadership unless the cv shows global team coordination",
+      "count": 3
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "reliability",
+      "count": 20
+    },
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "delivery",
+      "count": 19
+    },
+    {
+      "label": "scale",
+      "count": 17
+    },
+    {
+      "label": "evaluation",
+      "count": 12
+    },
+    {
+      "label": "governance",
+      "count": 2
+    },
+    {
+      "label": "cost",
+      "count": 2
+    },
+    {
+      "label": "hiring",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "accurate estimations",
+      "count": 13
+    },
+    {
+      "label": "production readiness",
+      "count": 13
+    },
+    {
+      "label": "smooth handoffs",
+      "count": 11
+    },
+    {
+      "label": "timeline alignment",
+      "count": 11
+    },
+    {
+      "label": "manage delivery",
+      "count": 9
+    },
+    {
+      "label": "ensure technical quality",
+      "count": 9
+    },
+    {
+      "label": "code quality",
+      "count": 6
+    },
+    {
+      "label": "testing",
+      "count": 6
+    },
+    {
+      "label": "delivery roadmaps",
+      "count": 4
+    },
+    {
+      "label": "technical quality",
+      "count": 4
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps to enterprise ai workflow platforms, rag, guardrails, evaluation, and production-scale delivery.",
+      "count": 3
+    },
+    {
+      "label": "lantern maps to llm gateway design, multi-provider routing, and resilience patterns such as circuit breakers.",
+      "count": 3
+    },
+    {
+      "label": "cqrs and event-sourcing work maps to backend architecture, distributed systems, and event-driven design.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps strongly because it is an enterprise ai workflow platform with rag, semantic caching, evaluation, and guardrails, which matches the ai / llm backend integration and production-readiness angle.",
+      "count": 3
+    },
+    {
+      "label": "lantern maps strongly because multi-provider routing and circuit breaking are relevant to production ai / llm backend architecture and reliability.",
+      "count": 3
+    },
+    {
+      "label": "lead engineer work on cqrs / event-sourcing maps to scalable backend architecture and distributed systems design.",
+      "count": 3
+    },
+    {
+      "label": "backend engineer work with flask / mongodb and microservices / rabbitmq maps directly to the python backend, api, and message-queue expectations.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps strongly: enterprise ai workflow platform, 42 plugins, 2,000 users, rag, evaluation, and guardrails align with backend ai integration, production readiness, and scalable platform design.",
+      "count": 3
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "english",
+      "count": 2
+    },
+    {
+      "label": "polish",
+      "count": 1
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "10+ years backend engineering",
+      "count": 5
+    },
+    {
+      "label": "10+ years of backend engineering experience",
+      "count": 2
+    },
+    {
+      "label": "5+ years in ml / ai engineering or mlops",
+      "count": 1
+    },
+    {
+      "label": "7+ years building and scaling production-grade web applications in a senior or lead engineering role",
+      "count": 1
+    },
+    {
+      "label": "10+ years in ai / ml / computer vision, with 8+ years in technical leadership roles",
+      "count": 1
+    },
+    {
+      "label": "5+ years production-grade ai / ml systems",
+      "count": 1
+    }
+  ]
+}
+
+YOUR JOB
+Synthesize the evidence into one differentiated blueprint for this category.
+
+Before writing the blueprint, reason internally through these checks:
+1. What is the real role archetype here: executive leader, architect, hands-on senior IC, or player-coach?
+2. Which signals are table stakes, which are differentiators, and which are too weak or too rare to drive the CV?
+3. Which claims are safe only if explicitly evidenced on the candidate CV?
+4. What makes this category meaningfully different from nearby categories in the same macro family?
+
+OUTPUT RULES
+- Return valid JSON only. No markdown fences. No explanatory preamble.
+- Every substantive recommendation must cite evidence using count/total/pct where available.
+- Keep recommendations specific to this category. Avoid generic advice that could fit any AI role.
+- Make the blueprint usable for CV generation, not just human reading.
+- Keep wording concise and operational.
+- Prefer evidence-first language such as "show", "prove", "demonstrate", "quantify", "name explicitly".
+- Allowed strength labels are: "table stakes", "common in this sample", "differentiator", and "optional".
+- Do not use the phrases "must-have" or "must have" anywhere in the JSON for this category.
+- Do not use the phrases "best-in-class", "world-class", "visionary", or "thought leader" anywhere unless directly evidenced, which is rare.
+- If research_heavy evidence is near zero, keep research/publication/PhD terms inside risk warnings only, not positive recommendations.
+- Keep positive sections applied and delivery-oriented. Do not use research/publication/PhD words outside unsafe/risk sections.
+- For ATS guidance, specify keyword repetition strategy:
+  strongest 4-6 keywords = 2-3 mentions across headline/profile/experience/skills if true;
+  secondary 4-6 keywords = 1-2 mentions if true;
+  niche keywords = once only and only if true.
+- For competency themes, produce exactly 4 sections with 2-4 themes each.
+- For achievement archetypes, produce 4-6 ranked archetypes.
+- For primary_target categories, be richer and more specific.
+- For low-sample categories, include uncertainty notes and avoid over-precision.
+
+JSON SCHEMA
+{
+  "meta": {
+    "category_id": "string",
+    "category_name": "string",
+    "macro_family": "string",
+    "priority": "string",
+    "confidence": "high|medium|low|exploratory",
+    "total_jobs": "int",
+    "deep_analysis_count": "int",
+    "low_sample_mode": "bool",
+    "noisy_title_mode": "bool",
+    "uncertainty_note": "string"
+  },
+  "category_signature": {
+    "one_sentence_summary": "string",
+    "distinctive_signals": ["string", "string", "string"],
+    "citations": ["string"]
+  },
+  "headline_pattern": {
+    "recommended_structure": "string",
+    "safe_title_families": ["string"],
+    "safe_title_variants": ["string"],
+    "avoid_title_variants": ["string"],
+    "evidence_first_rules": ["string"],
+    "citations": ["string"]
+  },
+  "tagline_profile_angle": {
+    "positioning_angle": ["string", "string"],
+    "foreground": ["string"],
+    "avoid": ["string"],
+    "safe_positioning": ["string"],
+    "unsafe_positioning": ["string"],
+    "citations": ["string"]
+  },
+  "core_competency_themes": [
+    {
+      "section_name": "string",
+      "themes": [
+        {
+          "theme": "string",
+          "classification": "table_stakes|differentiator|optional",
+          "why_it_matters": "string",
+          "ats_guidance": "string",
+          "citation": "string"
+        }
+      ]
+    }
+  ],
+  "key_achievement_archetypes": [
+    {
+      "rank": "int",
+      "archetype": "string",
+      "what_it_proves": "string",
+      "pain_points_addressed": ["string"],
+      "metrics_to_include": ["string"],
+      "story_format_guidance": "STAR or ARIS guidance in 1-2 sentences",
+      "citation": "string"
+    }
+  ],
+  "role_weighting_guidance": {
+    "highest_weight_roles": ["string"],
+    "expand_in_work_history": ["string"],
+    "compress_in_work_history": ["string"],
+    "how_to_frame_non_ai_experience": ["string"],
+    "citations": ["string"]
+  },
+  "language_and_tone": {
+    "recommended_tone": "executive|architect|hands_on|player_coach",
+    "formality": "high|medium|low",
+    "preferred_vocabulary": ["string"],
+    "avoid_vocabulary": ["string"],
+    "citations": ["string"]
+  },
+  "unsafe_or_weak_framing": {
+    "avoid_claims": ["string"],
+    "buzzword_patterns": ["string"],
+    "title_inflation_risks": ["string"],
+    "research_framing_risks": ["string"],
+    "domain_or_region_risks": ["string"],
+    "citations": ["string"]
+  },
+  "evidence_ledger": [
+    {
+      "recommendation": "string",
+      "support": ["string"],
+      "confidence": "high|medium|low"
+    }
+  ]
+}
+
+QUALITY BAR
+- If the category behaves like an architect category, the blueprint must emphasize architecture proof, system integration, productionization, and stakeholder translation.
+- If the category behaves like a leadership category, the blueprint must emphasize org-building, delivery ownership, team shaping, and business-to-technical translation only when supported by evidence.
+- If the category behaves like a senior IC category, the blueprint must stay hands-on and avoid inflated leadership language.
+- Explicitly distinguish table stakes from differentiators.
+- Explicitly separate safe claims from unsafe claims.
+- Explicitly reflect the hiring pain points.
+- The final blueprint should read noticeably differently from adjacent categories in the same macro family.
+codex
+{"meta":{"category_id":"tech_lead_ai_eea","category_name":"Tech Lead AI — EEA","macro_family":"ai_engineering_adjacent","priority":"secondary_target","confidence":"high","total_jobs":41,"deep_analysis_count":20,"low_sample_mode":false,"noisy_title_mode":false,"uncertainty_note":"Evidence base is solid for this category (41 jobs, 20 deep analyses). Role shape is clear, but cloud, framework, and AI-pattern choices are fragmented, so keep stack claims tightly evidence-bound."},"category_signature":{"one_sentence_summary":"A player-coach AI tech lead category centered on Python backend architecture, enterprise AI/LLM integration, production readiness, and mentoring rather than formal people management or research framing.","distinctive_signals":["Hands-on lead scope dominates: most roles are player-coach rather than pure management.","Architecture proof matters more than title inflation: backend/platform design and production delivery are core.","Applied AI is expected as backend/system integration work, with evaluation and RAG as useful but non-universal differentiators."],"citations":["Title family skew: tech_lead 31/41 (75.6%); engineering_manager 7/41 (17.1%); ai_architect 2/41 (4.9%).","Role shape: player_coach 37/41 (90.2%); senior_ic 32/41 (78.0%); manager-only scope 1/41 (2.4%); management_signals_weak = true.","Architecture and stack: platform design 95.1%; Python hard skill 28/41 (68.3%); Python required 29/41 (70.7%); OpenAI 16/41 (39.0%); Hugging Face 15/41 (36.6%).","Leadership boundary: hiring 3/41 (7.3%); performance management 4/41 (9.8%); org-building 8/41 (19.5%); budget/P&L 0/41 (0.0%); requires_phd_pct 0.0%; research_heavy_pct 0.0%."]},"headline_pattern":{"recommended_structure":"[Tech Lead / Technical Lead] | Python Backend + AI Systems | Architecture, Production Readiness, Mentoring","safe_title_families":["Tech Lead","Technical Lead","AI Tech Lead","Lead Software Engineer"],"safe_title_variants":["AI/ML Python Team Lead","Technical Lead, Backend AI Python","Lead Software Engineer (Tech Lead)"],"avoid_title_variants":["Engineering Manager unless direct-report and performance scope are explicit","Head of AI / Director / VP language unless org ownership is explicit","AI Architect unless the candidate truly operated in an architecture-first, low-coding role","Staff Engineer unless the actual leveling and scope match"],"evidence_first_rules":["Use a lead title only when the CV shows hands-on technical direction or mentoring; player_coach roles are 37/41 (90.2%) and mentoring is 30/41 (73.2%).","Name Python explicitly in the headline when true; Python is the only technical keyword above 60%: hard skill 28/41 (68.3%), required language 29/41 (70.7%).","Pair AI wording with backend/platform wording, not standalone GenAI language; platform design is 95.1%, distributed systems 19/41 (46.3%), and AI/LLM integration appears as a repeated hiring pain point (count 3).","Do not headline formal management, hiring, or budget ownership unless explicitly evidenced; hiring 3/41 (7.3%), performance management 4/41 (9.8%), budget/P&L 0/41 (0.0%)."],"citations":["Title family skew: tech_lead 31/41 (75.6%).","Role shape: player_coach 37/41 (90.2%).","Python signal: 28/41 (68.3%) hard-skill mentions; 29/41 (70.7%) required language.","Management boundary: hiring 3/41 (7.3%), performance management 4/41 (9.8%), budget/P&L 0/41 (0.0%)."]},"tagline_profile_angle":{"positioning_angle":["Hands-on player-coach for Python backend and AI-enabled platform delivery.","Architecture-and-delivery lead who integrates AI/LLM capabilities into production systems and raises technical quality."],"foreground":["Backend architecture and platform design.","Python APIs/services and production-grade delivery.","Reliability, CI/CD, testing, and production readiness.","Mentoring, collaboration, and technical communication."],"avoid":["Pure people-manager framing.","Research, publication, or PhD-style framing.","Generic GenAI builder copy without backend or delivery proof.","Broad multi-cloud ownership claims unless explicitly evidenced."],"safe_positioning":["Show a senior engineer who leads by architecture decisions, code quality, mentoring, and delivery discipline.","Show applied AI as system integration work inside enterprise or distributed products, not as isolated experimentation.","Show leadership through handoffs, estimation accuracy, technical quality, and cross-team coordination rather than org charts."],"unsafe_positioning":["Formal engineering manager with hiring, reviews, and direct-report ownership unless explicit.","Executive/org-builder with budget, P&L, or company-wide headcount responsibility.","Pure AI architect or researcher detached from implementation and delivery.","Deep owner of AWS, Azure, and GCP simultaneously unless each is clearly evidenced."],"citations":["Collaboration 36/41 (87.8%); mentoring 30/41 (73.2%); communication 29/41 (70.7%).","Platform design 95.1%; CI/CD 19/41 (46.3%); distributed systems 19/41 (46.3%).","OpenAI 16/41 (39.0%); Hugging Face 15/41 (36.6%); RAG 9/41 (22.0%); evaluation_quality 9/41 (22.0%).","Hiring 3/41 (7.3%); performance management 4/41 (9.8%); budget/P&L 0/41 (0.0%); requires_phd_pct 0.0%; research_heavy_pct 0.0%."]},"core_competency_themes":[{"section_name":"Backend Architecture","themes":[{"theme":"Python backend leadership","classification":"table_stakes","why_it_matters":"Python is the clearest technical anchor in this category, and the lead roles are typically backend-facing rather than model-research-facing.","ats_guidance":"Strongest keywords: `Python`, `backend`, `tech lead` should appear 2-3 times across headline/profile/experience/skills if true. Secondary keywords: `FastAPI`, `Flask`, `Django` should appear 1-2 times if true. Niche framework names should appear once only and only if true.","citation":"Python hard skill 28/41 (68.3%); Python required 29/41 (70.7%); FastAPI 20/41 (48.8%); Flask 17/41 (41.5%); Django 15/41 (36.6%)."},{"theme":"Platform and enterprise architecture","classification":"table_stakes","why_it_matters":"This category is hired to design and steer backend/platform shape, especially for enterprise systems and new product delivery.","ats_guidance":"Strongest keywords: `architecture`, `platform design`, `enterprise systems` should appear 2-3 times if true. Secondary keywords: `backend architecture`, `system design` should appear 1-2 times if true. Do not use `architect` as a title unless the actual role matched it.","citation":"Platform design 95.1%; pain point `need to drive backend architecture for enterprise systems` count 3; valued evidence type `architecture` count 20."},{"theme":"Distributed and event-driven systems","classification":"differentiator","why_it_matters":"Distributed systems, queues, and microservices are common enough to strengthen fit, especially for scalable backend AI products.","ats_guidance":"Secondary keywords: `distributed systems`, `microservices`, `Kafka` should appear 1-2 times if true. Niche keywords: `SQS`, specific caching or queue tech should appear once only and only if true.","citation":"Distributed systems 19/41 (46.3%); microservices 17/41 (41.5%); Kafka 16/41 (39.0%); SQS 15/41 (36.6%); caching 15/41 (36.6%)."}]},{"section_name":"Production Delivery","themes":[{"theme":"Production readiness, testing, and CI/CD","classification":"table_stakes","why_it_matters":"Hiring signals repeatedly favor leads who ship reliable systems, keep quality high, and make AI/backend work production-ready rather than demo-ready.","ats_guidance":"Strongest keywords: `production readiness`, `CI/CD`, `technical quality` should appear 2-3 times if true. Secondary keywords: `testing`, `release quality`, `production support` should appear 1-2 times if true.","citation":"CI/CD 19/41 (46.3%); success metric `production readiness` count 13; `ensure technical quality` count 9; `code quality` count 6; `testing` count 6."},{"theme":"Delivery planning and estimation accuracy","classification":"differentiator","why_it_matters":"This market values leads who translate architecture into realistic plans, predictable timelines, and smooth handoffs.","ats_guidance":"Secondary keywords: `delivery`, `roadmap`, `estimation`, `handoff` should appear 1-2 times if true. Keep these attached to shipped outcomes, not generic process language.","citation":"Valued evidence type `delivery` count 19; success metric `accurate estimations` count 13; `timeline alignment` count 11; `smooth handoffs` count 11; `manage delivery` count 9."},{"theme":"Reliability and scale proof","classification":"differentiator","why_it_matters":"Top-third positioning improves when the CV shows measurable reliability or scale gains, not only feature delivery.","ats_guidance":"Secondary keywords: `reliability`, `scalability`, `availability` should appear 1-2 times if true. Niche observability tools should appear once only and only if true.","citation":"Valued evidence type `reliability` count 20; `scale` count 17; collaboration model `distributed` 18/41 (43.9%)."}]},{"section_name":"Applied AI Integration","themes":[{"theme":"AI/LLM integration into backend products","classification":"table_stakes","why_it_matters":"What separates this category from a generic backend lead is applied AI integration inside production systems, especially APIs, workflows, and enterprise products.","ats_guidance":"Strongest keywords: `AI/LLM`, `backend AI`, `integration` should appear 2-3 times if true. Secondary keywords: `OpenAI`, `Hugging Face`, `LLM platform` should appear 1-2 times if true. Do not list providers or frameworks that were not actually used.","citation":"Pain points `need to integrate AI/LLM capabilities into backend applications` count 3 and `integrate AI/LLM capabilities into enterprise systems` count 3; OpenAI 16/41 (39.0%); Hugging Face 15/41 (36.6%)."},{"theme":"Evaluation and quality controls for AI features","classification":"differentiator","why_it_matters":"AI quality and evaluation signals are not universal, but they materially differentiate production-grade AI leads from feature-only builders.","ats_guidance":"Secondary keywords: `evaluation`, `quality`, `guardrails` should appear 1-2 times if true. Niche observability or eval tools should appear once only and only if true.","citation":"AI/ML signal `evaluation_quality` 9/41 (22.0%); valued evidence type `evaluation` count 12; `guardrails_governance` 4/41 (9.8%)."},{"theme":"RAG and orchestration patterns","classification":"optional","why_it_matters":"RAG, prompt workflows, and orchestration help when real experience exists, but they are not universal enough to drive the whole CV.","ats_guidance":"Niche keywords: `RAG`, `agents`, `prompt engineering`, `vector search` should appear once only and only if true. Do not over-repeat these at the expense of architecture and delivery terms.","citation":"RAG 9/41 (22.0%); agents_orchestration 6/41 (14.6%); prompt_engineering 6/41 (14.6%); vector_search 4/41 (9.8%)."}]},{"section_name":"Technical Leadership","themes":[{"theme":"Mentoring and technical collaboration","classification":"table_stakes","why_it_matters":"Leadership is usually evidenced through mentoring, communication, and cross-team execution rather than formal management authority.","ats_guidance":"Strongest keywords: `mentoring`, `collaboration`, `communication` should appear 2-3 times if true. Keep them attached to concrete outcomes such as quality uplift, handoffs, or team throughput.","citation":"Collaboration 36/41 (87.8%); mentoring 30/41 (73.2%); communication 29/41 (70.7%)."},{"theme":"Hands-on player-coach scope","classification":"table_stakes","why_it_matters":"The target profile is a lead who still codes, reviews, designs, and unblocks delivery, not a detached manager.","ats_guidance":"Strongest keywords: `tech lead`, `technical leadership`, `hands-on` should appear 2-3 times if true. Avoid `engineering manager` language unless direct-report scope is explicit.","citation":"Role scope `player_coach` 37/41 (90.2%); `ic` 3/41 (7.3%); `manager` 1/41 (2.4%); management_signals_weak = true."},{"theme":"Distributed delivery and stakeholder translation","classification":"differentiator","why_it_matters":"A useful edge in this EEA sample is leading work across distributed teams and translating client or stakeholder needs into delivery plans.","ats_guidance":"Secondary keywords: `stakeholder management`, `distributed teams`, `delivery planning` should appear 1-2 times if true. Only mention offshore/onshore coordination if it actually happened.","citation":"Stakeholder management 12/41 (29.3%); collaboration model `distributed` 18/41 (43.9%); `remote_first` 12/41 (29.3%); pain points `coordinate work across onshore/offshore teams` count 3 and `manage client requirements and delivery planning` count 3."}]}],"key_achievement_archetypes":[{"rank":1,"archetype":"Architecture-led AI backend platform build or modernization","what_it_proves":"Proves the candidate can shape backend/platform architecture while integrating AI capabilities into real products, which is the clearest category-defining signal.","pain_points_addressed":["need to drive backend architecture for enterprise systems","need to integrate AI/LLM capabilities into backend applications","integrate AI/LLM capabilities into enterprise systems"],"metrics_to_include":["services or modules built/re-architected","latency or throughput improvement","availability/SLA impact","time-to-production","user or team adoption"],"story_format_guidance":"Use STAR or ARIS. Show the architecture problem first, then the design decision, then measurable production impact and why the AI integration mattered to the product.","citation":"Platform design 95.1%; pain point `need to drive backend architecture for enterprise systems` count 3; pain point `need to integrate AI/LLM capabilities into backend applications` count 3; OpenAI 16/41 (39.0%); Hugging Face 15/41 (36.6%)."},{"rank":2,"archetype":"Production-readiness and quality uplift","what_it_proves":"Proves the candidate does not just ship features; they increase reliability, testing discipline, CI/CD maturity, and production readiness.","pain_points_addressed":["need to maintain code quality, testing, CI/CD, and production readiness","need to manage client requirements and delivery planning"],"metrics_to_include":["deployment frequency","change failure rate","incident rate","test coverage or defect escape rate","lead time for changes","release predictability"],"story_format_guidance":"Use STAR or ARIS. Frame the before-state as fragile delivery or quality debt, then show the process and engineering changes, and end with measurable production-readiness gains.","citation":"Pain point `need to maintain code quality, testing, CI/CD, and production readiness` count 3; CI/CD 19/41 (46.3%); success metric `production readiness` count 13; `code quality` count 6; `testing` count 6."},{"rank":3,"archetype":"Scale and reliability in distributed systems","what_it_proves":"Proves the candidate can handle the non-demo side of AI/backend systems: distributed services, queues, scaling paths, and resilience.","pain_points_addressed":["drive backend architecture","need to maintain code quality, testing, CI/CD, and production readiness"],"metrics_to_include":["throughput","p95/p99 latency","availability","error rate","queue lag or processing time","cost per request or infrastructure efficiency"],"story_format_guidance":"Use STAR or ARIS. Show the scale or resilience constraint, name the system pattern used, and quantify stability or performance outcomes in production.","citation":"Distributed systems 19/41 (46.3%); microservices 17/41 (41.5%); Kafka 16/41 (39.0%); SQS 15/41 (36.6%); valued evidence types `reliability` count 20 and `scale` count 17."},{"rank":4,"archetype":"Player-coach delivery leadership","what_it_proves":"Proves the candidate can lead technical execution through mentoring, code review, planning, and cross-functional communication without inflating into formal management.","pain_points_addressed":["need to manage client requirements and delivery planning","lead development teams across onshore/offshore groups"],"metrics_to_include":["team size influenced","delivery predictability","handoff quality","cycle time","number of engineers mentored","review or defect reduction outcomes"],"story_format_guidance":"Use STAR or ARIS. Show how you unblocked delivery through technical direction and mentoring, then quantify team or project-level outcomes rather than people-management claims.","citation":"Role scope `player_coach` 37/41 (90.2%); collaboration 36/41 (87.8%); mentoring 30/41 (73.2%); communication 29/41 (70.7%); success metric `smooth handoffs` count 11."},{"rank":5,"archetype":"Evaluation-aware AI feature rollout","what_it_proves":"Proves the candidate can move beyond shipping AI features to measuring quality, setting controls, and improving production behavior.","pain_points_addressed":["need to integrate ai/llm capabilities into backend applications","need to maintain code quality, testing, ci/cd, and production readiness"],"metrics_to_include":["evaluation score changes","hallucination/error reduction","acceptance or adoption rate","latency/cost tradeoffs","guardrail or failure-rate improvement"],"story_format_guidance":"Use STAR or ARIS. Start with a quality or trust problem in an AI feature, show the evaluation/control approach, and end with measurable product or operational improvement.","citation":"AI/ML signal `evaluation_quality` 9/41 (22.0%); `rag` 9/41 (22.0%); `guardrails_governance` 4/41 (9.8%); valued evidence type `evaluation` count 12."}],"role_weighting_guidance":{"highest_weight_roles":["Tech lead or lead engineer roles with hands-on backend architecture responsibility.","Senior IC roles that clearly show player-coach behavior: design authority, mentoring, and delivery ownership.","AI/backend platform roles where AI/LLM work was integrated into production systems rather than isolated experiments."],"expand_in_work_history":["Roles with Python backend ownership, especially APIs, services, or platform modules.","Roles with architecture decisions, modernization, or enterprise-system integration.","Roles showing CI/CD, testing, reliability, or production-readiness improvements.","Roles showing mentoring, technical leadership, distributed collaboration, or delivery planning.","Roles with applied AI/LLM integration, especially where evaluation or RAG was used in production."],"compress_in_work_history":["Pure line-management positions without technical depth.","Research-only or experimentation-only work with weak delivery outcomes.","Frontend-heavy or generalist work that does not support backend/platform leadership.","Early-career roles unless they add durable backend architecture or distributed-systems evidence."],"how_to_frame_non_ai_experience":["Frame strong non-AI backend work as the foundation for AI product delivery: APIs, distributed systems, queues, reliability, and production operations.","Translate platform or microservices work into AI-adjacent relevance only when it genuinely supported model integration, evaluation, or data flows.","Do not relabel standard backend work as AI work unless the system actually included AI/LLM capabilities."],"citations":["Title families: tech_lead 31/41 (75.6%); engineering_manager 7/41 (17.1%); ai_architect 2/41 (4.9%).","Role shape: player_coach 37/41 (90.2%); senior_ic 32/41 (78.0%).","Architecture focus: platform design 95.1%; distributed systems 19/41 (46.3%); Python required 29/41 (70.7%).","Applied AI signals: OpenAI 16/41 (39.0%); Hugging Face 15/41 (36.6%); RAG 9/41 (22.0%)."]},"language_and_tone":{"recommended_tone":"player_coach","formality":"high","preferred_vocabulary":["architecture","platform design","Python backend","production readiness","reliability","delivery","technical quality","AI/LLM integration","mentoring","distributed systems"],"avoid_vocabulary":["visionary","thought leader","P&L owner","org builder","research-driven","AI evangelist","full people management","multi-cloud expert"],"citations":["Role scope `player_coach` 37/41 (90.2%).","Valued evidence types: `reliability` count 20; `architecture` count 20; `delivery` count 19.","Soft skills: collaboration 36/41 (87.8%); mentoring 30/41 (73.2%); communication 29/41 (70.7%).","Budget/P&L 0/41 (0.0%); requires_phd_pct 0.0%; research_heavy_pct 0.0%."]},"unsafe_or_weak_framing":{"avoid_claims":["Budget or P&L ownership.","Formal people management with direct reports unless explicit.","Hiring, performance reviews, or org-design ownership unless explicit.","Deep ownership across AWS, Azure, and GCP unless each is explicitly evidenced.","Named FastAPI, Django, or Flask leadership unless the CV shows real production depth.","Hands-on experience with every listed stack item.","Onshore/offshore leadership at company level unless real cross-border coordination is evidenced."],"buzzword_patterns":["Generic `GenAI expert` language without architecture, delivery, or production metrics.","Tool-list stacking that names every framework/provider once without showing shipped outcomes.","`AI architect` phrasing for candidates whose actual strength is hands-on lead delivery.","`MLOps leader` language without clear MLOps, evaluation, or production operations evidence.","`Multi-cloud` phrasing that implies broad platform ownership instead of actual implementation scope."],"title_inflation_risks":["Upgrading to Engineering Manager when hiring/performance signals are weak.","Using Head/Director/VP titles for what is actually player-coach scope.","Using AI Architect as the primary identity when the market is mostly tech lead/player-coach.","Using Staff+ leveling language when the work history does not show equivalent scope."],"research_framing_risks":["Do not add PhD, publication, or research-led framing as a positive angle for this category.","Do not position the candidate as a research scientist or academic ML profile.","Keep research/publication language only inside risk checks when it exists in the raw CV, because market demand here is delivery-oriented."],"domain_or_region_risks":["Do not imply defense, fintech, consultancy, or enterprise SaaS depth unless the CV actually shows it.","Do not imply GDPR, data privacy, PCI, or audit-logging depth unless explicitly evidenced; each appeared only 1/41 (2.4%).","Do not imply native-language fit beyond what is true; English appears 2 times and Polish 1 time in deep analysis, so language claims are narrow.","Do not overfit the CV around remote/distributed or offshore coordination unless the work history clearly supports it."],"citations":["Unsafe claims in deep analysis: `budget or p and l ownership` count 12; `formal people management with direct reports` count 3; `hiring or performance review ownership` count 3; `deep aws / azure / gcp platform ownership if not already evidenced` count 3.","Framework inflation warnings in deep analysis: `specific fastapi or django production leadership if not shown` count 3; `named python framework depth in fastapi, django, or flask unless the cv shows it` count 3; `hands-on experience with every named stack item unless explicitly evidenced` count 3.","Leadership boundary: hiring 3/41 (7.3%); performance management 4/41 (9.8%); budget/P&L 0/41 (0.0%).","Research boundary: requires_phd_pct 0.0%; research_heavy_pct 0.0%; governance/compliance items each 1/41 (2.4%)."]},"evidence_ledger":[{"recommendation":"Position the candidate as a player-coach tech lead, not a formal manager or executive.","support":["Tech lead title family 31/41 (75.6%).","Player-coach scope 37/41 (90.2%); senior IC 32/41 (78.0%).","Hiring 3/41 (7.3%); performance management 4/41 (9.8%); budget/P&L 0/41 (0.0%)."],"confidence":"high"},{"recommendation":"Anchor the CV on Python backend architecture and platform design.","support":["Python hard skill 28/41 (68.3%); Python required 29/41 (70.7%).","Platform design 95.1%.","Pain point `need to drive backend architecture for enterprise systems` count 3."],"confidence":"high"},{"recommendation":"Show applied AI as backend/system integration work, not as standalone experimentation.","support":["Pain points `need to integrate AI/LLM capabilities into backend applications` count 3 and `integrate AI/LLM capabilities into enterprise systems` count 3.","OpenAI 16/41 (39.0%); Hugging Face 15/41 (36.6%).","RAG 9/41 (22.0%); evaluation_quality 9/41 (22.0%)."],"confidence":"high"},{"recommendation":"Quantify production readiness, technical quality, and delivery predictability.","support":["CI/CD 19/41 (46.3%).","Success metrics: `production readiness` count 13; `accurate estimations` count 13; `timeline alignment` count 11; `smooth handoffs` count 11.","`Code quality` count 6; `testing` count 6."],"confidence":"high"},{"recommendation":"Use mentoring, collaboration, and communication as the primary leadership proof.","support":["Collaboration 36/41 (87.8%).","Mentoring 30/41 (73.2%).","Communication 29/41 (70.7%)."],"confidence":"high"},{"recommendation":"Treat RAG, orchestration, guardrails, and compliance as selective differentiators only when true.","support":["RAG 9/41 (22.0%); agents_orchestration 6/41 (14.6%); prompt_engineering 6/41 (14.6%); guardrails_governance 4/41 (9.8%).","Governance/compliance items such as GDPR, data privacy, and audit logging are each 1/41 (2.4%).","Deep-analysis warning `hands-on experience with every named stack item unless explicitly evidenced` count 3."],"confidence":"high"},{"recommendation":"Avoid inflating management, cloud, framework, or research claims beyond the documented CV evidence.","support":["Deep-analysis warning `budget or p and l ownership` count 12.","Deep-analysis warnings for formal people management, hiring/performance ownership, and deep cloud/framework ownership each appear 3 times.","Requires PhD 0.0%; research-heavy 0.0%."],"confidence":"high"}  ,{"recommendation":"Differentiate this category from adjacent AI roles by emphasizing architecture plus delivery, not pure modeling or prompt-only work.","support":["Valued evidence types: `architecture` count 20; `reliability` count 20; `delivery` count 19; `evaluation` count 12.","Platform design 95.1%; distributed systems 19/41 (46.3%).","OpenAI 16/41 (39.0%) and Hugging Face 15/41 (36.6%) are meaningful, but RAG 9/41 (22.0%) and agents 6/41 (14.6%) are not dominant enough to define the whole profile."],"confidence":"high"}] }
+tokens used
+36.172

@@ -1,0 +1,1048 @@
+{
+  "category_id": "tech_lead_ai_eea",
+  "category_name": "Tech Lead AI \u2014 EEA",
+  "macro_family": "ai_engineering_adjacent",
+  "priority": "secondary_target",
+  "confidence": "high",
+  "total_jobs": 41,
+  "deep_analysis_count": 20,
+  "tier_breakdown": {
+    "C": 30,
+    "D": 10,
+    "B": 1
+  },
+  "signal_strength": {
+    "applied_count": 1,
+    "avg_score": 62.0,
+    "median_score": 72,
+    "score_range": [
+      0,
+      85
+    ]
+  },
+  "title_variants": {
+    "AI/ML Python Team Lead": 11,
+    "Technical Lead, Backend AI Python": 3,
+    "Senior Software Engineer II (Tech Lead) - ML, New Products": 2,
+    "Product AI Engineering Lead": 2,
+    "Lead Software Engineer": 2,
+    "Core & ML Ops Team Lead": 1,
+    "Core & MLOps Team Lead": 1,
+    "Python Tech Lead (AI)": 1,
+    "Lead Machine Learning, Computer Vision Software Engineer": 1,
+    "AI Tech Lead / Senior Full Stack Engineer": 1
+  },
+  "title_families": {
+    "tech_lead": 31,
+    "engineering_manager": 7,
+    "ai_architect": 2,
+    "staff_engineer": 1
+  },
+  "seniority_distribution": {
+    "senior_ic": 32,
+    "manager": 5,
+    "senior_manager": 4
+  },
+  "role_scope_distribution": {
+    "player_coach": 37,
+    "ic": 3,
+    "manager": 1
+  },
+  "hard_skills": [
+    {
+      "skill": "Python",
+      "count": 28,
+      "total": 41,
+      "pct": 68.3,
+      "band": "must_have"
+    },
+    {
+      "skill": "AWS",
+      "count": 21,
+      "total": 41,
+      "pct": 51.2,
+      "band": "common"
+    },
+    {
+      "skill": "FastAPI",
+      "count": 20,
+      "total": 41,
+      "pct": 48.8,
+      "band": "common"
+    },
+    {
+      "skill": "distributed systems",
+      "count": 19,
+      "total": 41,
+      "pct": 46.3,
+      "band": "common"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 19,
+      "total": 41,
+      "pct": 46.3,
+      "band": "common"
+    },
+    {
+      "skill": "Flask",
+      "count": 17,
+      "total": 41,
+      "pct": 41.5,
+      "band": "common"
+    },
+    {
+      "skill": "microservices",
+      "count": 17,
+      "total": 41,
+      "pct": 41.5,
+      "band": "common"
+    },
+    {
+      "skill": "OpenAI",
+      "count": 16,
+      "total": 41,
+      "pct": 39.0,
+      "band": "common"
+    },
+    {
+      "skill": "Kafka",
+      "count": 16,
+      "total": 41,
+      "pct": 39.0,
+      "band": "common"
+    },
+    {
+      "skill": "Django",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6,
+      "band": "common"
+    },
+    {
+      "skill": "HuggingFace",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6,
+      "band": "common"
+    },
+    {
+      "skill": "Azure",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6,
+      "band": "common"
+    },
+    {
+      "skill": "GCP",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6,
+      "band": "common"
+    },
+    {
+      "skill": "caching",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6,
+      "band": "common"
+    },
+    {
+      "skill": "SQS",
+      "count": 15,
+      "total": 41,
+      "pct": 36.6,
+      "band": "common"
+    },
+    {
+      "skill": "Azure OpenAI",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Llama",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "SQL databases",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "NoSQL databases",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "RabbitMQ",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "testing",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "AI/LLM integrations",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "APIs",
+      "count": 13,
+      "total": 41,
+      "pct": 31.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 12,
+      "total": 41,
+      "pct": 29.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "event-driven components",
+      "count": 11,
+      "total": 41,
+      "pct": 26.8,
+      "band": "differentiator"
+    },
+    {
+      "skill": "cloud-native solutions",
+      "count": 11,
+      "total": 41,
+      "pct": 26.8,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Docker",
+      "count": 10,
+      "total": 41,
+      "pct": 24.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "MLOps",
+      "count": 8,
+      "total": 41,
+      "pct": 19.5,
+      "band": "differentiator"
+    },
+    {
+      "skill": "PyTorch",
+      "count": 8,
+      "total": 41,
+      "pct": 19.5,
+      "band": "differentiator"
+    },
+    {
+      "skill": "production readiness",
+      "count": 8,
+      "total": 41,
+      "pct": 19.5,
+      "band": "differentiator"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "collaboration",
+      "count": 36,
+      "total": 41,
+      "pct": 87.8,
+      "band": "must_have"
+    },
+    {
+      "skill": "mentoring",
+      "count": 30,
+      "total": 41,
+      "pct": 73.2,
+      "band": "must_have"
+    },
+    {
+      "skill": "communication",
+      "count": 29,
+      "total": 41,
+      "pct": 70.7,
+      "band": "must_have"
+    },
+    {
+      "skill": "leadership",
+      "count": 21,
+      "total": 41,
+      "pct": 51.2,
+      "band": "common"
+    },
+    {
+      "skill": "stakeholder_management",
+      "count": 12,
+      "total": 41,
+      "pct": 29.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "problem-solving",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8,
+      "band": "rare"
+    },
+    {
+      "skill": "team player",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "growth mindset",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "ownership",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "curiosity",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "technical leadership",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "proactive",
+      "count": 2,
+      "total": 41,
+      "pct": 4.9,
+      "band": "rare"
+    },
+    {
+      "skill": "coaching",
+      "count": 2,
+      "total": 41,
+      "pct": 4.9,
+      "band": "rare"
+    },
+    {
+      "skill": "stakeholder collaboration",
+      "count": 2,
+      "total": 41,
+      "pct": 4.9,
+      "band": "rare"
+    },
+    {
+      "skill": "mentorship",
+      "count": 2,
+      "total": 41,
+      "pct": 4.9,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 29,
+        "total": 41,
+        "pct": 70.7,
+        "band": "must_have"
+      },
+      {
+        "skill": "C++",
+        "count": 4,
+        "total": 41,
+        "pct": 9.8,
+        "band": "rare"
+      },
+      {
+        "skill": "Java",
+        "count": 3,
+        "total": 41,
+        "pct": 7.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Rust",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "Go",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "C",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "C#",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Golang",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "CUDA",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      }
+    ],
+    "preferred": [
+      {
+        "skill": "PHP",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Python",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Go",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      }
+    ]
+  },
+  "infrastructure": [
+    {
+      "skill": "microservices",
+      "count": 18,
+      "total": 41,
+      "pct": 43.9,
+      "band": "common"
+    },
+    {
+      "skill": "CI_CD",
+      "count": 14,
+      "total": 41,
+      "pct": 34.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 13,
+      "total": 41,
+      "pct": 31.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 12,
+      "total": 41,
+      "pct": 29.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Docker",
+      "count": 10,
+      "total": 41,
+      "pct": 24.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "cloud-native",
+      "count": 6,
+      "total": 41,
+      "pct": 14.6,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven",
+      "count": 6,
+      "total": 41,
+      "pct": 14.6,
+      "band": "rare"
+    },
+    {
+      "skill": "message queues",
+      "count": 6,
+      "total": 41,
+      "pct": 14.6,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven components",
+      "count": 5,
+      "total": 41,
+      "pct": 12.2,
+      "band": "rare"
+    },
+    {
+      "skill": "cloud-native solutions",
+      "count": 5,
+      "total": 41,
+      "pct": 12.2,
+      "band": "rare"
+    },
+    {
+      "skill": "distributed systems",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8,
+      "band": "rare"
+    },
+    {
+      "skill": "Terraform",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "IaC",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven architecture",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "caching",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "Kafka",
+      "count": 5,
+      "total": 41,
+      "pct": 12.2,
+      "band": "rare"
+    },
+    {
+      "skill": "SQL",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8,
+      "band": "rare"
+    },
+    {
+      "skill": "NoSQL",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8,
+      "band": "rare"
+    },
+    {
+      "skill": "SQS",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8,
+      "band": "rare"
+    },
+    {
+      "skill": "RabbitMQ",
+      "count": 4,
+      "total": 41,
+      "pct": 9.8,
+      "band": "rare"
+    },
+    {
+      "skill": "Postgres",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "PostgreSQL",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "SQL databases",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "NoSQL databases",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    },
+    {
+      "skill": "caching",
+      "count": 3,
+      "total": 41,
+      "pct": 7.3,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "data governance",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "SBOM",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "image signing",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "PCI",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "data privacy",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "GDPR",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "RBAC",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "audit logging",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "IL5",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    },
+    {
+      "skill": "IL6",
+      "count": 1,
+      "total": 41,
+      "pct": 2.4,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 9,
+      "total": 41,
+      "pct": 22.0
+    },
+    "agents_orchestration": {
+      "count": 6,
+      "total": 41,
+      "pct": 14.6
+    },
+    "fine_tuning": {
+      "count": 5,
+      "total": 41,
+      "pct": 12.2
+    },
+    "evaluation_quality": {
+      "count": 9,
+      "total": 41,
+      "pct": 22.0
+    },
+    "guardrails_governance": {
+      "count": 4,
+      "total": 41,
+      "pct": 9.8
+    },
+    "prompt_engineering": {
+      "count": 6,
+      "total": 41,
+      "pct": 14.6
+    },
+    "vector_search": {
+      "count": 4,
+      "total": 41,
+      "pct": 9.8
+    },
+    "model_serving_routing": {
+      "count": 1,
+      "total": 41,
+      "pct": 2.4
+    },
+    "top_frameworks": [
+      {
+        "skill": "HuggingFace",
+        "count": 15,
+        "total": 41,
+        "pct": 36.6,
+        "band": "common"
+      },
+      {
+        "skill": "PyTorch",
+        "count": 9,
+        "total": 41,
+        "pct": 22.0,
+        "band": "differentiator"
+      },
+      {
+        "skill": "TensorFlow",
+        "count": 7,
+        "total": 41,
+        "pct": 17.1,
+        "band": "differentiator"
+      },
+      {
+        "skill": "LangChain",
+        "count": 4,
+        "total": 41,
+        "pct": 9.8,
+        "band": "rare"
+      },
+      {
+        "skill": "OpenAI",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "Anthropic",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "Hugging Face",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "FastAPI",
+        "count": 2,
+        "total": 41,
+        "pct": 4.9,
+        "band": "rare"
+      },
+      {
+        "skill": "TensorFlow Lite",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "JAX",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Triton",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Ray",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "scikit-learn",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "NVIDIA NeMo",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "vLLM",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      }
+    ],
+    "top_observability": [
+      {
+        "skill": "logging",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "metrics",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "tracing",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Langfuse",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Weights & Biases",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Datadog",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Grafana",
+        "count": 1,
+        "total": 41,
+        "pct": 2.4,
+        "band": "rare"
+      }
+    ]
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 3,
+      "total": 41,
+      "pct": 7.3
+    },
+    "performance_management": {
+      "count": 4,
+      "total": 41,
+      "pct": 9.8
+    },
+    "org_building": {
+      "count": 8,
+      "total": 41,
+      "pct": 19.5
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 41,
+      "pct": 0.0
+    },
+    "direct_reports_samples": [
+      "3-5",
+      "5-10 engineers",
+      "3-5"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 95.1,
+    "greenfield_split": {
+      "both": 18,
+      "optimization": 2,
+      "greenfield": 2
+    },
+    "cloud_preference": {
+      "multi_cloud": 18,
+      "AWS": 9,
+      "GCP": 1
+    }
+  },
+  "domain_industry": {
+    "enterprise_saas": 3,
+    "consultancy": 2,
+    "fintech": 1,
+    "defense": 1,
+    "consulting": 1
+  },
+  "company_stage": {
+    "consultancy": 5,
+    "scaleup": 2,
+    "startup_b": 2,
+    "enterprise": 2
+  },
+  "collaboration_model": {
+    "distributed": 18,
+    "remote_first": 12
+  },
+  "pain_points": [
+    {
+      "pain_point": "need to drive backend architecture for enterprise systems",
+      "count": 3
+    },
+    {
+      "pain_point": "need to integrate ai/llm capabilities into backend applications",
+      "count": 3
+    },
+    {
+      "pain_point": "need to coordinate work across onshore/offshore teams",
+      "count": 3
+    },
+    {
+      "pain_point": "need to manage client requirements and delivery planning",
+      "count": 3
+    },
+    {
+      "pain_point": "need to maintain code quality, testing, ci/cd, and production readiness",
+      "count": 3
+    },
+    {
+      "pain_point": "drive backend architecture",
+      "count": 3
+    },
+    {
+      "pain_point": "lead development teams across onshore/offshore groups",
+      "count": 3
+    },
+    {
+      "pain_point": "integrate ai/llm capabilities into enterprise systems",
+      "count": 3
+    },
+    {
+      "pain_point": "align requirements with clients and product stakeholders",
+      "count": 3
+    },
+    {
+      "pain_point": "oversee delivery and technical quality",
+      "count": 3
+    },
+    {
+      "pain_point": "backend architecture needs for scalable enterprise systems",
+      "count": 3
+    },
+    {
+      "pain_point": "integration of ai/llm capabilities into backend applications",
+      "count": 3
+    },
+    {
+      "pain_point": "coordination across onshore/offshore teams",
+      "count": 3
+    },
+    {
+      "pain_point": "client requirement gathering and solution presentation",
+      "count": 3
+    },
+    {
+      "pain_point": "maintaining code quality, testing, ci/cd, and production readiness",
+      "count": 3
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

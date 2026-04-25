@@ -1,0 +1,87 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "696ff4cb3da7d438ae4f5f49",
+  "dimension_scores": {
+    "ats_optimization": 6.5,
+    "impact_clarity": 7.5,
+    "jd_alignment": 5.5,
+    "executive_presence": 7.0,
+    "anti_hallucination": 6.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": false,
+    "persona_fit_gate": true
+  },
+  "overall_score": 6.5,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong platform architecture delivery with quantified outcomes: billions of events daily, 3 years zero downtime, 75% incident reduction refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:8,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:29",
+    "Deep AWS operational experience with Lambda, EventBridge, OpenSearch for enterprise-scale distributed systems refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:11,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:28,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:34",
+    "Event-driven architecture and CQRS/event-sourcing patterns demonstrated across multiple roles refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:14,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:38,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:59",
+    "Executive stakeholder management and cross-functional collaboration evidenced refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:21,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:81"
+  ],
+  "top_failures": [
+    "No Amazon Bedrock, Nova, or Textract experience despite JD requiring deep Bedrock ecosystem knowledge refs=jd:29-38,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:19",
+    "LLM-based systems, prompt engineering at scale, and multi-agent orchestration absent from CV refs=jd:80-82,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:18",
+    "RAG and agentic retrieval strategy not evidenced despite JD explicit requirement refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:60,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:18",
+    "Agentic AI claims lack substance: no LLM, prompt, or multi-agent implementation details refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:10,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:27,jd:80-84"
+  ],
+  "unsupported_claims": [
+    "Headline claims Agentic AI Solutions Architect without evidence of LLM, prompt engineering, or multi-agent orchestration refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:3",
+    "Architecting agentic AI solutions claim (cv:8) lacks specifics on AI/ML components, models, or agent frameworks refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:8,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:10",
+    "Agentic AI initiative claim provides no detail on agent design, model selection, or orchestration patterns refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:27"
+  ],
+  "missing_must_haves": [
+    "Amazon Bedrock ecosystem including model selection strategy and prompt orchestration refs=jd:29-31",
+    "LLM-based systems design and implementation experience refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:80",
+    "Multi-agent orchestration with task planning, reasoning, and validation agents refs=jd:20-25,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:81",
+    "Prompt engineering at scale refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:82",
+    "RAG vs Agentic Retrieval strategy design refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:60",
+    "AI-specific guardrails and governance including prompt/output guardrails, hallucination risk controls refs=jd:63-69"
+  ],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "Agents/orchestration identified as curated-but-underrepresented gap in baseline; CV lacks this evidence refs=data/eval/baselines/ai_architect_global_baseline.json"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:3",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:8",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:10",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:11",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:14",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:18",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:19",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:21",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:27",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:28",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:29",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:34",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:38",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:59",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:81",
+    "jd:20-25",
+    "jd:29-31",
+    "jd:29-38",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:60",
+    "jd:63-69",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:80",
+    "jd:80-82",
+    "jd:80-84",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:81",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:82",
+    "data/eval/baselines/ai_architect_global_baseline.json"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:50:55Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md",
+    "jd_path": "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md"
+  }
+}

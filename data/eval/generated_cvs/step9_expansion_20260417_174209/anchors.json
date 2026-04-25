@@ -1,0 +1,22 @@
+[
+  {
+    "category_id": "ai_architect_eea",
+    "job_id": "69610d7b6dd552ab7ec2d666",
+    "jd_path": "data/eval/raw/ai_architect_eea/jd_texts/02_neurons_lab_ai_solution_architect.md"
+  },
+  {
+    "category_id": "staff_ai_engineer_global",
+    "job_id": "6957aa9a6dd552ab7ec2ccd7",
+    "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md"
+  },
+  {
+    "category_id": "ai_eng_manager_eea",
+    "job_id": "69275eb345fa3c355f8435ab",
+    "jd_path": "data/eval/raw/ai_eng_manager_eea/jd_texts/01_zendesk_engineering_manager_ai_agents.md"
+  },
+  {
+    "category_id": "senior_ai_engineer_eea",
+    "job_id": "69381c28c9b1888e56022ad3",
+    "jd_path": "data/eval/raw/senior_ai_engineer_eea/jd_texts/01_teamblue_senior_ai_software_engineer.md"
+  }
+]

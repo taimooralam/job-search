@@ -1,0 +1,10 @@
+# AI/ML Python Team Lead
+
+**Company:** ACCION LABS EUROPE
+**Location:** Romania 11 hours ago
+**Score:** 75 (Tier C)
+**Status:** N/A
+
+---
+
+We are seeking a Technical Lead (Backend AI – Python) with 10+ years ofexperience to drive backend architecture, lead development teams, and integrateAI/LLM capabilities into enterprise systems. This role requires strong technicaldepth, leadership skills, and the ability to coordinate across onshore/offshoreteams while working closely with clients on requirements and delivery.Key Responsibilities * Lead the design and development of scalable backend systems using Python (FastAPI, Django, Flask). * Architect microservices, APIs, event-driven components, and cloud-native solutions. * Integrate AI/LLM-based features (OpenAI, Azure OpenAI, Llama, HuggingFace) into backend applications. * Gather and refine requirements directly with clients and product stakeholders. * Provide effort estimations, technical planning, and delivery roadmaps. * Coordinate daily work with onshore/offshore teams, ensuring smooth handoffs and timeline alignment. * Lead technical discussions, solution reviews, and client presentations. * Oversee code quality, testing, CI/CD, and production readiness. * Mentor engineers and promote best practices in Python backend and AI integration.Required Qualifications * 10+ years of backend engineering experience, with strong expertise in Python. * Proven experience as a technical lead in distributed/global team environments. * Strong knowledge of microservices, distributed systems, and cloud (AWS/Azure/GCP). * Hands-on experience with AI/LLM integrations and related frameworks. * Experience with SQL/NoSQL databases, caching, and message queues (Kafka/SQS/RabbitMQ). * Excellent client-facing communication skills for requirement gathering and solution presentations. * Ability to provide accurate estimations, manage delivery, and ensure technical quality.Show more Show less

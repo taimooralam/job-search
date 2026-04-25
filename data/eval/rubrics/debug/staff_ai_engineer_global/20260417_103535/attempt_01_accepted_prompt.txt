@@ -1,0 +1,868 @@
+You are an evidence-bound CV evaluation rubric synthesizer.
+
+Your job: produce a reusable Category Eval Rubric that a downstream scorer will apply to candidate CVs (generated or edited) for this specific job category. The rubric must be category-specific, evidence-first, and safe against hallucination and title inflation.
+
+CATEGORY META
+- category_id: staff_ai_engineer_global
+- category_name: Staff AI Engineer — Global/Remote
+- macro_family: ai_engineering_adjacent
+- priority: secondary_target
+- confidence: high
+- rubric_version: 2026-04-17
+
+FAMILY-SPECIFIC PERSONA GUIDANCE
+STAFF/SENIOR IC CATEGORY: interpret executive_presence as senior IC authority, technical judgment, cross-team influence WITHOUT formal management. Penalize manager/director/VP framing as persona inflation.
+
+FIVE SCORED DIMENSIONS (FIXED WEIGHTS — SUM = 100)
+- ats_optimization: 20
+- impact_clarity: 25
+- jd_alignment: 25
+- executive_presence: 15
+- anti_hallucination: 15
+
+VERDICT THRESHOLDS (FIXED)
+- strong_match_min: 8.5
+- good_match_min: 7.0
+- needs_work_min: 5.5
+- weak_match_max: 5.49
+
+EVIDENCE INPUT (BLUEPRINT + BASELINE SUMMARY)
+{
+  "category_id": "staff_ai_engineer_global",
+  "category_name": "Staff AI Engineer \u2014 Global/Remote",
+  "macro_family": "ai_engineering_adjacent",
+  "priority": "secondary_target",
+  "confidence": "high",
+  "total_jobs": 25,
+  "blueprint": {
+    "category_signature": {
+      "one_sentence_summary": "Hands-on Staff/Principal AI Engineers in this market are hired to architect and productionize AI platforms and distributed systems, prove reliability and integration depth, and influence peers without overstating formal management.",
+      "distinctive_signals": [
+        "Architecture proof dominates: platform design appears in 24/25 roles (96%), with greenfield or mixed greenfield/optimization scope in 20/25 sampled roles.",
+        "The role is senior IC first: senior_ic is 25/25 (100%), with scope split between IC 14/25 (56%) and player-coach 11/25 (44%).",
+        "AI demand centers on shipped systems, not advanced experimentation: agent orchestration 12/25 (48%), RAG 9/25 (36%), guardrails/governance 7/25 (28%), while requires_advanced academic_pct and advanced experimentation_heavy_pct are both 0/25 (0%)."
+      ],
+      "citations": [
+        "Platform design 24/25 (96%); greenfield_split both 12 and greenfield 8 out of 25.",
+        "Seniority distribution senior_ic 25/25 (100%); role scope IC 14/25 (56%) and player_coach 11/25 (44%).",
+        "AI stack signals: agents_orchestration 12/25 (48%), RAG 9/25 (36%), guardrails_governance 7/25 (28%); disqualifiers requires_phd_pct 0/25 (0%) and research_heavy_pct 0/25 (0%)."
+      ]
+    },
+    "headline_pattern": {
+      "recommended_structure": "[Staff|Principal] AI/ML Engineer | AI Platform Architecture, Distributed Systems, Production GenAI",
+      "safe_title_families": [
+        "Staff AI Engineer",
+        "Principal AI Engineer",
+        "Staff Software Engineer, AI/ML",
+        "Principal Engineer, Generative AI",
+        "Staff/Principal Software Engineer"
+      ],
+      "safe_title_variants": [
+        "Principal AI Engineer",
+        "Staff Software Engineer, AI/ML",
+        "Principal Engineer, Generative AI",
+        "Principal Software Engineer",
+        "Staff Software Engineer"
+      ],
+      "avoid_title_variants": [
+        "Head of AI",
+        "Director of AI Engineering",
+        "VP Engineering",
+        "AI Engineering Manager",
+        "advanced experimentation Scientist"
+      ],
+      "evidence_first_rules": [
+        "Use Staff/Principal framing first because title families cluster around principal_engineer 13/25 (52%) and staff_engineer 11/25 (44%).",
+        "Put architecture and production scope before tool names because platform design appears in 24/25 roles (96%) and no hard skill exceeds Python at 8/25 (32%).",
+        "Add AI/ML, Generative AI, agent, or RAG wording only when shipped work is documented; agents_orchestration appears in 12/25 (48%) and RAG in 9/25 (36%), not in every role.",
+        "Reserve leadership wording for technical influence, mentoring, and standards-setting; player_coach is 11/25 (44%), org_building 9/25 (36%), but hiring is only 2/25 (8%)."
+      ],
+      "citations": [
+        "Title families: principal_engineer 13/25 (52%), staff_engineer 11/25 (44%), tech_lead 1/25 (4%).",
+        "Hard skills: Python leads at 8/25 (32%), distributed systems 7/25 (28%), observability 6/25 (24%).",
+        "Role scope and management: player_coach 11/25 (44%), org_building 9/25 (36%), hiring 2/25 (8%)."
+      ]
+    },
+    "tagline_profile_angle": {
+      "positioning_angle": [
+        "Architecture-first senior IC who ships production AI platforms and distributed backend systems.",
+        "Player-coach technical leader who improves reliability, delivery quality, and cross-functional execution without relying on formal management claims."
+      ],
+      "foreground": [
+        "Platform architecture and system design for AI/backend systems.",
+        "Production delivery of agent orchestration, RAG, evaluation, and guardrails when true.",
+        "Reliability, observability, and incident-aware productionization.",
+        "Cross-functional collaboration and mentoring with concrete delivery outcomes."
+      ],
+      "avoid": [
+        "People-management-first positioning.",
+        "Provider-brand-heavy taglines without shipped platform evidence.",
+        "advanced experimentation, formal external credential, or advanced academic-style framing.",
+        "Consumer-scale or multi-cloud breadth claims without explicit metrics and scope."
+      ],
+      "safe_positioning": [
+        "Show architecture ownership, integration depth, and production reliability because architecture is the strongest evidence type in 20 deep-analysis samples and platform design appears in 24/25 roles (96%).",
+        "Show collaboration and mentoring as force multipliers because collaboration appears in 23/25 roles (92%) and mentoring in 12/25 (48%).",
+        "Show AI delivery through shipped systems, evaluation, and guardrails because agents_orchestration appears in 12/25 (48%), RAG in 9/25 (36%), evaluation_quality in 5/25 (20%), and guardrails_governance in 7/25 (28%)."
+      ],
+      "unsafe_positioning": [
+        "Do not imply direct hiring authority or formal people management unless the CV proves it; hiring appears in 2/25 roles (8%) and performance management in 1/25 (4%).",
+        "Do not imply advanced experimentation-heavy credentials; advanced experimentation_heavy_pct and requires_advanced academic_pct are both 0/25 (0%).",
+        "Do not claim direct MCP, OpenAI, Anthropic, HIPAA, or full multi-cloud implementation unless explicitly documented; these are named in unsafe_claims_top despite low direct frequency."
+      ],
+      "citations": [
+        "Soft skills: collaboration 23/25 (92%), mentoring 12/25 (48%), communication 10/25 (40%).",
+        "AI stack: agents_orchestration 12/25 (48%), RAG 9/25 (36%), evaluation_quality 5/25 (20%), guardrails_governance 7/25 (28%).",
+        "Management and disqualifiers: hiring 2/25 (8%), performance_management 1/25 (4%), research_heavy_pct 0/25 (0%), requires_phd_pct 0/25 (0%)."
+      ]
+    },
+    "core_competency_themes": [
+      {
+        "section_name": "Architecture And Platforms",
+        "themes": [
+          {
+            "theme": "AI platform architecture and system design",
+            "classification": "table_stakes",
+            "why_it_matters": "This category is architecture-led. Show end-to-end design ownership for production systems, reusable platforms, and integration boundaries because platform design appears in 24/25 roles (96%) and architecture is the top valued evidence type in 20 deep-analysis samples.",
+            "ats_guidance": "Strongest keywords if true: platform architecture, system design, AI platform. Use 2-3 mentions across headline/profile/experience/skills. Secondary keywords: greenfield, modernization. Use 1-2 mentions. Niche vendor names once only.",
+            "citation": "Platform design 24/25 (96%); valued evidence type architecture 20 deep-analysis samples."
+          },
+          {
+            "theme": "Distributed systems and cloud-native backend foundations",
+            "classification": "table_stakes",
+            "why_it_matters": "This market still screens for deep backend and distributed systems judgment under the AI layer. Show service boundaries, event-driven systems, APIs, and scalable backend delivery because distributed systems appears in 7/25 roles (28%) and backend engineering, CI/CD, and Kubernetes each appear in 4/25 (16%).",
+            "ats_guidance": "Strongest keywords if true: distributed systems, backend engineering. Use 2-3 mentions. Secondary keywords: event-driven systems, cloud-native systems, Kubernetes, CI/CD. Use 1-2 mentions. Niche language or cloud terms once only.",
+            "citation": "Hard skills: distributed systems 7/25 (28%), backend engineering 4/25 (16%), CI/CD 4/25 (16%), Kubernetes 4/25 (16%), event-driven systems 3/25 (12%), cloud-native systems 3/25 (12%)."
+          },
+          {
+            "theme": "System integration and modernization under enterprise constraints",
+            "classification": "differentiator",
+            "why_it_matters": "The hiring pain points point to integration complexity, modernization, and solution selection through POCs. Show cases where you connected AI or cloud services into existing enterprise systems and improved code quality or delivery safety.",
+            "ats_guidance": "Secondary keywords if true: system integration, modernization, proof of concept, enterprise systems. Use 1-2 mentions. Niche domain terms once only and only if true.",
+            "citation": "Pain points are repeated as single-sample signals: integration across multiple systems (1), choose appropriate solutions through POCs (1), modernize and improve code quality while integrating AI services (1)."
+          }
+        ]
+      },
+      {
+        "section_name": "Production AI Delivery",
+        "themes": [
+          {
+            "theme": "Agent orchestration and reusable AI workflow systems",
+            "classification": "differentiator",
+            "why_it_matters": "This category is more platform-and-orchestration oriented than generic LLM feature work. Show shipped agent workflows, reusable tool integrations, orchestration logic, and developer-facing enablement because agents_orchestration appears in 12/25 roles (48%).",
+            "ats_guidance": "Strongest keywords if true: agent orchestration, AI workflows. Use 2-3 mentions. Secondary keywords: developer tools, reusable platform, plugins. Use 1-2 mentions. Framework names only once and only if true.",
+            "citation": "AI stack signals: agents_orchestration 12/25 (48%); frameworks are fragmented, with LangChain highest at 5/25 (20%)."
+          },
+          {
+            "theme": "RAG, retrieval, and vector-based grounding",
+            "classification": "differentiator",
+            "why_it_matters": "Retrieval-driven delivery is a visible category pattern, but not universal. Show grounded-answering systems, retrieval quality work, embeddings, and vector search only when you have production evidence because RAG appears in 9/25 (36%) and vector_search in 5/25 (20%).",
+            "ats_guidance": "Strongest keywords if true: RAG, retrieval, vector databases. Use 2-3 mentions for one or two core terms. Secondary keywords: embeddings, vector search. Use 1-2 mentions. Database brand names once only.",
+            "citation": "AI stack signals: RAG 9/25 (36%), vector_search 5/25 (20%); hard skills: vector databases 5/25 (20%), embeddings 4/25 (16%)."
+          },
+          {
+            "theme": "Evaluation, guardrails, and production quality controls",
+            "classification": "differentiator",
+            "why_it_matters": "This category values AI quality and safe production behavior more than generic prompt claims. Show eval harnesses, structured output validation, hallucination handling, guardrails, and governance where delivered because evaluation_quality appears in 5/25 (20%) and guardrails_governance in 7/25 (28%).",
+            "ats_guidance": "Secondary keywords if true: evaluation, guardrails, structured output validation, governance. Use 1-2 mentions. Niche compliance labels once only and only if directly supported.",
+            "citation": "AI stack signals: evaluation_quality 5/25 (20%), guardrails_governance 7/25 (28%); deep-analysis success metrics include handling hallucinations (1) and structured output validation (1)."
+          }
+        ]
+      },
+      {
+        "section_name": "Reliability And Operations",
+        "themes": [
+          {
+            "theme": "Reliability, observability, and production hardening",
+            "classification": "table_stakes",
+            "why_it_matters": "Production reliability is central to this category. Show uptime, incident reduction, latency stability, failure handling, and observability instrumentation because reliability is cited in 18 deep-analysis samples, observability appears in 6/25 roles (24%), and reliability is the top success metric cluster.",
+            "ats_guidance": "Strongest keywords if true: reliability, observability, production. Use 2-3 mentions. Secondary keywords: incident response, SLOs, monitoring. Use 1-2 mentions only if you truly owned them. Tool names once only.",
+            "citation": "Valued evidence types: reliability 18 deep-analysis samples; hard skills: observability 6/25 (24%); success metrics: reliability appears 4 times, performance 3 times, scalability 2 times."
+          },
+          {
+            "theme": "Cloud deployment and delivery discipline",
+            "classification": "optional",
+            "why_it_matters": "Cloud and deployment tooling matter, but the sample does not support over-optimizing around one vendor. Show deployment rigor, containerization, and delivery systems when they are real, while keeping vendor claims narrow because multi_cloud appears in 8 samples, AWS in 4, and GCP in 2.",
+            "ats_guidance": "Secondary keywords if true: AWS, GCP, Kubernetes, CI/CD. Use 1-2 mentions. Niche provider services once only. Do not force multi-cloud wording unless the CV proves more than one cloud.",
+            "citation": "Architecture cloud preference: multi_cloud 8 samples, AWS 4, GCP 2; hard skills: Kubernetes 4/25 (16%), CI/CD 4/25 (16%), cloud platforms 3/25 (12%)."
+          },
+          {
+            "theme": "Security and governance for enterprise AI",
+            "classification": "differentiator",
+            "why_it_matters": "A smaller but meaningful slice of roles asks for secure, governed AI delivery. Show practical controls, policy enforcement, or safe rollout processes when you implemented them because guardrails_governance appears in 7/25 (28%) and governance is a valued evidence type in 8 deep-analysis samples.",
+            "ats_guidance": "Secondary keywords if true: security, governance, responsible AI. Use 1-2 mentions. Niche regulatory terms such as HIPAA or PHI once only and only if the CV proves that environment.",
+            "citation": "AI stack guardrails_governance 7/25 (28%); valued evidence type governance 8 deep-analysis samples; governance/compliance terms are individually low-frequency, with responsible AI highest at 2/25 (8%)."
+          }
+        ]
+      },
+      {
+        "section_name": "Technical Leadership And Influence",
+        "themes": [
+          {
+            "theme": "Cross-functional collaboration and stakeholder translation",
+            "classification": "table_stakes",
+            "why_it_matters": "This market expects strong collaboration more consistently than any single hard skill. Show how you aligned product, platform, security, and engineering stakeholders around architecture and delivery because collaboration appears in 23/25 roles (92%) and communication in 10/25 (40%).",
+            "ats_guidance": "Strongest keywords if true: collaboration, stakeholder alignment, cross-functional. Use 2-3 mentions. Secondary keywords: communication, technical strategy. Use 1-2 mentions.",
+            "citation": "Soft skills: collaboration 23/25 (92%), communication 10/25 (40%)."
+          },
+          {
+            "theme": "Mentoring and technical leadership without formal management inflation",
+            "classification": "differentiator",
+            "why_it_matters": "There is a real player-coach signal, but not a people-manager signal. Show mentoring, standards-setting, reviews, and technical direction because mentoring appears in 12/25 roles (48%) and player_coach scope in 11/25 (44%), while hiring is only 2/25 (8%).",
+            "ats_guidance": "Secondary keywords if true: mentoring, technical leadership, standards. Use 1-2 mentions. Avoid manager, hiring, or org ownership terms unless explicitly evidenced.",
+            "citation": "Soft skills: mentoring 12/25 (48%), technical leadership 3/25 (12%); role scope player_coach 11/25 (44%); hiring 2/25 (8%)."
+          },
+          {
+            "theme": "Org-building and standards as a scoped extension, not the headline",
+            "classification": "optional",
+            "why_it_matters": "Some roles want senior engineers who help define standards or shape how teams build AI systems, but this should stay secondary to delivery. Include this only if you can show frameworks, standards, or internal enablement because org_building appears in 9/25 roles (36%).",
+            "ats_guidance": "Secondary keywords if true: engineering standards, enablement, internal platform. Use 1-2 mentions. Keep delivery metrics more prominent than process language.",
+            "citation": "Management_leadership org_building 9/25 (36%); deep-analysis unsafe claims warn against overstating people-management or company-wide ownership."
+          }
+        ]
+      }
+    ],
+    "key_achievement_archetypes": [
+      {
+        "rank": 1,
+        "archetype": "Architected and shipped a production AI platform or gateway",
+        "what_it_proves": "Shows the core category value: architecture ownership, reusable platform thinking, and production delivery under reliability constraints.",
+        "pain_points_addressed": [
+          "need to define and drive ai technical strategy",
+          "need to build and scale advanced ai systems in production",
+          "need to establish ml engineering standards, security, and governance"
+        ],
+        "metrics_to_include": [
+          "time to production",
+          "adoption by teams or users",
+          "supported workflows or integrations",
+          "reliability or availability",
+          "latency or throughput",
+          "cost per request or routing efficiency"
+        ],
+        "story_format_guidance": "Use ARIS: state the architecture problem, your platform design, the implementation choices, and measurable production outcomes. Make the reusable-system boundary explicit, not just a single feature shipped.",
+        "citation": "Platform design 24/25 (96%); valued evidence types architecture 20 and delivery 18 deep-analysis samples; agents_orchestration 12/25 (48%)."
+      },
+      {
+        "rank": 2,
+        "archetype": "Took an agent or RAG system from POC to reliable production",
+        "what_it_proves": "Shows you can move beyond demos into grounded, observable, production-safe AI systems.",
+        "pain_points_addressed": [
+          "need to choose appropriate solutions through pocs",
+          "need to build and scale advanced ai systems in production",
+          "need to modernize and improve code quality while integrating ai services"
+        ],
+        "metrics_to_include": [
+          "evaluation pass rate",
+          "hallucination or error reduction",
+          "retrieval quality or answer accuracy",
+          "workflow completion rate",
+          "user adoption",
+          "deployment frequency"
+        ],
+        "story_format_guidance": "Use STAR: frame the weak prototype or business need, show the architecture and evaluation changes you led, then quantify production quality and adoption. Name guardrails and validation steps if they were part of the delivery.",
+        "citation": "AI stack signals: agents_orchestration 12/25 (48%), RAG 9/25 (36%), evaluation_quality 5/25 (20%), vector_search 5/25 (20%); success metrics include handling hallucinations (1) and structured output validation (1)."
+      },
+      {
+        "rank": 3,
+        "archetype": "Modernized or integrated complex enterprise systems around AI or cloud services",
+        "what_it_proves": "Shows enterprise-readiness, integration judgment, and ability to deliver in non-greenfield environments.",
+        "pain_points_addressed": [
+          "complex system integration as oracle cloud subscription data travels to multiple systems",
+          "need to modernize and improve code quality while integrating ai services",
+          "need to troubleshoot application and infrastructure issues in test and prod"
+        ],
+        "metrics_to_include": [
+          "systems integrated",
+          "latency or throughput improvement",
+          "defect or incident reduction",
+          "migration milestones",
+          "developer productivity",
+          "release stability"
+        ],
+        "story_format_guidance": "Use ARIS: show the pre-existing complexity, the integration or modernization architecture, the rollout path, and the operational results. Emphasize dependency management and production stability.",
+        "citation": "Greenfield_split shows both 12 and greenfield 8, implying mixed new-build and existing-system work across 20/25 samples; pain-point examples are single-sample but category-relevant integration and modernization signals."
+      },
+      {
+        "rank": 4,
+        "archetype": "Raised reliability, observability, and operational safety of AI/backend systems",
+        "what_it_proves": "Shows the production judgment this category values more than generic prompt or tool familiarity.",
+        "pain_points_addressed": [
+          "need to troubleshoot application and infrastructure issues in test and prod",
+          "need to establish ml engineering standards, security, and governance"
+        ],
+        "metrics_to_include": [
+          "availability or uptime",
+          "MTTR",
+          "incident count",
+          "on-call noise reduction",
+          "SLO attainment",
+          "latency stability"
+        ],
+        "story_format_guidance": "Use STAR with a measurable operations problem. Name the instrumentation, failure-handling, or routing changes you made and tie them to incident, performance, or stability outcomes.",
+        "citation": "Valued evidence types reliability 18 deep-analysis samples; hard skill observability 6/25 (24%); success metrics include reliability (4), performance (3), security (2), behaves as expected in production (1)."
+      },
+      {
+        "rank": 5,
+        "archetype": "Influenced engineering standards and mentored teams while remaining hands-on",
+        "what_it_proves": "Shows the player-coach edge that distinguishes this category from purely individual execution roles without implying formal management.",
+        "pain_points_addressed": [
+          "need to establish ml engineering standards, security, and governance",
+          "need to define and drive ai technical strategy"
+        ],
+        "metrics_to_include": [
+          "teams adopting standards",
+          "reduction in defects or review cycles",
+          "faster onboarding or delivery",
+          "number of engineers mentored",
+          "coverage of reusable patterns"
+        ],
+        "story_format_guidance": "Use ARIS: show the delivery problem, the standard or enablement mechanism you introduced, your hands-on role in implementation, and the concrete team-level outcome. Keep people-management claims out unless formally documented.",
+        "citation": "Role scope player_coach 11/25 (44%); mentoring 12/25 (48%); org_building 9/25 (36%); hiring only 2/25 (8%)."
+      }
+    ],
+    "role_weighting_guidance": {
+      "highest_weight_roles": [
+        "Staff/Principal IC roles with architecture ownership for production platforms or distributed systems.",
+        "Hands-on AI platform, backend platform, or developer tooling roles that shipped real systems.",
+        "Player-coach roles with mentoring or standards-setting, but limited formal management scope."
+      ],
+      "expand_in_work_history": [
+        "Roles where you owned architecture, integration boundaries, greenfield platform work, or modernization.",
+        "Roles where you can quantify reliability, scale, delivery speed, evaluation quality, or security outcomes.",
+        "Roles with agent orchestration, RAG, vector retrieval, or guardrails only when those systems were shipped and measured."
+      ],
+      "compress_in_work_history": [
+        "Pure people-management scope without hands-on technical delivery.",
+        "Tool-only experimentation, hackathon-style prototypes, or prompt-only work without production outcomes.",
+        "Older application work that lacks architecture, distributed systems, platform, or reliability relevance."
+      ],
+      "how_to_frame_non_ai_experience": [
+        "Translate strong backend, microservices, CQRS, event-sourcing, or distributed systems work into evidence for AI platform architecture and production reliability.",
+        "Use prior cloud/platform roles to prove integration judgment, delivery discipline, and observability foundations for AI systems.",
+        "If AI work is newer than platform work, weight the AI roles higher but keep the backend foundation visible because no single AI keyword dominates this category."
+      ],
+      "citations": [
+        "Seniority and scope: senior_ic 25/25 (100%), IC 14/25 (56%), player_coach 11/25 (44%).",
+        "Architecture and delivery: platform design 24/25 (96%); valued evidence types architecture 20, delivery 18, reliability 18, scale 15 deep-analysis samples.",
+        "Candidate-mapping themes explicitly connect microservices, RabbitMQ, CQRS, and event-sourcing experience to distributed systems and backend platform design (count 2)."
+      ]
+    },
+    "language_and_tone": {
+      "recommended_tone": "architect",
+      "formality": "high",
+      "preferred_vocabulary": [
+        "platform architecture",
+        "production AI systems",
+        "distributed systems",
+        "reliability",
+        "observability",
+        "agent orchestration",
+        "RAG",
+        "evaluation",
+        "guardrails",
+        "cross-functional collaboration"
+      ],
+      "avoid_vocabulary": [
+        "people manager",
+        "hiring leader",
+        "AI evangelist",
+        "multi-cloud expert",
+        "millions-scale",
+        "end-to-end owner of everything",
+        "advanced experimentation-driven"
+      ],
+      "citations": [
+        "Architecture dominates: platform design 24/25 (96%); valued evidence types architecture 20, reliability 18, delivery 18 deep-analysis samples.",
+        "Soft-skill tone should stay collaborative and technical: collaboration 23/25 (92%), mentoring 12/25 (48%), communication 10/25 (40%).",
+        "No hard skill is universal: top hard skill Python is 8/25 (32%), so broad architecture and delivery vocabulary is safer than stack-heavy branding."
+      ]
+    },
+    "unsafe_or_weak_framing": {
+      "avoid_claims": [
+        "Deep production backend delivery in Go unless the CV clearly proves Go depth.",
+        "Ownership of SLOs, incident response, or reliability programs unless the CV shows direct operational scope.",
+        "Direct MCP, OpenAI, or Anthropic platform experience if not documented.",
+        "Formal people management, hiring authority, or performance management unless explicitly held.",
+        "Company-wide AI developer tooling ownership at large scale without adoption metrics.",
+        "Full multi-cloud implementation across Bedrock and Vertex AI if the work was only on one cloud or one provider.",
+        "HIPAA, PHI, or healthcare compliance ownership without direct delivery evidence in that environment."
+      ],
+      "buzzword_patterns": [
+        "Tool-brand lists without shipped system outcomes.",
+        "Agentic AI language without architecture, evaluation, or reliability proof.",
+        "RAG language that implies durable memory or self-correcting systems when the work was only partial retrieval or workflow support.",
+        "Typescript-first or developer-tools-platform claims when the work was primarily Python or backend infrastructure."
+      ],
+      "title_inflation_risks": [
+        "Inflating Staff/Principal IC work into Director, Head, or VP language.",
+        "Using AI Engineering Manager titles when the real evidence is mentoring or player-coach influence only.",
+        "Claiming principal-wide org ownership when evidence is limited to a platform or program slice."
+      ],
+      "research_framing_risks": [
+        "Do not add publication, research, or PhD-style framing as a positive asset for this category.",
+        "Do not reposition delivery work as model research; the market evidence shows research_heavy_pct 0/25 (0%) and requires_phd_pct 0/25 (0%)."
+      ],
+      "domain_or_region_risks": [
+        "Do not overfit to fintech, healthcare, or enterprise SaaS unless repeated on the candidate CV; each appears only 2 times in market context.",
+        "Do not imply native-language or region-specific requirements; native_language_requirements is empty and collaboration model is mostly remote-first.",
+        "Do not overclaim consultancy or budget ownership; consultancy appears once and budget_pnl is 0/25 (0%)."
+      ],
+      "citations": [
+        "Unsafe claims come directly from deep_analysis unsafe_claims_top, including Go depth (count 2), SLO/incident ownership (count 2), direct MCP/OpenAI/Anthropic experience (count 2), and formal people management or hiring authority (count 2).",
+        "Management evidence is limited: hiring 2/25 (8%), performance_management 1/25 (4%), budget_pnl 0/25 (0%).",
+        "Research disqualifiers: research_heavy_pct 0/25 (0%), requires_phd_pct 0/25 (0%); native_language_requirements is empty."
+      ]
+    }
+  },
+  "baseline": {
+    "overall_assessment": {
+      "combined_fit_score": 7.85,
+      "readiness_tier": "GOOD",
+      "one_sentence_verdict": "Strong architecture-first AI platform evidence with production RAG, evaluation harnesses, guardrails, and player-coach mentoring aligns well with this senior IC category, though headline framing and agent orchestration depth need refinement.",
+      "uncertainty_note": "Representation is proxy-derived; headline currently uses 'Technical Architect' rather than Staff/Principal AI Engineer framing that matches 96% of target roles.",
+      "citations": [
+        "Platform design appears in 24/25 roles (96%); candidate has Commander-4 platform lead evidence at data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "RAG 9/25 (36%), evaluation_quality 5/25 (20%), guardrails_governance 7/25 (28%) \u2014 all supported by Commander-4 curated evidence",
+        "Player_coach 11/25 (44%) matches mentoring 10+ engineers at data/master-cv/roles/01_seven_one_entertainment.md:231"
+      ]
+    },
+    "score_breakdown": {
+      "candidate_evidence_coverage_score": 8.5,
+      "evidence_curation_completeness_score": 7.5,
+      "master_cv_representation_quality_score": 7.0,
+      "ai_architecture_fit_score": 8.0,
+      "leadership_scope_fit_score": 8.0,
+      "impact_proof_strength_score": 8.5,
+      "weighted_score_explanation": [
+        "Evidence coverage (8.5 \u00d7 0.30 = 2.55): Platform architecture, RAG, evaluation, guardrails, and distributed systems all strongly supported by Commander-4 and legacy modernization evidence.",
+        "Curation completeness (7.5 \u00d7 0.15 = 1.125): Core AI platform work is curated; some upstream STAR records and Daypaio evidence remain pending promotion.",
+        "Representation quality (7.0 \u00d7 0.25 = 1.75): AI platform and reliability metrics are surfaced, but headline uses 'Technical Architect' instead of Staff/Principal AI Engineer title family that matches 96% of roles.",
+        "AI architecture fit (8.0 \u00d7 0.15 = 1.20): Strong RAG, hybrid search, evaluation harness, and guardrails evidence; agent orchestration is present via MCP tools but not as deeply articulated as multi-agent patterns.",
+        "Leadership scope fit (8.0 \u00d7 0.10 = 0.80): Player-coach mentoring of 10+ engineers with 3 promotions fits category scope; hiring involvement supports but does not over-claim.",
+        "Impact proof strength (8.5 \u00d7 0.05 = 0.425): Quantified metrics include 75% incident reduction, 3 years zero downtime, 2,000 users, 42 plugins, and 25% velocity improvement."
+      ],
+      "citations": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28 \u2014 Commander-4 platform lead with hybrid search, LLM-as-judge, semantic caching, evaluation harness",
+        "data/master-cv/roles/01_seven_one_entertainment.md:77 \u2014 75% incident reduction, 3 years zero downtime",
+        "data/master-cv/roles/01_seven_one_entertainment.md:231 \u2014 mentored 10+ engineers, promoted 3 to lead"
+      ]
+    },
+    "strongest_supported_signals": [
+      {
+        "signal": "AI platform architecture with production RAG and hybrid retrieval",
+        "why_it_matters_for_category": "Platform design appears in 24/25 roles (96%) and RAG in 9/25 (36%); architecture is the top valued evidence type in deep-analysis samples.",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:28",
+          "data/master-cv/projects/commander4.md:8"
+        ],
+        "citation": "BM25 + RRF hybrid search with LLM-as-judge reranking via Claude Sonnet serving 2,000 users across 42 plugins"
+      },
+      {
+        "signal": "Evaluation harness with retrieval quality metrics",
+        "why_it_matters_for_category": "Evaluation_quality appears in 5/25 (20%) and is a differentiator; this category values AI quality and production behavior over generic prompt claims.",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:28",
+          "data/master-cv/projects/commander4.md:7"
+        ],
+        "citation": "MRR@k and NDCG@k (exponential gain) scoring functions with 14 unit tests for retrieval quality evaluation"
+      },
+      {
+        "signal": "Guardrails and governed structured outputs for enterprise AI",
+        "why_it_matters_for_category": "Guardrails_governance appears in 7/25 (28%); shows practical controls and safe production behavior.",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:55",
+          "data/master-cv/projects/commander4.md:6"
+        ],
+        "citation": "Zod schema validation, composable guardrail profiles across 42 plugins, per-silo guardrail injection via LiteLLM proxy with access-control-aware behavior"
+      },
+      {
+        "signal": "Legacy platform modernization with reliability outcomes",
+        "why_it_matters_for_category": "Reliability is cited in 18 deep-analysis samples; success metrics cluster around reliability (4), performance (3), scalability (2).",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:77"
+        ],
+        "citation": "Transformed legacy JS AdTech platform to TypeScript microservices on AWS; achieved 75% incident reduction and 3 years zero downtime"
+      },
+      {
+        "signal": "Player-coach mentoring with quantified team development",
+        "why_it_matters_for_category": "Player_coach 11/25 (44%) and mentoring 12/25 (48%); shows technical leadership without overstating formal management.",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:231",
+          "data/master-cv/roles/01_seven_one_entertainment.md:172"
+        ],
+        "citation": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices; promoted 3 engineers to lead positions"
+      },
+      {
+        "signal": "MCP tool design and external system integrations",
+        "why_it_matters_for_category": "Agent orchestration appears in 12/25 (48%); MCP tool design shows production AI integration capability.",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:55",
+          "data/master-cv/projects/commander4_skills.json:22"
+        ],
+        "citation": "5 MCP server tools for external system integrations within Commander-4 enterprise AI workflow platform"
+      },
+      {
+        "signal": "Event-driven distributed systems architecture",
+        "why_it_matters_for_category": "Distributed systems appears in 7/25 (28%); backend foundations matter under the AI layer.",
+        "status": "supported_and_curated",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:77",
+          "data/master-cv/roles/01_seven_one_entertainment.md:172"
+        ],
+        "citation": "EventBridge choreography, autonomous event-driven TypeScript microservices, DDD with bounded contexts"
+      }
+    ],
+    "gap_analysis_top": [
+      {
+        "signal": "Staff/Principal AI Engineer title framing in headline",
+        "gap_type": "curated_but_underrepresented",
+        "why_it_matters": "Title families cluster around principal_engineer 13/25 (52%) and staff_engineer 11/25 (44%); current headline uses 'Technical Architect' which may not trigger ATS or recruiter pattern matching for this category.",
+        "current_state": "Headline reads 'Technical Architect / AI Platform Architect' per data/master-cv/role_metadata.json:4",
+        "safe_interpretation": "Evidence supports Staff AI Engineer positioning given platform lead role and 11 years experience.",
+        "recommended_action": "Update headline to 'Staff AI Engineer | AI Platform Architecture, Distributed Systems, Production GenAI' per blueprint safe title families.",
+        "evidence_refs": [
+          "data/master-cv/role_metadata.json:4",
+          "data/master-cv/roles/01_seven_one_entertainment.md:28"
+        ],
+        "citation": "Blueprint recommends Staff/Principal framing first because title families cluster around principal_engineer 13/25 (52%) and staff_engineer 11/25 (44%)"
+      },
+      {
+        "signal": "Agent orchestration beyond MCP tools",
+        "gap_type": "curated_but_underrepresented",
+        "why_it_matters": "Agents_orchestration appears in 12/25 (48%); showing reusable agent workflow systems and orchestration logic is a differentiator.",
+        "current_state": "MCP tools (5) are curated but broader agent orchestration patterns are not emphasized in current representation.",
+        "safe_interpretation": "MCP integration is valid agent orchestration evidence; can be positioned as agent-enabling infrastructure.",
+        "recommended_action": "Surface Commander-4 as agent-enabling platform in summary; emphasize workflow plugin system (42 plugins) as reusable AI workflow orchestration.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:55",
+          "data/master-cv/projects/commander4.md:2"
+        ],
+        "citation": "Category values shipped agent workflows and reusable tool integrations; agents_orchestration 12/25 (48%)"
+      },
+      {
+        "signal": "Observability pipeline at billions-scale",
+        "gap_type": "curated_but_underrepresented",
+        "why_it_matters": "Observability appears in 6/25 (24%); scale proof strengthens reliability narrative valued by this category.",
+        "current_state": "Observability pipeline with billions of events daily is curated at data/master-cv/roles/01_seven_one_entertainment.md:103 but not prominently surfaced in role priorities.",
+        "safe_interpretation": "Evidence is strong and can be elevated in experience bullets for this category.",
+        "recommended_action": "Elevate observability pipeline achievement to top-4 experience bullets for Staff AI Engineer applications; include 'billions of events' scale marker.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:103"
+        ],
+        "citation": "Valued evidence types include reliability 18 samples; hard skill observability 6/25 (24%)"
+      },
+      {
+        "signal": "Semantic caching latency and cost reduction metrics",
+        "gap_type": "curated_but_underrepresented",
+        "why_it_matters": "Production reliability and cost efficiency matter for platform delivery; quantified caching impact proves production judgment.",
+        "current_state": "Two-tier semantic caching with L1 ~2ms and L2 ~200ms is curated but cost/latency reduction percentages are not quantified.",
+        "safe_interpretation": "Cache architecture is proven; can claim latency tiers without fabricating reduction percentages.",
+        "recommended_action": "Surface semantic caching latency tiers explicitly in experience bullets; add cost reduction claim only if Lantern project 40% reduction applies to Commander-4.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:354",
+          "data/master-cv/projects/lantern.md:10"
+        ],
+        "citation": "L1 exact-match ~2ms, L2 semantic similarity ~200ms via Redis TTL and S3 Vectors cosine search"
+      },
+      {
+        "signal": "Cross-functional collaboration with product/security stakeholders",
+        "gap_type": "curated_but_underrepresented",
+        "why_it_matters": "Collaboration appears in 23/25 (92%); this is the most consistent soft skill signal in the category.",
+        "current_state": "Stakeholder alignment is mentioned in Technical Vision achievement but collaboration is not emphasized in summary or headline.",
+        "safe_interpretation": "Evidence supports cross-functional collaboration claims across AdTech and AI platform work.",
+        "recommended_action": "Add 'cross-functional collaboration' to summary positioning; emphasize product owner and enterprise architect alignment in experience bullets.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:172",
+          "data/master-cv/roles/01_seven_one_entertainment.md:299"
+        ],
+        "citation": "Collaboration 23/25 (92%) is highest soft skill; blueprint recommends showing how you aligned product, platform, security, and engineering stakeholders"
+      },
+      {
+        "signal": "Go language depth for backend systems",
+        "gap_type": "unsupported_or_unsafe",
+        "why_it_matters": "Go appears in 4/25 (16%) of roles; some Staff AI Engineer roles expect Go expertise.",
+        "current_state": "No curated evidence of Go development; primary languages are TypeScript and Python.",
+        "safe_interpretation": "Do not claim Go expertise; position TypeScript/Python as primary backend languages with Node.js and Python-based ML integration.",
+        "recommended_action": "Do not add Go claims; focus on TypeScript distributed systems and Python AI layer evidence.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:28"
+        ],
+        "citation": "Blueprint unsafe claims include 'Deep production backend delivery in Go unless the CV clearly proves Go depth'"
+      },
+      {
+        "signal": "Direct SLO/SLI ownership and incident response programs",
+        "gap_type": "unsupported_or_unsafe",
+        "why_it_matters": "Some roles expect direct SLO/SLI ownership; blueprint flags this as an unsafe claim without explicit evidence.",
+        "current_state": "MTTR reduction and incident management culture are mentioned but formal SLO/SLI ownership is not documented.",
+        "safe_interpretation": "Can claim incident reduction outcomes and monitoring/alerting implementation; should not claim SLO program ownership.",
+        "recommended_action": "Position as reliability-focused architect with incident reduction outcomes; avoid claiming SLO/SLI program ownership unless Lantern project SLO/SLI Design skill is promoted to Commander-4.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:212",
+          "data/master-cv/projects/lantern_skills.json:38"
+        ],
+        "citation": "Blueprint unsafe claims include 'Ownership of SLOs, incident response, or reliability programs unless the CV shows direct operational scope'"
+      },
+      {
+        "signal": "Multi-cloud implementation breadth",
+        "gap_type": "unsupported_or_unsafe",
+        "why_it_matters": "Multi_cloud appears in 8 deep-analysis samples; some roles expect cross-cloud platform work.",
+        "current_state": "Evidence shows AWS-centric delivery (Lambda, ECS, EventBridge, S3, CloudFront); Lantern mentions OpenAI/Anthropic/Azure endpoints but not full multi-cloud infrastructure.",
+        "safe_interpretation": "Can claim AWS platform delivery and multi-provider LLM integration; should not claim full multi-cloud infrastructure implementation.",
+        "recommended_action": "Position as AWS-experienced with multi-provider LLM gateway integration; avoid claiming GCP/Azure infrastructure deployment.",
+        "evidence_refs": [
+          "data/master-cv/roles/01_seven_one_entertainment.md:77",
+          "data/master-cv/projects/lantern.md:7"
+        ],
+        "citation": "Blueprint warns against 'Full multi-cloud implementation across Bedrock and Vertex AI if the work was only on one cloud or one provider'"
+      }
+    ],
+    "safe_claims_now": {
+      "headline_safe": [
+        "Staff AI Engineer",
+        "AI Platform Architecture",
+        "Production AI Systems",
+        "Distributed Systems",
+        "Enterprise AI Workflows"
+      ],
+      "profile_safe": [
+        "Architected and shipped enterprise AI workflow platform serving 2,000 users with 42 workflow plugins",
+        "Built production RAG systems with hybrid retrieval (BM25 + RRF fusion) and LLM-as-judge reranking",
+        "Designed evaluation harnesses with MRR@k and NDCG@k retrieval quality metrics",
+        "Implemented governed structured outputs and per-silo guardrails for multi-tenant AI safety",
+        "Transformed legacy platforms into event-driven TypeScript microservices achieving 75% incident reduction",
+        "Led observability pipeline channeling billions of events daily with real-time dashboards",
+        "Player-coach technical leader mentoring 10+ engineers and promoting 3 to lead positions"
+      ],
+      "experience_safe": [
+        "Platform lead for Commander-4 (Joyia) enterprise AI workflow platform at ProSiebenSat.1",
+        "BM25 scoring from scratch for S3 Vectors with RRF fusion (k=60)",
+        "LLM-as-judge reranking via Claude Sonnet through LiteLLM gateway with parallel execution",
+        "Two-tier semantic caching with L1 exact-match (~2ms) and L2 semantic similarity (~200ms)",
+        "5 MCP server tools for external system integrations",
+        "Zod schema validation for type-safe LLM outputs across 42 workflow plugins",
+        "3 years zero downtime on revenue-critical AdTech platform",
+        "DDD bounded contexts reducing developer onboarding from 6 to 3 months"
+      ],
+      "leadership_safe": [
+        "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices",
+        "Promoted 3 engineers to lead positions",
+        "Established architectural north star and technical vision with stakeholder alignment",
+        "Led hiring process including selection criteria, interview strategies, and technical assessments",
+        "Cross-functional collaboration with product owners, enterprise architects, and stakeholders"
+      ],
+      "unsafe_or_too_weak": [
+        "Go language expertise \u2014 no curated evidence of Go development",
+        "SLO/SLI program ownership \u2014 incident reduction shown but not formal SLO programs",
+        "Direct MCP/OpenAI/Anthropic platform engineering \u2014 integration only, not platform development",
+        "Multi-cloud infrastructure deployment \u2014 AWS-focused with multi-provider LLM routing only",
+        "Formal people management or hiring authority \u2014 player-coach scope only",
+        "Fine-tuning, custom embedding training, or RLHF \u2014 explicitly flagged in do_not_claim",
+        "Millions-scale user claims \u2014 2,000 platform users documented, not consumer-scale"
+      ],
+      "citations": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28 \u2014 Commander-4 platform lead evidence",
+        "data/master-cv/roles/01_seven_one_entertainment.md:231 \u2014 10+ engineers mentored, 3 promoted",
+        "data/master-cv/projects/commander4_skills.json:42 \u2014 do_not_claim: fine-tuning, RLHF, custom embedding training"
+      ]
+    },
+    "representation_diagnosis": {
+      "well_represented_now": [
+        "RAG and hybrid retrieval with BM25+RRF fusion \u2014 prominent in role_priority_current_state",
+        "Evaluation harnesses with MRR@k and NDCG@k metrics \u2014 surfaced in projects",
+        "Guardrails and governed structured outputs \u2014 mentioned in summary and projects",
+        "Legacy modernization with reliability outcomes \u2014 75% incident reduction visible",
+        "MCP tool integration \u2014 5 MCP server tools documented"
+      ],
+      "underrepresented_now": [
+        "Staff/Principal AI Engineer title framing \u2014 headline uses 'Technical Architect' instead",
+        "Agent orchestration as category keyword \u2014 MCP tools present but 'agent orchestration' language not used",
+        "Observability pipeline scale \u2014 'billions of events' not in top-4 experience priorities",
+        "Cross-functional collaboration emphasis \u2014 present in evidence but not in summary",
+        "Semantic caching latency metrics \u2014 L1/L2 timing documented but not prominently surfaced"
+      ],
+      "overstated_risk_now": [
+        "Headline may imply broader architecture scope than AI-specific platform work for this category",
+        "Summary mentions 'large-scale platform modernization' without quantifying scale relative to enterprise AI context"
+      ],
+      "representation_priorities": [
+        "1. Update headline to Staff AI Engineer title family with AI Platform Architecture focus",
+        "2. Add agent orchestration and workflow automation language to summary",
+        "3. Elevate observability pipeline to top-4 experience bullets with billions-scale marker",
+        "4. Add cross-functional collaboration to profile positioning",
+        "5. Ensure semantic caching latency tiers are visible in experience section"
+      ],
+      "citations": [
+        "data/master-cv/role_metadata.json:4 \u2014 current headline 'Technical Architect / AI Platform Architect'",
+        "data/master-cv/role_metadata.json:5 \u2014 current summary mentions RAG, guardrails, evaluation harnesses",
+        "data/master-cv/roles/01_seven_one_entertainment.md:103 \u2014 observability pipeline with billions of events underrepresented"
+      ]
+    },
+    "curation_priorities_top": [
+      {
+        "priority_rank": 1,
+        "action": "Promote upstream STAR records for Seven.One Technical Lead with agent orchestration framing",
+        "why_now": "Agents_orchestration appears in 12/25 (48%); upstream evidence at docs/archive/knowledge-base.md:268 has overlap score 28 and may contain additional agent workflow details not yet curated.",
+        "target_files": [
+          "data/master-cv/roles/01_seven_one_entertainment.md"
+        ],
+        "source_refs": [
+          "docs/archive/knowledge-base.md:268",
+          "docs/archive/knowledge-base.md:360"
+        ],
+        "expected_category_impact": "Strengthens agent orchestration signal from curated but underrepresented to prominently surfaced differentiator.",
+        "citation": "Upstream pending curation signals show overlap score 28 and 26 for Technical Lead - Addressable TV records"
+      },
+      {
+        "priority_rank": 2,
+        "action": "Curate Daypaio event-sourced architecture evidence for distributed systems depth",
+        "why_now": "Distributed systems appears in 7/25 (28%); Daypaio CQRS/EventStore work adds backend architecture proof beyond current Seven.One focus.",
+        "target_files": [
+          "data/master-cv/roles/02_samdock_daypaio.md"
+        ],
+        "source_refs": [
+          "docs/archive/knowledge-base.md:734"
+        ],
+        "expected_category_impact": "Adds 0\u21921 platform architecture evidence with event sourcing that category candidate-mapping explicitly values.",
+        "citation": "Upstream signal 'DAYPAIO GmbH \u2014 Senior Software Engineer Full Stack - Tech Lead' has overlap score 29"
+      },
+      {
+        "priority_rank": 3,
+        "action": "Extract quantified observability and reliability metrics from upstream STAR records",
+        "why_now": "Reliability is cited in 18 deep-analysis samples; upstream records may contain additional incident reduction, MTTR, or scale metrics not fully quantified in curated store.",
+        "target_files": [
+          "data/master-cv/roles/01_seven_one_entertainment.md"
+        ],
+        "source_refs": [
+          "docs/archive/knowledge-base.md:7",
+          "docs/archive/knowledge-base.md:98"
+        ],
+        "expected_category_impact": "Strengthens impact proof with additional quantified reliability outcomes.",
+        "citation": "Upstream 'Lead Software Engineer / Technical Architect' records have high overlap scores 29 and 22"
+      }
+    ]
+  }
+}
+
+YOUR TASK
+Return ONE valid JSON rubric object. No markdown. No preamble.
+
+Every major section MUST carry citations (clean path references only — see format rules below). Each dimension MUST have Layer A (category_core) + Layer B (job_specific_overlay) + full score_anchors (9_10, 7_8, 5_6, 0_4) + red_flags + citations.
+
+CITATION FORMAT (CRITICAL)
+Every citation MUST be a clean path reference — NOT a narrative string.
+- Correct: "data/eval/blueprints/staff_ai_engineer_global_blueprint.json"
+- Correct: "data/eval/baselines/staff_ai_engineer_global_baseline.json"
+- Correct: "data/master-cv/projects/commander4.md:12"
+- Wrong:   "strong evidence in blueprint — data/eval/..."
+- Allowed prefixes: data/eval/, data/master-cv/, docs/
+
+EXECUTIVE PRESENCE RULES
+- For architect/staff/senior-IC categories: DO NOT describe executive_presence as literal executive leadership, C-suite, boardroom, or P&L ownership. Frame it as architectural / IC authority.
+- For head_of_ai_* (architect-first player-coach-safe): frame it as player-coach leadership.
+- Penalty criteria in red_flags MUST include "unsupported people-management framing" or equivalent.
+
+ANTI-HALLUCINATION RULES
+- `anti_hallucination` dimension MUST include:
+  - red_flags listing unsupported metrics, fabricated titles, PhD/publication inflation, unsupported scope of reports
+  - score anchors that explicitly penalize unsourced numbers and unsupported claims
+  - category-specific unsafe_or_weak_framing items from the blueprint
+
+FORBIDDEN LANGUAGE
+- Do NOT use: "best-in-class", "world-class", "visionary", "thought leader".
+
+EVIDENCE LEDGER
+- Minimum 6 entries for this category (secondary_target).
+- Each entry: rubric_rule (what rule), support (citations), confidence (high|medium|low).
+
+JSON SCHEMA (STRICT — OUTPUT MUST CONFORM EXACTLY)
+{
+  "meta": {
+    "category_id": "staff_ai_engineer_global",
+    "category_name": "Staff AI Engineer — Global/Remote",
+    "macro_family": "ai_engineering_adjacent",
+    "priority": "secondary_target",
+    "confidence": "high",
+    "rubric_version": "2026-04-17"
+  },
+  "rubric_identity": {
+    "one_sentence_purpose": "string",
+    "core_persona": "string",
+    "job_overlay_notes": ["string", ...],
+    "citations": ["string", ...]
+  },
+  "dimension_rubrics": [
+    {
+      "dimension": "ats_optimization|impact_clarity|jd_alignment|executive_presence|anti_hallucination",
+      "weight": 20|25|25|15|15,
+      "category_core": {
+        "what_good_looks_like": ["string", ...],
+        "common_failures": ["string", ...]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": ["string", ...],
+        "company_domain_overrides": ["string", ...],
+        "region_overrides": ["string", ...]
+      },
+      "score_anchors": {
+        "9_10": ["string", ...],
+        "7_8": ["string", ...],
+        "5_6": ["string", ...],
+        "0_4": ["string", ...]
+      },
+      "red_flags": ["string", ...],
+      "citations": ["string", ...]
+    }
+    // EXACTLY 5 entries, one per dimension, weights sum to 100
+  ],
+  "gates": {
+    "must_have_coverage_gate": {
+      "pass_criteria": ["string", ...],
+      "fail_conditions": ["string", ...],
+      "citations": ["string", ...]
+    },
+    "unsafe_claim_gate": {
+      "pass_criteria": ["string", ...],
+      "fail_conditions": ["string", ...],
+      "citations": ["string", ...]
+    },
+    "persona_fit_gate": {
+      "pass_criteria": ["string", ...],
+      "fail_conditions": ["string", ...],
+      "citations": ["string", ...]
+    }
+  },
+  "verdict_thresholds": {
+    "strong_match_min": 8.5,
+    "good_match_min": 7.0,
+    "needs_work_min": 5.5,
+    "weak_match_max": 5.49
+  },
+  "scoring_guidance": {
+    "how_to_interpret_executive_presence": "string",
+    "how_to_penalize_unsupported_claims": "string",
+    "how_to_handle_category_vs_job_tradeoffs": "string",
+    "citations": ["string", ...]
+  },
+  "scorecard_template_mapping": {
+    "dimension_keys": ["ats_optimization","impact_clarity","jd_alignment","executive_presence","anti_hallucination"],
+    "gate_keys": ["must_have_coverage_gate","unsafe_claim_gate","persona_fit_gate"],
+    "required_output_fields": ["overall_score","verdict","top_strengths","top_failures","unsupported_claims","missing_must_haves"]
+  },
+  "evidence_ledger": [
+    {"rubric_rule": "string", "support": ["string", ...], "confidence": "high|medium|low"}
+    // minimum 6 entries
+  ]
+}
+
+QUALITY BAR
+- Rubric must meaningfully differ from nearby categories in the same macro family.
+- Layer B (job_specific_overlay) must call out concrete axes of variation (stack, domain, region, company stage).
+- Gates must cite actual blueprint must-have signals and unsafe framing.
+- Evidence ledger MUST tie each rubric rule to a specific blueprint or baseline location.

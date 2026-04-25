@@ -1,0 +1,927 @@
+[
+  {
+    "job_id": "696ff4cb3da7d438ae4f5f49",
+    "title": "Agentic AI Solutions Architect",
+    "company": "INTEGRITI GLOBAL",
+    "location": "",
+    "category": "ai_architect_global",
+    "jd_source": "raw",
+    "cv_review_verdict": "NEEDS_WORK",
+    "cv_review_confidence": 0.78,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 6,
+    "cv_review_bridge_quality": 5,
+    "cv_review_failure_modes": [
+      "headline_overclaim",
+      "tagline_proof_gap",
+      "low_pain_point_coverage",
+      "hallucination_project_context",
+      "missing_ai_evidence"
+    ],
+    "cv_review_headline_evidence_bounded": false,
+    "cv_review_strengths": [
+      "Credible, high-signal reliability and scale proof: 75% incident reduction, 3 years zero downtime, billions of events/day observability pipeline.",
+      "Strong cloud-native, event-driven architecture narrative (Lambda/EventBridge/S3/CloudFront/ECS/OpenSearch) aligned with enterprise platform work.",
+      "Clear systems-thinking vocabulary (DDD, bounded contexts, orchestration vs choreography language in master CV)."
+    ],
+    "cv_review_weaknesses": [
+      "Trust gap: multiple roles/metrics/technologies appear in the CV but are not present in the master CV, creating a high risk of rejection at staff level.",
+      "Agentic AI positioning is not supported by evidenced, concrete artifacts in the CV top third (multi-agent design, governance, retrieval strategy, tool-calling patterns).",
+      "Missing critical JD platform keywords (Bedrock/Textract/Nova, RAG, AI governance, IAM/VPC, LangGraph/LangChain) with no grounded substitution."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "\u201c...establishing architectural standards achieving 85% test coverage across distributed teams.\u201d",
+        "issue": "Metric not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cCurrently architecting agentic AI solutions for multi-million user systems ...\u201d",
+        "issue": "\u201cmulti-million user systems\u201d and agentic AI-in-role not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cArchitected agentic AI initiative with clear scope definition ...\u201d",
+        "issue": "Agentic AI initiative not found in master CV (current role evidence focuses on AWS modernization/observability/DDD)",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cDesigned CQRS/event-sourcing architecture with NestJS and EventStore ...\u201d",
+        "issue": "NestJS/EventStore/CQRS claim not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cEstablished CloudWatch and SNS-based monitoring with Slack alerting ...\u201d",
+        "issue": "Slack alerting and this specific implementation detail not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "\u201cFacilitated Jenkins to GitLab CI migration ... reducing release cycles from weeks to days\u201d",
+        "issue": "Not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Samdock/Daypaio role bullets (10x growth, 40% bug reduction, 50% faster integrations, hours\u2192minutes deploy, team of 4, +30% velocity)",
+        "issue": "This role and its metrics are not present in the master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "KI Labs role bullets (incidents -35%, MongoDB -60%)",
+        "issue": "This role and its metrics are not present in the master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Fortis role bullets (RabbitMQ, microservices details)",
+        "issue": "This project/role is not present in the master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "OSRAM role bullets (OSCOAP, OpenAIS-compliant CoAP server)",
+        "issue": "This role and these specifics are not present in the master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Clary Icon role bullets (WebRTC/Licode/FFmpeg, SIP reverse-engineering)",
+        "issue": "This role and these specifics are not present in the master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cKubernetes\u201d listed in Core Competencies",
+        "issue": "Kubernetes not found in master CV",
+        "severity": "low"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '6/15 keywords found', 'missing_critical_keywords': ['Amazon Bedrock', 'Amazon Textract', 'Amazon Nova', 'RAG', 'Multi-agent orchestration', 'AI governance', 'AWS IAM', 'AWS VPC',"
+  },
+  {
+    "job_id": "697b5d457d41dc1e8a16b99f",
+    "title": "Solution Architect - Generative AI and Post-Training, Solution Architect -",
+    "company": "NVIDIA",
+    "location": "",
+    "category": "ai_architect_global",
+    "jd_source": "raw",
+    "cv_review_verdict": "WEAK_MATCH",
+    "cv_review_confidence": 0.9,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 3,
+    "cv_review_bridge_quality": 3,
+    "cv_review_failure_modes": [
+      "headline_overclaim",
+      "tagline_proof_gap",
+      "low_pain_point_coverage",
+      "hallucination_project_context",
+      "missing_ai_evidence"
+    ],
+    "cv_review_headline_evidence_bounded": false,
+    "cv_review_strengths": [
+      "Strong evidence (from master CV) of large-scale platform modernization on AWS with event-driven TypeScript microservices and measurable reliability outcomes.",
+      "Clear architectural depth in observability and distributed systems (OpenSearch pipeline, event-driven architecture, DDD), with metrics that read as senior/staff-level impact."
+    ],
+    "cv_review_weaknesses": [
+      "Role mismatch: CV does not demonstrate Generative AI / LLM post-training depth (SFT/RLHF/data curation) or NVIDIA platform/tooling alignment.",
+      "High hallucination risk relative to the provided master CV: multiple roles, technologies, and metrics in the CV are not present in the master CV."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Led multi-tenant CQRS foundation on GCP using NestJS, EventStore, and MongoDB with RxJS pub/sub patterns\u2014enabling 10x horizontal scaling",
+        "issue": "Technologies and metric not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Designed RESTful APIs with Swagger/OpenAPI documentation enabling 50% faster partner integrations",
+        "issue": "Metric and Swagger/OpenAPI claim not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Facilitated Jenkins to GitLab CI migration, enabling faster automated deployments and reducing release cycles from weeks to days",
+        "issue": "Not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Scaled AWS infrastructure for bursty traffic using Lambda and ECS auto-scaling, reducing missed impressions by 20%",
+        "issue": "Metric and missed-impressions claim not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Established pytest-based multi-layered test suite ... reducing production incidents by 35%",
+        "issue": "Metric and test-suite claim not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Samdock (Daypaio) \u2022 Lead Software Engineer (2019\u20132020)",
+        "issue": "Role/employer not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "KI Labs \u2022 Intermediate Backend Engineer (2018\u20132019)",
+        "issue": "Role/employer not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Fortis (Research Project) \u2022 Backend Engineer (2018)",
+        "issue": "Project not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "OSRAM \u2022 Software Engineer (IoT) (2016\u20132018)",
+        "issue": "Role/employer not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Clary Icon \u2022 Software Engineer (2014\u20132016)",
+        "issue": "Role/employer not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Core competencies include Kubernetes, Apache Airflow, Flask, C++, and others as key strengths for current positioning",
+        "issue": "Several listed technologies are not evidenced in the master CV",
+        "severity": "medium"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '2/20 keywords found', 'missing_critical_keywords': ['Generative AI', 'LLM Post-Training', 'RLHF', 'Supervised Fine-tuning', 'PyTorch', 'Megatron-LM', 'NeMo', 'Transformers', 'Dat"
+  },
+  {
+    "job_id": "697dd6287d41dc1e8a2136c9",
+    "title": "AI Solution Architect",
+    "company": "TUI",
+    "location": "",
+    "category": "ai_architect_global",
+    "jd_source": "raw",
+    "cv_review_verdict": "NEEDS_WORK",
+    "cv_review_confidence": 0.82,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 6,
+    "cv_review_bridge_quality": 5,
+    "cv_review_failure_modes": [
+      "headline_overclaim",
+      "tagline_proof_gap",
+      "low_pain_point_coverage",
+      "hallucination_project_context",
+      "missing_ai_evidence"
+    ],
+    "cv_review_headline_evidence_bounded": false,
+    "cv_review_strengths": [
+      "Strong, defensible cloud-native modernization and event-driven microservices architecture (AWS Lambda/ECS/EventBridge/CloudFront) with clear reliability outcomes in the master CV.",
+      "High-scale observability/data pipeline story (OpenSearch; billions of events daily) aligns with enterprise platform quality and operational excellence.",
+      "Architecture discipline and enablement (DDD, bounded contexts, onboarding/velocity improvements) maps well to enterprise architecture and sustainable delivery."
+    ],
+    "cv_review_weaknesses": [
+      "AI platform architecture and adoption enablement are not evidenced in the top third despite the AI Solution Architect headline; AI appears implied rather than proven.",
+      "Multiple quantified claims and role details in the CV are not supported by the master CV provided, creating credibility risk (hallucination/overclaim).",
+      "Competencies and summary emphasize governance/security/DevSecOps outcomes without matching source evidence; raises \u201cclaims without proof\u201d flags for staff-level hiring."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "\u201cEnterprise architect \u2026 specializing in establishing architectural governance, security standards \u2026\u201d",
+        "issue": "Governance/security-standards specialization not evidenced in master CV text provided (master focuses on AWS modernization, event-driven architecture, observability, DDD, buy-in).",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cEstablished DevOps practices with security-integrated CI/CD pipelines, reducing release cycles from weeks to days \u2026\u201d",
+        "issue": "Release-cycle metric and security-integrated CI/CD claim not found in master CV text provided.",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201creducing missed impressions by 20%\u201d (Seven.One bullet)",
+        "issue": "Not found in master CV; master has 75% incident reduction and 3 years zero downtime, but not missed impressions.",
+        "severity": "high"
+      },
+      {
+        "claim": "CloudWatch, SNS monitoring, Slack alerting integration (Seven.One bullet)",
+        "issue": "Not found in master CV text provided.",
+        "severity": "medium"
+      },
+      {
+        "claim": "Samdock/Daypaio role with CQRS, NestJS, EventStore, \u201c25 paying tenants\u201d, \u201c10x horizontal scaling\u201d, \u201c50% faster partner integrations\u201d",
+        "issue": "This employer/role and the metrics/tech are not present in the master CV provided, so cannot be verified.",
+        "severity": "high"
+      },
+      {
+        "claim": "KI Labs: \u201c60% query response time reduction\u201d, \u201creducing production incidents by 35%\u201d",
+        "issue": "Not found in master CV provided.",
+        "severity": "high"
+      },
+      {
+        "claim": "OSRAM: \u201cOSCOAP security features \u2026 secure multicast\u201d",
+        "issue": "Not found in master CV provided.",
+        "severity": "medium"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '10/15 keywords found', 'missing_critical_keywords': ['AI Platform Architecture', 'AI/ML Solutions', 'DevSecOps', 'Governance Frameworks', 'Architecture Blueprints', 'Agile Archit"
+  },
+  {
+    "job_id": "6983466f7d41dc1e8a3a5101",
+    "title": "Enterprise & Agentic AI - AI Solutions Architect",
+    "company": "YOURSOFT ALTERNATIVE",
+    "location": "Romania",
+    "category": "ai_architect_eea",
+    "jd_source": "raw",
+    "cv_review_verdict": "NEEDS_WORK",
+    "cv_review_confidence": 0.74,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 5,
+    "cv_review_bridge_quality": 4,
+    "cv_review_failure_modes": [
+      "headline_overclaim",
+      "tagline_proof_gap",
+      "thin_competencies",
+      "low_pain_point_coverage",
+      "hallucination_project_context",
+      "missing_ai_evidence"
+    ],
+    "cv_review_headline_evidence_bounded": false,
+    "cv_review_strengths": [
+      "Clear positioning around cloud-native architecture, distributed systems, and event-driven microservices (AWS-heavy).",
+      "Strong observability framing (OpenSearch, monitoring) that maps to enterprise production readiness.",
+      "Master CV contains several high-signal, defensible metrics (75% incident reduction, 3 years zero downtime, 10x cost reduction, DDD impact) that could be leveraged better.",
+      "Master CV includes credible LLM-platform work (gateway, semantic caching, eval/observability tooling) that could align with the JD if surfaced."
+    ],
+    "cv_review_weaknesses": [
+      "Top third does not read like an AI Solutions Architect (agentic/GenAI) candidate; AI/LLM platform keywords and proof are not front-loaded.",
+      "Multiple metrics and role claims appear in the CV but are not present in the master CV (high risk for credibility screening).",
+      "Headline does not match the JD title, increasing rejection risk at the first scan.",
+      "Multi-cloud breadth (Azure/GCP/IBM) and AI governance/responsible AI are not evidenced clearly."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "\u201cspecializing in integrating complex distributed systems across AWS and GCP\u201d",
+        "issue": "GCP specialization not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cDesigned scalable multi-tenant architecture enabling 10x horizontal scaling\u201d (Professional Summary + Samdock bullets)",
+        "issue": "Not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201creducing MTTR significantly\u201d (Professional Summary) and \u201cdefined alerting standards\u2026 significantly reducing MTTR\u201d (Seven.One bullets)",
+        "issue": "MTTR impact not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "\u201cprocessing billions of events daily\u2014established governance standards\u2026 across 10+ integrated systems\u201d (Seven.One bullet)",
+        "issue": "\u201cbillions of events daily\u201d is supported, but \u201c10+ integrated systems\u201d is not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "\u201creducing missed impressions by 20%\u201d (Seven.One bullet)",
+        "issue": "Not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "\u201cCloudWatch, SNS, and Slack integration\u201d (Seven.One bullet)",
+        "issue": "Slack integration not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "\u201creducing release cycles from weeks to days\u201d (Seven.One bullet)",
+        "issue": "Not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "All roles outside Seven.One (Samdock/Daypaio, KI Labs, Fortis, OSRAM, Clary Icon) with their bullets/metrics/tech stacks",
+        "issue": "These roles and claims are not present in the master CV, so they cannot be verified",
+        "severity": "high"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '7/20 keywords found', 'missing_critical_keywords': ['AI Solutions Architect', 'Generative AI', 'Agentic AI', 'Multi-agent systems', 'LLM', 'MLOps', 'AI governance', 'Model deploy"
+  },
+  {
+    "job_id": "69da851a12725d71479184bf",
+    "title": "Senior GenAI Solutions Engineer",
+    "company": "NEBIRU",
+    "location": "Brussels Region, Belgium",
+    "category": "senior_ai_engineer_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "WEAK_MATCH",
+    "cv_review_confidence": 0.92,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 3,
+    "cv_review_bridge_quality": null,
+    "cv_review_failure_modes": [],
+    "cv_review_headline_evidence_bounded": null,
+    "cv_review_strengths": [
+      "Strong senior-level architecture and delivery narrative exists in the master CV.",
+      "Quantified outcomes are present in the source profile, including 75% incident reduction, 3 years zero downtime, and 25% velocity improvement."
+    ],
+    "cv_review_weaknesses": [
+      "Most GenAI claims are not supported by the master CV.",
+      "Critical JD stack keywords are missing or not evidenced, especially Azure, Databricks, Power BI, and explicit testing frameworks."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Delivers production GenAI and LLM solutions with RAG pipelines and prompt engineering",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "serving 2,000 users achieving 60% performance gains",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Built GenAI platform serving 2,000 users with 42 AI workflow plugins, 5 MCP tools",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Engineered production RAG pipelines with hybrid retrieval (BM25 scoring, RRF fusion k=60, LLM-as-judge reranking)",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Implemented retrieval evaluation harness with MRR@k and NDCG@k",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Built custom S3VectorSemanticCache Python class for LiteLLM",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Implemented Zod schema validation for all LLM outputs",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Scaled AWS infrastructure with Lambda/ECS auto-scaling for GenAI workloads, reducing missed impressions by 20%",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Facilitated Jenkins to GitLab CI migration",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform (Internal \u2014 ProSiebenSat.1)",
+        "issue": "not found in master CV",
+        "severity": "high"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '11/15 keywords found', 'missing_critical_keywords': ['Azure', 'Databricks', 'Power BI', 'Golden set testing', 'Regression testing', 'Safety testing', 'Chatbots'], 'acronym_issues"
+  },
+  {
+    "job_id": "69da8c2212725d714791b034",
+    "title": "Data & AI Director",
+    "company": "Confidential",
+    "location": "Doha, Qatar",
+    "category": "head_of_ai_global",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "NEEDS_WORK",
+    "cv_review_confidence": 0.74,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 6,
+    "cv_review_bridge_quality": 6,
+    "cv_review_failure_modes": [
+      "headline_overclaim",
+      "tagline_proof_gap",
+      "thin_competencies",
+      "low_pain_point_coverage",
+      "hallucination_project_context",
+      "missing_ai_evidence"
+    ],
+    "cv_review_headline_evidence_bounded": false,
+    "cv_review_strengths": [
+      "Strong, defensible platform modernization impact (75% incident reduction, 3 years zero downtime) with clear architecture narrative.",
+      "Credible high-scale observability/analytics delivery (billions of events/day to OpenSearch, real-time dashboards).",
+      "Concrete enterprise LLM platform work with evaluation + structured validation (2,000 users, 42 plugins; schema validation; retrieval eval)."
+    ],
+    "cv_review_weaknesses": [
+      "Director-level data governance/MDM/metadata-lineage and regulated-enterprise risk controls are not evidenced; headline overreaches.",
+      "Multiple top-third claims appear unsupported vs master CV (defects -40%, incidents -35%, TCF framework, \u20ac30M, mentoring/hiring).",
+      "Experience section contains multiple roles/metrics/tech not present in master CV, creating credibility risk in senior screening."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Data & AI Director \u00b7 Head of AI",
+        "issue": "not found in master CV (master headline is Engineering Leader / Software Architect; role listed is Technical Lead at Seven.One)",
+        "severity": "high"
+      },
+      {
+        "claim": "building data platforms, governance frameworks",
+        "issue": "data governance frameworks not evidenced in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "mentored 3 to leadership positions",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "reduced production defects 40%",
+        "issue": "not found in master CV (40% metric appears for requirement misalignment, not defects)",
+        "severity": "high"
+      },
+      {
+        "claim": "Reduced ... incidents by 35%",
+        "issue": "not found in master CV (master cites 75% incident reduction)",
+        "severity": "high"
+      },
+      {
+        "claim": "Architected TCF-compliant data privacy framework achieving regulatory approval ... protecting \u20ac30M annual revenue",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Seven.One: established hiring criteria and technical assessments; led team of 10+ senior engineers",
+        "issue": "team size 10+ is in master CV, but hiring/\u2018senior\u2019/assessment claims are not",
+        "severity": "medium"
+      },
+      {
+        "claim": "Seven.One: Built hybrid retrieval pipeline ... for enterprise AI platform",
+        "issue": "retrieval/LLM platform work is evidenced in Commander-4 and Lantern files, not in the Seven.One role section of the master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Samdock (Daypaio) bullets including velocity +30%, 85% code coverage, bugs -40%, EventStore, event storming",
+        "issue": "Samdock role and claims are not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "KI Labs, Fortis, OSRAM, Clary Icon roles and detailed claims",
+        "issue": "these roles and claims are not found in master CV",
+        "severity": "high"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '9/15 keywords found', 'missing_critical_keywords': ['Master Data Management', 'ETL/ELT', 'Metadata Management', 'Data Lineage', 'Data Lake/Warehouse', 'Risk Management', 'Model L"
+  },
+  {
+    "job_id": "69da8c2212725d714791b040",
+    "title": "Senior AI Product Engineer",
+    "company": "FromHereOn",
+    "location": "Sydney, New South Wales, Australia",
+    "category": "senior_ai_engineer_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "WEAK_MATCH",
+    "cv_review_confidence": 0.96,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 3,
+    "cv_review_bridge_quality": null,
+    "cv_review_failure_modes": [],
+    "cv_review_headline_evidence_bounded": null,
+    "cv_review_strengths": [
+      "Strong senior-level engineering and architecture positioning in the master CV, especially AWS, microservices, event-driven systems, and observability",
+      "Quantified impact is present in the master CV, including 75% incident reduction, 3 years zero downtime, 70% refactoring, and 25% velocity improvement",
+      "The CV signals delivery velocity, modernization, and platform thinking, which are relevant to the role's shipping and stability pain points"
+    ],
+    "cv_review_weaknesses": [
+      "The top-third AI product branding is not supported by the master CV and reads as keyword-stuffed",
+      "The CV omits the JD's exact stack: Replit, Azure, LangGraph, SAST/DAST, security scanning, and state machines",
+      "Several of the most prominent metrics and AI-specific platform claims are not grounded in the master CV"
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "deployed production platform serving 2,000 users with 42 plugins",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "using LangChain",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "AI memory layer",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Reduced production incidents by 35% through DevSecOps practices",
+        "issue": "not found in master CV; master CV has different quantified outcomes",
+        "severity": "high"
+      },
+      {
+        "claim": "pytest-based test suite with 14 unit tests (unit, E2E, snapshot)",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "CloudWatch/SNS monitoring reducing MTTR",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Implemented BM25 scoring from scratch for S3 Vectors with RRF fusion (k=60), LLM-as-judge reranking, and custom S3VectorSemanticCache",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "MRR@k and NDCG@k retrieval eval functions",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Optimized MongoDB data layer achieving 60% query response time reduction",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Enabled 50% faster partner integrations through rapid prototyping of RESTful APIs",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Accelerated deployment cycles from hours to minutes and release cycles from weeks to days",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Jenkins to GitLab CI migration",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '7/15 keywords found', 'missing_critical_keywords': ['Replit', 'Azure', 'LangGraph', 'SAST', 'DAST', 'security scanning', 'Unix/Bash', 'state machines'], 'acronym_issues': ['LLM, "
+  },
+  {
+    "job_id": "69da932a12725d714791dc6e",
+    "title": "Lead Product Designer - Agentic AI",
+    "company": "Pigment",
+    "location": "Paris, \u00cele-de-France, France",
+    "category": "tech_lead_ai_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "WEAK_MATCH",
+    "cv_review_confidence": 0.98,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 2,
+    "cv_review_bridge_quality": null,
+    "cv_review_failure_modes": [],
+    "cv_review_headline_evidence_bounded": null,
+    "cv_review_strengths": [
+      "Strong senior engineering and architecture profile in the master CV.",
+      "Quantified operational impact in the master CV: 75% incident reduction, 3 years zero downtime, ~70% refactoring, 25% velocity improvement, and onboarding reduced from 6 to 3 months.",
+      "Evidence of mentoring and technical leadership, which is relevant to staff-level scope in engineering."
+    ],
+    "cv_review_weaknesses": [
+      "No evidence of core product design work: UX, UI, research, usability testing, design systems, or front-end craft.",
+      "The top third is misleading for the role and includes multiple unsupported AI/design claims.",
+      "The CV reads like an engineering architect profile repackaged for a design job, which will trigger skepticism quickly."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Lead Product Designer - Agentic AI",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "AI Architect",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Technical leader and AI architect scaling enterprise platforms to 2,000 users with 42 workflow plugins",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Architected enterprise AI workflow platform (Commander-4/Joyia) with 42 plugins and 5 MCP server tools serving 2,000 users at ProSiebenSat.1",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Built hybrid retrieval pipeline combining BM25 scoring, RRF fusion, and LLM-as-judge reranking with semantic caching reducing API costs",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Designed CQRS/event-sourcing architecture enabling 10x horizontal scaling for multi-tenant SaaS platform",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Established CI/CD automation reducing deployment cycles from hours to minutes across multiple projects",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Mentored 10+ senior engineers on architectural patterns, promoting 3 to lead positions while maintaining low turnover",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Implemented agile practices improving feature delivery predictability in startup environment",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Created reusable Angular component library standardizing UI development across platform",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Designed RESTful APIs with Swagger/OpenAPI documentation enabling 50% faster partner integrations",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Developed OpenAIS-compliant CoAP server in Python establishing reusable template adopted by multiple team projects",
+        "issue": "not found in master CV",
+        "severity": "high"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '7/15 keywords found', 'missing_critical_keywords': ['UX Design', 'UI Design', 'React', 'HTML/CSS', 'User Research', 'Usability Testing', 'Design Leadership', 'B2B SaaS'], 'acrony"
+  },
+  {
+    "job_id": "69da9a3212725d714792097c",
+    "title": "Associate Director in Data Science, Digital Health Analytics and Innovation (all genders)",
+    "company": "Merck Healthcare",
+    "location": "Darmstadt, Hesse, Germany",
+    "category": "head_of_ai_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "WEAK_MATCH",
+    "cv_review_confidence": 0.97,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 3,
+    "cv_review_bridge_quality": null,
+    "cv_review_failure_modes": [],
+    "cv_review_headline_evidence_bounded": null,
+    "cv_review_strengths": [
+      "Strong quantified engineering impact with credible delivery metrics.",
+      "Good evidence of Python, AWS, data-pipeline, and validation discipline."
+    ],
+    "cv_review_weaknesses": [
+      "Wrong domain for the role; there is no clinical, biomarker, or regulatory evidence.",
+      "Top-third positioning is not aligned to the JD and appears embellished beyond the master CV."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Associate Director in Data Science, Digital Health Analytics and Innovation",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "processing billions of time-series sensor data events",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Built Machine Learning retrieval system using Python with Large Language Models (Claude Sonnet) implementing deep learning algorithms",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform (Internal \u2014 ProSiebenSat.1) serving 2,000 users with 42 plugins",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Built custom S3VectorSemanticCache Python class for LiteLLM",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Designed structured output architecture using Zod schema validation for all LLM responses, 5 MCP server tools",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '6/14 keywords found', 'missing_critical_keywords': ['Digital biomarkers', 'Clinical endpoints', 'Digital health', 'Time-series analysis', 'Wearables', 'Regulatory validation', 'C"
+  },
+  {
+    "job_id": "69daa84612725d7147924d49",
+    "title": "Lead AI Engineer",
+    "company": "Kainos",
+    "location": "The Home, United Kingdom",
+    "category": "tech_lead_ai_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "NEEDS_WORK",
+    "cv_review_confidence": 0.78,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 6,
+    "cv_review_bridge_quality": 5,
+    "cv_review_failure_modes": [
+      "headline_overclaim",
+      "tagline_proof_gap",
+      "thin_competencies",
+      "low_pain_point_coverage",
+      "hallucination_project_context"
+    ],
+    "cv_review_headline_evidence_bounded": false,
+    "cv_review_strengths": [
+      "Strong, defensible AWS-scale production engineering proof (75% incident reduction, 3 years zero downtime, billions of events/day observability).",
+      "Clear architecture modernization narrative (legacy \u2192 event-driven TypeScript microservices; infra-first patterns).",
+      "Relevant LLM platform work exists in the project appendix (structured outputs, retrieval, evaluation, caching, observability)."
+    ],
+    "cv_review_weaknesses": [
+      "Trust risk: multiple high-severity claims in the CV are not supported by the master CV (metrics, team size, Kubernetes/Docker, audits/revenue).",
+      "Role fit gaps for Lead AI Engineer: limited explicit evidence of classic ML model deployment/MLOps lifecycle; no Workday integration; cloud breadth not shown.",
+      "Core competencies section is sparse and not ATS-optimized for this JD."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Architected AWS observability data pipelines processing billions of events daily with Kubernetes and Docker",
+        "issue": "Kubernetes/Docker usage not found in master CV evidence for the OpenSearch observability pipeline",
+        "severity": "high"
+      },
+      {
+        "claim": "Built CI/CD pipeline cutting deployment time from hours to minutes",
+        "issue": "Hours-to-minutes metric not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "reducing infrastructure missed impressions by 20%",
+        "issue": "Not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Led agile team of 4 engineers improving sprint velocity by 30%",
+        "issue": "Team size and 30% velocity metric not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Led GDPR/TCF compliance program ... passed BLM regulatory audits, protecting \u20ac30M annual revenue",
+        "issue": "Audit and \u20ac30M revenue protection claim not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Scaled multi-tenant platform 10x horizontally",
+        "issue": "10x scaling metric not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Professional identity: Lead AI Engineer \u00b7 AI Architect",
+        "issue": "Master CV headline/role titles do not support 'Lead AI Engineer' as an official role identity",
+        "severity": "medium"
+      },
+      {
+        "claim": "Deep Learning platforms",
+        "issue": "Deep Learning evidence not found in master CV or the provided AI project files",
+        "severity": "medium"
+      },
+      {
+        "claim": "Seven.One role includes Commander-4/Joyia platform leadership (2,000 users, 42 plugins)",
+        "issue": "Project is documented in AI project file, but explicit attribution to the Seven.One role is not stated in the master CV",
+        "severity": "low"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '14/15 keywords found', 'missing_critical_keywords': ['Workday'], 'acronym_issues': [\"LLM mentioned but 'Large Language Model' not expanded\", 'MLOps mentioned but not expanded', '"
+  },
+  {
+    "job_id": "69dab65312725d714792968d",
+    "title": "AI Architect",
+    "company": "Paradigma Digital",
+    "location": "Madrid, Community of Madrid, Spain",
+    "category": "ai_architect_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "NEEDS_WORK",
+    "cv_review_confidence": 0.95,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 4,
+    "cv_review_bridge_quality": null,
+    "cv_review_failure_modes": [],
+    "cv_review_headline_evidence_bounded": null,
+    "cv_review_strengths": [
+      "Strong AWS, microservices, and event-driven systems background with measurable reliability gains.",
+      "Enterprise-scale operational experience is credible in the master CV, including billions of daily events and observability work.",
+      "Evidence of systems thinking, DDD, and cross-functional communication.",
+      "11+ years of experience is directionally appropriate for staff/principal expectations."
+    ],
+    "cv_review_weaknesses": [
+      "The AI Architect positioning is not supported by the master CV and includes multiple unsupported claims.",
+      "Missing direct evidence for the JD's core stack: LangGraph, Bedrock, FinOps, Langfuse, Genesys Cloud, HITL, and JSON-RPC 2.0.",
+      "The top third reads padded and repetitive, which hurts trust during a quick screen.",
+      "Several bullets appear to be injected or embellished beyond the master source."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Architected enterprise AI platform serving 2,000 users with 42 plugins",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Implemented hybrid RAG retrieval with Claude Sonnet reranking via LiteLLM and vector database scoring achieving validated MRR@k/NDCG@k metrics",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Designed LLMOps infrastructure with 5 MCP server tools, guardrails, and structured output validation across Claude/OpenAI pipelines via LiteLLM gateway",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Scaled AWS cloud architecture using Lambda/ECS auto-scaling reducing missed impressions by 20%",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Facilitated Jenkins to GitLab CI migration, enabling faster automated deployments and reducing release cycles from weeks to days",
+        "issue": "not found in master CV",
+        "severity": "medium"
+      },
+      {
+        "claim": "Implemented BM25 scoring from scratch for S3 Vectors with RRF fusion and 14 unit tests",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Implemented Zod schema validation for all LLM outputs, 5 MCP server tools for external integrations, and per-silo guardrail profiles",
+        "issue": "not found in master CV",
+        "severity": "high"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '9/14 keywords found', 'missing_critical_keywords': ['LangGraph', 'Amazon Bedrock', 'MLOps', 'Multi-agent systems', 'FinOps', 'Langfuse', 'Genesys Cloud', 'HITL'], 'acronym_issues"
+  },
+  {
+    "job_id": "69dab65312725d7147929691",
+    "title": "Sr. Manager Data & AI Tech AI/ML",
+    "company": "dsm-firmenich",
+    "location": "Greater Barcelona Metropolitan Area",
+    "category": "ai_eng_manager_eea",
+    "jd_source": "reconstructed",
+    "cv_review_verdict": "WEAK_MATCH",
+    "cv_review_confidence": 0.95,
+    "cv_review_would_interview": false,
+    "cv_review_first_impression": 4,
+    "cv_review_bridge_quality": null,
+    "cv_review_failure_modes": [],
+    "cv_review_headline_evidence_bounded": null,
+    "cv_review_strengths": [
+      "Strong verified AWS platform and observability background in the master CV.",
+      "Clear evidence of measurable modernization outcomes: 75% incident reduction, 3 years zero downtime, 25% velocity improvement, and 40% reduction in requirement misalignment."
+    ],
+    "cv_review_weaknesses": [
+      "The CV injects a large amount of unverified AI/ML, Kubernetes, and Azure content that is not grounded in the master CV.",
+      "The top third is over-optimized for keywords and loses credibility because the proof points do not map cleanly to the source CV."
+    ],
+    "cv_review_hallucination_flags": [
+      {
+        "claim": "Tech lead scaling MLOps, platform engineering and agentic AI systems to billions of daily events, 2,000 users, reducing incidents 75% across AWS cloud-native infrastructure.",
+        "issue": "MLOps, agentic AI, 2,000 users, and cloud-native wording are not supported in the master CV; the 75% figure belongs to a different master-CV achievement context.",
+        "severity": "high"
+      },
+      {
+        "claim": "Built enterprise agentic AI platform on Kubernetes serving 2,000 users with 42 plugins, implementing cloud-native hybrid retrieval pipeline (BM25 + RRF k=60) with LLM reranking.",
+        "issue": "not found in master CV",
+        "severity": "high"
+      },
+      {
+        "claim": "Architected AWS and Azure platform engineering solution with OpenSearch observability processing billions of events daily, delivering cost optimization and scalability.",
+        "issue": "Azure is not found in master CV; the OpenSearch observability pipeline is grounded, but the multi-cloud framing is injected.",
+        "severity": "high"
+      },
+      {
+        "claim": "Scaled cloud-native infrastructure using Kubernetes container orchestration, Lambda and ECS across AWS and Azure, reducing missed impressions by 20% for ML model deployment.",
+        "issue": "Kubernetes, Azure, missed impressions, and ML model deployment are not supported in the master CV.",
+        "severity": "high"
+      },
+      {
+        "claim": "Implemented MLOps best practices with CI/CD automation and pytest-based test suite for ML pipelines and model deployment, reducing production incidents by 75%.",
+        "issue": "MLOps, ML pipelines, and pytest-based ML test suite are not in the master CV; the 75% incident reduction is supported only for the legacy modernization achievement, not this ML context.",
+        "severity": "high"
+      },
+      {
+        "claim": "Optimized platform engineering and data layer achieving 60% query response time reduction, 10x scalability growth, and 50% faster partner integrations.",
+        "issue": "These numbers are borrowed from different roles in the master CV and are conflated into one claim.",
+        "severity": "medium"
+      },
+      {
+        "claim": "Sr. Manager Data & AI Tech \u00b7 AI Architect",
+        "issue": "not found in master CV; the master title is Engineering Leader / Software Architect, and the AI Architect framing is not substantiated.",
+        "severity": "medium"
+      }
+    ],
+    "cv_review_ats_assessment": "{'keyword_coverage': '15/15 keywords found', 'missing_critical_keywords': ['rollback strategies', 'high availability', 'security'], 'acronym_issues': ['MLOps, CI/CD, LLM, MCP, RRF, and BM25 are used w"
+  }
+]

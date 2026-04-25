@@ -1,0 +1,1212 @@
+[
+  {
+    "job_id": "6948fe05056b4548bf97934d",
+    "title_normalized": "Sovereign AI Enterprise Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "secure and high-performing platforms"
+    },
+    "hard_skills_must_have": [
+      "AI/ML architecture",
+      "MLOps",
+      "security/privacy frameworks",
+      "cloud platforms",
+      "model lifecycle",
+      "data pipelines",
+      "governance frameworks",
+      "responsible AI principles",
+      "security-by-design",
+      "compliance"
+    ],
+    "hard_skills_nice_to_have": [
+      "EU AI Act",
+      "GDPR",
+      "FedRAMP",
+      "sovereignty regulations"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "GreenLake"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "EU AI Act",
+      "GDPR",
+      "FedRAMP"
+    ],
+    "soft_skills": [
+      "communication",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "compliance with national regulations",
+      "secure platforms",
+      "high-performing platforms"
+    ],
+    "implied_pain_points": [
+      "Design sovereign AI solutions that satisfy regulatory and security requirements",
+      "Translate customer vision and complex requirements into actionable roadmaps",
+      "Navigate AI infrastructure complexity while improving performance"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years in enterprise IT, cloud, AI/ML, or data/analytics",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69610d7b6dd552ab7ec2d666",
+    "title_normalized": "AI Solution Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "solution architecture",
+      "AWS Well-Architected framework",
+      "cloud cost optimization",
+      "credits management",
+      "consumption tracking",
+      "AWS/GCP partnership programs",
+      "Python",
+      "FastAPI",
+      "Flask",
+      "Infrastructure as Code",
+      "AWS CDK",
+      "Terraform",
+      "AWS Bedrock",
+      "LangChain",
+      "Docker",
+      "ECS",
+      "EKS",
+      "AI/ML architecture",
+      "AI/ML workloads on cloud platforms",
+      "production deployment of AI or Generative AI solutions"
+    ],
+    "hard_skills_nice_to_have": [
+      "AWS Certified Solutions Architect Professional",
+      "AWS Certified Machine Learning - Specialty",
+      "AWS Partner Network structure",
+      "PoC funding",
+      "MAP program",
+      "ISV Workload Migration",
+      "Well-Architected Review process",
+      "AWS competency requirements"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS",
+        "GCP",
+        "AWS Bedrock",
+        "AWS CDK",
+        "ECS",
+        "EKS"
+      ]
+    },
+    "infrastructure": [
+      "Docker",
+      "ECS",
+      "EKS",
+      "Terraform",
+      "AWS CDK"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "AWS Well-Architected"
+    ],
+    "soft_skills": [
+      "communication",
+      "coordination",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "BFSI",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "95%+ AWS funding success rate",
+      "Well-Architected compliance",
+      "security best practices",
+      "streamlined cloud department processes",
+      "accelerated team capability"
+    ],
+    "implied_pain_points": [
+      "Balance cloud operations leadership with hands-on AI/ML delivery",
+      "Manage AWS/GCP partnership programs, funding, and governance work",
+      "Build production-grade AI/ML systems for regulated enterprise clients",
+      "Improve operational efficiency through automation and reusable patterns"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years in cloud architecture, solution architecture, or cloud engineering; 2+ years with AI/ML workloads on cloud platforms",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69611ba86dd552ab7ec2d671",
+    "title_normalized": "AI Solution Architect (Power Platform Specialist)",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "scalable delivery; all future squads",
+      "latency_reliability": "performance, resilience, security; latency and cost considerations"
+    },
+    "hard_skills_must_have": [
+      "solution architecture",
+      "ALM",
+      "integration contracts",
+      "security model",
+      "environment strategy",
+      "identity and role design",
+      "data loss prevention",
+      "CI/CD",
+      "testing",
+      "telemetry",
+      "cost management",
+      "architecture reviews",
+      "build-vs-buy decisions",
+      "modularisation",
+      "reusability",
+      "Azure AI Foundry",
+      "agent orchestration",
+      "deployment governance",
+      "RAG architecture design",
+      "retrieval layers",
+      "grounding sources",
+      "vector databases",
+      "knowledge bases",
+      "Microsoft Power Platform",
+      "Microsoft Copilot Studio",
+      "Azure DevOps",
+      "GitHub Actions",
+      "AuthN/Z",
+      "secrets management",
+      "Microsoft Purview",
+      "Azure Monitor",
+      "Application Insights",
+      "reference architectures",
+      "architecture decision records"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "Azure",
+      "services_mentioned": [
+        "Azure AI Foundry",
+        "Microsoft Power Platform",
+        "Microsoft Copilot Studio",
+        "Azure DevOps",
+        "GitHub Actions",
+        "Microsoft Purview",
+        "Azure Monitor",
+        "Application Insights"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "Azure AI Foundry",
+        "Microsoft Power Platform",
+        "Microsoft Copilot Studio"
+      ],
+      "observability": [
+        "Azure Monitor",
+        "Application Insights"
+      ]
+    },
+    "data_stack": [
+      "vector databases",
+      "knowledge bases"
+    ],
+    "governance_compliance": [
+      "data loss prevention",
+      "segregation of duties",
+      "Microsoft Purview"
+    ],
+    "soft_skills": [
+      "documentation",
+      "knowledge transfer",
+      "communication",
+      "mentoring",
+      "coaching",
+      "collaboration",
+      "agile ceremonies",
+      "risk management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "governed delivery",
+      "cost-efficient platform",
+      "resilient platform",
+      "accelerate all future squads",
+      "measure outcomes",
+      "clear estimates",
+      "surface risks early",
+      "use data and telemetry to guide continuous improvement"
+    ],
+    "implied_pain_points": [
+      "Define a scalable and governed solution blueprint for AI agents and Power Platform delivery",
+      "Establish reusable reference architectures, ALM patterns, and security controls",
+      "Reduce complexity across squads through modularisation and reusability",
+      "Improve architecture consistency, observability, and cost control"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10-12+ years across solution architecture and engineering, including 4+ years leading low-code/automation platforms at scale",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696129806dd552ab7ec2d67a",
+    "title_normalized": "AI Solution Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "low-code/automation platforms at scale",
+      "latency_reliability": "SLOs, performance, resilience"
+    },
+    "hard_skills_must_have": [
+      "solution architecture",
+      "integration contracts",
+      "security model",
+      "non-functional requirements",
+      "environment strategy",
+      "identity/role design",
+      "data loss prevention",
+      "ALM",
+      "CI/CD",
+      "testing",
+      "telemetry",
+      "cost management",
+      "architecture reviews",
+      "reference architectures",
+      "architecture decision records",
+      "build-vs-buy decisions",
+      "Azure AI Foundry",
+      "agent orchestration",
+      "RAG architecture design",
+      "retrieval layers",
+      "grounding sources",
+      "vector databases",
+      "knowledge bases",
+      "Microsoft Power Platform",
+      "Microsoft Copilot Studio",
+      "Azure DevOps or GitHub Actions",
+      "authN/Z",
+      "secrets management",
+      "Microsoft Purview",
+      "Azure Monitor",
+      "Application Insights"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "Azure",
+      "services_mentioned": [
+        "Azure AI Foundry",
+        "Azure DevOps",
+        "Azure Monitor",
+        "Application Insights",
+        "Microsoft Purview"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD",
+      "ALM"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "Azure AI Foundry",
+        "Microsoft Copilot Studio"
+      ],
+      "observability": [
+        "Azure Monitor",
+        "Application Insights"
+      ]
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "coaching",
+      "mentoring",
+      "communication",
+      "collaboration",
+      "documentation",
+      "knowledge transfer"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalable delivery",
+      "cost-efficient platform",
+      "resilient platform",
+      "clear boundaries between product teams and shared services",
+      "accelerate all future squads"
+    ],
+    "implied_pain_points": [
+      "define the solution blueprint and architecture for AI agents",
+      "establish governed and cost-efficient platform patterns",
+      "standardize ALM, CI/CD, testing, telemetry, and cost management",
+      "improve security, DLP, and segregation of duties across squads"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10-12+ years across solution architecture and engineering; 4+ years leading low-code/automation platforms at scale",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696242e86dd552ab7ec2d767",
+    "title_normalized": "Platform Architect",
+    "title_family": "solutions_architect",
+    "seniority": "mid_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "platform scale",
+      "latency_reliability": "observability, reliability, performance"
+    },
+    "hard_skills_must_have": [
+      "Golang",
+      "Python",
+      "microservices architecture",
+      "REST",
+      "gRPC",
+      "event-driven systems",
+      "Docker",
+      "Kubernetes",
+      "Helm",
+      "CI/CD",
+      "orchestration",
+      "AI/ML systems in production",
+      "machine learning",
+      "deep learning",
+      "reinforcement learning",
+      "3D digital twins",
+      "simulation-driven workflows",
+      "physics-aware AI systems",
+      "industrial domain exposure",
+      "PostgreSQL",
+      "APIs",
+      "distributed systems"
+    ],
+    "hard_skills_nice_to_have": [
+      "simulation",
+      "digital twins",
+      "physics-based systems"
+    ],
+    "programming_languages": {
+      "required": [
+        "Golang",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "Helm",
+      "CI/CD",
+      "microservices",
+      "event-driven systems"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "collaboration",
+      "problem_solving"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "reduce prototyping risks",
+      "accelerate time-to-market",
+      "enable AI-assisted engineering at scale",
+      "ensure observability, reliability, and performance at platform scale"
+    ],
+    "implied_pain_points": [
+      "build a unified cloud platform for engineering",
+      "operationalize AI and physics-aware systems in production",
+      "integrate microservices, orchestration, and simulation workflows",
+      "deliver reliable APIs for simulation and AI pipelines"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years hands-on engineering experience",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696cdce23da7d438ae4f5db1",
+    "title_normalized": "AI & Computer Vision Solution Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale datasets from X-ray, CT, MRI, and digital pathology",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "computer vision",
+      "deep learning",
+      "generative AI",
+      "CNN architectures",
+      "GANs",
+      "synthetic image generation",
+      "TensorFlow",
+      "PyTorch",
+      "OpenCV",
+      "medical image analysis",
+      "segmentation",
+      "object detection",
+      "image classification",
+      "medical imaging preprocessing",
+      "DICOM",
+      "NIfTI",
+      "cloud environments",
+      "model deployment",
+      "PACS integration",
+      "cloud-native imaging stacks",
+      "model performance metrics",
+      "validation strategies",
+      "annotation strategies",
+      "quality control",
+      "traceability",
+      "reproducibility"
+    ],
+    "hard_skills_nice_to_have": [
+      "FDA/CE Class B or C medical imaging products",
+      "explainable AI",
+      "Grad-CAM",
+      "LIME",
+      "fairness techniques",
+      "FHIR",
+      "HL7",
+      "HIPAA",
+      "GDPR",
+      "AI for surgical robotics",
+      "augmented reality in healthcare",
+      "histopathology image analysis",
+      "technical presales",
+      "client advisory initiatives"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "production pipelines",
+      "cloud-native imaging stacks"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "TensorFlow",
+        "PyTorch",
+        "OpenCV"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "HIPAA",
+      "GDPR",
+      "FDA/CE Class B or C"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "healthcare",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "design advanced AI solutions for medical image analysis",
+      "launch projects involving computer vision, deep learning, and generative AI",
+      "model robustness",
+      "explainability",
+      "regulatory readiness",
+      "meaningful impact to patient care"
+    ],
+    "implied_pain_points": [
+      "engage new clients with advanced AI solutions",
+      "build computer vision solutions for medical imaging",
+      "integrate AI models into production pipelines with cloud, DevOps, and QA",
+      "ensure robustness, explainability, and regulatory readiness in healthcare contexts",
+      "support technical presales and client workshops"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "7+ years of experience in AI/ML; 4+ years focused on computer vision and deep learning",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "699c0c9c87737d491c2b5bfe",
+    "title_normalized": "Agentic AI Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "resilient, observable, secure, and production-ready"
+    },
+    "hard_skills_must_have": [
+      "large-scale systems",
+      "Java",
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "distributed systems",
+      "APIs",
+      "automation workflows",
+      "cloud-native architectures",
+      "Azure",
+      "AWS",
+      "GCP",
+      "prototyping",
+      "building PoCs",
+      "identity",
+      "security",
+      "data protection",
+      "monitoring",
+      "observability",
+      "operational readiness",
+      "knowledge retrieval",
+      "guardrails",
+      "access control",
+      "responsible-AI principles"
+    ],
+    "hard_skills_nice_to_have": [
+      "modern AI patterns",
+      "emerging AI models",
+      "frameworks",
+      "tools"
+    ],
+    "programming_languages": {
+      "required": [
+        "Java",
+        "Python",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure",
+        "AWS",
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "distributed systems",
+      "APIs",
+      "automation workflows",
+      "cloud-native architectures",
+      "monitoring",
+      "observability",
+      "operational readiness"
+    ],
+    "ai_ml_stack": {
+      "rag": "derived",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "derived",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "responsible-AI principles"
+    ],
+    "soft_skills": [
+      "curiosity",
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "simplifying complexity",
+      "balancing strategy with hands-on work",
+      "learning fast"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "solutions are resilient, observable, secure, and production-ready",
+      "validate feasibility and value through PoCs and pilots",
+      "optimize for cost, scale, and performance",
+      "meet enterprise standards for security and compliance",
+      "produce architecture diagrams and documentation for engineering and customer teams"
+    ],
+    "implied_pain_points": [
+      "need to design secure and scalable architectures for conversational, automation, and multi-agent systems",
+      "need to connect AI agents with enterprise tools, APIs, and human users",
+      "need to move customers from simple automation toward agentic ecosystems",
+      "need to establish governance, observability, and incident response for AI-powered systems",
+      "need to create reusable patterns and best practices for a new Centre of Excellence"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "697d1f657d41dc1e8a1dc154",
+    "title_normalized": "Enterprise Solutions Architect (AI Focus)",
+    "title_family": "solutions_architect",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "large-scale, complex AI / Data / Cloud platform programs",
+      "latency_reliability": "scalability, security, and performance"
+    },
+    "hard_skills_must_have": [
+      "10+ years of professional experience in software engineering",
+      "at least 5 years in an Enterprise Architect, Solutions Architect, Principal Engineer, or similar architecture-focused role",
+      "architecting, designing, and overseeing implementation of large-scale, complex AI / Data / Cloud platform programs",
+      "modern SDLC methodologies",
+      "Agile",
+      "CI/CD",
+      "DevSecOps",
+      "distributed system design principles",
+      "Azure cloud architecture",
+      "GCP cloud architecture",
+      "containerization",
+      "API gateway-based microservice ecosystems",
+      "building on-prem based solutions that work in isolated/air-gaped environments",
+      "building applications and services on top of Kubernetes",
+      "multi-vendor program governance",
+      "delivery coordination",
+      "RACI ownership",
+      "risk management",
+      "data pipelines",
+      "ingestion frameworks",
+      "AI/ML integration concepts",
+      "communication skills",
+      "stakeholder management skills",
+      "analytical skills",
+      "problem-solving abilities",
+      "conflict-resolution abilities",
+      "driving technical consensus on high-stakes architectural decisions"
+    ],
+    "hard_skills_nice_to_have": [
+      "background in AI-driven platforms",
+      "AI Agents",
+      "ML based solutions",
+      "Azure AI Foundry",
+      "Google Agentspaces",
+      "cross-organization alignment",
+      "leading engineering teams",
+      "managing globally distributed teams"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure AI Foundry",
+        "Google Agentspaces"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "DevSecOps",
+      "containerization",
+      "microservices",
+      "API gateway",
+      "Kubernetes",
+      "on-prem"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "stakeholder management",
+      "analytical",
+      "problem-solving",
+      "conflict-resolution",
+      "technical leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "timely and high-quality delivery across multiple workstreams",
+      "technical alignment across multiple stakeholders",
+      "driving technical consensus on high-stakes architectural decisions",
+      "owning the core platform blueprint for scalability, security, and performance",
+      "predictable delivery in a highly dynamic multi-vendor environment"
+    ],
+    "implied_pain_points": [
+      "coordinating multiple engineering workstreams across backend, frontend, data, DevOps, and ML",
+      "aligning technical decisions across vendors, partners, and internal stakeholders",
+      "defining a platform architecture that supports scalability, security, and performance",
+      "operating in isolated or air-gaped deployment environments",
+      "reducing delivery risk and improving predictability in a multi-vendor program"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years software engineering; at least 5 years in an architecture-focused role",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6983466f7d41dc1e8a3a5101",
+    "title_normalized": "Enterprise & Agentic AI Solutions Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "enterprise-scale AI and Generative AI solutions",
+      "latency_reliability": "high availability, security, scalability, and cost optimization"
+    },
+    "hard_skills_must_have": [
+      "designing enterprise-scale AI and Generative AI solutions",
+      "agentic AI architectures",
+      "autonomous systems",
+      "planning and orchestration layers",
+      "tool-use and function calling",
+      "multi-agent collaboration and workflows",
+      "AI governance",
+      "explainability",
+      "responsible AI usage",
+      "data ingestion and processing pipelines",
+      "model training",
+      "fine-tuning",
+      "evaluation",
+      "model deployment",
+      "monitoring",
+      "lifecycle management",
+      "integration with enterprise applications and data platforms",
+      "AWS cloud architecture for AI workloads",
+      "Microsoft Azure cloud architecture for AI workloads",
+      "Google Cloud architecture for AI workloads",
+      "IBM Cloud architecture for AI workloads",
+      "managed AI/ML services",
+      "LLM platforms",
+      "cloud security",
+      "identity",
+      "governance",
+      "cost management",
+      "translating complex business requirements into technical AI architectures",
+      "analytical skills",
+      "problem-solving skills",
+      "decision-making skills",
+      "communication skills",
+      "engaging technical and executive stakeholders",
+      "working in consulting, enterprise, or large-scale transformation environments"
+    ],
+    "hard_skills_nice_to_have": [
+      "Business Intelligence and Analytics platforms integrated with AI",
+      "data governance",
+      "privacy",
+      "regulatory requirements",
+      "MLOps",
+      "AI observability",
+      "model risk management",
+      "relevant cloud certifications",
+      "relevant AI certifications"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "analytical",
+      "problem-solving",
+      "decision-making",
+      "collaboration",
+      "stakeholder management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "AI solutions aligned with client business needs and strategic objectives",
+      "seamless interoperability between AI components and existing enterprise systems",
+      "cloud-native architectures with high availability, security, scalability, and cost optimization",
+      "adherence to standards",
+      "mitigation of technical risks",
+      "clear roadmaps, reference architectures, and reusable patterns",
+      "documented architecture decisions, solution blueprints, and best practices"
+    ],
+    "implied_pain_points": [
+      "designing end-to-end AI platforms from ingestion through production monitoring",
+      "building agentic and autonomous AI systems",
+      "integrating AI solutions with enterprise systems and data platforms",
+      "establishing governance and reusable architecture patterns",
+      "balancing scalability, security, and cost in cloud AI workloads",
+      "translating business needs into technical architecture"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6995c99087737d491c0da50f",
+    "title_normalized": "Senior AI Solutions Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "explicit",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "scalable AI systems; custom LLM solutions; existing client relationships; enterprise clients; financial services clients",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI system architecture design and implementation",
+      "AI/ML solutions development",
+      "model selection",
+      "deployment patterns",
+      "infrastructure requirements",
+      "multi-agent system design",
+      "agent-to-agent communication protocols",
+      "AI safety",
+      "bias mitigation",
+      "failure modes",
+      "monitoring and intervention systems",
+      "AI safety and compliance framework development",
+      "business process transformation through AI",
+      "custom LLM solutions"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "client_relationship_management",
+      "stakeholder_management",
+      "mentoring",
+      "leadership",
+      "performance_management"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "90%+ Customer Satisfaction Index (CSI) on technical delivery",
+      "support team performance improvement",
+      "capability development",
+      "deliver scalable AI system architectures that meet FSI compliance requirements"
+    ],
+    "implied_pain_points": [
+      "Scale technical capacity for custom LLM solutions and AI-powered business process transformation projects",
+      "Support existing client relationships while contributing to business development",
+      "Improve engineering team performance and capability development",
+      "Design scalable AI architectures that satisfy financial services compliance requirements",
+      "Coordinate multi-agent AI systems and safety mechanisms"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  }
+]

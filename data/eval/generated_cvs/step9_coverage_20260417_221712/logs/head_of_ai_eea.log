@@ -1,0 +1,652 @@
+🔍 Validating configuration...
+✅ Configuration valid
+
+Loading candidate profile from: ./master-cv.md
+2026-04-17 22:17:29 [INFO] src.common.master_cv_store: Master-CV collections and indexes ensured
+2026-04-17 22:17:29 [INFO] src.layer6_v2.cv_loader: ✅ CVLoader initialized with MongoDB support (will use CV Editor data)
+2026-04-17 22:17:29 [INFO] src.layer6_v2.variant_parser: Parsed 01_seven_one_entertainment: 18 achievements, 93 total variants
+2026-04-17 22:17:29 [INFO] src.layer6_v2.variant_parser: Parsed 02_samdock_daypaio: 8 achievements, 33 total variants
+2026-04-17 22:17:29 [INFO] src.layer6_v2.variant_parser: Parsed 03_ki_labs: 5 achievements, 21 total variants
+2026-04-17 22:17:29 [INFO] src.layer6_v2.variant_parser: Parsed 04_fortis: 4 achievements, 16 total variants
+2026-04-17 22:17:30 [INFO] src.layer6_v2.variant_parser: Parsed 05_osram: 7 achievements, 25 total variants
+2026-04-17 22:17:30 [INFO] src.layer6_v2.variant_parser: Parsed 06_clary_icon: 6 achievements, 24 total variants
+2026-04-17 22:17:30 [INFO] src.layer6_v2.cv_loader: ✅ Loaded 6 roles from MongoDB (CV Editor data)
+✓ Loaded profile (6796 chars)
+
+Loading job 699f001187737d491c3ab803 from MongoDB...
+  ✓ Found job in collection: level-2
+✓ Loaded job: Head of Engineering at REVOLUT
+
+🎯 Processing Tier: A (Full pipeline with premium models - for best-fit jobs)
+   CV Model: claude-sonnet-4-20250514
+   Research Model: gpt-4o-mini
+   Max Contacts: 5
+   Estimated Cost: $0.50
+
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] [ProgressCallback] Using default StructuredLogger callback
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] ======================================================================
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] STARTING JOB INTELLIGENCE PIPELINE
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] ======================================================================
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] Job: Head of Engineering at REVOLUT
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] Job ID: 699f001187737d491c3ab803
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] Run ID: 019d9d17-6860-7594-b0d1-27216278e31b
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] Started: 2026-04-17T20:17:30.209038Z
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] ======================================================================
+{"timestamp": "2026-04-17T20:17:30.210128Z", "event": "pipeline_start", "job_id": "699f001187737d491c3ab803", "metadata": {"job_title": "Head of Engineering", "company": "REVOLUT", "run_id": "019d9d17-6860-7594-b0d1-27216278e31b"}}
+2026-04-17 22:17:30 [INFO] src.workflow: [PipelineTracking] ✓ Run started: 019d9d17...
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] Processing Tier: A - Full pipeline with premium models - for best-fit jobs
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17]   CV Model: claude-sonnet-4-20250514
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17]   Research Model: gpt-4o-mini
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17]   Max Contacts: 5
+/Users/ala0001t/pers/projects/job-search/src/workflow.py:148: UserWarning: The 'config' parameter should be typed as 'RunnableConfig' or 'RunnableConfig | None', not 'typing.Optional[typing.Dict[str, typing.Any]]'. 
+  workflow.add_node("jd_extractor", jd_extractor_node)  # CV Gen V2: Layer 1.4
+2026-04-17 22:17:30 [INFO] src.workflow: Using CV Generation V2 (6-phase pipeline)
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] LangSmith tracing enabled
+[Tracing] Run: 019d9d17-6860-7594-b0d1-27216278e31b
+[Tracing] Job: 699f001187737d491c3ab803
+[Tracing] URL: https://smith.langchain.com/o/default/projects/p/job-intelligence-pipeline?search=019d9d17-6860-7594-b0d1-27216278e31b
+2026-04-17 22:17:30 [INFO] src.workflow: [run:019d9d17] Executing LangGraph workflow
+/Users/ala0001t/pers/projects/job-search/.venv/lib/python3.11/site-packages/pydantic/v1/main.py:1054: UserWarning: LangSmith now uses UUID v7 for run and trace identifiers. This warning appears when passing custom IDs. Please use: from langsmith import uuid7
+            id = uuid7()
+Future versions will require UUID v7.
+  input_data = validator(cls_, input_data)
+2026-04-17 22:17:30 [INFO] src.layer1_4.claude_jd_extractor: [JDExtractor] Starting extraction for job_id=699f001187737d491c3ab803
+2026-04-17 22:17:30 [INFO] src.layer1_4.claude_jd_extractor: [Claude:699f001187737d491c3ab803] Starting extraction with tier=middle
+2026-04-17 22:17:30 [INFO] src.common.unified_llm: [UnifiedLLM:jd_extraction] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=DISABLED (mandatory), job=699f001187737d49
+{"timestamp": "2026-04-17T20:17:30.451477Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "jd_extraction"}
+{"timestamp": "2026-04-17T20:17:30.451841Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_9b7fbcf9", "system_prompt_preview": "You are an...planation.", "user_prompt_preview": "# JOB DESC...planation.", "prompt_length": 15676}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:17:30 [WARNING] langsmith.client: Failed to multipart ingest runs: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{"error":"Forbidden"}\n')
+{"timestamp": "2026-04-17T20:18:57.842552Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 87390, "metadata": {"session_id": "claude_9b7fbcf9", "result_preview": "```json\n{\n...\n  }\n}\n```", "result_length": 5239}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.031392, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:18:57 [INFO] src.common.unified_llm: [UnifiedLLM:jd_extraction] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=87391ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:18:57.843588Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 87391, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "jd_extraction"}
+2026-04-17 22:18:57 [INFO] src.layer1_4.claude_jd_extractor: [Claude:699f001187737d491c3ab803] LLM responded via backend=claude_cli, model=claude-sonnet-4-5-20250929
+2026-04-17 22:18:57 [INFO] src.layer1_4.claude_jd_extractor: [Claude:699f001187737d491c3ab803] Extraction complete: head_of_engineering
+2026-04-17 22:18:57 [INFO] src.layer1_4.claude_jd_extractor: [JDExtractor] Extraction complete: role_category=head_of_engineering, keywords=15, duration=87393ms, model=claude-sonnet-4-5-20250929
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] ============================================================
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] LAYER 2: Pain-Point Miner (Enhanced Edition)
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] ============================================================
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Job: Head of Engineering at REVOLUT
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Description length: 4943 chars
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Backend: UnifiedLLM (tier=middle, model=claude-sonnet-4-5-20250929)
+{"timestamp": "2026-04-17T20:18:57.848673Z", "event": "layer_start", "job_id": "699f001187737d491c3ab803", "layer": 2, "layer_name": "pain_point_miner"}
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Detected job domain: tech_saas
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] No annotation context available - using standard extraction
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [LLM] Calling LLM for job: Head of Engineering at REVOLUT
+2026-04-17 22:18:57 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [LLM] JD length: 4943 chars
+2026-04-17 22:18:57 [INFO] src.common.unified_llm: [UnifiedLLM:pain_point_extraction] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=enabled, job=699f001187737d49
+{"timestamp": "2026-04-17T20:18:57.849727Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "pain_point_extraction"}
+{"timestamp": "2026-04-17T20:18:57.849953Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_1947e54b", "system_prompt_preview": "# PERSONA\n... Show less", "user_prompt_preview": "## QUALITY...nd metrics", "prompt_length": 10587}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:18:58 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{"error":"Forbidden"}\n')
+{"timestamp": "2026-04-17T20:20:08.159106Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 70308, "metadata": {"session_id": "claude_1947e54b", "result_preview": "<reasoning...ned in JD)", "result_length": 8443}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.039588, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:20:08 [INFO] src.common.unified_llm: [UnifiedLLM:pain_point_extraction] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=70309ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:20:08.159795Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 70309, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "pain_point_extraction"}
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [LLM] Response received - success: True
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [LLM] Backend: claude_cli, Model: claude-sonnet-4-5-20250929
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [LLM] Response content length: 8443 chars
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Reasoning summary:
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   - Key trigger: Rapid growth to 70M+ customers with 13,000 employees creating engineering quality and consistency crisis across globally distributed teams
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   - Symptoms found:
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   • "key focus on quality control and code optimisation" (quality gaps)
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   • "raise the bar on quality and efficiency" (current state below target)
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Raw LLM response length: 8443 chars
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Raw LLM response preview: <reasoning>
+- Key trigger: Rapid growth to 70M+ customers with 13,000 employees creating engineering quality and consistency crisis across globally distributed teams
+
+- Symptoms found:
+  • "key focus on quality control and code optimisation" (quality gaps)
+  • "raise the bar on quality and efficiency" (current state below target)
+  • "Influencing best practices to ensure they're followed across the company" (compliance/consistency issues)
+  • "Optimising and reviewing team performance, aiming to
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Response contains <final> tags: True
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Extracted JSON from <final> tags, length: 6569
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Stripped ```json prefix
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Stripped ``` suffix
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] JSON parsed successfully. Keys: ['pain_points', 'strategic_needs', 'risks_if_unfilled', 'success_metrics', 'reasoning_summary', 'why_now']
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] pain_points: 6 items
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] strategic_needs: 5 items
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] risks_if_unfilled: 5 items
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] success_metrics: 6 items
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] [PARSE] Pydantic validation passed. Pain points: 6
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Confidence distribution: {'high': 9, 'medium': 11, 'low': 2}
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Why now: Organizational complexity at 13,000 employees plus quality/efficiency gaps at 70M+ user scale have reached critical mass—further growth is blocked without engineering leadership to standardize practices, optimize architecture, and prevent quality incidents that would damage fintech brand trust. AI infrastructure needs add urgency for strategic technical leadership.
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Extracted pain-point analysis:
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   Pain points: 6
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   Strategic needs: 5
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   Risks if unfilled: 5
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   Success metrics: 6
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Extracted Pain Points:
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   1. Engineering quality inconsistency across teams preventing reliable delivery at 70M+ customer scale
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   2. Best practices not being followed consistently across organization, creating technical drift
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   3. Engineering processes insufficient for current org complexity (13,000 employees), causing inefficiency
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   4. Technical debt from rapid scaling blocking further growth and feature velocity
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   5. Architecture not optimized for distributed systems at current scale, limiting performance
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   6. AI infrastructure capabilities lagging strategic needs for LLM-based features
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] Extracted Strategic Needs:
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   1. Standardize engineering excellence across globally distributed teams to enable consistent product quality
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   2. Build scalable architecture foundation to support next phase of customer growth beyond 70M users
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   3. Establish AI/ML infrastructure capabilities as competitive differentiator in fintech
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   4. Accelerate engineering hiring to support expansion while maintaining quality bar
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2]   5. Reduce engineering inefficiency to improve time-to-market for financial products
+{"timestamp": "2026-04-17T20:20:08.162254Z", "event": "layer_complete", "job_id": "699f001187737d491c3ab803", "layer": 2, "layer_name": "pain_point_miner", "status": "success", "duration_ms": 70313, "metadata": {"pain_points_count": 6, "strategic_needs_count": 5}}
+2026-04-17 22:20:08 [INFO] src.layer2.pain_point_miner: [run:019d9d17] [layer2] ============================================================
+2026-04-17 22:20:08 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] ============================================================
+2026-04-17 22:20:08 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] LAYER 4: Opportunity Mapper (Phase 6 + Annotation Signal)
+2026-04-17 22:20:08 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] ============================================================
+2026-04-17 22:20:08 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] Backend: UnifiedLLM (tier=middle, model=claude-sonnet-4-5-20250929)
+{"timestamp": "2026-04-17T20:20:08.164253Z", "event": "layer_start", "job_id": "699f001187737d491c3ab803", "layer": 4, "layer_name": "opportunity_mapper"}
+2026-04-17 22:20:08 [INFO] src.layer4.opportunity_mapper: Analyzing fit for: Head of Engineering at REVOLUT
+2026-04-17 22:20:08 [INFO] src.common.unified_llm: [UnifiedLLM:fit_analysis] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=enabled, job=699f001187737d49
+{"timestamp": "2026-04-17T20:20:08.164770Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "fit_analysis"}
+{"timestamp": "2026-04-17T20:20:08.164995Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_d9ef41e0", "system_prompt_preview": "", "user_prompt_preview": "You are a ...aterials\"\n", "prompt_length": 11273}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:20:08 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{"error":"Forbidden"}\n')
+{"timestamp": "2026-04-17T20:21:12.190777Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 64025, "metadata": {"session_id": "claude_d9ef41e0", "result_preview": "**REASONIN...al skills.", "result_length": 3437}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.021338999999999997, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:21:12 [INFO] src.common.unified_llm: [UnifiedLLM:fit_analysis] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=64026ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:21:12.191491Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 64026, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "fit_analysis"}
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: No annotations - using LLM score directly
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: Final fit score: 42/100 (weak)
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: Generated rationale (513 chars)
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: Rationale validation: see any quality warnings above
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] Fit Score: 42/100
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] Fit Category: WEAK
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] Fit Rationale:
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4]   At Seven.One, candidate engineered LLM infrastructure with quantified performance (2ms L1 cache, 200ms L2 cache, Claude Sonnet integration), directly addressing Revolut's AI capability gap. However, CV provides zero evidence of team leadership, hiring, or managing engineering quality across multiple teams—all critical requirements for Head of Engineering. The 35,000x scale gap (2,000 users vs. 70M customers) and absence of any people management metrics make this a weak fit despite strong IC technical skills.
+{"timestamp": "2026-04-17T20:21:12.193449Z", "event": "layer_complete", "job_id": "699f001187737d491c3ab803", "layer": 4, "layer_name": "opportunity_mapper", "status": "success", "duration_ms": 64029, "metadata": {"fit_score": 42, "fit_category": "weak"}}
+2026-04-17 22:21:12 [INFO] src.layer4.opportunity_mapper: [run:019d9d17] [layer4] ============================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: [run:019d9d17] [layer6_v2] ============================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: [run:019d9d17] [layer6_v2] LAYER 6 V2: CV Generation Pipeline
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: [run:019d9d17] [layer6_v2] ============================================================
+{"timestamp": "2026-04-17T20:21:12.195681Z", "event": "layer_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2"}
+2026-04-17 22:21:12 [INFO] src.common.master_cv_store: Master-CV collections and indexes ensured
+2026-04-17 22:21:12 [INFO] src.layer6_v2.cv_loader: ✅ CVLoader initialized with MongoDB support (will use CV Editor data)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: RoleGenerator initialized with UnifiedLLM (step=role_generator, tier=middle)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.header_generator: HeaderGenerator initialized with UnifiedLLM (step=header_generator, tier=middle)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.grader: CVGrader initialized with UnifiedLLM (step=grader, tier=low)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.improver: CVImprover initialized with UnifiedLLM (step=improver, tier=middle)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: CVGeneratorV2 initialized with model: gpt-4o
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: ============================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: CV GENERATION V2: Starting 6-phase pipeline
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: ============================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: Phase 1: Loading candidate data...
+{"timestamp": "2026-04-17T20:21:12.277704Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 1, "phase_name": "load_candidate_data"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_parser: Parsed 01_seven_one_entertainment: 18 achievements, 93 total variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_parser: Parsed 02_samdock_daypaio: 8 achievements, 33 total variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_parser: Parsed 03_ki_labs: 5 achievements, 21 total variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_parser: Parsed 04_fortis: 4 achievements, 16 total variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_parser: Parsed 05_osram: 7 achievements, 25 total variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_parser: Parsed 06_clary_icon: 6 achievements, 24 total variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.cv_loader: ✅ Loaded 6 roles from MongoDB (CV Editor data)
+2026-04-17 22:21:12 [WARNING] src.layer6_v2.cv_loader: Achievement grounding filtered 87 hard skills: ['API Design', 'API Integration', 'AWS (Lambda, ECS, EventBridge, S3, CloudFront, SNS, SQS, Fargate)', 'Aggregation Pipelines', 'Analytics Dashboards', 'Apache Airflow', 'Automation', 'Automation Platforms', 'Backend Development', 'Bash', 'Batch Processing', 'Big Data', 'Bitbucket', 'CSS', 'Cloud Architecture', 'Cloud Computing', 'Cloud Infrastructure', 'Cloud-Native Architecture', 'Code Review', 'Component Libraries', 'Confluence Ingestion', 'Container Orchestration', 'Containerization', 'Cross-Platform', 'Data Pipelines', 'DataOps', 'Datadog', 'Design Patterns', 'DevOps', 'Distributed Systems', 'Docker', 'DynamoDB', 'Eclipse', 'Elasticsearch', 'Embedded Systems', 'Event Sourcing', 'Event Streaming', 'Frontend Development', 'Frontend Frameworks', 'GCP', 'GitHub', 'GitHub Actions', 'Google Cloud Platform', 'Grafana', 'HTML', 'High-Availability Systems', 'Hybrid Search (BM25 + RRF)', 'Infrastructure as Code', 'Jenkins', 'Jira ADF Parsing', 'Kubernetes', 'LLM-as-Judge Evaluation', 'Linux', 'Logging', 'Media Encoding', 'Model Routing', 'Mongoose', 'NoSQL', 'Observability Platforms', 'Performance Optimization', 'Prometheus', 'Prompt Engineering', 'Protocol Design', 'QML', 'Qt (Widgets)', 'RAG Pipeline', 'RAPTOR Indexing', 'Real-Time Streaming', 'Retrieval Evaluation (MRR, NDCG)', 'Scalable Systems', 'Serverless', 'Service Delivery Platforms', 'Smart Lighting', 'Snapshot Testing', 'Software Architecture', 'Swagger/OpenAPI', 'System Design', 'TCP/IP', 'TDD', 'Terraform', 'Third-Party System Integration', 'Unit Testing', 'Vector Search (S3 Vectors)', 'Vercel AI SDK', 'Video Transcoding', 'Visual Studio', 'text-embedding-3-small']
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   Loaded 6 roles from master CV
+{"timestamp": "2026-04-17T20:21:12.463246Z", "event": "phase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 1, "phase_name": "load_candidate_data", "roles_count": 6, "roles": [{"company": "Seven.One Entertainment Group", "title": "Technical Lead (Addressable TV)", "period": "2020\u2013Present"}, {"company": "Samdock (Daypaio)", "title": "Lead Software Engineer", "period": "2019\u20132020"}, {"company": "KI Labs", "title": "Intermediate Backend Engineer", "period": "2018\u20132019"}, {"company": "Fortis (Research Project)", "title": "Backend Engineer", "period": "2018"}, {"company": "OSRAM", "title": "Software Engineer (IoT)", "period": "2016\u20132018"}, {"company": "Clary Icon", "title": "Software Engineer", "period": "2014\u20132016"}], "skill_whitelist_size": {"hard_skills": 73, "soft_skills": 9}, "certifications_count": 4, "education": {"masters": "M.Sc. Computer Science \u2014 Technical University of M...", "bachelors": "B.Sc. Computer Software Engineering \u2014 GIK Institut..."}}}
+{"timestamp": "2026-04-17T20:21:12.463477Z", "event": "ai_classification", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"is_ai_job": false, "ai_categories": [], "role_category": "head_of_engineering", "role_category_override": null}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: Phase 2: Generating tailored bullets per role...
+{"timestamp": "2026-04-17T20:21:12.463612Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 2, "phase_name": "generate_bullets", "has_jd_annotations": false, "roles_to_process": 6}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   Variant-based generation ENABLED (zero hallucination)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   Roles with variants: 6/6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+==================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: VARIANT-BASED GENERATION
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Processing 6 roles
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Target role category: head_of_engineering
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Fallback to LLM: True
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: ==================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+[Role 1/6] Seven.One Entertainment Group - Technical Lead (Addressable TV)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selecting variants for: Seven.One Entertainment Group - Technical Lead (Addressable TV)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Available achievements: 18
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total variants: 93
+{"timestamp": "2026-04-17T20:21:12.464421Z", "event": "cv_role_gen_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting variant selection for Seven.One Entertainment Group - Technical Lead (Addressable TV)", "phase": 2, "subphase": "role_Seven.One Entertainment Group", "role_title": "Technical Lead (Addressable TV)", "role_company": "Seven.One Entertainment Group", "available_achievements": 18, "total_variants": 93, "target_bullet_count": null, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_selector: Selected 6/6 variants for Seven.One Entertainment Group (avg score: 0.35, keyword coverage: 11%)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selected 6 variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keyword coverage: 10.9%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Generated 6 bullets from variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Word count: 80
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keywords integrated: 6
+{"timestamp": "2026-04-17T20:21:12.548247Z", "event": "cv_role_gen_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Variant selection complete for Seven.One Entertainment Group: 6 bullets", "decision": "variant_selection", "role_company": "Seven.One Entertainment Group", "role_title": "Technical Lead (Addressable TV)", "bullets_count": 6, "total_word_count": 80, "keyword_coverage": 0.10909090909090909, "keywords_integrated": ["architecture", "engineering", "hiring", "system", "team", "technical"], "keywords_count": 6, "annotation_influenced_count": 0, "bullet_details": [{"index": 0, "text_preview": "Led engineering hiring by defining selection criteria and designing technical assessments", "word_count": 11, "jd_keyword_used": "technical", "source_metric": null, "annotation_influenced": false}, {"index": 1, "text_preview": "Mentored 10+ senior engineers on architecture and cloud patterns, promoting 3 to lead positions", "word_count": 14, "jd_keyword_used": "architecture", "source_metric": null, "annotation_influenced": false}, {"index": 2, "text_preview": "Established DDD framework as engineering standard, cutting developer onboarding time from 6 to 3 months", "word_count": 15, "jd_keyword_used": "engineering", "source_metric": null, "annotation_influenced": false}, {"index": 3, "text_preview": "Analyzed and communicated system risks transparently to business stakeholders for informed decision-making", "word_count": 12, "jd_keyword_used": "system", "source_metric": null, "annotation_influenced": false}, {"index": 4, "text_preview": "Led observability initiative from concept to production, tra...ming team's ability to detect and resolve issues proactively", "word_count": 16, "jd_keyword_used": "team", "source_metric": null, "annotation_influenced": false}, {"index": 5, "text_preview": "Bridged business and technical domains, identifying core metrics and leading their realization", "word_count": 12, "jd_keyword_used": "technical", "source_metric": null, "annotation_influenced": false}]}}
+{"timestamp": "2026-04-17T20:21:12.548384Z", "event": "cv_role_gen_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Completed variant selection for Seven.One Entertainment Group", "phase": 2, "subphase": "role_Seven.One Entertainment Group", "role_title": "Technical Lead (Addressable TV)", "role_company": "Seven.One Entertainment Group", "bullets_generated": 6, "word_count": 80, "keyword_coverage": 0.10909090909090909, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   Selected 6 variants (80 words)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+[Role 2/6] Samdock (Daypaio) - Lead Software Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selecting variants for: Samdock (Daypaio) - Lead Software Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Available achievements: 8
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total variants: 33
+{"timestamp": "2026-04-17T20:21:12.548509Z", "event": "cv_role_gen_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting variant selection for Samdock (Daypaio) - Lead Software Engineer", "phase": 2, "subphase": "role_Samdock (Daypaio)", "role_title": "Lead Software Engineer", "role_company": "Samdock (Daypaio)", "available_achievements": 8, "total_variants": 33, "target_bullet_count": null, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_selector: Selected 6/6 variants for Samdock (Daypaio) (avg score: 0.30, keyword coverage: 11%)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selected 6 variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keyword coverage: 10.9%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Generated 6 bullets from variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Word count: 90
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keywords integrated: 6
+{"timestamp": "2026-04-17T20:21:12.569061Z", "event": "cv_role_gen_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Variant selection complete for Samdock (Daypaio): 6 bullets", "decision": "variant_selection", "role_company": "Samdock (Daypaio)", "role_title": "Lead Software Engineer", "bullets_count": 6, "total_word_count": 90, "keyword_coverage": 0.10909090909090909, "keywords_integrated": ["architecture", "code", "engineering", "quality", "team", "technical"], "keywords_count": 6, "annotation_influenced_count": 0, "bullet_details": [{"index": 0, "text_preview": "Led SCRUM team of 4 engineers, improving sprint velocity by 30% through agile practice refinement", "word_count": 15, "jd_keyword_used": "team", "source_metric": "30%", "annotation_influenced": false}, {"index": 1, "text_preview": "Defined engineering standards for startup codebase, balancing speed with quality through testing discipline", "word_count": 13, "jd_keyword_used": "quality", "source_metric": null, "annotation_influenced": false}, {"index": 2, "text_preview": "Developed talent pipeline through hands-on apprenticeship resulting in successful career progression", "word_count": 11, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}, {"index": 3, "text_preview": "Facilitated cross-functional event storming workshops translating business requirements into technical domain model", "word_count": 12, "jd_keyword_used": "technical", "source_metric": null, "annotation_influenced": false}, {"index": 4, "text_preview": "Designed architecture balancing startup agility with enterprise scalability for 10x growth", "word_count": 11, "jd_keyword_used": "architecture", "source_metric": "10x", "annotation_influenced": false}, {"index": 5, "text_preview": "Reduced production bugs by 40% through comprehensive testing...ral compliance and coding standards adoption across the team", "word_count": 28, "jd_keyword_used": "team", "source_metric": "40%", "annotation_influenced": false}]}}
+{"timestamp": "2026-04-17T20:21:12.569176Z", "event": "cv_role_gen_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Completed variant selection for Samdock (Daypaio)", "phase": 2, "subphase": "role_Samdock (Daypaio)", "role_title": "Lead Software Engineer", "role_company": "Samdock (Daypaio)", "bullets_generated": 6, "word_count": 90, "keyword_coverage": 0.10909090909090909, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   Selected 6 variants (90 words)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+[Role 3/6] KI Labs - Intermediate Backend Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selecting variants for: KI Labs - Intermediate Backend Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Available achievements: 5
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total variants: 21
+{"timestamp": "2026-04-17T20:21:12.569287Z", "event": "cv_role_gen_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting variant selection for KI Labs - Intermediate Backend Engineer", "phase": 2, "subphase": "role_KI Labs", "role_title": "Intermediate Backend Engineer", "role_company": "KI Labs", "available_achievements": 5, "total_variants": 21, "target_bullet_count": null, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_selector: Selected 5/5 variants for KI Labs (avg score: 0.23, keyword coverage: 5%)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selected 5 variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keyword coverage: 5.5%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Generated 5 bullets from variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Word count: 50
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keywords integrated: 3
+{"timestamp": "2026-04-17T20:21:12.580202Z", "event": "cv_role_gen_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Variant selection complete for KI Labs: 5 bullets", "decision": "variant_selection", "role_company": "KI Labs", "role_title": "Intermediate Backend Engineer", "bullets_count": 5, "total_word_count": 50, "keyword_coverage": 0.05454545454545454, "keywords_integrated": ["architecture", "optimization", "quality"], "keywords_count": 3, "annotation_influenced_count": 0, "bullet_details": [{"index": 0, "text_preview": "Implemented onion architecture pattern for data pipeline APIs, ensuring separation of concerns and testability", "word_count": 14, "jd_keyword_used": "architecture", "source_metric": null, "annotation_influenced": false}, {"index": 1, "text_preview": "Reduced query latency by 60% through data layer optimization", "word_count": 9, "jd_keyword_used": "optimization", "source_metric": "60%", "annotation_influenced": false}, {"index": 2, "text_preview": "Reduced support requests by 40% through comprehensive API documentation", "word_count": 9, "jd_keyword_used": null, "source_metric": "40%", "annotation_influenced": false}, {"index": 3, "text_preview": "Bi-weekly sprint delivery with consistent quality in consulting environment", "word_count": 9, "jd_keyword_used": "quality", "source_metric": null, "annotation_influenced": false}, {"index": 4, "text_preview": "Reduced production incidents by 35% through systematic testing approach", "word_count": 9, "jd_keyword_used": null, "source_metric": "35%", "annotation_influenced": false}]}}
+{"timestamp": "2026-04-17T20:21:12.580296Z", "event": "cv_role_gen_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Completed variant selection for KI Labs", "phase": 2, "subphase": "role_KI Labs", "role_title": "Intermediate Backend Engineer", "role_company": "KI Labs", "bullets_generated": 5, "word_count": 50, "keyword_coverage": 0.05454545454545454, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   Selected 5 variants (50 words)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+[Role 4/6] Fortis (Research Project) - Backend Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selecting variants for: Fortis (Research Project) - Backend Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Available achievements: 4
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total variants: 16
+{"timestamp": "2026-04-17T20:21:12.580410Z", "event": "cv_role_gen_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting variant selection for Fortis (Research Project) - Backend Engineer", "phase": 2, "subphase": "role_Fortis (Research Project)", "role_title": "Backend Engineer", "role_company": "Fortis (Research Project)", "available_achievements": 4, "total_variants": 16, "target_bullet_count": null, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_selector: Selected 4/4 variants for Fortis (Research Project) (avg score: 0.25, keyword coverage: 5%)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selected 4 variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keyword coverage: 5.5%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Generated 4 bullets from variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Word count: 38
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keywords integrated: 3
+{"timestamp": "2026-04-17T20:21:12.589019Z", "event": "cv_role_gen_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Variant selection complete for Fortis (Research Project): 4 bullets", "decision": "variant_selection", "role_company": "Fortis (Research Project)", "role_title": "Backend Engineer", "bullets_count": 4, "total_word_count": 38, "keyword_coverage": 0.05454545454545454, "keywords_integrated": ["architecture", "collaboration", "communication"], "keywords_count": 3, "annotation_influenced_count": 0, "bullet_details": [{"index": 0, "text_preview": "Designed Node.js microservices architecture establishing service boundaries and communication contracts", "word_count": 10, "jd_keyword_used": "communication", "source_metric": null, "annotation_influenced": false}, {"index": 1, "text_preview": "Established event-driven communication patterns using RabbitMQ for service decoupling", "word_count": 9, "jd_keyword_used": "communication", "source_metric": null, "annotation_influenced": false}, {"index": 2, "text_preview": "SCRUM collaboration with research client demos and feedback integration", "word_count": 9, "jd_keyword_used": "collaboration", "source_metric": null, "annotation_influenced": false}, {"index": 3, "text_preview": "Created API contracts enabling parallel development and clear integration points", "word_count": 10, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}]}}
+{"timestamp": "2026-04-17T20:21:12.589107Z", "event": "cv_role_gen_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Completed variant selection for Fortis (Research Project)", "phase": 2, "subphase": "role_Fortis (Research Project)", "role_title": "Backend Engineer", "role_company": "Fortis (Research Project)", "bullets_generated": 4, "word_count": 38, "keyword_coverage": 0.05454545454545454, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   Selected 4 variants (38 words)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+[Role 5/6] OSRAM - Software Engineer (IoT)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selecting variants for: OSRAM - Software Engineer (IoT)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Available achievements: 7
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total variants: 25
+{"timestamp": "2026-04-17T20:21:12.589224Z", "event": "cv_role_gen_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting variant selection for OSRAM - Software Engineer (IoT)", "phase": 2, "subphase": "role_OSRAM", "role_title": "Software Engineer (IoT)", "role_company": "OSRAM", "available_achievements": 7, "total_variants": 25, "target_bullet_count": null, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_selector: Selected 6/6 variants for OSRAM (avg score: 0.24, keyword coverage: 5%)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selected 6 variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keyword coverage: 5.5%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Generated 6 bullets from variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Word count: 82
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keywords integrated: 3
+{"timestamp": "2026-04-17T20:21:12.606955Z", "event": "cv_role_gen_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Variant selection complete for OSRAM: 6 bullets", "decision": "variant_selection", "role_company": "OSRAM", "role_title": "Software Engineer (IoT)", "bullets_count": 6, "total_word_count": 82, "keyword_coverage": 0.05454545454545454, "keywords_integrated": ["collaboration", "infrastructure", "team"], "keywords_count": 3, "annotation_influenced_count": 0, "bullet_details": [{"index": 0, "text_preview": "Created reference implementation of CoAP server that became team standard for new OpenAIS-related development", "word_count": 14, "jd_keyword_used": "team", "source_metric": null, "annotation_influenced": false}, {"index": 1, "text_preview": "Bridged legacy OSRAM infrastructure with OpenAIS platform, enabling gradual migration path for existing installations", "word_count": 14, "jd_keyword_used": "infrastructure", "source_metric": null, "annotation_influenced": false}, {"index": 2, "text_preview": "Architected protocol translation layer bridging CoAP and UDP...nding ecosystem compatibility beyond native protocol support", "word_count": 15, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}, {"index": 3, "text_preview": "Created comprehensive development and installation documentation that became team reference material", "word_count": 11, "jd_keyword_used": "team", "source_metric": null, "annotation_influenced": false}, {"index": 4, "text_preview": "Built demonstration application used by OSRAM business units... backend capabilities to enterprise clients and stakeholders", "word_count": 17, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}, {"index": 5, "text_preview": "SCRUM team collaboration with JIRA and Git in diverse international environment", "word_count": 11, "jd_keyword_used": "collaboration", "source_metric": null, "annotation_influenced": false}]}}
+{"timestamp": "2026-04-17T20:21:12.607068Z", "event": "cv_role_gen_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Completed variant selection for OSRAM", "phase": 2, "subphase": "role_OSRAM", "role_title": "Software Engineer (IoT)", "role_company": "OSRAM", "bullets_generated": 6, "word_count": 82, "keyword_coverage": 0.05454545454545454, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   Selected 6 variants (82 words)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+[Role 6/6] Clary Icon - Software Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selecting variants for: Clary Icon - Software Engineer
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Available achievements: 6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total variants: 24
+{"timestamp": "2026-04-17T20:21:12.607197Z", "event": "cv_role_gen_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting variant selection for Clary Icon - Software Engineer", "phase": 2, "subphase": "role_Clary Icon", "role_title": "Software Engineer", "role_company": "Clary Icon", "available_achievements": 6, "total_variants": 24, "target_bullet_count": null, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.variant_selector: Selected 6/6 variants for Clary Icon (avg score: 0.21, keyword coverage: 5%)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Selected 6 variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keyword coverage: 5.5%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Generated 6 bullets from variants
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Word count: 126
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Keywords integrated: 3
+{"timestamp": "2026-04-17T20:21:12.627292Z", "event": "cv_role_gen_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Variant selection complete for Clary Icon: 6 bullets", "decision": "variant_selection", "role_company": "Clary Icon", "role_title": "Software Engineer", "bullets_count": 6, "total_word_count": 126, "keyword_coverage": 0.05454545454545454, "keywords_integrated": ["architecture", "engineering", "system"], "keywords_count": 3, "annotation_influenced_count": 0, "bullet_details": [{"index": 0, "text_preview": "Architected video recording pipeline integrating WebRTC stre...de with FFmpeg transcoding for format conversion and storage", "word_count": 17, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}, {"index": 1, "text_preview": "Designed synchronized playback architecture solving multi-pa...nt using WebSocket timestamps and persistent stream metadata", "word_count": 15, "jd_keyword_used": "architecture", "source_metric": null, "annotation_influenced": false}, {"index": 2, "text_preview": "Built self-service onboarding system that reduced support re...eech, screen annotations, and step-by-step workflow guidance", "word_count": 31, "jd_keyword_used": "system", "source_metric": null, "annotation_influenced": false}, {"index": 3, "text_preview": "Direct client engagement for requirements, demos, and feedback integration", "word_count": 9, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}, {"index": 4, "text_preview": "Self-directed reverse engineering of SIP client to add missi...atures needed for internal testing and client demonstrations", "word_count": 17, "jd_keyword_used": "engineering", "source_metric": null, "annotation_influenced": false}, {"index": 5, "text_preview": "Built enhanced desktop SIP client interface in Qt C++, addin...rate custom features without vendor support or documentation", "word_count": 37, "jd_keyword_used": null, "source_metric": null, "annotation_influenced": false}]}}
+{"timestamp": "2026-04-17T20:21:12.627395Z", "event": "cv_role_gen_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Completed variant selection for Clary Icon", "phase": 2, "subphase": "role_Clary Icon", "role_title": "Software Engineer", "role_company": "Clary Icon", "bullets_generated": 6, "word_count": 126, "keyword_coverage": 0.05454545454545454, "generation_method": "variant_selection"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   Selected 6 variants (126 words)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: 
+==================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: VARIANT-BASED GENERATION COMPLETE
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total bullets: 33
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Total words: 466
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: Roles processed: 6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   - Variant selection: 6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   - LLM fallback: 0
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator:   - Skipped: 0
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_generator: ==================================================
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   Generated bullets for 6 roles
+{"timestamp": "2026-04-17T20:21:12.627624Z", "event": "phase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 2, "phase_name": "generate_bullets", "roles_processed": 6, "per_role_summary": [{"company": "Seven.One Entertainment Group", "title": "Technical Lead (Addressable TV)", "bullets_count": 6, "total_word_count": 80}, {"company": "Samdock (Daypaio)", "title": "Lead Software Engineer", "bullets_count": 6, "total_word_count": 90}, {"company": "KI Labs", "title": "Intermediate Backend Engineer", "bullets_count": 5, "total_word_count": 50}, {"company": "Fortis (Research Project)", "title": "Backend Engineer", "bullets_count": 4, "total_word_count": 38}, {"company": "OSRAM", "title": "Software Engineer (IoT)", "bullets_count": 6, "total_word_count": 82}, {"company": "Clary Icon", "title": "Software Engineer", "bullets_count": 6, "total_word_count": 126}], "total_bullets": 33}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: Phase 3: Running hallucination QA...
+{"timestamp": "2026-04-17T20:21:12.627710Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 3, "phase_name": "hallucination_qa"}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running hallucination check for Seven.One Entertainment Group
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: QA Result: PASS
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Flagged: 1/6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Confidence: 0.83
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running STAR format check for Seven.One Entertainment Group
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Check: FAIL
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Coverage: 0.0% (0/6)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Keyword Coverage: 6.7%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Found: 1/15
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running hallucination check for Samdock (Daypaio)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: QA Result: PASS
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Flagged: 0/6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Confidence: 1.00
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running STAR format check for Samdock (Daypaio)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Check: FAIL
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Coverage: 0.0% (0/6)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Keyword Coverage: 0.0%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Found: 0/15
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running hallucination check for KI Labs
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: QA Result: PASS
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Flagged: 0/5
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Confidence: 1.00
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running STAR format check for KI Labs
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Check: FAIL
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Coverage: 0.0% (0/5)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Keyword Coverage: 0.0%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Found: 0/15
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running hallucination check for Fortis (Research Project)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: QA Result: PASS
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Flagged: 0/4
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Confidence: 1.00
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running STAR format check for Fortis (Research Project)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Check: FAIL
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Coverage: 0.0% (0/4)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Keyword Coverage: 0.0%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Found: 0/15
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running hallucination check for OSRAM
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: QA Result: PASS
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Flagged: 2/6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Confidence: 0.67
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running STAR format check for OSRAM
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Check: FAIL
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Coverage: 0.0% (0/6)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Keyword Coverage: 0.0%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Found: 0/15
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running hallucination check for Clary Icon
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: QA Result: PASS
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Flagged: 0/6
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Confidence: 1.00
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: Running STAR format check for Clary Icon
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Check: FAIL
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Coverage: 0.0% (0/6)
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Keyword Coverage: 0.0%
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa:   Found: 0/15
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: 
+QA Summary: 6/6 roles passed hallucination check
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Summary: 0/6 roles passed STAR format check
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: STAR Coverage: 0.0% average
+2026-04-17 22:21:12 [INFO] src.layer6_v2.role_qa: ATS Summary: 1.1% average keyword coverage
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   QA passed: 6/6 roles
+{"timestamp": "2026-04-17T20:21:12.703926Z", "event": "phase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 3, "phase_name": "hallucination_qa", "qa_passed_count": 6, "qa_failed_count": 0, "qa_pass_rate": 1.0, "per_role_qa": [{"role": "role_0", "passed": true, "grounding_issues": 0, "metric_issues": 0}, {"role": "role_1", "passed": true, "grounding_issues": 0, "metric_issues": 0}, {"role": "role_2", "passed": true, "grounding_issues": 0, "metric_issues": 0}, {"role": "role_3", "passed": true, "grounding_issues": 0, "metric_issues": 0}, {"role": "role_4", "passed": true, "grounding_issues": 0, "metric_issues": 0}, {"role": "role_5", "passed": true, "grounding_issues": 0, "metric_issues": 0}]}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   Using skill whitelist: 73 hard, 9 soft skills
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator: Phase 4: Stitching roles with deduplication...
+{"timestamp": "2026-04-17T20:21:12.704033Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 4, "phase_name": "stitch_roles", "word_budget": null, "target_keywords_count": 15}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher: Stitching 6 roles
+{"timestamp": "2026-04-17T20:21:12.704103Z", "event": "cv_stitch_subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Starting CV stitching for 6 roles", "phase": 4, "subphase": "stitch_start", "roles_count": 6, "original_bullet_count": 33, "target_keywords_count": 15, "roles": [{"company": "Seven.One Entertainment Group", "title": "Technical Lead (Addressable TV)", "bullet_count": 6}, {"company": "Samdock (Daypaio)", "title": "Lead Software Engineer", "bullet_count": 6}, {"company": "KI Labs", "title": "Intermediate Backend Engineer", "bullet_count": 5}, {"company": "Fortis (Research Project)", "title": "Backend Engineer", "bullet_count": 4}, {"company": "OSRAM", "title": "Software Engineer (IoT)", "bullet_count": 6}, {"company": "Clary Icon", "title": "Software Engineer", "bullet_count": 6}]}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher: Found 0 duplicate pairs
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher: Word budget disabled - keeping all content
+{"timestamp": "2026-04-17T20:21:12.791361Z", "event": "cv_stitch_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Deduplication complete: 33 \u2192 33 \u2192 33 bullets", "decision": "deduplication_result", "original_count": 33, "after_dedup_count": 33, "final_count": 33, "removed_by_dedup": 0, "removed_by_budget": 0, "compression_applied": false, "word_budget": null}}
+{"timestamp": "2026-04-17T20:21:12.791631Z", "event": "cv_stitch_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "Compiled skills for 6 roles", "decision": "skill_compilation", "roles_summary": [{"company": "Seven.One Entertainment Group", "bullet_count": 6, "skills_count": 8, "jd_matching_skills": []}, {"company": "Samdock (Daypaio)", "bullet_count": 6, "skills_count": 8, "jd_matching_skills": []}, {"company": "KI Labs", "bullet_count": 5, "skills_count": 8, "jd_matching_skills": []}, {"company": "Fortis (Research Project)", "bullet_count": 4, "skills_count": 8, "jd_matching_skills": []}, {"company": "OSRAM", "bullet_count": 6, "skills_count": 8, "jd_matching_skills": []}, {"company": "Clary Icon", "bullet_count": 6, "skills_count": 8, "jd_matching_skills": []}], "total_keywords_found": 1, "keywords_found": ["Hiring"], "whitelist_active": true, "whitelist_size": 82}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher: Stitching complete:
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher:   Original bullets: 33
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher:   After dedup: 33
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher:   Final bullets: 33
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher:   Total words: 466
+2026-04-17 22:21:12 [INFO] src.layer6_v2.stitcher:   Keywords found: 1
+{"timestamp": "2026-04-17T20:21:12.791811Z", "event": "cv_stitch_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator", "metadata": {"message": "CV stitching complete: 33 bullets, 466 words", "phase": 4, "subphase": "stitch_complete", "original_bullet_count": 33, "final_bullet_count": 33, "total_word_count": 466, "roles_count": 6, "keywords_coverage_count": 1, "duplicates_removed": 0, "compression_applied": false}}
+2026-04-17 22:21:12 [INFO] src.layer6_v2.orchestrator:   Stitched CV: 466 words, 33 bullets
+{"timestamp": "2026-04-17T20:21:12.791870Z", "event": "phase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 4, "phase_name": "stitch_roles", "total_word_count": 466, "total_bullet_count": 33, "roles_included": 6, "deduplication_applied": true, "word_budget": null, "within_budget": true}}
+{"timestamp": "2026-04-17T20:21:12.805337Z", "event": "persona_sources", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"has_synthesized_persona": false, "has_ideal_candidate_profile": true, "has_role_persona": true, "persona_sources_count": 2}}
+2026-04-17 22:21:12 [WARNING] src.common.llm_config: Unrecognized step name 'title_sanitizer' - using default config. Add it to STEP_CONFIGS in llm_config.py if this is a new step.
+2026-04-17 22:21:12 [INFO] src.common.unified_llm: [UnifiedLLM:title_sanitizer] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=enabled, job=699f001187737d49
+{"timestamp": "2026-04-17T20:21:12.811676Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "title_sanitizer"}
+{"timestamp": "2026-04-17T20:21:12.811850Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_e88d5bf6", "system_prompt_preview": "", "user_prompt_preview": "You clean ...ean title:", "prompt_length": 406}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:21:12 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{"error":"Forbidden"}\n')
+{"timestamp": "2026-04-17T20:21:19.549791Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 6737, "metadata": {"session_id": "claude_e88d5bf6", "result_preview": "Head of Engineering", "result_length": 19}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.00036300000000000004, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:21:19 [INFO] src.common.unified_llm: [UnifiedLLM:title_sanitizer] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=6738ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:21:19.550552Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 6738, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "title_sanitizer"}
+2026-04-17 22:21:19 [INFO] src.layer6_v2.title_sanitizer: LLM title sanitizer: 'Head of Engineering' → 'Head of Engineering'
+2026-04-17 22:21:19 [INFO] src.layer6_v2.orchestrator: Phase 5: Generating header and skills...
+{"timestamp": "2026-04-17T20:21:19.550789Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 5, "phase_name": "generate_header"}}
+2026-04-17 22:21:19 [INFO] src.layer6_v2.orchestrator:   Processing tier: D (fit_score=42)
+2026-04-17 22:21:19 [INFO] src.layer6_v2.orchestrator:   Using single-shot generation (D tier)
+2026-04-17 22:21:19 [INFO] src.layer6_v2.header_generator: Using skill whitelist: 73 hard, 9 soft skills
+2026-04-17 22:21:19 [INFO] src.layer6_v2.skills_taxonomy: Loaded skills taxonomy: 10 roles, 109 aliases
+2026-04-17 22:21:19 [INFO] src.layer6_v2.skills_taxonomy: TaxonomyBasedSkillsGenerator initialized: 82 whitelisted skills, lax_mode=True
+2026-04-17 22:21:19 [INFO] src.layer6_v2.header_generator: Using taxonomy-based skills generator
+2026-04-17 22:21:19 [INFO] src.layer6_v2.header_generator: HeaderGenerator initialized with UnifiedLLM (step=header_generator, tier=middle)
+2026-04-17 22:21:19 [INFO] src.layer6_v2.header_generator: Generating CV header sections...
+2026-04-17 22:21:19 [INFO] src.layer6_v2.header_generator: Generating V2 profile with anti-hallucination guarantees...
+{"timestamp": "2026-04-17T20:21:19.552472Z", "event": "cv_header_llm_call_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Generating value proposition for head_of_engineering", "component": "value_proposition", "system_prompt_preview": "You are generating a VALUE PROPOSITION STATEMENT for a CV header.\n\n=== VALUE PROPOSITION FORMULA ===...ith 12+ years building teams of 30+ engineers delivering cloud platforms serving 10M+ daily users.\"\n", "user_prompt_preview": "Generate a VALUE PROPOSITION STATEMENT for this candidate.\n\n=== ROLE CATEGORY: HEAD_OF_ENGINEERING ===\n\nFORMULA: [Function builder/culture champion] w...cator (team size, users, revenue)\n4. No soft skill clich\u00e9s\n5. All metrics must come from achievements above\n\nGenerate the value proposition statement:", "system_prompt_length": 2763, "user_prompt_length": 2878, "role_category": "head_of_engineering", "years_experience": 10}}
+2026-04-17 22:21:19 [INFO] src.common.unified_llm: [UnifiedLLM:header_generator] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=DISABLED (mandatory), job=699f001187737d49
+{"timestamp": "2026-04-17T20:21:19.552615Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "header_generator"}
+{"timestamp": "2026-04-17T20:21:19.552812Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_9260e46f", "system_prompt_preview": "", "user_prompt_preview": "You are ge...statement:", "prompt_length": 5643}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+{"timestamp": "2026-04-17T20:22:10.877528Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 51324, "metadata": {"session_id": "claude_9260e46f", "result_preview": "Engineerin...ocity 30%.", "result_length": 222}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.0050550000000000005, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:22:10 [INFO] src.common.unified_llm: [UnifiedLLM:header_generator] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=51325ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:22:10.878669Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 51325, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "header_generator"}
+2026-04-17 22:22:10 [INFO] src.layer6_v2.header_generator: V2 value proposition: 28 words
+{"timestamp": "2026-04-17T20:22:10.878825Z", "event": "cv_header_llm_call_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Value proposition generated: 28 words", "component": "value_proposition", "success": true, "result_preview": "Engineering leader with 10+ years balancing execution velocity and architectural excellence, mentori...adership while establishing frameworks that halved onboarding time and improved sprint velocity 30%.", "result_length": 222, "word_count": 28}}
+{"timestamp": "2026-04-17T20:22:10.879057Z", "event": "cv_header_llm_call_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Selecting key achievement bullets from 33 candidates", "component": "key_achievement_bullets", "system_prompt_preview": "You are selecting and tailoring KEY ACHIEVEMENT BULLETS for a CV header.\n\n=== TASK ===\n\nSelect 5-6 b...ected'\"\n    }\n  ],\n  \"rejected_jd_skills\": [\"skill1 not in whitelist\", \"skill2 not in whitelist\"]\n}\n", "user_prompt_preview": "Select and tailor 5-6 KEY ACHIEVEMENT BULLETS for the CV header.\n\n=== ROLE CATEGORY: HEAD_OF_ENGINEERING ===\nPREFERRED ACTION VERBS: Built, Establishe...whitelist\n   - Don't change core achievement\n4. Return rejected_jd_skills for any JD skills not in whitelist\n\nGenerate the achievement selection JSON:", "system_prompt_length": 2063, "user_prompt_length": 6199, "candidate_bullets_count": 33, "role_category": "head_of_engineering"}}
+2026-04-17 22:22:10 [INFO] src.common.unified_llm: [UnifiedLLM:header_generator] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=DISABLED (mandatory), job=699f001187737d49
+{"timestamp": "2026-04-17T20:22:10.879188Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "header_generator"}
+{"timestamp": "2026-04-17T20:22:10.879393Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_95b5d9e1", "system_prompt_preview": "", "user_prompt_preview": "You are se...tion JSON:", "prompt_length": 8264}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+{"timestamp": "2026-04-17T20:23:51.936802Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 101057, "metadata": {"session_id": "claude_95b5d9e1", "result_preview": "```json\n{\n...: []\n}\n```", "result_length": 4378}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.022608, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:23:51 [INFO] src.common.unified_llm: [UnifiedLLM:header_generator] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=101058ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:23:51.938113Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 101058, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "header_generator"}
+2026-04-17 22:23:51 [INFO] src.layer6_v2.header_generator: V2 selected 6 bullets, rejected 0 JD skills not in whitelist
+{"timestamp": "2026-04-17T20:23:51.938331Z", "event": "cv_header_llm_call_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Selected 6 key achievement bullets", "component": "key_achievement_bullets", "success": true, "bullets_selected": 6, "bullets_rejected_jd_skills": 0, "rejected_jd_skills_preview": [], "selected_bullets_preview": [{"text_preview": "Mentored 10+ senior engineers on architecture best practices, promoting 3 to lead positions", "source_role": "Seven.One Entertainment Group", "tailored": true}, {"text_preview": "Established Domain-Driven Design framework as best practice ...zation, cutting developer onboarding time from 6 to 3 months", "source_role": "Seven.One Entertainment Group", "tailored": true}, {"text_preview": "Drove observability initiative from concept to production, t...ity control through proactive issue detection and resolution", "source_role": "Seven.One Entertainment Group", "tailored": true}]}}
+2026-04-17 22:23:51 [INFO] src.layer6_v2.skills_taxonomy: Loaded skills taxonomy: 10 roles, 109 aliases
+2026-04-17 22:23:51 [INFO] src.layer6_v2.skills_taxonomy: CoreCompetencyGeneratorV2 initialized: role=head_of_engineering, 82 whitelisted skills, 4 static sections
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator: V2 core competencies: 40 skills, 4 JD skills rejected
+{"timestamp": "2026-04-17T20:23:52.017542Z", "event": "cv_header_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Generated 40 core competencies (algorithmic)", "component": "core_competencies", "method": "algorithmic_taxonomy", "total_skills_selected": 40, "jd_matched_skills_count": 3, "jd_matched_skills_preview": ["System Architecture", "ORM", "C"], "whitelist_only_skills_count": 37, "rejected_jd_skills_count": 4, "rejected_jd_skills_preview": ["llm training", "jvm languages", "llm optimization", "team leadership"], "skills_by_section": {"Executive Leadership": 10, "Strategic Delivery": 10, "Technology Vision": 10, "Business Impact": 10}, "role_category": "head_of_engineering", "all_from_whitelist": true}}
+{"timestamp": "2026-04-17T20:23:52.018013Z", "event": "cv_header_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Constructed headline: Head of Engineering | 10+ Years Engineering Leadership...", "component": "headline", "method": "algorithmic_template", "job_title": "Head of Engineering", "years_experience": 10, "headline_preview": "Head of Engineering | 10+ Years Engineering Leadership", "headline_word_count": 8, "summary_type": "executive_summary", "role_category": "head_of_engineering", "is_executive_level": true}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator: V2 profile generated: value_prop=28 words, achievements=6, competencies=4 sections
+{"timestamp": "2026-04-17T20:23:52.018144Z", "event": "cv_header_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"message": "Profile generation complete (V2)", "component": "profile_v2", "subphase": "profile_generation", "headline": {"text": "Head of Engineering | 10+ Years Engineering Leadership", "word_count": 8}, "tagline": {"text_preview": "Engineering leader with 10+ years balancing execution velocity and architectural...lishing frameworks that halved onboarding time and improved sprint velocity 30%.", "word_count": 28}, "key_achievements": {"count": 6, "previews": ["Mentored 10+ senior engineers on architecture best practices, promoting 3 to lead positions", "Established Domain-Driven Design framework as best...tting developer onboarding time from 6 to 3 months", "Drove observability initiative from concept to pro...l through proactive issue detection and resolution"]}, "core_competencies": {"sections_count": 4, "total_skills": 40, "sections": {"Executive Leadership": 10, "Strategic Delivery": 10, "Technology Vision": 10, "Business Impact": 10}}, "summary_type": "executive_summary", "role_category": "head_of_engineering", "regional_variant": "us_eu", "total_word_count": 124}}
+{"timestamp": "2026-04-17T20:23:52.018263Z", "event": "cv_header_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"decision": "profile_generation", "headline": {"text_preview": "Head of Engineering | 10+ Years Engineering Leadership", "word_count": 8}, "tagline": {"text_preview": "Engineering leader with 10+ years balancing execution veloci...", "word_count": 28}, "key_achievements_count": 6, "total_word_count": 124, "persona_applied": false}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator: Extracting skills from experience...
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator: Using taxonomy-based skills generator...
+2026-04-17 22:23:52 [INFO] src.layer6_v2.skills_taxonomy: Generating skills sections for role: head_of_engineering
+2026-04-17 22:23:52 [INFO] src.layer6_v2.skills_taxonomy: Selected 3 sections: ['Executive Leadership', 'Technology Vision', 'Strategic Delivery']
+2026-04-17 22:23:52 [INFO] src.layer6_v2.skills_taxonomy: Generated 2 sections with 3 total skills
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator: Generated 3 skills across 2 sections
+{"timestamp": "2026-04-17T20:23:52.020104Z", "event": "cv_header_decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"decision": "skills_generation", "skills_sections": [{"category": "Technology Vision", "skills_count": 2, "skills": ["Microservices", "Event-Driven Architecture"]}, {"category": "Strategic Delivery", "skills_count": 1, "skills": ["Agile"]}], "total_skills": 3, "taxonomy_used": true, "lax_mode": true}}
+{"timestamp": "2026-04-17T20:23:52.020177Z", "event": "cv_header_validation_result", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"validation": "skills_grounding_final", "passed": true, "total_skills": 3, "grounded_count": null}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator: Header generation complete:
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator:   Profile: 124 words
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator:   Skills: 3 across 2 categories
+2026-04-17 22:23:52 [INFO] src.layer6_v2.header_generator:   Validation: PASSED
+{"timestamp": "2026-04-17T20:23:52.020288Z", "event": "cv_header_subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "header_generator", "metadata": {"phase": 5, "subphase": "header_generation", "profile": {"headline_preview": "Head of Engineering | 10+ Years Engineering Leadership", "tagline_preview": "Engineering leader with 10+ years balancing execution veloci...", "key_achievements_count": 6, "word_count": 124}, "skills": {"sections_count": 2, "total_skills": 3, "categories": ["Technology Vision", "Strategic Delivery"]}, "education_count": 0, "certifications_count": 4, "validation_passed": true, "persona_applied": false, "annotation_context_used": false}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator:   Profile: 124 words
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator:   Skills sections: 2
+{"timestamp": "2026-04-17T20:23:52.020469Z", "event": "phase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 5, "phase_name": "generate_header", "tier_used": "D", "headline": {"text_preview": "Head of Engineering | 10+ Years Engineering Leadership", "word_count": 8}, "tagline": {"text_preview": "Engineering leader with 10+ years balancing execution veloci...", "word_count": 28}, "key_achievements": {"count": 6}, "core_competencies_count": 8, "profile_word_count": 124, "skills_sections": [{"category": "Technology Vision", "skills_count": 2}, {"category": "Strategic Delivery", "skills_count": 1}], "ensemble": null, "annotation_influenced": false}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator: Phase 5.4: Skill grounding validation...
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator:   Skill grounding: PASSED (all technologies grounded)
+{"timestamp": "2026-04-17T20:23:52.023180Z", "event": "validation_result", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"validation": "skill_grounding", "passed": true, "flagged_skills": [], "flag_count": 0}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator: Phase 5.5: ATS keyword validation...
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator:   Phase 6 ATS Validation: 0/10 keywords met
+2026-04-17 22:23:52 [WARNING] src.layer6_v2.orchestrator:     ⚠ Distributed systems: 0/1 (too few)
+2026-04-17 22:23:52 [WARNING] src.layer6_v2.orchestrator:     ⚠ Software architecture: 0/1 (too few)
+2026-04-17 22:23:52 [WARNING] src.layer6_v2.orchestrator:     ⚠ Engineering leadership: 0/1 (too few)
+{"timestamp": "2026-04-17T20:23:52.024412Z", "event": "validation_result", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"validation": "ats_coverage", "passed": false, "coverage_pct": null, "missing_keywords": [], "frequency_violations": []}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator: Phase 5.6: Reframe traceability validation...
+{"timestamp": "2026-04-17T20:23:52.024468Z", "event": "validation_result", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"validation": "reframe_traceability", "applied_count": 0, "not_applied_count": 0, "application_rate": 0}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator: Phase 5.7: Keyword placement validation...
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator:   Phase 5.7: No annotations - skipping placement validation
+{"timestamp": "2026-04-17T20:23:52.024525Z", "event": "validation_result", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"validation": "keyword_placement", "passed": null, "top_third_pct": null, "headline_keywords": [], "placement_score": null}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.orchestrator: Phase 6: Grading CV...
+{"timestamp": "2026-04-17T20:23:52.024569Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 6, "phase_name": "grade_and_improve"}}
+2026-04-17 22:23:52 [INFO] src.layer6_v2.grader: CVGrader initialized with UnifiedLLM (step=grader, tier=low)
+2026-04-17 22:23:52 [INFO] src.layer6_v2.grader: Grading CV across 5 dimensions...
+2026-04-17 22:23:52 [INFO] src.common.unified_llm: [UnifiedLLM:grader] 🚀 Starting LLM call: backend=claude_cli, model=claude-haiku-4-5-20251001, tier=low, fallback=DISABLED (mandatory), job=699f001187737d49
+{"timestamp": "2026-04-17T20:23:52.045240Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-haiku-4-5-20251001", "tier": "low", "step_name": "grader"}
+{"timestamp": "2026-04-17T20:23:52.045394Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_82079890", "system_prompt_preview": "You are an...*: 5 years", "user_prompt_preview": "## Design ... feedback.", "prompt_length": 105430}, "backend": "claude_cli", "model": "claude-haiku-4-5-20251001", "tier": "low", "step_name": "claude_cli:699f001187737d491c3ab803"}
+{"timestamp": "2026-04-17T20:25:16.187829Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 84142, "metadata": {"session_id": "claude_82079890", "result_preview": "```json\n{\n...ned roles.", "result_length": 14230}, "backend": "claude_cli", "model": "claude-haiku-4-5-20251001", "tier": "low", "cost_usd": 0.0110355, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:25:16 [INFO] src.common.unified_llm: [UnifiedLLM:grader] Backend=claude_cli, Model=claude-haiku-4-5-20251001, Duration=84236ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:25:16.281799Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 84236, "backend": "claude_cli", "model": "claude-haiku-4-5-20251001", "tier": "low", "step_name": "grader"}
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader: Type coercion NEEDED: exemplary_sections types = ['dict', 'dict', 'dict']
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader: Type coercion APPLIED: coerced 3 items to strings
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader: Grading complete:
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   Composite score: 6.27/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   Passed: False
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   Lowest dimension: anti_hallucination
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   - ats_optimization: 6.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   - impact_clarity: 7.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   - jd_alignment: 5.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   - executive_presence: 6.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.grader:   - anti_hallucination: 5.0/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:   Composite score: 6.3/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:   Passed: False (threshold: 8.5)
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:   Lowest dimension: anti_hallucination
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:     ats_optimization: 6.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:     impact_clarity: 7.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:     jd_alignment: 5.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:     executive_presence: 6.5/10
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:     anti_hallucination: 5.0/10
+{"timestamp": "2026-04-17T20:25:16.282870Z", "event": "decision_point", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"decision": "cv_grade", "composite_score": 6.2749999999999995, "passed": false, "threshold": 8.5, "dimensions": {}, "improvement_needed": true}}
+2026-04-17 22:25:16 [INFO] src.layer6_v2.orchestrator:   CV below threshold - applying single-pass improvement...
+{"timestamp": "2026-04-17T20:25:16.282974Z", "event": "subphase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 6, "subphase": "improvement"}}
+2026-04-17 22:25:16 [INFO] src.layer6_v2.improver: CVImprover initialized with UnifiedLLM (step=improver, tier=middle)
+2026-04-17 22:25:16 [INFO] src.layer6_v2.improver: Starting single-pass CV improvement...
+2026-04-17 22:25:16 [INFO] src.layer6_v2.improver: Targeting anti_hallucination (score: 5.0/10)
+2026-04-17 22:25:16 [INFO] src.common.unified_llm: [UnifiedLLM:improver] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=DISABLED (mandatory), job=699f001187737d49
+{"timestamp": "2026-04-17T20:25:16.283806Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "improver"}
+{"timestamp": "2026-04-17T20:25:16.284074Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_e9042270", "system_prompt_preview": "You are a ...*: 5 years", "user_prompt_preview": "## Design ...r summary.", "prompt_length": 107838}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+{"timestamp": "2026-04-17T20:27:42.191786Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 145907, "metadata": {"session_id": "claude_e9042270", "result_preview": "Looking at...ry.\"\n}\n```", "result_length": 8782}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.113802, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:27:42 [INFO] src.common.unified_llm: [UnifiedLLM:improver] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=145909ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:27:42.193512Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 145909, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "improver"}
+2026-04-17 22:27:42 [INFO] src.layer6_v2.improver: Improvement complete:
+2026-04-17 22:27:42 [INFO] src.layer6_v2.improver:   Target: anti_hallucination
+2026-04-17 22:27:42 [INFO] src.layer6_v2.improver:   Changes: 6
+2026-04-17 22:27:42 [INFO] src.layer6_v2.improver:   Summary: Corrected email address to match CLAUDE.md specification (taimoor.alam12@gmail.com). Verified all co...
+2026-04-17 22:27:42 [INFO] src.layer6_v2.orchestrator:   Improved anti_hallucination
+2026-04-17 22:27:42 [INFO] src.layer6_v2.orchestrator:   Changes: 6
+{"timestamp": "2026-04-17T20:27:42.195025Z", "event": "subphase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 6, "subphase": "improvement", "improved": true, "target_dimension": "anti_hallucination", "changes_made": ["Fixed email address from 'alamtaimoor.de@gmail.com' to 'taimoor.alam12@gmail.com' per CLAUDE.md specification", "Verified all technical claims against Master CV - no hallucinated skills or achievements found", "Verified all metrics are sourced from Master CV achievements", "Confirmed CV accurately represents AdTech/Addressable TV domain without false FinTech claims", "Confirmed no JVM language skills added (Java/Kotlin/Scala absent as expected from Master CV)"], "changes_count": 6}}
+2026-04-17 22:27:42 [INFO] src.layer6_v2.orchestrator:   CV saved to: outputs/REVOLUT/cv_Head_of_Engineering.md
+2026-04-17 22:27:42 [INFO] src.layer6_v2.orchestrator: Phase 7: Generating cover letter...
+{"timestamp": "2026-04-17T20:27:42.196942Z", "event": "phase_start", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 7, "phase_name": "cover_letter"}}
+2026-04-17 22:27:42 [INFO] src.layer6_v2.cover_letter_generator: Generating cover letter for REVOLUT - Head of Engineering
+2026-04-17 22:27:42 [INFO] src.common.unified_llm: [UnifiedLLM:cover_letter_generation] 🚀 Starting LLM call: backend=claude_cli, model=claude-sonnet-4-5-20250929, tier=middle, fallback=DISABLED (mandatory), job=699f001187737d49
+{"timestamp": "2026-04-17T20:27:42.197284Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "cover_letter_generation"}
+{"timestamp": "2026-04-17T20:27:42.197491Z", "event": "llm_call_start", "job_id": "699f001187737d491c3ab803", "status": "start", "metadata": {"session_id": "claude_9478427b", "system_prompt_preview": "", "user_prompt_preview": "You are an...etter now:", "prompt_length": 7068}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "claude_cli:699f001187737d491c3ab803"}
+{"timestamp": "2026-04-17T20:28:25.077913Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 42880, "metadata": {"session_id": "claude_9478427b", "result_preview": "Scaling en...navigated.", "result_length": 1495}, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "cost_usd": 0.010896, "step_name": "claude_cli:699f001187737d491c3ab803"}
+2026-04-17 22:28:25 [INFO] src.common.unified_llm: [UnifiedLLM:cover_letter_generation] Backend=claude_cli, Model=claude-sonnet-4-5-20250929, Duration=42881ms, Job=699f001187737d491c3ab803
+{"timestamp": "2026-04-17T20:28:25.079157Z", "event": "llm_call_complete", "job_id": "699f001187737d491c3ab803", "status": "complete", "duration_ms": 42881, "backend": "claude_cli", "model": "claude-sonnet-4-5-20250929", "tier": "middle", "step_name": "cover_letter_generation"}
+2026-04-17 22:28:25 [INFO] src.layer6_v2.cover_letter_generator: Cover letter generated: 201 words
+{"timestamp": "2026-04-17T20:28:25.079452Z", "event": "phase_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"phase": 7, "phase_name": "cover_letter", "generated": true, "word_count": 201}}
+2026-04-17 22:28:25 [INFO] src.layer6_v2.orchestrator: ============================================================
+2026-04-17 22:28:25 [INFO] src.layer6_v2.orchestrator: CV GENERATION V2: Complete
+2026-04-17 22:28:25 [INFO] src.layer6_v2.orchestrator:   Final score: 6.3/10
+2026-04-17 22:28:25 [INFO] src.layer6_v2.orchestrator:   Passed: False
+2026-04-17 22:28:25 [INFO] src.layer6_v2.orchestrator:   Cover letter: yes
+2026-04-17 22:28:25 [INFO] src.layer6_v2.orchestrator: ============================================================
+{"timestamp": "2026-04-17T20:28:25.079837Z", "event": "pipeline_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "metadata": {"final_score": 6.2749999999999995, "passed": false, "threshold": 8.5, "tier_used": "D", "total_roles": 6, "total_bullets": 33, "final_word_count": 881, "improvement_applied": true, "tailoring_applied": false, "ats_passed": false, "cover_letter_generated": true}}
+{"timestamp": "2026-04-17T20:28:25.080145Z", "event": "layer_complete", "job_id": "699f001187737d491c3ab803", "layer": 6, "layer_name": "cv_generator_v2", "status": "success", "duration_ms": 432884}
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ============================================================
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] LAYER 7: Output Publisher
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ============================================================
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] [STATE-CHECK] extracted_jd present in Layer 7 input: role_category=head_of_engineering
+{"timestamp": "2026-04-17T20:28:25.083102Z", "event": "layer_start", "job_id": "699f001187737d491c3ab803", "layer": 7, "layer_name": "output_publisher"}
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: Generating dossier
+2026-04-17 22:28:25 [ERROR] src.layer7.output_publisher: [Dossier] Generation failed: object of type 'NoneType' has no len()
+Traceback (most recent call last):
+  File "/Users/ala0001t/pers/projects/job-search/src/layer7/output_publisher.py", line 537, in publish
+    dossier_content = self.dossier_gen.generate_dossier(state)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ala0001t/pers/projects/job-search/src/layer7/dossier_generator.py", line 58, in generate_dossier
+    sections.append(self._generate_pain_proof_plan_section(state))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ala0001t/pers/projects/job-search/src/layer7/dossier_generator.py", line 152, in _generate_pain_proof_plan_section
+    primary_count = len(state.get('primary_contacts', []))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: object of type 'NoneType' has no len()
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [Local] Saving files to local disk
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: Saving files locally to: applications/REVOLUT/Head_of_Engineering
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: Saved dossier: applications/REVOLUT/Head_of_Engineering/dossier.txt
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: Saved cover letter: applications/REVOLUT/Head_of_Engineering/cover_letter.txt
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: CV already saved: outputs/REVOLUT/cv_Head_of_Engineering.md
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [Local] ✓ Saved 3 files
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [MongoDB] Starting persistence
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: Persisting to MongoDB for job_id: 699f001187737d491c3ab803
+2026-04-17 22:28:25 [INFO] src.common.repositories.config: Initialized Atlas-only job repository (Phase 1)
+2026-04-17 22:28:25 [INFO] src.common.repositories.atlas_repository: Atlas repository connected: jobs.level-2
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [MongoDB] Found job by _id (ObjectId): 699f001187737d491c3ab803
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: Persisting extracted_jd: role_category=head_of_engineering
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [MongoDB] ✓ Updated 1 document(s) for job 699f001187737d491c3ab803
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [MongoDB] Persisted fields: ['pipeline_run_at', 'generated_dossier', 'pipeline_status', 'status', 'fit_score', 'fit_rationale', 'cover_letter', 'cv_text', 'cv_path', 'cv_reasoning']...
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [MongoDB] ✓ Persistence completed
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ============================================================
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] LAYER 7 OUTPUT SUMMARY
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ============================================================
+2026-04-17 22:28:25 [ERROR] src.layer7.output_publisher: [run:019d9d17] [layer7] ❌ Dossier: Failed
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ✅ Local Files: 3 files saved
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7]    📄 Dossier: applications/REVOLUT/Head_of_Engineering/dossier.txt
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ✅ MongoDB: Job record updated
+2026-04-17 22:28:25 [WARNING] src.layer7.output_publisher: [run:019d9d17] [layer7] Drive: No folder created
+2026-04-17 22:28:25 [WARNING] src.layer7.output_publisher: [run:019d9d17] [layer7] Sheets: Not logged
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] ============================================================
+2026-04-17 22:28:25 [INFO] src.layer7.output_publisher: [run:019d9d17] [layer7] [FIX] Explicitly preserving extracted_jd in Layer 7 return
+{"timestamp": "2026-04-17T20:28:25.349331Z", "event": "layer_complete", "job_id": "699f001187737d491c3ab803", "layer": 7, "layer_name": "output_publisher", "status": "success", "duration_ms": 266, "metadata": {"dossier_generated": false, "local_save_success": true, "mongodb_persisted": true, "drive_uploaded": false, "sheets_logged": false}}
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] [TokenTracking] ✓ Total cost: $0.0000 USD
+2026-04-17 22:28:25 [WARNING] src.workflow: [run:019d9d17] Pipeline completed with errors: ["[Dossier] Generation failed: object of type 'NoneType' has no len()"]
+{"timestamp": "2026-04-17T20:28:25.353775Z", "event": "pipeline_complete", "job_id": "699f001187737d491c3ab803", "status": "partial", "duration_ms": 655144, "metadata": {"fit_score": 42, "errors_count": 1, "trace_url": null}}
+2026-04-17 22:28:25 [INFO] src.workflow: [PipelineTracking] ✓ Run completed: 019d9d17... -> partial (N/A)
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] [StateFile] ✓ Pipeline state written to: .pipeline_state_699f001187737d491c3ab803.json
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] ======================================================================
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] PIPELINE COMPLETE
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] ======================================================================
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] Run ID: 019d9d17-6860-7594-b0d1-27216278e31b
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] Status: partial
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] Fit Score: 42/100
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] Drive Folder: None
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] Sheets Row: None
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] Total Cost: $0.0000 USD
+2026-04-17 22:28:25 [WARNING] src.workflow: [run:019d9d17] Warnings/Errors:
+2026-04-17 22:28:25 [WARNING] src.workflow: [run:019d9d17]   - [Dossier] Generation failed: object of type 'NoneType' has no len()
+2026-04-17 22:28:25 [INFO] src.workflow: [run:019d9d17] ======================================================================
+
+======================================================================
+📊 FINAL RESULTS
+======================================================================
+
+📋 Pain Point Analysis (4 Dimensions):
+
+  A. Pain Points:
+    1. Engineering quality inconsistency across teams preventing reliable delivery at 70M+ customer scale
+    2. Best practices not being followed consistently across organization, creating technical drift
+    3. Engineering processes insufficient for current org complexity (13,000 employees), causing inefficiency
+    4. Technical debt from rapid scaling blocking further growth and feature velocity
+    5. Architecture not optimized for distributed systems at current scale, limiting performance
+    6. AI infrastructure capabilities lagging strategic needs for LLM-based features
+
+  B. Strategic Needs:
+    1. Standardize engineering excellence across globally distributed teams to enable consistent product quality
+    2. Build scalable architecture foundation to support next phase of customer growth beyond 70M users
+    3. Establish AI/ML infrastructure capabilities as competitive differentiator in fintech
+    4. Accelerate engineering hiring to support expansion while maintaining quality bar
+    5. Reduce engineering inefficiency to improve time-to-market for financial products
+
+  C. Risks if Unfilled:
+    1. Quality incidents at 70M+ user scale damaging brand reputation and customer trust in financial platform
+    2. Engineering velocity declining as organizational complexity increases, slowing product innovation
+    3. Technical debt compounding exponentially, making future architectural changes prohibitively expensive
+    4. Top engineering talent attrition due to poor practices and low code quality standards
+    5. AI/ML feature development blocked or poorly executed, losing competitive edge to fintech rivals
+
+  D. Success Metrics:
+    1. Engineering quality metrics improved: test coverage >80%, critical bug rate reduced 50%, tech debt ratio <15%
+    2. Deployment frequency increased to daily releases with <0.1% rollback rate for 70M user base
+    3. Best practice adoption measured at 90%+ across all engineering teams within 12 months
+    4. Engineering hiring velocity: 50+ senior engineers hired annually while maintaining quality bar
+    5. System reliability maintained at 99.99% uptime as user base scales beyond 100M
+    6. API latency optimized to <50ms p99 for core financial transaction flows
+
+⭐ Selected STAR Achievements (Layer 2.5):
+  None selected
+
+🏢 Company Summary:
+  None
+
+🎯 Fit Analysis:
+  Score: 42/100
+  Rationale: At Seven.One, candidate engineered LLM infrastructure with quantified performance (2ms L1 cache, 200ms L2 cache, Claude Sonnet integration), directly addressing Revolut's AI capability gap. However, CV provides zero evidence of team leadership, hiring, or managing engineering quality across multiple teams—all critical requirements for Head of Engineering. The 35,000x scale gap (2,000 users vs. 70M customers) and absence of any people management metrics make this a weak fit despite strong IC technical skills.
+
+👥 Key Contacts (Layer 5):
+  None identified
+
+📄 Cover Letter:
+  Generated (1495 chars)
+
+  Preview:
+  Scaling engineering quality to match 70M+ customer growth is the defining challenge for distributed systems at Revolut's scale. For the Head of Engineering role, I bring systematic frameworks that cut...
+
+📋 CV:
+  outputs/REVOLUT/cv_Head_of_Engineering.md
+
+📁 Outputs:
+  Drive Folder: None
+  Sheets Row: None
+
+⚠️  Warnings:
+  - [Dossier] Generation failed: object of type 'NoneType' has no len()
+======================================================================
+
+✅ Pipeline complete!
+2026-04-17 22:28:25 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{"error":"Forbidden"}\n')

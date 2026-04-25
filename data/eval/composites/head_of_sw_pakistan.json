@@ -1,0 +1,854 @@
+{
+  "category_id": "head_of_sw_pakistan",
+  "category_name": "Head of Software/Engineering \u2014 Pakistan",
+  "macro_family": "leadership_adjacent",
+  "priority": "tertiary_target",
+  "confidence": "high",
+  "total_jobs": 23,
+  "deep_analysis_count": 20,
+  "tier_breakdown": {
+    "B": 15,
+    "C": 8
+  },
+  "signal_strength": {
+    "applied_count": 15,
+    "avg_score": 89.1,
+    "median_score": 92,
+    "score_range": [
+      75,
+      92
+    ]
+  },
+  "title_variants": {
+    "Head of Engineering": 9,
+    "Head of Software Engineering": 2,
+    "Deputy Head of Engineering": 2,
+    "Head of Engineering - Payments": 1,
+    "Consumer AI Co-Founder / Head of Engineering": 1,
+    "Head of Engineering (Credit)": 1,
+    "Head of Engineering - E-Commerce": 1,
+    "Head of Engineering - Telecom": 1,
+    "Head of Product Engineering - Order & Buy Area": 1,
+    "Head of Engineering - Platform": 1
+  },
+  "title_families": {
+    "other": 20,
+    "engineering_manager": 3
+  },
+  "seniority_distribution": {
+    "executive": 3,
+    "director": 16,
+    "senior_manager": 4
+  },
+  "role_scope_distribution": {
+    "executive": 3,
+    "director": 9,
+    "player_coach": 11
+  },
+  "hard_skills": [
+    {
+      "skill": "AWS",
+      "count": 7,
+      "total": 23,
+      "pct": 30.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Python",
+      "count": 7,
+      "total": 23,
+      "pct": 30.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "TypeScript",
+      "count": 7,
+      "total": 23,
+      "pct": 30.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 6,
+      "total": 23,
+      "pct": 26.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "microservices",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "React",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "PostgreSQL",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "JavaScript",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "monitoring",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Node.js",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "PHP",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Java",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Tailwind",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Flask",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "FastAPI",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Docker",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "CI_CD",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "GitHub Actions",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "GCP",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Cursor",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Claude Code",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "e-commerce",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "architecture",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "scalability",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "distributed architectures",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "security",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "system design",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "RDS",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "S3",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "reliability",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "communication",
+      "count": 20,
+      "total": 23,
+      "pct": 87.0,
+      "band": "must_have"
+    },
+    {
+      "skill": "collaboration",
+      "count": 15,
+      "total": 23,
+      "pct": 65.2,
+      "band": "must_have"
+    },
+    {
+      "skill": "leadership",
+      "count": 13,
+      "total": 23,
+      "pct": 56.5,
+      "band": "common"
+    },
+    {
+      "skill": "mentoring",
+      "count": 13,
+      "total": 23,
+      "pct": 56.5,
+      "band": "common"
+    },
+    {
+      "skill": "ownership",
+      "count": 9,
+      "total": 23,
+      "pct": 39.1,
+      "band": "common"
+    },
+    {
+      "skill": "coaching",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "feedback",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "stakeholder management",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "cross-functional collaboration",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "accountability",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "product_mindset",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "resilience",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "pragmatism",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "decision-making",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "alignment",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 7,
+        "total": 23,
+        "pct": 30.4,
+        "band": "differentiator"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 7,
+        "total": 23,
+        "pct": 30.4,
+        "band": "differentiator"
+      },
+      {
+        "skill": "JavaScript",
+        "count": 4,
+        "total": 23,
+        "pct": 17.4,
+        "band": "differentiator"
+      },
+      {
+        "skill": "PHP",
+        "count": 3,
+        "total": 23,
+        "pct": 13.0,
+        "band": "rare"
+      },
+      {
+        "skill": "Java",
+        "count": 3,
+        "total": 23,
+        "pct": 13.0,
+        "band": "rare"
+      },
+      {
+        "skill": "Go",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      }
+    ],
+    "preferred": [
+      {
+        "skill": "Node.js",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "JVM languages",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      }
+    ]
+  },
+  "infrastructure": [
+    {
+      "skill": "CI/CD",
+      "count": 6,
+      "total": 23,
+      "pct": 26.1,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI_CD",
+      "count": 5,
+      "total": 23,
+      "pct": 21.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "microservices",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Docker",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "GitHub Actions",
+      "count": 3,
+      "total": 23,
+      "pct": 13.0,
+      "band": "rare"
+    },
+    {
+      "skill": "WAF",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "DevOps",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "CloudFormation",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "infrastructure as code",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "ECS",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "container ecosystems",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Cloudflare",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "PostgreSQL",
+      "count": 4,
+      "total": 23,
+      "pct": 17.4,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Postgres",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Supabase",
+      "count": 2,
+      "total": 23,
+      "pct": 8.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Airflow",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Snowflake",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "dbt",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "custom ETL",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "RDS",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "CDP",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "MySQL",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "PCI DSS",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "modern fintech compliance, security, and risk frameworks",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "OWASP",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    },
+    {
+      "skill": "HIPAA",
+      "count": 1,
+      "total": 23,
+      "pct": 4.3,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 1,
+      "total": 23,
+      "pct": 4.3
+    },
+    "agents_orchestration": {
+      "count": 2,
+      "total": 23,
+      "pct": 8.7
+    },
+    "fine_tuning": {
+      "count": 0,
+      "total": 23,
+      "pct": 0.0
+    },
+    "evaluation_quality": {
+      "count": 1,
+      "total": 23,
+      "pct": 4.3
+    },
+    "guardrails_governance": {
+      "count": 0,
+      "total": 23,
+      "pct": 0.0
+    },
+    "prompt_engineering": {
+      "count": 0,
+      "total": 23,
+      "pct": 0.0
+    },
+    "vector_search": {
+      "count": 0,
+      "total": 23,
+      "pct": 0.0
+    },
+    "model_serving_routing": {
+      "count": 0,
+      "total": 23,
+      "pct": 0.0
+    },
+    "top_frameworks": [
+      {
+        "skill": "TensorFlow",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "PyTorch",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Scikit-learn",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "JAX",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "React",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Flask",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "FastAPI",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Tailwind",
+        "count": 1,
+        "total": 23,
+        "pct": 4.3,
+        "band": "rare"
+      }
+    ],
+    "top_observability": []
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 9,
+      "total": 23,
+      "pct": 39.1
+    },
+    "performance_management": {
+      "count": 10,
+      "total": 23,
+      "pct": 43.5
+    },
+    "org_building": {
+      "count": 19,
+      "total": 23,
+      "pct": 82.6
+    },
+    "budget_pnl": {
+      "count": 1,
+      "total": 23,
+      "pct": 4.3
+    },
+    "direct_reports_samples": [
+      "up to 5 product teams",
+      "3-6 Engineering Managers"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 91.3,
+    "greenfield_split": {
+      "greenfield": 1,
+      "optimization": 8,
+      "both": 10
+    },
+    "cloud_preference": {
+      "AWS": 5,
+      "GCP": 3,
+      "multi_cloud": 2
+    }
+  },
+  "domain_industry": {
+    "ecommerce": 6,
+    "fintech": 5,
+    "enterprise_saas": 3,
+    "healthcare": 1
+  },
+  "company_stage": {
+    "enterprise": 6,
+    "scaleup": 4,
+    "startup_b": 2,
+    "startup_a": 1
+  },
+  "collaboration_model": {
+    "remote_first": 9,
+    "distributed": 6,
+    "hybrid": 2
+  },
+  "pain_points": [
+    {
+      "pain_point": "need to define technical strategy for an ai-native customer experience platform",
+      "count": 1
+    },
+    {
+      "pain_point": "need to decide what to build versus buy",
+      "count": 1
+    },
+    {
+      "pain_point": "need to scale the engineering org while maintaining velocity",
+      "count": 1
+    },
+    {
+      "pain_point": "need to keep technical credibility while operating at executive level",
+      "count": 1
+    },
+    {
+      "pain_point": "need to improve and scale onboarding for sme members",
+      "count": 1
+    },
+    {
+      "pain_point": "need to coordinate across product, design, and business functions",
+      "count": 1
+    },
+    {
+      "pain_point": "need to lead engineering strategy across multiple product areas",
+      "count": 1
+    },
+    {
+      "pain_point": "need to keep systems scalable while tide expands globally",
+      "count": 1
+    },
+    {
+      "pain_point": "need to extract and rebuild a monolithic payment engine into a standalone platform",
+      "count": 1
+    },
+    {
+      "pain_point": "need to migrate from php to distributed node/typescript microservices",
+      "count": 1
+    },
+    {
+      "pain_point": "need to support multiple payment processors behind a unified api",
+      "count": 1
+    },
+    {
+      "pain_point": "need to build a pci dss compliant system from day one",
+      "count": 1
+    },
+    {
+      "pain_point": "need to handle high-volume transactions safely at scale",
+      "count": 1
+    },
+    {
+      "pain_point": "need a hands-on engineering leader to shape a cloud-native saas platform",
+      "count": 1
+    },
+    {
+      "pain_point": "need reliable data pipelines and validation for scientific and customer data",
+      "count": 1
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

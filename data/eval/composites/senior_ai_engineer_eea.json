@@ -1,0 +1,713 @@
+{
+  "category_id": "senior_ai_engineer_eea",
+  "category_name": "Senior AI Engineer \u2014 EEA",
+  "macro_family": "ai_engineering_adjacent",
+  "priority": "secondary_target",
+  "confidence": "low",
+  "total_jobs": 7,
+  "deep_analysis_count": 7,
+  "tier_breakdown": {
+    "C": 4,
+    "D": 3
+  },
+  "signal_strength": {
+    "applied_count": 0,
+    "avg_score": 56.3,
+    "median_score": 70,
+    "score_range": [
+      0,
+      89
+    ]
+  },
+  "title_variants": {
+    "Senior AI Software Engineer": 1,
+    "Senior ML Software Engineer": 1,
+    "Senior Agentic AI & LLM Engineer": 1,
+    "Senior AI/ML Developer": 1,
+    "Senior Software Applied AI Engineer": 1,
+    "Senior Software Engineer, AI Developer Tools": 1,
+    "Senior AI Data Engineer": 1
+  },
+  "title_families": {
+    "senior_engineer": 6,
+    "tech_lead": 1
+  },
+  "seniority_distribution": {
+    "senior_ic": 7
+  },
+  "role_scope_distribution": {
+    "ic": 6,
+    "player_coach": 1
+  },
+  "hard_skills": [
+    {
+      "skill": "Python",
+      "count": 4,
+      "total": 7,
+      "pct": 57.1,
+      "band": "common"
+    },
+    {
+      "skill": "prompt engineering",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9,
+      "band": "common"
+    },
+    {
+      "skill": "vector databases",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9,
+      "band": "common"
+    },
+    {
+      "skill": "SQL",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9,
+      "band": "common"
+    },
+    {
+      "skill": "AI agents",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "conversational AI",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "LangChain",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "embeddings",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "context management",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "retrieval-augmented generation (RAG)",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "FastAPI",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Flask",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "microservices architecture",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven architecture",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Kafka",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "SSE",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "WebSocket",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "LLMs",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "fine-tuning",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "GPT",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Claude",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Gemini",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "OpenSearch",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "FAISS",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "RAG systems",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "OpenAI Chat Completion API",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "OpenAI Assistant endpoints",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "MCP servers",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "agentic frameworks",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Python ecosystem",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "collaboration",
+      "count": 5,
+      "total": 7,
+      "pct": 71.4,
+      "band": "must_have"
+    },
+    {
+      "skill": "problem_solving",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9,
+      "band": "common"
+    },
+    {
+      "skill": "communication",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6,
+      "band": "differentiator"
+    },
+    {
+      "skill": "documentation",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "troubleshooting",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "independent_work",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "teamwork",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "opinion_sharing",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "leadership",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "customer obsession",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "transparency",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "integrity",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "accountability",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "data-driven decision making",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "first principles problem solving",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 4,
+        "total": 7,
+        "pct": 57.1,
+        "band": "common"
+      },
+      {
+        "skill": "SQL",
+        "count": 2,
+        "total": 7,
+        "pct": 28.6,
+        "band": "differentiator"
+      },
+      {
+        "skill": "JavaScript",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3,
+        "band": "rare"
+      }
+    ],
+    "preferred": [
+      {
+        "skill": "C",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3,
+        "band": "rare"
+      },
+      {
+        "skill": "C++",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3,
+        "band": "rare"
+      }
+    ]
+  },
+  "infrastructure": [
+    {
+      "skill": "microservices",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven architecture",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "CI_CD",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "serverless",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "edge functions",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "deployment pipelines",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "observability integration",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "security controls",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "operational tooling",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "dbt",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Cloud Functions",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "OpenSearch",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "FAISS",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Snowflake",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "BigQuery",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Salesforce Data Cloud",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "GDPR",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 5,
+      "total": 7,
+      "pct": 71.4
+    },
+    "agents_orchestration": {
+      "count": 5,
+      "total": 7,
+      "pct": 71.4
+    },
+    "fine_tuning": {
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    "evaluation_quality": {
+      "count": 4,
+      "total": 7,
+      "pct": 57.1
+    },
+    "guardrails_governance": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "prompt_engineering": {
+      "count": 3,
+      "total": 7,
+      "pct": 42.9
+    },
+    "vector_search": {
+      "count": 3,
+      "total": 7,
+      "pct": 42.9
+    },
+    "model_serving_routing": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "top_frameworks": [
+      {
+        "skill": "LangChain",
+        "count": 2,
+        "total": 7,
+        "pct": 28.6,
+        "band": "differentiator"
+      },
+      {
+        "skill": "LangGraph",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3,
+        "band": "rare"
+      },
+      {
+        "skill": "LlamaIndex",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3,
+        "band": "rare"
+      }
+    ],
+    "top_observability": []
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "performance_management": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "org_building": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 100.0,
+    "greenfield_split": {
+      "both": 4,
+      "optimization": 1,
+      "greenfield": 2
+    },
+    "cloud_preference": {
+      "AWS": 1,
+      "GCP": 1
+    }
+  },
+  "domain_industry": {
+    "consulting": 2,
+    "enterprise_saas": 2
+  },
+  "company_stage": {
+    "scaleup": 1
+  },
+  "collaboration_model": {
+    "remote_first": 2,
+    "distributed": 1,
+    "hybrid": 1
+  },
+  "pain_points": [
+    {
+      "pain_point": "unlock genai across the team.blue group",
+      "count": 1
+    },
+    {
+      "pain_point": "build scalable ai-driven products and experiences",
+      "count": 1
+    },
+    {
+      "pain_point": "integrate ai solutions into existing environments and workflows",
+      "count": 1
+    },
+    {
+      "pain_point": "deploy production rag systems and ai agents",
+      "count": 1
+    },
+    {
+      "pain_point": "shape ai offerings for smb customers",
+      "count": 1
+    },
+    {
+      "pain_point": "build and maintain internal ml operation services",
+      "count": 1
+    },
+    {
+      "pain_point": "support training and ci/cd pipelines in aws",
+      "count": 1
+    },
+    {
+      "pain_point": "integrate models into sophos products",
+      "count": 1
+    },
+    {
+      "pain_point": "improve ml quality assurance and monitoring",
+      "count": 1
+    },
+    {
+      "pain_point": "increase traceability and reproducibility of retrained models",
+      "count": 1
+    },
+    {
+      "pain_point": "build real-world agentic ai and multi-agent applications",
+      "count": 1
+    },
+    {
+      "pain_point": "deploy open-source llms in production",
+      "count": 1
+    },
+    {
+      "pain_point": "guide architectural decisions for llm systems",
+      "count": 1
+    },
+    {
+      "pain_point": "create performant agentic ai pipelines",
+      "count": 1
+    },
+    {
+      "pain_point": "build ai-powered features for a product coach",
+      "count": 1
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

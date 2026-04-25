@@ -1,0 +1,10 @@
+# Principal AI Solutions Architect
+
+**Company:** WAVE SEARCH
+**Location:** 
+**Score:** 85 (Tier B)
+**Status:** applied
+
+---
+
+Principal AI Solutions ArchitectAbout the companyOur client is a global strategy and advisory firm at the forefront of digitaltransformation and enterprise innovation. With a presence across keyinternational markets, they are leading large-scale AI programmes that arereshaping public and private sector landscapes across the GCC. Their work spansstrategic advisory through to solution delivery, with a strong focus onresponsible AI, regulatory compliance, and scalable architecture.About the roleThis is a senior leadership opportunity to drive AI architecture across some ofthe most high-profile and complex AI programmes in the GCC region. As aPrincipal AI Solutions Architect, you’ll serve as the technical authority onenterprise-grade AI solutions, shaping architectures from concept through todeployment. You will engage C-suite stakeholders, lead cross-functional deliveryteams, and ensure the success of multi-vendor, multi-cloud AI environments. Thisrole also contributes to the firm’s capability development through assets,accelerators, and governance frameworks.Key skills * AI architecture, GenAI, ML engineering, and MLOps * Experience with vector databases, orchestration platforms, and cloud AI stacks * Strong command of performance, security, explainability, and regulatory compliance * Executive-level communication and client advisory experience * Proven leadership of complex AI programmes and cross-functional teamsNice to have * Consulting or strategy firm experience * Certifications in cloud, AI, or enterprise architecture * Master’s degree or PhD in a related fieldSalary: $150,000 – $180,000 + Housing + BonusLocation: Dubai, UAEWorking Model: HybridApply now or share your CV as our client is interviewing immediately!Show more Show less

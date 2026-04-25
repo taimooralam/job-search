@@ -1,0 +1,2644 @@
+
+You are an evidence-bound CV baseline evaluator.
+
+Your task is to evaluate exactly one target job category against:
+1. the candidate's current curated evidence store,
+2. vetted upstream evidence that may support additional claims but is not yet curated,
+3. the current master-CV representation.
+
+You are not writing a new CV.
+You are not giving generic career advice.
+You are producing a category-specific baseline that will guide evidence curation and master-CV improvement.
+
+CATEGORY META
+- category_id: staff_ai_engineer_eea
+- category_name: Staff AI Engineer — EEA
+- macro_family: ai_engineering_adjacent
+- priority: secondary_target
+- confidence: high
+
+BLUEPRINT INPUT
+{
+  "meta": {
+    "category_id": "staff_ai_engineer_eea",
+    "category_name": "Staff AI Engineer \u2014 EEA",
+    "macro_family": "ai_engineering_adjacent",
+    "priority": "secondary_target",
+    "confidence": "high",
+    "uncertainty_note": "Moderate sample with strong consistency: emphasize repeated architecture, delivery, reliability, and evaluation signals; avoid overfitting around niche frameworks, domains, or formal management because those remain low-frequency in this category."
+  },
+  "category_signature": {
+    "one_sentence_summary": "A top-third CV for this category should present a senior IC or light player-coach who ships production AI platforms and features, proves architecture and reliability outcomes, and translates cross-functional needs into scalable applied AI systems rather than pure advanced experimentation or formal people management.",
+    "distinctive_signals": [
+      "Architecture/platform scope is the clearest category anchor: platform design appears in 34/34 roles (100%), with most roles spanning both greenfield and optimization work (28/34).",
+      "This category is delivery-heavy and senior-IC-led: senior_ic appears in 34/34 roles, with scope split between IC (19/34) and player-coach (15/34), while hiring (3/34, 8.8%) and performance management (1/34, 2.9%) stay rare.",
+      "GenAI emphasis is practical rather than advanced experimentation-led: evaluation/quality is stronger (15/34, 44.1%) than RAG (10/34, 29.4%), agents/orchestration (9/34, 26.5%), prompt engineering (8/34, 23.5%), or fine-tuning (4/34, 11.8%)."
+    ],
+    "citations": [
+      "Platform design 34/34 (100%); greenfield+optimization 28/34.",
+      "Seniority: senior_ic 34/34; role scope IC 19/34, player-coach 15/34.",
+      "Management signals: hiring 3/34 (8.8%), org building 8/34 (23.5%), performance management 1/34 (2.9%).",
+      "AI stack: evaluation_quality 15/34 (44.1%), RAG 10/34 (29.4%), agents_orchestration 9/34 (26.5%), prompt_engineering 8/34 (23.5%), fine_tuning 4/34 (11.8%).",
+      "Research-heavy and PhD requirements each 1/34 (2.9%)."
+    ]
+  },
+  "headline_pattern": {
+    "recommended_structure": "<Staff|Principal> AI Engineer | Applied AI Platform & Architecture | Production GenAI, Evaluation, Reliability",
+    "safe_title_families": [
+      "Staff Engineer",
+      "Principal Engineer"
+    ],
+    "safe_title_variants": [
+      "Staff AI Engineer",
+      "Principal AI Engineer",
+      "Principal AI/ML Engineer",
+      "Staff Software Engineer - Applied AI",
+      "Staff Software Engineer (Platform - GenAI)"
+    ],
+    "avoid_title_variants": [
+      "Director of AI Engineering",
+      "Head of AI",
+      "VP Engineering",
+      "AI advanced experimentation Lead",
+      "Engineering Manager"
+    ],
+    "evidence_first_rules": [
+      "Use a Staff/Principal headline only when the CV already shows senior IC scope; title families cluster around staff_engineer (20/34) and principal_engineer (13/34).",
+      "Add an architecture/platform qualifier because platform design is universal in this sample (34/34, 100%).",
+      "Add GenAI or applied AI language only if the experience proves production delivery, evaluation, RAG, agents, or guardrails; no single technical keyword exceeds 60%, so keep the headline evidence-backed rather than tool-stuffed.",
+      "Do not imply formal people management, hiring ownership, or org leadership in the headline because those signals are limited: hiring 3/34 (8.8%), org building 8/34 (23.5%), performance management 1/34 (2.9%)."
+    ],
+    "citations": [
+      "Title families: staff_engineer 20/34, principal_engineer 13/34, senior_engineer 1/34.",
+      "Platform design 34/34 (100%).",
+      "Management signals: hiring 3/34 (8.8%), org building 8/34 (23.5%), performance management 1/34 (2.9%).",
+      "No hard skill crosses 60%; top hard skill Python is 11/34 (32.4%)."
+    ]
+  },
+  "tagline_profile_angle": {
+    "positioning_angle": [
+      "Position as a hands-on architect for production AI systems who combines platform design, delivery ownership, and reliability evidence.",
+      "Show light technical leadership through mentoring, design influence, and stakeholder translation without overstating formal management."
+    ],
+    "foreground": [
+      "Production architecture, system integration, reliability, evaluation quality, and scalable delivery across AI-enabled platforms.",
+      "Cross-functional execution and communication: collaboration 29/34 (85.3%), communication 23/34 (67.6%), mentoring 20/34 (58.8%).",
+      "Applied GenAI patterns when true: evaluation/quality 15/34 (44.1%), RAG 10/34 (29.4%), agents/orchestration 9/34 (26.5%), prompt engineering 8/34 (23.5%)."
+    ],
+    "avoid": [
+      "advanced experimentation-centric positioning, formal external credential language, or advanced academic-style framing.",
+      "Pure people-manager positioning or hiring-led narrative.",
+      "Niche stack laundry lists unsupported by outcomes."
+    ],
+    "safe_positioning": [
+      "Staff/principal-level AI platform engineer who designs and productionizes scalable AI systems.",
+      "Senior IC or player-coach who improves reliability, latency, evaluation quality, and adoption of AI capabilities.",
+      "Architect-level engineer who bridges product, platform, and ML delivery in distributed environments."
+    ],
+    "unsafe_positioning": [
+      "Formal org owner, people manager, or hiring lead unless explicitly evidenced.",
+      "Deep domain specialist in healthcare, fintech, observability, or consulting unless repeated work history proves it.",
+      "Cloud- or tooling-specific specialist claims such as deep Azure, Oracle, Grafana, Prometheus, or OpenTelemetry ownership unless explicitly evidenced."
+    ],
+    "citations": [
+      "Collaboration 29/34 (85.3%), communication 23/34 (67.6%), mentoring 20/34 (58.8%), leadership 14/34 (41.2%).",
+      "Evaluation_quality 15/34 (44.1%), RAG 10/34 (29.4%), agents_orchestration 9/34 (26.5%), prompt_engineering 8/34 (23.5%).",
+      "Research-heavy 1/34 (2.9%), PhD required 1/34 (2.9%).",
+      "Unsafe claims sample includes formal people-management org ownership, strategic hiring ownership, deep healthcare ownership, deep consulting background, observability tool ownership, and deep oracle cloud specialization."
+    ]
+  },
+  "core_competency_themes": [
+    {
+      "section_name": "Architecture And Productionization",
+      "themes": [
+        {
+          "theme": "AI platform architecture and system design",
+          "classification": "table_stakes",
+          "why_it_matters": "This category consistently rewards engineers who can design reusable AI-enabled platforms and services, not just model experiments; platform design appears in 34/34 roles (100%).",
+          "citation": "Platform design 34/34 (100%); valued evidence type architecture 20/20 deep-analysis samples."
+        },
+        {
+          "theme": "Greenfield plus optimization delivery",
+          "classification": "table_stakes",
+          "why_it_matters": "Top profiles show both building new systems and improving existing ones, which matches the dominant delivery pattern in the sample.",
+          "citation": "Greenfield split: both 28/34, greenfield-only 1/34, optimization-only 1/34."
+        },
+        {
+          "theme": "Distributed systems and service integration",
+          "classification": "differentiator",
+          "why_it_matters": "The role sits closer to platform and production engineering than to isolated model work, so distributed systems, APIs, microservices, and integration depth can separate stronger CVs.",
+          "citation": "Distributed systems 4/34 (11.8%), microservices 4/34 (11.8%), APIs 3/34 (8.8%); pain points emphasize robust data flows, serving APIs, large-scale maintainability, and low latency."
+        }
+      ]
+    },
+    {
+      "section_name": "Reliability Quality And Operations",
+      "themes": [
+        {
+          "theme": "Reliability and operational resilience",
+          "classification": "table_stakes",
+          "why_it_matters": "Reliability is repeatedly valued in deep analysis and in success metrics, so CV bullets should prove stable production operation rather than only feature shipment.",
+          "citation": "Valued evidence type reliability 18/20; success metrics include reliability, resilience, and high availability; monitoring appears in 4/34 (11.8%)."
+        },
+        {
+          "theme": "Evaluation and quality measurement for AI systems",
+          "classification": "differentiator",
+          "why_it_matters": "Evaluation is the strongest AI-specific signal in this category and distinguishes production-minded AI engineers from generic GenAI implementers.",
+          "citation": "Evaluation_quality 15/34 (44.1%); valued evidence type evaluation 15/20 deep-analysis samples."
+        },
+        {
+          "theme": "Performance, latency, and scalability outcomes",
+          "classification": "differentiator",
+          "why_it_matters": "Hiring pain points repeatedly mention low latency, high throughput, and maintainable scale, so outcome metrics here carry more weight than generic model claims.",
+          "citation": "Valued evidence types scale 14/20 and cost 11/20; success metrics include scalability, performance, operational excellence, latency optimization; pain points cite low-latency and high-throughput constraints."
+        }
+      ]
+    },
+    {
+      "section_name": "Applied GenAI Delivery",
+      "themes": [
+        {
+          "theme": "RAG and retrieval-grounded AI systems",
+          "classification": "differentiator",
+          "why_it_matters": "RAG is meaningful in this category but not universal, so it should strengthen the CV when real delivery evidence exists rather than dominate the narrative by default.",
+          "citation": "RAG 10/34 (29.4%); vector_search 6/34 (17.6%)."
+        },
+        {
+          "theme": "Agents and orchestration workflows",
+          "classification": "differentiator",
+          "why_it_matters": "Agentic workflows appear often enough to matter, especially when tied to production controls, reuse, or automation outcomes.",
+          "citation": "Agents_orchestration 9/34 (26.5%); hard skill agentic workflows 3/34 (8.8%)."
+        },
+        {
+          "theme": "Guardrails, prompting, and safe AI behavior",
+          "classification": "optional",
+          "why_it_matters": "These signals support stronger applied AI stories, but they are still weaker than evaluation and platform delivery, so they should not anchor the whole CV unless deeply evidenced.",
+          "citation": "Prompt_engineering 8/34 (23.5%), guardrails_governance 5/34 (14.7%), model_serving_routing 1/34 (2.9%)."
+        }
+      ]
+    },
+    {
+      "section_name": "Technical Leadership Without Formal Management",
+      "themes": [
+        {
+          "theme": "Cross-functional collaboration and communication",
+          "classification": "table_stakes",
+          "why_it_matters": "This role requires translating architecture and delivery choices across product, platform, and engineering stakeholders; collaboration and communication are the most repeated soft-skill signals.",
+          "citation": "Collaboration 29/34 (85.3%), communication 23/34 (67.6%), cross-functional collaboration 8/34 (23.5%)."
+        },
+        {
+          "theme": "Mentoring and technical guidance",
+          "classification": "table_stakes",
+          "why_it_matters": "Mentoring is common and supports a player-coach profile, but it should be framed as technical uplift rather than line management.",
+          "citation": "Mentoring 20/34 (58.8%), leadership 14/34 (41.2%), role scope player-coach 15/34."
+        },
+        {
+          "theme": "Org influence without people-management inflation",
+          "classification": "optional",
+          "why_it_matters": "Some roles include broader org-shaping influence, but the evidence does not support treating formal org ownership as standard for the category.",
+          "citation": "Org_building 8/34 (23.5%), hiring 3/34 (8.8%), performance_management 1/34 (2.9%)."
+        }
+      ]
+    }
+  ],
+  "key_achievement_archetypes": [
+    {
+      "rank": 1,
+      "archetype": "Built or evolved a production AI platform used by multiple teams or workflows",
+      "what_it_proves": "Shows the category's core value: platform architecture plus real delivery, reuse, and adoption at senior IC scope.",
+      "citation": "Platform design 34/34 (100%); valued evidence types architecture 20/20, delivery 20/20, reliability 18/20, scale 14/20."
+    },
+    {
+      "rank": 2,
+      "archetype": "Improved AI system quality with evaluation, benchmarking, or feedback loops",
+      "what_it_proves": "Demonstrates mature applied AI engineering and distinguishes the CV from generic GenAI delivery claims.",
+      "citation": "Evaluation_quality 15/34 (44.1%); valued evidence type evaluation 15/20; success metrics include reliability, performance, and operational excellence."
+    },
+    {
+      "rank": 3,
+      "archetype": "Shipped retrieval or agent workflows with safe operational behavior",
+      "what_it_proves": "Shows practical GenAI experience in the patterns most relevant to this category without drifting into advanced experimentation framing.",
+      "citation": "RAG 10/34 (29.4%), agents_orchestration 9/34 (26.5%), prompt_engineering 8/34 (23.5%), guardrails_governance 5/34 (14.7%), cost evidence 11/20."
+    },
+    {
+      "rank": 4,
+      "archetype": "Scaled an AI-enabled service under latency, throughput, or reliability constraints",
+      "what_it_proves": "Signals that the candidate can handle the production engineering side of applied AI, which is central to staff/principal hiring in this sample.",
+      "citation": "Success metrics include scalability, performance, resilience, reliability, high availability, and latency optimization; valued evidence types reliability 18/20, scale 14/20, cost 11/20."
+    },
+    {
+      "rank": 5,
+      "archetype": "Raised team delivery standards through technical leadership and mentoring",
+      "what_it_proves": "Supports a player-coach profile without overclaiming formal management and aligns with the category's strong collaboration and mentoring evidence.",
+      "citation": "Collaboration 29/34 (85.3%), communication 23/34 (67.6%), mentoring 20/34 (58.8%), player-coach scope 15/34, org_building 8/34 (23.5%)."
+    }
+  ],
+  "role_weighting_guidance": {
+    "highest_weight_roles": [
+      "Staff/principal IC roles with platform, architecture, or applied AI delivery scope.",
+      "Technical lead or architect roles where the candidate designed production systems and influenced multiple teams.",
+      "Senior engineering roles with clear reliability, scale, API, distributed-systems, or MLOps-style outcomes that map into AI platform work."
+    ],
+    "expand_in_work_history": [
+      "Roles with direct evidence of platform design, reusable infrastructure, production AI delivery, evaluation, reliability, or cross-team architecture influence.",
+      "Work that shows both greenfield building and optimization of existing systems.",
+      "Bullets with measurable outcomes in latency, uptime, quality, scalability, or adoption."
+    ],
+    "compress_in_work_history": [
+      "Older roles that are primarily feature delivery without architecture scope.",
+      "Work centered on narrow tools or domains that do not map to platform, AI delivery, or production reliability.",
+      "People-management details unless they are explicit and material, because formal management is not the dominant pattern in this category."
+    ],
+    "how_to_frame_non_ai_experience": [
+      "Translate non-AI platform work into transferable signals: distributed systems, APIs, microservices, cloud delivery, CI/CD, observability, reliability, and scale.",
+      "If the candidate has strong architecture experience outside AI, tie it forward to productionizing AI systems rather than pretending deep model specialization.",
+      "Use prior search, data, adtech, or backend scale work to prove relevance, ranking, routing, throughput, or serving depth when true."
+    ],
+    "citations": [
+      "Title families: staff_engineer 20/34, principal_engineer 13/34.",
+      "Platform design 34/34 (100%); greenfield+optimization 28/34.",
+      "Valued evidence types architecture 20/20, delivery 20/20, reliability 18/20, scale 14/20.",
+      "Management signals remain limited: hiring 3/34 (8.8%), performance management 1/34 (2.9%)."
+    ]
+  },
+  "language_and_tone": {
+    "recommended_tone": "player_coach",
+    "formality": "high",
+    "preferred_vocabulary": [
+      "platform architecture",
+      "production AI systems",
+      "applied AI",
+      "reliability",
+      "evaluation",
+      "scalability",
+      "low latency",
+      "cross-functional delivery",
+      "technical leadership",
+      "mentoring"
+    ],
+    "avoid_vocabulary": [
+      "strategic",
+      "experienced practitioner",
+      "AI evangelist",
+      "advanced experimentation pioneer",
+      "strong",
+      "owned hiring",
+      "built the entire org",
+      "end-to-end compliance owner",
+      "deep domain expert"
+    ],
+    "citations": [
+      "Role scope: IC 19/34, player-coach 15/34; senior_ic 34/34.",
+      "Soft skills: collaboration 29/34 (85.3%), communication 23/34 (67.6%), mentoring 20/34 (58.8%).",
+      "Architecture/platform scope 34/34 (100%); management signals remain modest."
+    ]
+  },
+  "unsafe_or_weak_framing": {
+    "avoid_claims": [
+      "Formal people-management org ownership unless explicitly evidenced; unsafe claim examples include formal people-management org ownership and direct people management or hiring ownership.",
+      "Strategic hiring ownership unless explicitly evidenced; hiring appears in only 3/34 roles (8.8%).",
+      "Deep healthcare, fintech, observability, consulting, or Oracle-specialist positioning unless repeated work history proves it.",
+      "Hands-on ownership of Grafana, Prometheus, Loki, Tempo, or OpenTelemetry in production unless the CV clearly shows it.",
+      "Primary ownership of front-end or unrelated stacks such as Ruby on Rails and React unless supported by actual experience.",
+      "End-to-end compliance, HIPAA, patient-safety, or responsible-AI program ownership unless explicitly stated."
+    ],
+    "title_inflation_risks": [
+      "Avoid upgrading senior engineer experience into staff/principal unless multi-team architecture and delivery scope is visible.",
+      "Avoid manager or director titles when the evidence supports senior IC or light player-coach positioning.",
+      "Avoid 'AI Research Lead' framing because research-heavy demand is only 1/34 (2.9%)."
+    ],
+    "research_framing_risks": [
+      "Keep publications, research, and PhD language out of positive positioning unless directly required by the target role.",
+      "Do not imply research ownership, model invention, or academic specialization from applied platform work."
+    ],
+    "domain_or_region_risks": [
+      "Do not claim native-language requirements; none are evidenced in the deep-analysis summary.",
+      "Do not overstate remote-only preference even though remote-first appears often; present distributed collaboration as a working style, not a core identity.",
+      "Do not overfit the CV to one vertical because domain distribution is mixed and shallow: fintech 3/34, healthcare 3/34, consulting 2/34, enterprise SaaS 2/34."
+    ],
+    "citations": [
+      "Unsafe claims sample includes formal people-management org ownership, strategic hiring ownership, deep healthcare ownership, observability ownership at scale, deep Oracle specialization, deep consulting background, and unsupported stack ownership.",
+      "Hiring 3/34 (8.8%), performance management 1/34 (2.9%), org_building 8/34 (23.5%).",
+      "Research-heavy 1/34 (2.9%), requires_phd 1/34 (2.9%).",
+      "Native language requirements: none. Domain distribution: fintech 3/34, healthcare 3/34, consulting 2/34, enterprise_saas 2/34."
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "recommendation": "Anchor the CV around production AI platform architecture and delivery rather than generic GenAI enthusiasm.",
+      "confidence": "high",
+      "support": [
+        "Platform design 34/34 (100%).",
+        "Valued evidence types architecture 20/20 and delivery 20/20.",
+        "Title families concentrate in staff_engineer 20/34 and principal_engineer 13/34."
+      ]
+    },
+    {
+      "recommendation": "Use a senior IC or light player-coach narrative, not a formal management narrative.",
+      "confidence": "high",
+      "support": [
+        "Seniority distribution: senior_ic 34/34.",
+        "Role scope: IC 19/34, player-coach 15/34.",
+        "Hiring 3/34 (8.8%), performance management 1/34 (2.9%), org_building 8/34 (23.5%)."
+      ]
+    },
+    {
+      "recommendation": "Prioritize quantified reliability, evaluation, scale, latency, and cost outcomes in bullet writing.",
+      "confidence": "high",
+      "support": [
+        "Valued evidence types: reliability 18/20, evaluation 15/20, scale 14/20, cost 11/20.",
+        "Success metrics include scalability, performance, resilience, reliability, operational excellence, and latency optimization.",
+        "Pain points repeatedly emphasize maintainability, low latency, throughput, and production serving."
+      ]
+    },
+    {
+      "recommendation": "Treat RAG and agents as differentiators, not universal anchors, unless the candidate truly has them.",
+      "confidence": "high",
+      "support": [
+        "RAG 10/34 (29.4%), agents_orchestration 9/34 (26.5%), prompt_engineering 8/34 (23.5%).",
+        "No hard skill crosses 60%; Python is highest at 11/34 (32.4%) in hard_skills_top and 12/34 (35.3%) in language requirements."
+      ]
+    },
+    {
+      "recommendation": "Repeat a small set of true keywords instead of listing many niche tools.",
+      "confidence": "high",
+      "support": [
+        "ATS strategy should center on strongest repeated concepts because the long-tail frameworks are sparse: PyTorch 6/34 (17.6%), LangChain 4/34 (11.8%), LangGraph 1/34 (2.9%), LlamaIndex 1/34 (2.9%).",
+        "No single technical keyword is universal in this category."
+      ]
+    },
+    {
+      "recommendation": "Keep research, publication, and PhD framing inside risk controls only.",
+      "confidence": "high",
+      "support": [
+        "Research-heavy 1/34 (2.9%).",
+        "Requires PhD 1/34 (2.9%)."
+      ]
+    },
+    {
+      "recommendation": "State distributed collaboration and mentoring when true, but avoid overclaiming org ownership or regional specialization.",
+      "confidence": "medium",
+      "support": [
+        "Collaboration 29/34 (85.3%), communication 23/34 (67.6%), mentoring 20/34 (58.8%).",
+        "Remote-first 11/34, distributed 5/34, hybrid 3/34.",
+        "Native language requirements are absent; domain and region-specific signals are weak."
+      ]
+    },
+    {
+      "recommendation": "Use keyword repetition selectively: strongest 4-6 keywords 2-3 mentions each if true; secondary 4-6 keywords 1-2 mentions each if true; niche keywords once only and only if true.",
+      "confidence": "high",
+      "support": [
+        "Strong repeated category concepts are architecture/platform, reliability, evaluation, collaboration, communication, mentoring, and production AI delivery.",
+        "The long-tail stack evidence is fragmented, so over-repetition of niche tools would overfit the CV."
+      ]
+    }
+  ]
+}
+
+CANDIDATE CONTEXT
+- candidate_name: Taimoor Alam
+- anchor_identity: Engineering Leader / Software Architect
+- current_role: Technical Lead at Seven.One Entertainment Group (ProSiebenSat.1), Munich
+- years_experience: 11
+
+EVIDENCE MODEL
+Use this 3-layer hierarchy strictly:
+
+1. CURATED EVIDENCE STORE
+- normalized evidence already promoted into pipeline-friendly candidate files
+- reusable for downstream CV generation if safely cited
+
+2. UPSTREAM RAW EVIDENCE
+- candidate-authored or vetted supporting material that may contain valid evidence not yet promoted into the curated store
+- useful for identifying curation opportunities
+- not automatically reusable by the pipeline until curated with provenance
+
+3. REPRESENTATION LAYER
+- the current master CV and related representation artifacts
+- used to judge how well curated evidence is surfaced, prioritized, and framed
+
+IMPORTANT TRUTH RULES
+- Do not treat the current master CV as the source of truth.
+- Do not treat the curated evidence store as complete.
+- Missing from curated files does not automatically mean unsupported.
+- Upstream evidence can justify a "pending curation" conclusion, but not a fully reusable downstream claim unless it is already curated.
+- Every concrete claim must cite exact evidence references.
+- If evidence is ambiguous, prefer the safer label.
+- Do not infer hiring, org-building, deep ML research, fine-tuning, RLHF, publications, or executive ownership unless explicitly supported.
+- Do not over-credit title labels when underlying scope evidence is mixed.
+
+INPUTS
+
+CURATED EVIDENCE SUMMARY
+{
+  "role_evidence": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "text": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "leadership",
+        "talent development",
+        "team building",
+        "culture",
+        "retention",
+        "career growth",
+        "people management",
+        "performance management",
+        "code review"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "keywords": [
+        "legacy modernization",
+        "microservices",
+        "TypeScript",
+        "AWS Lambda",
+        "EventBridge",
+        "ECS",
+        "CloudFront",
+        "event-driven architecture",
+        "choreography",
+        "monolith decomposition",
+        "AdTech",
+        "distributed systems",
+        "large-scale",
+        "system design",
+        "scalability",
+        "mixed-criticality",
+        "infrastructure-first",
+        "tech debt"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "keywords": [
+        "Domain-Driven Design",
+        "DDD",
+        "bounded contexts",
+        "ubiquitous language",
+        "engineering standards",
+        "onboarding",
+        "velocity",
+        "code review",
+        "architectural review"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Hiring & Team Building",
+      "text": "Led hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments. Scaled delivery across matrixed cross-functional engineering teams.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:217"
+      ],
+      "keywords": [
+        "hiring",
+        "recruitment",
+        "interviews",
+        "technical assessments",
+        "team building",
+        "cross-functional",
+        "scaling"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Monitoring & Incident Management",
+      "text": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platform reliability transformation.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:163"
+      ],
+      "keywords": [
+        "monitoring",
+        "alerting",
+        "MTTR",
+        "incident management",
+        "postmortems",
+        "operational excellence",
+        "automation",
+        "CloudWatch",
+        "SNS",
+        "Slack",
+        "AWS",
+        "alerting strategy"
+      ],
+      "score": 5
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Fortis (Research Project) \u2014 Node.js Microservices Architecture",
+      "text": "Designed Node.js microservices architecture for research platform, establishing service boundaries and communication patterns.",
+      "refs": [
+        "data/master-cv/roles/04_fortis.md:27"
+      ],
+      "keywords": [
+        "Node.js",
+        "microservices",
+        "architecture",
+        "service design",
+        "backend"
+      ],
+      "score": 4
+    }
+  ],
+  "project_evidence": [],
+  "verified_skills": [
+    {
+      "label": "API Gateway Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "API Gateway Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Enterprise AI Platform",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Guardrail Engineering",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "integration tests",
+      "ref": "data/master-cv/projects/lantern_skills.json:7",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "LLM Gateway Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "LLM Gateway Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "LLM-as-Judge Evaluation",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "LLM-as-Judge Evaluation",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "MCP Tool Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Model Routing",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Model Routing",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Prometheus metrics",
+      "ref": "data/master-cv/projects/commander4_skills.json:9",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Prometheus metrics",
+      "ref": "data/master-cv/projects/lantern_skills.json:7",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "RAG Pipeline",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "RAG Pipeline",
+      "ref": "data/master-cv/projects/lantern_skills.json:16",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Retrieval Evaluation (MRR, NDCG)",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Search Quality Optimization",
+      "ref": "data/master-cv/projects/commander4_skills.json:22",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    }
+  ],
+  "supporting_skills": [
+    {
+      "label": "Prompt Engineering",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Prompt Engineering",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Eval Harness Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Eval Harness Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "Faithfulness Evaluation",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "Faithfulness Evaluation",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "SLO/SLI Design",
+      "ref": "data/master-cv/projects/commander4_skills.json:36",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "SLO/SLI Design",
+      "ref": "data/master-cv/projects/lantern_skills.json:35",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    }
+  ],
+  "do_not_claim": [
+    {
+      "label": "fine-tuning pipeline",
+      "ref": "data/master-cv/projects/commander4_skills.json:42",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "custom embedding training",
+      "ref": "data/master-cv/projects/commander4_skills.json:42",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "RLHF",
+      "ref": "data/master-cv/projects/commander4_skills.json:42",
+      "source": "data/master-cv/projects/commander4_skills.json"
+    },
+    {
+      "label": "fine-tuning pipeline",
+      "ref": "data/master-cv/projects/lantern_skills.json:49",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "load balancing",
+      "ref": "data/master-cv/projects/lantern_skills.json:49",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    },
+    {
+      "label": "admin dashboard",
+      "ref": "data/master-cv/projects/lantern_skills.json:49",
+      "source": "data/master-cv/projects/lantern_skills.json"
+    }
+  ],
+  "leadership_signals": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "text": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "leadership",
+        "talent development",
+        "team building",
+        "culture",
+        "retention",
+        "career growth",
+        "people management",
+        "performance management",
+        "code review"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "keywords": [
+        "Domain-Driven Design",
+        "DDD",
+        "bounded contexts",
+        "ubiquitous language",
+        "engineering standards",
+        "onboarding",
+        "velocity",
+        "code review",
+        "architectural review"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Hiring & Team Building",
+      "text": "Led hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments. Scaled delivery across matrixed cross-functional engineering teams.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:217"
+      ],
+      "keywords": [
+        "hiring",
+        "recruitment",
+        "interviews",
+        "technical assessments",
+        "team building",
+        "cross-functional",
+        "scaling"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Samdock (Daypaio) \u2014 Mentorship & Talent Development",
+      "text": "Mentored junior engineer through apprenticeship program, with mentee progressing to mid-level front-end engineering role within 12 months.",
+      "refs": [
+        "data/master-cv/roles/02_samdock_daypaio.md:110"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "apprenticeship",
+        "talent development",
+        "career growth",
+        "junior engineers",
+        "onboarding"
+      ],
+      "score": 3
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Samdock (Daypaio) \u2014 Team Leadership & Agile Delivery",
+      "text": "Led cross-functional SCRUM team of 4 engineers, implementing agile practices that improved sprint velocity by 30% and feature delivery predictability.",
+      "refs": [
+        "data/master-cv/roles/02_samdock_daypaio.md:94"
+      ],
+      "keywords": [
+        "SCRUM",
+        "agile",
+        "team leadership",
+        "sprint velocity",
+        "delivery",
+        "cross-functional"
+      ],
+      "score": 3
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Risk Management & Strategic Communication",
+      "text": "Analyzed system risks and communicated them transparently to all business stakeholders, keeping them well-informed about consequences of future business decisions. Took hard decisions despite ambiguity, executed quickly, and collected data to adapt.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:266"
+      ],
+      "keywords": [
+        "risk management",
+        "stakeholder communication",
+        "transparency",
+        "decision-making",
+        "ambiguity",
+        "strategic communication"
+      ],
+      "score": 3
+    }
+  ],
+  "architecture_signals": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "text": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ],
+      "keywords": [
+        "mentoring",
+        "coaching",
+        "leadership",
+        "talent development",
+        "team building",
+        "culture",
+        "retention",
+        "career growth",
+        "people management",
+        "performance management",
+        "code review"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "keywords": [
+        "legacy modernization",
+        "microservices",
+        "TypeScript",
+        "AWS Lambda",
+        "EventBridge",
+        "ECS",
+        "CloudFront",
+        "event-driven architecture",
+        "choreography",
+        "monolith decomposition",
+        "AdTech",
+        "distributed systems",
+        "large-scale",
+        "system design",
+        "scalability",
+        "mixed-criticality",
+        "infrastructure-first",
+        "tech debt"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ],
+      "keywords": [
+        "Domain-Driven Design",
+        "DDD",
+        "bounded contexts",
+        "ubiquitous language",
+        "engineering standards",
+        "onboarding",
+        "velocity",
+        "code review",
+        "architectural review"
+      ],
+      "score": 6
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Monitoring & Incident Management",
+      "text": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platform reliability transformation.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:163"
+      ],
+      "keywords": [
+        "monitoring",
+        "alerting",
+        "MTTR",
+        "incident management",
+        "postmortems",
+        "operational excellence",
+        "automation",
+        "CloudWatch",
+        "SNS",
+        "Slack",
+        "AWS",
+        "alerting strategy"
+      ],
+      "score": 5
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Fortis (Research Project) \u2014 Node.js Microservices Architecture",
+      "text": "Designed Node.js microservices architecture for research platform, establishing service boundaries and communication patterns.",
+      "refs": [
+        "data/master-cv/roles/04_fortis.md:27"
+      ],
+      "keywords": [
+        "Node.js",
+        "microservices",
+        "architecture",
+        "service design",
+        "backend"
+      ],
+      "score": 4
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Architectural Runway & Technical Debt Strategy",
+      "text": "Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system components while continuously delivering business-critical features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:54"
+      ],
+      "keywords": [
+        "architectural runway",
+        "technical debt",
+        "strategic planning",
+        "incremental modernization",
+        "refactoring",
+        "legacy systems"
+      ],
+      "score": 4
+    }
+  ],
+  "impact_metrics": [
+    {
+      "label": "Seven.One Entertainment Group \u2014 Engineering Team Development & Mentorship",
+      "metrics": [
+        "10+ ",
+        "3 "
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:182"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "metrics": [
+        "4",
+        "1 ",
+        "2,000 ",
+        "42 ",
+        "1",
+        "60"
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "metrics": [
+        "2015-",
+        "75% ",
+        "3 "
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 DDD & Engineering Excellence Standards",
+      "metrics": [
+        "6 ",
+        "3 ",
+        "25%, ",
+        "40"
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:88"
+      ]
+    },
+    {
+      "label": "Seven.One Entertainment Group \u2014 Architectural Runway & Technical Debt Strategy",
+      "metrics": [
+        "70% "
+      ],
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:54"
+      ]
+    },
+    {
+      "label": "Samdock (Daypaio) \u2014 Mentorship & Talent Development",
+      "metrics": [
+        "12 "
+      ],
+      "refs": [
+        "data/master-cv/roles/02_samdock_daypaio.md:110"
+      ]
+    },
+    {
+      "label": "Samdock (Daypaio) \u2014 Scalability Architecture",
+      "metrics": [
+        "10x "
+      ],
+      "refs": [
+        "data/master-cv/roles/02_samdock_daypaio.md:142"
+      ]
+    },
+    {
+      "label": "Samdock (Daypaio) \u2014 Team Leadership & Agile Delivery",
+      "metrics": [
+        "4 ",
+        "30% "
+      ],
+      "refs": [
+        "data/master-cv/roles/02_samdock_daypaio.md:94"
+      ]
+    }
+  ],
+  "governance_reliability_signals": [
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Technical Vision & Architectural North Star",
+      "text": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:123"
+      ],
+      "keywords": [
+        "technical vision",
+        "north star architecture",
+        "HbbTV",
+        "observability",
+        "stakeholder alignment",
+        "technical debt ROI",
+        "DDD",
+        "event-driven",
+        "choreography",
+        "autonomous workflows",
+        "adaptive algorithm",
+        "confidence scoring",
+        "ad optimization",
+        "MIRO",
+        "mentoring",
+        "cross-functional",
+        "AdTech"
+      ],
+      "score": 9
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 AI Platform Engineering (Commander-4/Joyia)",
+      "text": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 implementing BM25 scoring from scratch for S3 Vectors (no inverted index available), with RRF fusion (k=60); (2) LLM-as-judge reranking using Claude Sonnet via LiteLLM gateway with parallel Promise.all execution; (3) two-tier semantic caching with L1 exact-match (sha256 hash, ~2ms) and L2 semantic similarity (S3 Vectors cosine >= 0.95, ~200ms), both backed by Redis TTL, via custom S3VectorSemanticCache class for LiteLLM in Python; and (4) retrieval quality evaluation functions (MRR@k, NDCG@k with exponential gain) with 14 unit tests.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "keywords": [
+        "AI platform",
+        "LLM",
+        "RAG",
+        "retrieval-augmented generation",
+        "hybrid search",
+        "BM25",
+        "reciprocal rank fusion",
+        "RRF",
+        "vector search",
+        "S3 Vectors",
+        "semantic caching",
+        "LLM-as-judge",
+        "LLM reranking",
+        "LiteLLM",
+        "AI gateway",
+        "model routing",
+        "prompt engineering",
+        "Claude",
+        "enterprise AI",
+        "Commander-4",
+        "Joyia",
+        "TypeScript",
+        "Python",
+        "Redis",
+        "cosine similarity",
+        "MRR",
+        "NDCG",
+        "retrieval evaluation",
+        "search quality metrics",
+        "DCG",
+        "evaluation harness"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Legacy Modernization & Platform Transformation",
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "keywords": [
+        "legacy modernization",
+        "microservices",
+        "TypeScript",
+        "AWS Lambda",
+        "EventBridge",
+        "ECS",
+        "CloudFront",
+        "event-driven architecture",
+        "choreography",
+        "monolith decomposition",
+        "AdTech",
+        "distributed systems",
+        "large-scale",
+        "system design",
+        "scalability",
+        "mixed-criticality",
+        "infrastructure-first",
+        "tech debt"
+      ],
+      "score": 8
+    },
+    {
+      "kind": "role_achievement",
+      "label": "Seven.One Entertainment Group \u2014 Monitoring & Incident Management",
+      "text": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platform reliability transformation.",
+      "refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:163"
+      ],
+      "keywords": [
+        "monitoring",
+        "alerting",
+        "MTTR",
+        "incident management",
+        "postmortems",
+        "operational excellence",
+        "automation",
+        "CloudWatch",
+        "SNS",
+        "Slack",
+        "AWS",
+        "alerting strategy"
+      ],
+      "score": 5
+    }
+  ],
+  "evidence_density_notes": {
+    "role_count": 6,
+    "project_count": 2,
+    "current_role_present": true,
+    "verified_skill_count": 133,
+    "supporting_skill_count": 32,
+    "do_not_claim_count": 6,
+    "candidate_anchor": {
+      "title_base": "Engineering Leader / Software Architect",
+      "years_experience": 11
+    }
+  }
+}
+
+UPSTREAM EVIDENCE SUMMARY
+{
+  "pending_curation_signals": [
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+      "why_relevant": "Matches category signals with overlap score 30.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:7"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+      "why_relevant": "Matches category signals with overlap score 27.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "DAYPAIO GmbH \u2014 Senior Software Engineer Full Stack - Tech Lead",
+      "why_relevant": "Matches category signals with overlap score 26.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:734"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+      "why_relevant": "Matches category signals with overlap score 25.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+      "why_relevant": "Matches category signals with overlap score 23.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:98"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+      "why_relevant": "Matches category signals with overlap score 23.",
+      "source_refs": [
+        "docs/archive/knowledge-base.md:181"
+      ],
+      "confidence": "high",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_11 \u2014 Hiring & Team Building",
+      "why_relevant": "Matches category signals with overlap score 6.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:418"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "Samdock/Daypaio (Mid-Senior) - 8 achievements",
+      "why_relevant": "Matches category signals with overlap score 6.",
+      "source_refs": [
+        "docs/current/achievement-review-index.md:136"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_13 \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "why_relevant": "Matches category signals with overlap score 5.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:1051"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_14 \u2014 Risk Management & Strategic Communication",
+      "why_relevant": "Matches category signals with overlap score 5.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:548"
+      ],
+      "confidence": "medium",
+      "recommended_target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ]
+    }
+  ],
+  "ambiguous_signals": [
+    {
+      "signal": "01_seven_one_entertainment_11 \u2014 Hiring & Team Building",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:418"
+      ]
+    },
+    {
+      "signal": "Samdock/Daypaio (Mid-Senior) - 8 achievements",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-index.md:136"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_13 \u2014 Subject Matter Expertise & Stakeholder Collaboration",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:1051"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_14 \u2014 Risk Management & Strategic Communication",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:548"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_4 \u2014 DDD & Engineering Excellence Standards",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:1077"
+      ]
+    },
+    {
+      "signal": "01_seven_one_entertainment_7 \u2014 Scalability & Performance Optimization",
+      "note": "Useful for curation prioritization but not automatically claimable.",
+      "source_refs": [
+        "docs/current/achievement-review-tracker.yaml:786"
+      ]
+    }
+  ],
+  "guidance_only_items": [
+    {
+      "signal": "1.3 Role-Framing Strategy",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:114"
+      ]
+    },
+    {
+      "signal": "6.1 IC Track (Staff/Principal Engineer)",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:660"
+      ]
+    },
+    {
+      "signal": "1.1 Why Divide-and-Conquer?",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:76"
+      ]
+    },
+    {
+      "signal": "1.4 ATS Optimization Approach",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:129"
+      ]
+    },
+    {
+      "signal": "6.2 Engineering Manager",
+      "note": "Guidance-only context; do not treat as direct claimable evidence.",
+      "source_refs": [
+        "docs/current/cv-generation-guide.md:684"
+      ]
+    }
+  ],
+  "upstream_risks": [
+    "Do not promote planning or rubric language into the curated store unless it references actual candidate work.",
+    "Treat achievement-review tracker items as prioritization hints, not verified claims by themselves."
+  ]
+}
+
+CURRENT MASTER CV REPRESENTATION SUMMARY
+{
+  "representation_proxy_mode": true,
+  "headline_current_state": {
+    "text": "Engineering Leader / Software Architect",
+    "refs": [
+      "data/master-cv/role_metadata.json:3"
+    ]
+  },
+  "summary_current_state": {
+    "text": "Engineering Leader / Software Architect with 11 years of experience. Current role: Technical Lead (Addressable TV) at Seven.One Entertainment Group. Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+    "refs": [
+      "data/master-cv/role_metadata.json:3"
+    ]
+  },
+  "role_priority_current_state": [
+    {
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:28"
+    },
+    {
+      "text": "Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system components while continuously delivering business-critical features.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:54"
+    },
+    {
+      "text": "Led initiative to architect and realize data observability pipeline channeling billions of events daily to OpenSearch on AWS. Real-time dashboards uncovered issues and debug scenarios previously invisible, increasing shipping speed, faster issue resolution, and significant revenue increase.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:71"
+    },
+    {
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:88"
+    }
+  ],
+  "project_priority_current_state": [
+    {
+      "text": "Enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins \u2014 hybrid retrieval, document ingestion, structured outputs, and semantic caching",
+      "ref": "data/master-cv/projects/commander4.md:2"
+    },
+    {
+      "text": "Engineered document ingestion pipeline processing Confluence XML (macro stripping, metadata extraction) and Jira ADF\u2192markdown conversion with sentence-boundary chunking (500-token windows, 50-token overlap), SHA-256 change detection for incremental updates, and RAPTOR hierarchical indexing for multi-granularity retrieval.",
+      "ref": "data/master-cv/projects/commander4.md:6"
+    },
+    {
+      "text": "Built hybrid retrieval pipeline combining BM25 scoring from scratch (no inverted index on S3 Vectors \u2014 corpus statistics computed in-memory) with RRF fusion (k=60) and LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.all execution.",
+      "ref": "data/master-cv/projects/commander4.md:7"
+    },
+    {
+      "text": "Multi-provider LLM gateway with semantic caching, eval-driven quality gates, and cost-aware routing",
+      "ref": "data/master-cv/projects/lantern.md:2"
+    },
+    {
+      "text": "Architected multi-provider LLM gateway with LiteLLM routing, model registry, and automatic fallback across OpenAI, Anthropic, and Azure endpoints.",
+      "ref": "data/master-cv/projects/lantern.md:7"
+    },
+    {
+      "text": "Built semantic caching layer using Redis + Qdrant vector similarity to deduplicate LLM calls, reducing redundant API spend by ~40% in testing.",
+      "ref": "data/master-cv/projects/lantern.md:8"
+    }
+  ],
+  "skills_priority_current_state": [
+    "Hybrid Search",
+    "RAG Pipeline",
+    "Document Ingestion Pipeline",
+    "Retrieval Evaluation (MRR, NDCG)",
+    "Semantic Caching",
+    "LLM-as-Judge Evaluation",
+    "Structured Outputs",
+    "MCP Tool Design",
+    "TypeScript",
+    "Python",
+    "S3 Vectors",
+    "LiteLLM",
+    "Redis",
+    "DynamoDB",
+    "SQS",
+    "Vercel AI SDK",
+    "LLM Gateway Design",
+    "Provider Fallback Chain"
+  ],
+  "underrepresented_signals": [
+    "Clary Icon \u2014 Client Delivery & Communication"
+  ],
+  "overstated_risks": [
+    "Representation is proxy-derived; treat headline and summary fit as provisional until a canonical master CV artifact exists."
+  ]
+}
+
+OPTIONAL RAW EVIDENCE REFS
+{
+  "data/master-cv/roles/01_seven_one_entertainment.md:28": {
+    "layer": "curated",
+    "label": "Legacy Modernization & Platform Transformation",
+    "snippet": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven Ty"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:54": {
+    "layer": "curated",
+    "label": "Architectural Runway & Technical Debt Strategy",
+    "snippet": "Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system com"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:71": {
+    "layer": "curated",
+    "label": "Real-Time Observability Pipeline",
+    "snippet": "Led initiative to architect and realize data observability pipeline channeling billions of events daily to OpenSearch on AWS. Real-time dashboards uncovered issues and debug scenarios previously invisible, increasing shipping speed, faster "
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:88": {
+    "layer": "curated",
+    "label": "DDD & Engineering Excellence Standards",
+    "snippet": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, a"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:106": {
+    "layer": "curated",
+    "label": "GDPR/TCF Compliance & Regulatory Success",
+    "snippet": "Led GDPR/TCF compliance program across multiple product lines, implementing consent management platform that passed BLM regulatory audits. First movers in EU region for TCF GDPR-approved compliant CMP, protecting \u20ac30M annual revenue exposur"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:123": {
+    "layer": "curated",
+    "label": "Technical Vision & Architectural North Star",
+    "snippet": "Established \"intelligent servers, dumb clients\" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers\u2014creating knowledge black holes. Educated business stakeholders "
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:146": {
+    "layer": "curated",
+    "label": "Scalability & Performance Optimization",
+    "snippet": "Led and optimized scaling of multi-million user backend systems around bursty traffic patterns using Lambda and ECS auto-scaling. Reduced missed impressions by 20% while optimizing cost-performance balance."
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:163": {
+    "layer": "curated",
+    "label": "Monitoring & Incident Management",
+    "snippet": "Implemented comprehensive monitoring and alerting system significantly reducing MTTR through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems as part of platf"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:182": {
+    "layer": "curated",
+    "label": "Engineering Team Development & Mentorship",
+    "snippet": "Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives."
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:200": {
+    "layer": "curated",
+    "label": "Innovation Culture (Lean Friday)",
+    "snippet": "Cultivated culture of innovation by establishing Lean Friday: one Friday per sprint where team works on any technical improvement. Resulted in breakthrough tools increasing team productivity by orders of magnitude."
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:217": {
+    "layer": "curated",
+    "label": "Hiring & Team Building",
+    "snippet": "Led hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments. Scaled delivery across matrixed cross-functional engineering teams."
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:233": {
+    "layer": "curated",
+    "label": "CI/CD & Deployment Excellence",
+    "snippet": "Drove enhancement and modernization of CI/CD pipelines, fostering culture of atomic deployments. Reduced release cycles from weeks to days, improving delivery predictability by 25%."
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:250": {
+    "layer": "curated",
+    "label": "Subject Matter Expertise & Stakeholder Collaboration",
+    "snippet": "Consulted as subject matter expert on technical challenges in Addressable TV domain. Collaborated with product owners, enterprise architects, and stakeholders to identify core business metrics and led their realization across technical stac"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:266": {
+    "layer": "curated",
+    "label": "Risk Management & Strategic Communication",
+    "snippet": "Analyzed system risks and communicated them transparently to all business stakeholders, keeping them well-informed about consequences of future business decisions. Took hard decisions despite ambiguity, executed quickly, and collected data "
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:282": {
+    "layer": "curated",
+    "label": "AI Platform Engineering (Commander-4/Joyia)",
+    "snippet": "As platform lead for Commander-4 (Joyia), an enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins, personally engineered four search quality improvements in TypeScript/Python: (1) BM25 + RRF hybrid search \u2014 "
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:309": {
+    "layer": "curated",
+    "label": "Document Ingestion Pipeline (Knowledgeflow)",
+    "snippet": "Engineered Knowledgeflow, the document ingestion pipeline for Commander-4 (Joyia), processing Confluence XML (macro stripping, metadata extraction) and Jira ADF\u2192markdown conversion. Implemented sentence-boundary chunking (500-token windows,"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:332": {
+    "layer": "curated",
+    "label": "Structured Outputs & Tool-Calling Architecture",
+    "snippet": "Designed the structured output and tool-calling architecture for Commander-4 (Joyia), implementing Zod schema validation for all LLM responses ensuring type-safe outputs, 5 MCP server tools for external system integrations, 42 workflow plug"
+  },
+  "data/master-cv/roles/01_seven_one_entertainment.md:354": {
+    "layer": "curated",
+    "label": "Semantic Caching Architecture",
+    "snippet": "Architected two-tier semantic caching system for Commander-4 (Joyia): L1 exact-match cache using SHA-256 content hashing (~2ms lookup), L2 semantic similarity cache using S3 Vectors cosine similarity (\u22650.95 threshold, ~200ms lookup), both b"
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:27": {
+    "layer": "curated",
+    "label": "Event-Sourced CRM Platform (0\u21921)",
+    "snippet": "Architected and launched event-sourced CRM platform from inception to market using CQRS pattern with NestJS/TypeScript and EventStore. Platform went live with 25 production tenants."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:44": {
+    "layer": "curated",
+    "label": "Event Storming & Domain Discovery",
+    "snippet": "Led event storming meetings with all stakeholders to create the domain model and requirements for the web-based SaaS CRM developed from scratch."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:60": {
+    "layer": "curated",
+    "label": "Engineering Standards & Quality",
+    "snippet": "Established engineering standards including reusable Angular component library and comprehensive Jest testing framework, achieving 85% code coverage and reducing bugs by 40%."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:78": {
+    "layer": "curated",
+    "label": "API Design & Documentation",
+    "snippet": "Designed scalable RESTful APIs with Swagger documentation, reducing integration time for external partners by 50%."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:94": {
+    "layer": "curated",
+    "label": "Team Leadership & Agile Delivery",
+    "snippet": "Led cross-functional SCRUM team of 4 engineers, implementing agile practices that improved sprint velocity by 30% and feature delivery predictability."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:110": {
+    "layer": "curated",
+    "label": "Mentorship & Talent Development",
+    "snippet": "Mentored junior engineer through apprenticeship program, with mentee progressing to mid-level front-end engineering role within 12 months."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:126": {
+    "layer": "curated",
+    "label": "CI/CD Pipeline & Release Automation",
+    "snippet": "Implemented automated CI/CD pipeline reducing deployment time from hours to minutes and enabling daily releases."
+  },
+  "data/master-cv/roles/02_samdock_daypaio.md:142": {
+    "layer": "curated",
+    "label": "Scalability Architecture",
+    "snippet": "Drove architectural decisions balancing startup speed with enterprise scalability, preparing platform for 10x user growth."
+  },
+  "data/master-cv/roles/03_ki_labs.md:27": {
+    "layer": "curated",
+    "label": "REST API Development (Large-Scale Data Pipeline)",
+    "snippet": "Built REST APIs in Flask over a large-scale data pipeline using onion architecture. Added JWT authentication and automated testing (unit, E2E, snapshot tests)."
+  },
+  "data/master-cv/roles/03_ki_labs.md:44": {
+    "layer": "curated",
+    "label": "Comprehensive Testing Strategy",
+    "snippet": "Developed comprehensive test suites including unit, E2E, and snapshot tests, reducing production incidents by 35%."
+  },
+  "data/master-cv/roles/03_ki_labs.md:61": {
+    "layer": "curated",
+    "label": "API Documentation & Developer Experience",
+    "snippet": "Created Swagger-based API documentation system improving developer onboarding and reducing support requests by 40%."
+  },
+  "data/master-cv/roles/03_ki_labs.md:77": {
+    "layer": "curated",
+    "label": "MongoDB Optimization",
+    "snippet": "Implemented MongoDB data layer optimizations reducing query response times by 60%."
+  },
+  "data/master-cv/roles/03_ki_labs.md:93": {
+    "layer": "curated",
+    "label": "Agile Delivery",
+    "snippet": "Collaborated in agile team with bi-weekly sprints, consistently delivering features on time with high quality standards."
+  },
+  "data/master-cv/roles/04_fortis.md:27": {
+    "layer": "curated",
+    "label": "Node.js Microservices Architecture",
+    "snippet": "Designed Node.js microservices architecture for research platform, establishing service boundaries and communication patterns."
+  },
+  "data/master-cv/roles/04_fortis.md:43": {
+    "layer": "curated",
+    "label": "RabbitMQ Pub/Sub Messaging",
+    "snippet": "Set up RabbitMQ pub/sub messaging for asynchronous microservice communication, enabling decoupled event-driven architecture."
+  },
+  "data/master-cv/roles/04_fortis.md:59": {
+    "layer": "curated",
+    "label": "API Standards & Documentation",
+    "snippet": "Established API standards with Swagger documentation, ensuring consistent interfaces across microservices."
+  },
+  "data/master-cv/roles/04_fortis.md:75": {
+    "layer": "curated",
+    "label": "Agile Client Collaboration",
+    "snippet": "Participated in SCRUM ceremonies with regular client demos and feedback incorporation, adapting to research project requirements."
+  },
+  "data/master-cv/roles/05_osram.md:26": {
+    "layer": "curated",
+    "label": "Cross-Platform IoT Control Application",
+    "snippet": "Built a Qt/C++ application for mobile and desktop that controlled enterprise lighting systems via CoAP protocol, extensively used for business demonstrations to OSRAM's business units."
+  },
+  "data/master-cv/roles/05_osram.md:42": {
+    "layer": "curated",
+    "label": "CoAP-to-UDP Integration Middleware",
+    "snippet": "Developed Python middleware server that translated CoAP to UDP, enabling third-party devices without native CoAP support to integrate into the OpenAIS lighting ecosystem."
+  },
+  "data/master-cv/roles/05_osram.md:58": {
+    "layer": "curated",
+    "label": "CoAP Security Enhancement (OSCOAP)",
+    "snippet": "Enhanced Erbium CoAP implementation by understanding the codebase and adding OSCOAP security features for multicast communication in IoT lighting networks."
+  },
+  "data/master-cv/roles/05_osram.md:74": {
+    "layer": "curated",
+    "label": "OpenAIS-Compliant CoAP Server Template",
+    "snippet": "Developed an OpenAIS-compliant CoAP server in Python that served as a reusable template for other projects within the team."
+  },
+  "data/master-cv/roles/05_osram.md:90": {
+    "layer": "curated",
+    "label": "Legacy Device Integration",
+    "snippet": "Integrated OSRAM's legacy products and firmware with the CoAP OpenAIS ecosystem, bridging old and new systems."
+  },
+  "data/master-cv/roles/05_osram.md:106": {
+    "layer": "curated",
+    "label": "Technical Documentation",
+    "snippet": "Documented technical specifications and installation processes, reducing support requests and improving team onboarding."
+  },
+  "data/master-cv/roles/05_osram.md:121": {
+    "layer": "curated",
+    "label": "SCRUM Team Collaboration",
+    "snippet": "Participated actively in SCRUM ceremonies within a diverse international team, using JIRA and Git for project management and version control."
+  },
+  "data/master-cv/roles/06_clary_icon.md:27": {
+    "layer": "curated",
+    "label": "WebRTC Video Recording System",
+    "snippet": "Developed a WebRTC-based video recording solution using Licode media server with custom REST APIs and FFmpeg transcoding pipeline. This client-requested feature was critical to contract renewal and secured continued project funding."
+  },
+  "data/master-cv/roles/06_clary_icon.md:46": {
+    "layer": "curated",
+    "label": "Real-Time Video Playback Service",
+    "snippet": "Engineered Node.js playback service handling concurrent video streams with WebSocket-based timestamp synchronization and MySQL persistence, enabling synchronized multi-party call playback for compliance and quality review."
+  },
+  "data/master-cv/roles/06_clary_icon.md:65": {
+    "layer": "curated",
+    "label": "SIP Client Enhancement (Qt/C++)",
+    "snippet": "Reverse-engineered OpenPhone SIP client and built enhanced desktop interface using Qt C++ widget framework, adding features for call management and UI customization that improved usability for internal testing and demos."
+  },
+  "data/master-cv/roles/06_clary_icon.md:84": {
+    "layer": "curated",
+    "label": "Interactive Onboarding Tutorial System",
+    "snippet": "Created interactive tutorial system in C# WPF with synthetic voice narration and visual annotations, enabling self-service onboarding for video conferencing platform users and reducing support requests for new user setup."
+  },
+  "data/master-cv/roles/06_clary_icon.md:103": {
+    "layer": "curated",
+    "label": "Client Delivery & Communication",
+    "snippet": "Worked directly with clients to gather requirements, demonstrate progress, and incorporate feedback throughout the development cycle."
+  },
+  "data/master-cv/roles/06_clary_icon.md:121": {
+    "layer": "curated",
+    "label": "Cross-Platform Development Experience",
+    "snippet": "Worked across multiple technology stacks (Node.js backend, Qt C++ desktop, C# WPF desktop) within the same project, demonstrating adaptability and full-stack capability."
+  },
+  "data/master-cv/projects/commander4.md:6": {
+    "layer": "curated",
+    "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform",
+    "snippet": "Engineered document ingestion pipeline processing Confluence XML (macro stripping, metadata extraction) and Jira ADF\u2192markdown conversion with sentence-boundary chunking (500-token windows, 50-token overlap), SHA-256 change detection for inc"
+  },
+  "data/master-cv/projects/commander4.md:7": {
+    "layer": "curated",
+    "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform",
+    "snippet": "Built hybrid retrieval pipeline combining BM25 scoring from scratch (no inverted index on S3 Vectors \u2014 corpus statistics computed in-memory) with RRF fusion (k=60) and LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.a"
+  },
+  "data/master-cv/projects/commander4.md:8": {
+    "layer": "curated",
+    "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform",
+    "snippet": "Implemented retrieval evaluation harness with MRR@k and NDCG@k (exponential gain) scoring functions, guardrail profiles for per-silo content policy enforcement, and two-tier semantic cache threshold tuning validated against 14 unit tests."
+  },
+  "data/master-cv/projects/commander4.md:9": {
+    "layer": "curated",
+    "label": "Commander-4 (Joyia) \u2014 Enterprise AI Workflow Platform",
+    "snippet": "Designed structured output architecture using Zod schema validation for all LLM responses, 5 MCP server tools for external integrations, 42 workflow plugins with per-silo guardrail injection via LiteLLM proxy, and per-silo access control."
+  },
+  "data/master-cv/projects/lantern.md:7": {
+    "layer": "curated",
+    "label": "Lantern \u2014 LLM Quality Gateway",
+    "snippet": "Architected multi-provider LLM gateway with LiteLLM routing, model registry, and automatic fallback across OpenAI, Anthropic, and Azure endpoints."
+  },
+  "data/master-cv/projects/lantern.md:8": {
+    "layer": "curated",
+    "label": "Lantern \u2014 LLM Quality Gateway",
+    "snippet": "Built semantic caching layer using Redis + Qdrant vector similarity to deduplicate LLM calls, reducing redundant API spend by ~40% in testing."
+  },
+  "data/master-cv/projects/lantern.md:9": {
+    "layer": "curated",
+    "label": "Lantern \u2014 LLM Quality Gateway",
+    "snippet": "Implemented eval-driven quality gates with golden-set evaluation, scoring LLM responses against reference outputs before serving to downstream consumers."
+  },
+  "data/master-cv/projects/lantern.md:10": {
+    "layer": "curated",
+    "label": "Lantern \u2014 LLM Quality Gateway",
+    "snippet": "Provisioned full observability stack (Prometheus, Grafana, Langfuse tracing) with GitHub Actions CI and VPS deploy workflow for production-grade operations."
+  },
+  "docs/archive/knowledge-base.md:7": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+    "snippet": "STAR RECORD #1\n================================================================================\n\nID: b7e9df84-84b3-4957-93f1-7f1adfe5588c\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Lead Software Engineer / Technical Architect\nPERIO"
+  },
+  "docs/archive/knowledge-base.md:98": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+    "snippet": "STAR RECORD #2\n================================================================================\n\nID: UUID-STAR-0002\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Lead Software Engineer / Technical Architect\nPERIOD: 2020\u2013Present\n\nDOMAI"
+  },
+  "docs/archive/knowledge-base.md:181": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect",
+    "snippet": "STAR RECORD #3\n================================================================================\n\nID: a7c4c2b9-1b8e-4f8e-93f0-42b4f97e78b9\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Lead Software Engineer / Technical Architect\nPERIO"
+  },
+  "docs/archive/knowledge-base.md:268": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+    "snippet": "STAR RECORD #4\n================================================================================\n\nID: 7d2f8e93-4c1b-4a89-b2e5-8f9c3d6a1e42\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Technical Lead - Addressable TV\nPERIOD: 2020\u2013Prese"
+  },
+  "docs/archive/knowledge-base.md:360": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+    "snippet": "STAR RECORD #5\n================================================================================\n\nID: 9e4a7b21-5d8f-4c3a-a1f6-2b9e8d5c4a73\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Technical Lead - Addressable TV\nPERIOD: 2020\u2013Prese"
+  },
+  "docs/archive/knowledge-base.md:453": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+    "snippet": "STAR RECORD #6\n================================================================================\n\nID: 3f5c9a84-7e2b-4d1a-9c8f-6b3d2e7a4f91\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Technical Lead - Addressable TV\nPERIOD: 2020\u2013Prese"
+  },
+  "docs/archive/knowledge-base.md:546": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+    "snippet": "STAR RECORD #7\n================================================================================\n\nID: 8c6d4f29-3a7e-4b2c-9f1d-5e8a7c3b6d42\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Technical Lead - Addressable TV\nPERIOD: 2020\u2013Prese"
+  },
+  "docs/archive/knowledge-base.md:638": {
+    "layer": "claimable_evidence",
+    "label": "Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV",
+    "snippet": "STAR RECORD #8\n================================================================================\n\nID: 5b8e3c71-9d4f-4a2e-8c6b-1f7a9e5d3c82\n\nCOMPANY: Seven.One Entertainment Group\nROLE TITLE: Technical Lead - Addressable TV\nPERIOD: 2020\u2013Prese"
+  },
+  "docs/archive/knowledge-base.md:734": {
+    "layer": "claimable_evidence",
+    "label": "DAYPAIO GmbH \u2014 Senior Software Engineer Full Stack - Tech Lead",
+    "snippet": "STAR RECORD #9\n================================================================================\n\nID: 6a9d2f48-5c7e-4b3a-9e1f-8d4c6b2a7e53\n\nCOMPANY: DAYPAIO GmbH\nROLE TITLE: Senior Software Engineer Full Stack - Tech Lead\nPERIOD: 2019\u20132020\n\n"
+  },
+  "docs/archive/knowledge-base.md:828": {
+    "layer": "claimable_evidence",
+    "label": "KI labs GmbH \u2014 Intermediate Backend Software Engineer",
+    "snippet": "STAR RECORD #10\n================================================================================\n\nID: 4e7b9c32-6a5d-4f8e-9b2c-3d1f8a6e5c74\n\nCOMPANY: KI labs GmbH\nROLE TITLE: Intermediate Backend Software Engineer\nPERIOD: 2018\u20132019\n\nDOMAIN A"
+  },
+  "docs/archive/knowledge-base.md:920": {
+    "layer": "claimable_evidence",
+    "label": "OSRAM GmbH \u2014 Software Engineer",
+    "snippet": "STAR RECORD #11\n================================================================================\n\nID: 2d9f6c84-5b7a-4e3c-8f1d-6c4e9b3a7d52\n\nCOMPANY: OSRAM GmbH\nROLE TITLE: Software Engineer\nPERIOD: 2016\u20132018\n\nDOMAIN AREAS:\nIoT \u2022 Embedded Sy"
+  },
+  "docs/current/achievement-review-index.md:1": {
+    "layer": "supporting_context",
+    "label": "Achievement Review Index",
+    "snippet": "Achievement Review Index > Quick reference for all 44 CV achievements, sorted by improvement priority. > Use this document to track progress and pick which achievement to review next. ---"
+  },
+  "docs/current/achievement-review-index.md:8": {
+    "layer": "supporting_context",
+    "label": "Review Progress",
+    "snippet": "Review Progress | Metric | Count | |--------|-------| | **Total Achievements** | 44 | | **Reviewed** | 2 | | **Pending** | 42 | | **In Progress** | - |"
+  },
+  "docs/current/achievement-review-index.md:19": {
+    "layer": "supporting_context",
+    "label": "Quick Commands",
+    "snippet": "Quick Commands | Command | Description | |---------|-------------| | **\"Review next\"** or **\"Let's continue\"** | Start the next pending achievement (lowest score first) | | **\"Review [ID]\"** | Jump to a specific achievement (e.g., \"Review 0"
+  },
+  "docs/current/achievement-review-index.md:30": {
+    "layer": "supporting_context",
+    "label": "Priority Tiers Explained",
+    "snippet": "Priority Tiers Explained | Tier | Score Range | Count | What It Means | |------|-------------|-------|---------------| | **Critical** | 0.0 | 10 | Not resonating with ANY target role - complete reframe needed | | **High** | 0.1-10.0 | 15 | "
+  },
+  "docs/current/achievement-review-index.md:41": {
+    "layer": "supporting_context",
+    "label": "Achievements by Priority",
+    "snippet": "Achievements by Priority"
+  },
+  "docs/current/achievement-review-index.md:43": {
+    "layer": "supporting_context",
+    "label": "Critical Priority (Score 0.0) - 10 achievements",
+    "snippet": "Critical Priority (Score 0.0) - 10 achievements | # | ID | Title | Role | Company | Gap Summary | |---|----|----|------|---------|-------------| | 1 | `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | Current"
+  },
+  "docs/current/achievement-review-index.md:47": {
+    "layer": "supporting_context",
+    "label": "| 1 | `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | Current | Seven.One | \u2705 Reviewed",
+    "snippet": "| 1 | `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | Current | Seven.One | \u2705 Reviewed |"
+  },
+  "docs/current/achievement-review-index.md:48": {
+    "layer": "supporting_context",
+    "label": "| 2 | `01_seven_one_entertainment_6` | Technical Vision & Architectural North Star | Current | Seven.One | \u2705 Reviewed |",
+    "snippet": "| 2 | `01_seven_one_entertainment_6` | Technical Vision & Architectural North Star | Current | Seven.One | \u2705 Reviewed |"
+  },
+  "docs/current/achievement-review-index.md:49": {
+    "layer": "supporting_context",
+    "label": "| 3 | `02_samdock_daypaio_4` | API Design & Documentation | Mid-Senior | Samdock | 0% leadership, 67% architecture |",
+    "snippet": "| 3 | `02_samdock_daypaio_4` | API Design & Documentation | Mid-Senior | Samdock | 0% leadership, 67% architecture |"
+  },
+  "docs/current/achievement-review-index.md:50": {
+    "layer": "supporting_context",
+    "label": "| 4 | `02_samdock_daypaio_8` | Scalability Architecture | Mid-Senior | Samdock | 25% leadership (needs 45%) |",
+    "snippet": "| 4 | `02_samdock_daypaio_8` | Scalability Architecture | Mid-Senior | Samdock | 25% leadership (needs 45%) |"
+  },
+  "docs/current/achievement-review-index.md:51": {
+    "layer": "supporting_context",
+    "label": "| 5 | `03_ki_labs_3` | API Documentation & Developer Experience | Mid | KI Labs | 0% leadership |",
+    "snippet": "| 5 | `03_ki_labs_3` | API Documentation & Developer Experience | Mid | KI Labs | 0% leadership |"
+  },
+  "docs/current/achievement-review-index.md:52": {
+    "layer": "supporting_context",
+    "label": "| 6 | `03_ki_labs_4` | MongoDB Optimization | Mid | KI Labs | 100% delivery only |",
+    "snippet": "| 6 | `03_ki_labs_4` | MongoDB Optimization | Mid | KI Labs | 100% delivery only |"
+  },
+  "docs/current/achievement-review-index.md:53": {
+    "layer": "supporting_context",
+    "label": "| 7 | `04_fortis_3` | API Standards & Documentation | Early-Mid | Fortis | 25% leadership, 50% process |",
+    "snippet": "| 7 | `04_fortis_3` | API Standards & Documentation | Early-Mid | Fortis | 25% leadership, 50% process |"
+  },
+  "docs/current/achievement-review-index.md:54": {
+    "layer": "supporting_context",
+    "label": "| 8 | `05_osram_3` | CoAP Security Enhancement (OSCOAP) | Early | OSRAM | 100% delivery only |",
+    "snippet": "| 8 | `05_osram_3` | CoAP Security Enhancement (OSCOAP) | Early | OSRAM | 100% delivery only |"
+  },
+  "docs/current/achievement-review-index.md:55": {
+    "layer": "supporting_context",
+    "label": "| 9 | `05_osram_5` | Legacy Device Integration | Early | OSRAM | 50/50 arch/delivery |",
+    "snippet": "| 9 | `05_osram_5` | Legacy Device Integration | Early | OSRAM | 50/50 arch/delivery |"
+  },
+  "docs/current/achievement-review-index.md:56": {
+    "layer": "supporting_context",
+    "label": "| 10 | `06_clary_icon_4` | Interactive Onboarding Tutorial System | First Role | Clary Icon | 100% architecture |",
+    "snippet": "| 10 | `06_clary_icon_4` | Interactive Onboarding Tutorial System | First Role | Clary Icon | 100% architecture |"
+  },
+  "docs/current/achievement-review-index.md:60": {
+    "layer": "supporting_context",
+    "label": "High Priority (Score 0.1-10.0) - 15 achievements",
+    "snippet": "High Priority (Score 0.1-10.0) - 15 achievements | # | ID | Title | Role | Company | Score | Gap Summary | |---|----|----|------|---------|-------|-------------| | 11 | `06_clary_icon_1` | WebRTC Video Recording System | First Role | Clary "
+  },
+  "docs/current/achievement-review-index.md:64": {
+    "layer": "supporting_context",
+    "label": "| 11 | `06_clary_icon_1` | WebRTC Video Recording System | First Role | Clary Icon | 2.9 | 100% delivery |",
+    "snippet": "| 11 | `06_clary_icon_1` | WebRTC Video Recording System | First Role | Clary Icon | 2.9 | 100% delivery |"
+  },
+  "docs/current/achievement-review-index.md:65": {
+    "layer": "supporting_context",
+    "label": "| 12 | `05_osram_2` | CoAP-to-UDP Integration Middleware | Early | OSRAM | 2.9 | 50/50 arch/delivery |",
+    "snippet": "| 12 | `05_osram_2` | CoAP-to-UDP Integration Middleware | Early | OSRAM | 2.9 | 50/50 arch/delivery |"
+  },
+  "docs/current/achievement-review-index.md:66": {
+    "layer": "supporting_context",
+    "label": "| 13 | `06_clary_icon_2` | Real-Time Video Playback Service | First Role | Clary Icon | 3.1 | All at 0% |",
+    "snippet": "| 13 | `06_clary_icon_2` | Real-Time Video Playback Service | First Role | Clary Icon | 3.1 | All at 0% |"
+  },
+  "docs/current/achievement-review-index.md:67": {
+    "layer": "supporting_context",
+    "label": "| 14 | `06_clary_icon_3` | SIP Client Enhancement (Qt/C++) | First Role | Clary Icon | 3.1 | 67% delivery |",
+    "snippet": "| 14 | `06_clary_icon_3` | SIP Client Enhancement (Qt/C++) | First Role | Clary Icon | 3.1 | 67% delivery |"
+  },
+  "docs/current/achievement-review-index.md:68": {
+    "layer": "supporting_context",
+    "label": "| 15 | `03_ki_labs_1` | REST API Development (Large-Scale Data Pipeline) | Mid | KI Labs | 3.1 | 50% delivery/process |",
+    "snippet": "| 15 | `03_ki_labs_1` | REST API Development (Large-Scale Data Pipeline) | Mid | KI Labs | 3.1 | 50% delivery/process |"
+  },
+  "docs/current/achievement-review-index.md:69": {
+    "layer": "supporting_context",
+    "label": "| 16 | `01_seven_one_entertainment_11` | Hiring & Team Building | Current | Seven.One | 3.3 | 100% leadership (too narro",
+    "snippet": "| 16 | `01_seven_one_entertainment_11` | Hiring & Team Building | Current | Seven.One | 3.3 | 100% leadership (too narrow) |"
+  },
+  "docs/current/achievement-review-index.md:70": {
+    "layer": "supporting_context",
+    "label": "| 17 | `06_clary_icon_5` | Client Delivery & Communication | First Role | Clary Icon | 4.0 | 100% leadership |",
+    "snippet": "| 17 | `06_clary_icon_5` | Client Delivery & Communication | First Role | Clary Icon | 4.0 | 100% leadership |"
+  },
+  "docs/current/achievement-review-index.md:71": {
+    "layer": "supporting_context",
+    "label": "| 18 | `01_seven_one_entertainment_3` | Real-Time Observability Pipeline | Current | Seven.One | 5.3 | Needs delivery |",
+    "snippet": "| 18 | `01_seven_one_entertainment_3` | Real-Time Observability Pipeline | Current | Seven.One | 5.3 | Needs delivery |"
+  },
+  "docs/current/achievement-review-index.md:72": {
+    "layer": "supporting_context",
+    "label": "| 19 | `02_samdock_daypaio_1` | Event-Sourced CRM Platform (0\u21921) | Mid-Senior | Samdock | 5.3 | 75% architecture |",
+    "snippet": "| 19 | `02_samdock_daypaio_1` | Event-Sourced CRM Platform (0\u21921) | Mid-Senior | Samdock | 5.3 | 75% architecture |"
+  },
+  "docs/current/achievement-review-index.md:73": {
+    "layer": "supporting_context",
+    "label": "| 20 | `03_ki_labs_2` | Comprehensive Testing Strategy | Mid | KI Labs | 5.3 | 50/50 delivery/process |",
+    "snippet": "| 20 | `03_ki_labs_2` | Comprehensive Testing Strategy | Mid | KI Labs | 5.3 | 50/50 delivery/process |"
+  },
+  "docs/current/achievement-review-index.md:74": {
+    "layer": "supporting_context",
+    "label": "| 21 | `01_seven_one_entertainment_14` | Risk Management & Strategic Communication | Current | Seven.One | 6.0 | 50/50 l",
+    "snippet": "| 21 | `01_seven_one_entertainment_14` | Risk Management & Strategic Communication | Current | Seven.One | 6.0 | 50/50 leadership/arch |"
+  },
+  "docs/current/achievement-review-index.md:75": {
+    "layer": "supporting_context",
+    "label": "| 22 | `04_fortis_2` | RabbitMQ Pub/Sub Messaging | Early-Mid | Fortis | 6.0 | 50/50 leadership/arch |",
+    "snippet": "| 22 | `04_fortis_2` | RabbitMQ Pub/Sub Messaging | Early-Mid | Fortis | 6.0 | 50/50 leadership/arch |"
+  },
+  "docs/current/achievement-review-index.md:76": {
+    "layer": "supporting_context",
+    "label": "| 23 | `02_samdock_daypaio_3` | Engineering Standards & Quality | Mid-Senior | Samdock | 6.2 | 67% process |",
+    "snippet": "| 23 | `02_samdock_daypaio_3` | Engineering Standards & Quality | Mid-Senior | Samdock | 6.2 | 67% process |"
+  },
+  "docs/current/achievement-review-index.md:77": {
+    "layer": "supporting_context",
+    "label": "| 24 | `06_clary_icon_6` | Cross-Platform Development Experience | First Role | Clary Icon | 6.2 | 100% architecture |",
+    "snippet": "| 24 | `06_clary_icon_6` | Cross-Platform Development Experience | First Role | Clary Icon | 6.2 | 100% architecture |"
+  },
+  "docs/current/achievement-review-index.md:78": {
+    "layer": "supporting_context",
+    "label": "| 25 | `01_seven_one_entertainment_1` | Legacy Modernization & Platform Transformation | Current | Seven.One | 6.7 | 71%",
+    "snippet": "| 25 | `01_seven_one_entertainment_1` | Legacy Modernization & Platform Transformation | Current | Seven.One | 6.7 | 71% architecture |"
+  },
+  "docs/current/achievement-review-index.md:82": {
+    "layer": "supporting_context",
+    "label": "Medium Priority (Score 10.1-20.0) - 9 achievements",
+    "snippet": "Medium Priority (Score 10.1-20.0) - 9 achievements | # | ID | Title | Role | Company | Score | Gap Summary | |---|----|----|------|---------|-------|-------------| | 26 | `02_samdock_daypaio_6` | Mentorship & Talent Development | Mid-Senior"
+  },
+  "docs/current/achievement-review-index.md:86": {
+    "layer": "supporting_context",
+    "label": "| 26 | `02_samdock_daypaio_6` | Mentorship & Talent Development | Mid-Senior | Samdock | 6.7 | 100% leadership |",
+    "snippet": "| 26 | `02_samdock_daypaio_6` | Mentorship & Talent Development | Mid-Senior | Samdock | 6.7 | 100% leadership |"
+  },
+  "docs/current/achievement-review-index.md:87": {
+    "layer": "supporting_context",
+    "label": "| 27 | `02_samdock_daypaio_7` | CI/CD Pipeline & Release Automation | Mid-Senior | Samdock | 7.3 | 75% process |",
+    "snippet": "| 27 | `02_samdock_daypaio_7` | CI/CD Pipeline & Release Automation | Mid-Senior | Samdock | 7.3 | 75% process |"
+  },
+  "docs/current/achievement-review-index.md:88": {
+    "layer": "supporting_context",
+    "label": "| 28 | `04_fortis_4` | Agile Client Collaboration | Early-Mid | Fortis | 7.3 | 100% process |",
+    "snippet": "| 28 | `04_fortis_4` | Agile Client Collaboration | Early-Mid | Fortis | 7.3 | 100% process |"
+  },
+  "docs/current/achievement-review-index.md:89": {
+    "layer": "supporting_context",
+    "label": "| 29 | `04_fortis_1` | Node.js Microservices Architecture | Early-Mid | Fortis | 8.0 | 100% architecture |",
+    "snippet": "| 29 | `04_fortis_1` | Node.js Microservices Architecture | Early-Mid | Fortis | 8.0 | 100% architecture |"
+  },
+  "docs/current/achievement-review-index.md:90": {
+    "layer": "supporting_context",
+    "label": "| 30 | `01_seven_one_entertainment_7` | Scalability & Performance Optimization | Current | Seven.One | 9.1 | 50/50 leade",
+    "snippet": "| 30 | `01_seven_one_entertainment_7` | Scalability & Performance Optimization | Current | Seven.One | 9.1 | 50/50 leadership/arch |"
+  },
+  "docs/current/achievement-review-index.md:91": {
+    "layer": "supporting_context",
+    "label": "| 31 | `01_seven_one_entertainment_12` | CI/CD & Deployment Excellence | Current | Seven.One | 11.3 | 60% process |",
+    "snippet": "| 31 | `01_seven_one_entertainment_12` | CI/CD & Deployment Excellence | Current | Seven.One | 11.3 | 60% process |"
+  },
+  "docs/current/achievement-review-index.md:92": {
+    "layer": "supporting_context",
+    "label": "| 32 | `05_osram_6` | Technical Documentation | Early | OSRAM | 12.0 | 50/50 leadership/process |",
+    "snippet": "| 32 | `05_osram_6` | Technical Documentation | Early | OSRAM | 12.0 | 50/50 leadership/process |"
+  },
+  "docs/current/achievement-review-index.md:93": {
+    "layer": "supporting_context",
+    "label": "| 33 | `01_seven_one_entertainment_8` | Monitoring & Incident Management | Current | Seven.One | 12.4 | Balanced but low",
+    "snippet": "| 33 | `01_seven_one_entertainment_8` | Monitoring & Incident Management | Current | Seven.One | 12.4 | Balanced but low |"
+  },
+  "docs/current/achievement-review-index.md:94": {
+    "layer": "supporting_context",
+    "label": "| 34 | `05_osram_1` | Cross-Platform IoT Control Application | Early | OSRAM | 14.7 | 50% architecture |",
+    "snippet": "| 34 | `05_osram_1` | Cross-Platform IoT Control Application | Early | OSRAM | 14.7 | 50% architecture |"
+  },
+  "docs/current/achievement-review-index.md:98": {
+    "layer": "supporting_context",
+    "label": "Low Priority (Score 20.1-36.0) - 10 achievements",
+    "snippet": "Low Priority (Score 20.1-36.0) - 10 achievements | # | ID | Title | Role | Company | Score | Status | |---|----|----|------|---------|-------|--------| | 35 | `03_ki_labs_5` | Agile Delivery | Mid | KI Labs | 17.6 | Needs more leadership | "
+  },
+  "docs/current/achievement-review-index.md:102": {
+    "layer": "supporting_context",
+    "label": "| 35 | `03_ki_labs_5` | Agile Delivery | Mid | KI Labs | 17.6 | Needs more leadership |",
+    "snippet": "| 35 | `03_ki_labs_5` | Agile Delivery | Mid | KI Labs | 17.6 | Needs more leadership |"
+  },
+  "docs/current/achievement-review-index.md:103": {
+    "layer": "supporting_context",
+    "label": "| 36 | `01_seven_one_entertainment_9` | Engineering Team Development & Mentorship | Current | Seven.One | 21.0 | 83% lea",
+    "snippet": "| 36 | `01_seven_one_entertainment_9` | Engineering Team Development & Mentorship | Current | Seven.One | 21.0 | 83% leadership - too narrow |"
+  },
+  "docs/current/achievement-review-index.md:104": {
+    "layer": "supporting_context",
+    "label": "| 37 | `05_osram_7` | SCRUM Team Collaboration | Early | OSRAM | 24.2 | Balanced |",
+    "snippet": "| 37 | `05_osram_7` | SCRUM Team Collaboration | Early | OSRAM | 24.2 | Balanced |"
+  },
+  "docs/current/achievement-review-index.md:105": {
+    "layer": "supporting_context",
+    "label": "| 38 | `01_seven_one_entertainment_5` | GDPR/TCF Compliance & Regulatory Success | Current | Seven.One | 28.0 | Balanced",
+    "snippet": "| 38 | `01_seven_one_entertainment_5` | GDPR/TCF Compliance & Regulatory Success | Current | Seven.One | 28.0 | Balanced |"
+  },
+  "docs/current/achievement-review-index.md:106": {
+    "layer": "supporting_context",
+    "label": "| 39 | `01_seven_one_entertainment_10` | Innovation Culture (Lean Friday) | Current | Seven.One | 30.0 | Good balance |",
+    "snippet": "| 39 | `01_seven_one_entertainment_10` | Innovation Culture (Lean Friday) | Current | Seven.One | 30.0 | Good balance |"
+  },
+  "docs/current/achievement-review-index.md:107": {
+    "layer": "supporting_context",
+    "label": "| 40 | `01_seven_one_entertainment_13` | Subject Matter Expertise & Stakeholder Collaboration | Current | Seven.One | 30",
+    "snippet": "| 40 | `01_seven_one_entertainment_13` | Subject Matter Expertise & Stakeholder Collaboration | Current | Seven.One | 30.0 | Needs keywords |"
+  },
+  "docs/current/achievement-review-index.md:108": {
+    "layer": "supporting_context",
+    "label": "| 41 | `01_seven_one_entertainment_4` | DDD & Engineering Excellence Standards | Current | Seven.One | 32.9 | Balanced |",
+    "snippet": "| 41 | `01_seven_one_entertainment_4` | DDD & Engineering Excellence Standards | Current | Seven.One | 32.9 | Balanced |"
+  },
+  "docs/current/achievement-review-index.md:109": {
+    "layer": "supporting_context",
+    "label": "| 42 | `05_osram_4` | OpenAIS-Compliant CoAP Server Template | Early | OSRAM | 33.3 | Good balance |",
+    "snippet": "| 42 | `05_osram_4` | OpenAIS-Compliant CoAP Server Template | Early | OSRAM | 33.3 | Good balance |"
+  },
+  "docs/current/achievement-review-index.md:110": {
+    "layer": "supporting_context",
+    "label": "| 43 | `02_samdock_daypaio_5` | Team Leadership & Agile Delivery | Mid-Senior | Samdock | 35.6 | Needs more leadership |",
+    "snippet": "| 43 | `02_samdock_daypaio_5` | Team Leadership & Agile Delivery | Mid-Senior | Samdock | 35.6 | Needs more leadership |"
+  },
+  "docs/current/achievement-review-index.md:111": {
+    "layer": "supporting_context",
+    "label": "| 44 | `02_samdock_daypaio_2` | Event Storming & Domain Discovery | Mid-Senior | Samdock | 36.0 | **Best performer!** |",
+    "snippet": "| 44 | `02_samdock_daypaio_2` | Event Storming & Domain Discovery | Mid-Senior | Samdock | 36.0 | **Best performer!** |"
+  },
+  "docs/current/achievement-review-index.md:115": {
+    "layer": "supporting_context",
+    "label": "By Role File",
+    "snippet": "By Role File"
+  },
+  "docs/current/achievement-review-index.md:117": {
+    "layer": "supporting_context",
+    "label": "Seven.One Entertainment (Current Role) - 14 achievements",
+    "snippet": "Seven.One Entertainment (Current Role) - 14 achievements | ID | Title | Score | Priority | |----|-------|-------|----------| | `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | 0.0 | Critical | | `01_seven_on"
+  },
+  "docs/current/achievement-review-index.md:121": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | 0.0 | Critical |",
+    "snippet": "| `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:122": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_6` | Technical Vision & Business Alignment | 0.0 | Critical |",
+    "snippet": "| `01_seven_one_entertainment_6` | Technical Vision & Business Alignment | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:123": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_11` | Hiring & Team Building | 3.3 | High |",
+    "snippet": "| `01_seven_one_entertainment_11` | Hiring & Team Building | 3.3 | High |"
+  },
+  "docs/current/achievement-review-index.md:124": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_3` | Real-Time Observability Pipeline | 5.3 | High |",
+    "snippet": "| `01_seven_one_entertainment_3` | Real-Time Observability Pipeline | 5.3 | High |"
+  },
+  "docs/current/achievement-review-index.md:125": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_14` | Risk Management & Strategic Communication | 6.0 | High |",
+    "snippet": "| `01_seven_one_entertainment_14` | Risk Management & Strategic Communication | 6.0 | High |"
+  },
+  "docs/current/achievement-review-index.md:126": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_1` | Legacy Modernization & Platform Transformation | 6.7 | High |",
+    "snippet": "| `01_seven_one_entertainment_1` | Legacy Modernization & Platform Transformation | 6.7 | High |"
+  },
+  "docs/current/achievement-review-index.md:127": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_7` | Scalability & Performance Optimization | 9.1 | Medium |",
+    "snippet": "| `01_seven_one_entertainment_7` | Scalability & Performance Optimization | 9.1 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:128": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_12` | CI/CD & Deployment Excellence | 11.3 | Medium |",
+    "snippet": "| `01_seven_one_entertainment_12` | CI/CD & Deployment Excellence | 11.3 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:129": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_8` | Monitoring & Incident Management | 12.4 | Medium |",
+    "snippet": "| `01_seven_one_entertainment_8` | Monitoring & Incident Management | 12.4 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:130": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_9` | Engineering Team Development & Mentorship | 21.0 | Low |",
+    "snippet": "| `01_seven_one_entertainment_9` | Engineering Team Development & Mentorship | 21.0 | Low |"
+  },
+  "docs/current/achievement-review-index.md:131": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_5` | GDPR/TCF Compliance & Regulatory Success | 28.0 | Low |",
+    "snippet": "| `01_seven_one_entertainment_5` | GDPR/TCF Compliance & Regulatory Success | 28.0 | Low |"
+  },
+  "docs/current/achievement-review-index.md:132": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_10` | Innovation Culture (Lean Friday) | 30.0 | Low |",
+    "snippet": "| `01_seven_one_entertainment_10` | Innovation Culture (Lean Friday) | 30.0 | Low |"
+  },
+  "docs/current/achievement-review-index.md:133": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_13` | Subject Matter Expertise & Stakeholder Collaboration | 30.0 | Low |",
+    "snippet": "| `01_seven_one_entertainment_13` | Subject Matter Expertise & Stakeholder Collaboration | 30.0 | Low |"
+  },
+  "docs/current/achievement-review-index.md:134": {
+    "layer": "supporting_context",
+    "label": "| `01_seven_one_entertainment_4` | DDD & Engineering Excellence Standards | 32.9 | Low |",
+    "snippet": "| `01_seven_one_entertainment_4` | DDD & Engineering Excellence Standards | 32.9 | Low |"
+  },
+  "docs/current/achievement-review-index.md:136": {
+    "layer": "supporting_context",
+    "label": "Samdock/Daypaio (Mid-Senior) - 8 achievements",
+    "snippet": "Samdock/Daypaio (Mid-Senior) - 8 achievements | ID | Title | Score | Priority | |----|-------|-------|----------| | `02_samdock_daypaio_4` | API Design & Documentation | 0.0 | Critical | | `02_samdock_daypaio_8` | Scalability Architecture |"
+  },
+  "docs/current/achievement-review-index.md:140": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_4` | API Design & Documentation | 0.0 | Critical |",
+    "snippet": "| `02_samdock_daypaio_4` | API Design & Documentation | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:141": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_8` | Scalability Architecture | 0.0 | Critical |",
+    "snippet": "| `02_samdock_daypaio_8` | Scalability Architecture | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:142": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_1` | Event-Sourced CRM Platform (0\u21921) | 5.3 | High |",
+    "snippet": "| `02_samdock_daypaio_1` | Event-Sourced CRM Platform (0\u21921) | 5.3 | High |"
+  },
+  "docs/current/achievement-review-index.md:143": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_3` | Engineering Standards & Quality | 6.2 | High |",
+    "snippet": "| `02_samdock_daypaio_3` | Engineering Standards & Quality | 6.2 | High |"
+  },
+  "docs/current/achievement-review-index.md:144": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_6` | Mentorship & Talent Development | 6.7 | Medium |",
+    "snippet": "| `02_samdock_daypaio_6` | Mentorship & Talent Development | 6.7 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:145": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_7` | CI/CD Pipeline & Release Automation | 7.3 | Medium |",
+    "snippet": "| `02_samdock_daypaio_7` | CI/CD Pipeline & Release Automation | 7.3 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:146": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_5` | Team Leadership & Agile Delivery | 35.6 | Low |",
+    "snippet": "| `02_samdock_daypaio_5` | Team Leadership & Agile Delivery | 35.6 | Low |"
+  },
+  "docs/current/achievement-review-index.md:147": {
+    "layer": "supporting_context",
+    "label": "| `02_samdock_daypaio_2` | Event Storming & Domain Discovery | 36.0 | Low |",
+    "snippet": "| `02_samdock_daypaio_2` | Event Storming & Domain Discovery | 36.0 | Low |"
+  },
+  "docs/current/achievement-review-index.md:149": {
+    "layer": "supporting_context",
+    "label": "KI Labs (Mid) - 5 achievements",
+    "snippet": "KI Labs (Mid) - 5 achievements | ID | Title | Score | Priority | |----|-------|-------|----------| | `03_ki_labs_3` | API Documentation & Developer Experience | 0.0 | Critical | | `03_ki_labs_4` | MongoDB Optimization | 0.0 | Critical | | `"
+  },
+  "docs/current/achievement-review-index.md:153": {
+    "layer": "supporting_context",
+    "label": "| `03_ki_labs_3` | API Documentation & Developer Experience | 0.0 | Critical |",
+    "snippet": "| `03_ki_labs_3` | API Documentation & Developer Experience | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:154": {
+    "layer": "supporting_context",
+    "label": "| `03_ki_labs_4` | MongoDB Optimization | 0.0 | Critical |",
+    "snippet": "| `03_ki_labs_4` | MongoDB Optimization | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:155": {
+    "layer": "supporting_context",
+    "label": "| `03_ki_labs_1` | REST API Development (Large-Scale Data Pipeline) | 3.1 | High |",
+    "snippet": "| `03_ki_labs_1` | REST API Development (Large-Scale Data Pipeline) | 3.1 | High |"
+  },
+  "docs/current/achievement-review-index.md:156": {
+    "layer": "supporting_context",
+    "label": "| `03_ki_labs_2` | Comprehensive Testing Strategy | 5.3 | High |",
+    "snippet": "| `03_ki_labs_2` | Comprehensive Testing Strategy | 5.3 | High |"
+  },
+  "docs/current/achievement-review-index.md:157": {
+    "layer": "supporting_context",
+    "label": "| `03_ki_labs_5` | Agile Delivery | 17.6 | Low |",
+    "snippet": "| `03_ki_labs_5` | Agile Delivery | 17.6 | Low |"
+  },
+  "docs/current/achievement-review-index.md:159": {
+    "layer": "supporting_context",
+    "label": "Fortis Research (Early-Mid) - 4 achievements",
+    "snippet": "Fortis Research (Early-Mid) - 4 achievements | ID | Title | Score | Priority | |----|-------|-------|----------| | `04_fortis_3` | API Standards & Documentation | 0.0 | Critical | | `04_fortis_2` | RabbitMQ Pub/Sub Messaging | 6.0 | High | "
+  },
+  "docs/current/achievement-review-index.md:163": {
+    "layer": "supporting_context",
+    "label": "| `04_fortis_3` | API Standards & Documentation | 0.0 | Critical |",
+    "snippet": "| `04_fortis_3` | API Standards & Documentation | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:164": {
+    "layer": "supporting_context",
+    "label": "| `04_fortis_2` | RabbitMQ Pub/Sub Messaging | 6.0 | High |",
+    "snippet": "| `04_fortis_2` | RabbitMQ Pub/Sub Messaging | 6.0 | High |"
+  },
+  "docs/current/achievement-review-index.md:165": {
+    "layer": "supporting_context",
+    "label": "| `04_fortis_4` | Agile Client Collaboration | 7.3 | Medium |",
+    "snippet": "| `04_fortis_4` | Agile Client Collaboration | 7.3 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:166": {
+    "layer": "supporting_context",
+    "label": "| `04_fortis_1` | Node.js Microservices Architecture | 8.0 | Medium |",
+    "snippet": "| `04_fortis_1` | Node.js Microservices Architecture | 8.0 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:168": {
+    "layer": "supporting_context",
+    "label": "OSRAM (Early) - 7 achievements",
+    "snippet": "OSRAM (Early) - 7 achievements | ID | Title | Score | Priority | |----|-------|-------|----------| | `05_osram_3` | CoAP Security Enhancement (OSCOAP) | 0.0 | Critical | | `05_osram_5` | Legacy Device Integration | 0.0 | Critical | | `05_os"
+  },
+  "docs/current/achievement-review-index.md:172": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_3` | CoAP Security Enhancement (OSCOAP) | 0.0 | Critical |",
+    "snippet": "| `05_osram_3` | CoAP Security Enhancement (OSCOAP) | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:173": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_5` | Legacy Device Integration | 0.0 | Critical |",
+    "snippet": "| `05_osram_5` | Legacy Device Integration | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:174": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_2` | CoAP-to-UDP Integration Middleware | 2.9 | High |",
+    "snippet": "| `05_osram_2` | CoAP-to-UDP Integration Middleware | 2.9 | High |"
+  },
+  "docs/current/achievement-review-index.md:175": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_6` | Technical Documentation | 12.0 | Medium |",
+    "snippet": "| `05_osram_6` | Technical Documentation | 12.0 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:176": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_1` | Cross-Platform IoT Control Application | 14.7 | Medium |",
+    "snippet": "| `05_osram_1` | Cross-Platform IoT Control Application | 14.7 | Medium |"
+  },
+  "docs/current/achievement-review-index.md:177": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_7` | SCRUM Team Collaboration | 24.2 | Low |",
+    "snippet": "| `05_osram_7` | SCRUM Team Collaboration | 24.2 | Low |"
+  },
+  "docs/current/achievement-review-index.md:178": {
+    "layer": "supporting_context",
+    "label": "| `05_osram_4` | OpenAIS-Compliant CoAP Server Template | 33.3 | Low |",
+    "snippet": "| `05_osram_4` | OpenAIS-Compliant CoAP Server Template | 33.3 | Low |"
+  },
+  "docs/current/achievement-review-index.md:180": {
+    "layer": "supporting_context",
+    "label": "Clary Icon (First Role) - 6 achievements",
+    "snippet": "Clary Icon (First Role) - 6 achievements | ID | Title | Score | Priority | |----|-------|-------|----------| | `06_clary_icon_4` | Interactive Onboarding Tutorial System | 0.0 | Critical | | `06_clary_icon_1` | WebRTC Video Recording System"
+  },
+  "docs/current/achievement-review-index.md:184": {
+    "layer": "supporting_context",
+    "label": "| `06_clary_icon_4` | Interactive Onboarding Tutorial System | 0.0 | Critical |",
+    "snippet": "| `06_clary_icon_4` | Interactive Onboarding Tutorial System | 0.0 | Critical |"
+  },
+  "docs/current/achievement-review-index.md:185": {
+    "layer": "supporting_context",
+    "label": "| `06_clary_icon_1` | WebRTC Video Recording System | 2.9 | High |",
+    "snippet": "| `06_clary_icon_1` | WebRTC Video Recording System | 2.9 | High |"
+  },
+  "docs/current/achievement-review-index.md:186": {
+    "layer": "supporting_context",
+    "label": "| `06_clary_icon_2` | Real-Time Video Playback Service | 3.1 | High |",
+    "snippet": "| `06_clary_icon_2` | Real-Time Video Playback Service | 3.1 | High |"
+  },
+  "docs/current/achievement-review-index.md:187": {
+    "layer": "supporting_context",
+    "label": "| `06_clary_icon_3` | SIP Client Enhancement (Qt/C++) | 3.1 | High |",
+    "snippet": "| `06_clary_icon_3` | SIP Client Enhancement (Qt/C++) | 3.1 | High |"
+  },
+  "docs/current/achievement-review-index.md:188": {
+    "layer": "supporting_context",
+    "label": "| `06_clary_icon_5` | Client Delivery & Communication | 4.0 | High |",
+    "snippet": "| `06_clary_icon_5` | Client Delivery & Communication | 4.0 | High |"
+  },
+  "docs/current/achievement-review-index.md:189": {
+    "layer": "supporting_context",
+    "label": "| `06_clary_icon_6` | Cross-Platform Development Experience | 6.2 | High |",
+    "snippet": "| `06_clary_icon_6` | Cross-Platform Development Experience | 6.2 | High |"
+  },
+  "docs/current/achievement-review-index.md:193": {
+    "layer": "supporting_context",
+    "label": "Interview Flow Reference",
+    "snippet": "Interview Flow Reference When we review an achievement, I'll ask these questions: 1. **Context & Role**: Your position, team size, main responsibilities 2. **The Challenge**: What problem led to this achievement? 3. **Your Actions**: What Y"
+  },
+  "docs/current/achievement-review-index.md:207": {
+    "layer": "supporting_context",
+    "label": "Next Steps",
+    "snippet": "Next Steps Say **\"Review next\"** to start with the first critical priority achievement: - **`01_seven_one_entertainment_2`**: Architectural Runway & Technical Debt Strategy Or pick any achievement by ID: **\"Review 03_ki_labs_4\"**"
+  },
+  "docs/current/achievement-review-index.md:210": {
+    "layer": "supporting_context",
+    "label": "- **`01_seven_one_entertainment_2`**: Architectural Runway & Technical Debt Strategy",
+    "snippet": "- **`01_seven_one_entertainment_2`**: Architectural Runway & Technical Debt Strategy"
+  },
+  "docs/current/achievement-review-tracker.yaml:22": {
+    "layer": "supporting_context",
+    "label": "01_seven_one_entertainment_2 \u2014 Architectural Runway & Technical Debt Strategy",
+    "snippet": "01_seven_one_entertainment_2 Architectural Runway & Technical Debt Strategy. Recommended variant: leadership. Competency gap: 0% leadership (needs 45%), 60% architecture (needs 10%). Missing keywords: angular, postgresql, ci/cd, team leader"
+  },
+  "docs/current/achievement-review-tracker.yaml:49": {
+    "layer": "supporting_context",
+    "label": "01_seven_one_entertainment_6 \u2014 Technical Vision & Architectural North Star",
+    "snippet": "01_seven_one_entertainment_6 Technical Vision & Architectural North Star. Recommended variant: leadership. Competency gap: All competencies at 0% - needs reframing. Missing keywords: angular, postgresql, ci/cd, team leadership, kubernetes."
+  },
+  "data/master-cv/role_metadata.json:3": {
+    "layer": "representation",
+    "label": "summary",
+    "snippet": "Engineering Leader / Software Architect with 11 years of experience. Current role: Technical Lead (Addressable TV) at Seven.One Entertainment Group. Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback he"
+  }
+}
+
+REQUIRED GAP TAXONOMY
+Every important missing or weak signal must be classified into exactly one of these:
+
+- supported_and_curated
+- supported_upstream_pending_curation
+- curated_but_underrepresented
+- unsupported_or_unsafe
+
+SCORING FRAMEWORK
+Return a combined score from 0.0 to 10.0 using these weighted components:
+
+- candidate_evidence_coverage_score: 30%
+- evidence_curation_completeness_score: 15%
+- master_cv_representation_quality_score: 25%
+- ai_architecture_fit_score: 15%
+- leadership_scope_fit_score: 10%
+- impact_proof_strength_score: 5%
+
+READINESS TIERS
+- STRONG: >= 8.5
+- GOOD: 7.0 to 8.49
+- STRETCH: 5.5 to 6.99
+- LOW: < 5.5
+
+OUTPUT RULES
+- Return valid JSON only.
+- No markdown fences.
+- No explanatory preamble.
+- Every substantive section must contain citations.
+- Be concrete, operational, and category-specific.
+- Use exact file references when available.
+- Prefer evidence-first wording:
+  "supported by", "not yet curated from", "underrepresented in", "unsafe because", "promote into", "surface in"
+- Do not give generic resume advice.
+- Do not recommend fabricating evidence.
+- Do not collapse curation gaps into unsupported gaps.
+- Do not collapse representation gaps into evidence gaps.
+- If the category confidence is low or the evidence is sparse, include uncertainty notes.
+
+JSON SCHEMA OVERVIEW
+- meta
+- overall_assessment
+- score_breakdown
+- strongest_supported_signals
+- gap_analysis
+- safe_claims_now
+- representation_diagnosis
+- curation_priorities
+- master_cv_upgrade_actions
+- evidence_ledger

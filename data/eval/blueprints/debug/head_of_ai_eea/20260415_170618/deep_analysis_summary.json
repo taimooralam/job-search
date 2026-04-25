@@ -1,0 +1,181 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "budget or p and l ownership",
+      "count": 2
+    },
+    {
+      "label": "designed and trained custom llms from scratch as the primary model scientist",
+      "count": 1
+    },
+    {
+      "label": "implemented mechanistic interpretability research end-to-end",
+      "count": 1
+    },
+    {
+      "label": "published ai security research or patents as a core job duty",
+      "count": 1
+    },
+    {
+      "label": "personally processed 3 trillion security events daily",
+      "count": 1
+    },
+    {
+      "label": "worked as a pure applied ml scientist for 7+ years rather than an engineering leader",
+      "count": 1
+    },
+    {
+      "label": "owned the full mlops stack for multiple client programs as a dedicated ml platform architect",
+      "count": 1
+    },
+    {
+      "label": "implemented vector database and embedding architecture beyond platform integration work",
+      "count": 1
+    },
+    {
+      "label": "led enterprise ai safety and regulatory governance in a formally regulated environment",
+      "count": 1
+    },
+    {
+      "label": "designed openai and azure openai integration patterns without relying on broader engineering support",
+      "count": 1
+    },
+    {
+      "label": "had primary responsibility for translating business requirements into model fine-tuning strategies",
+      "count": 1
+    },
+    {
+      "label": "led a formal team of integration engineers with direct people-management authority",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 21
+    },
+    {
+      "label": "delivery",
+      "count": 20
+    },
+    {
+      "label": "reliability",
+      "count": 17
+    },
+    {
+      "label": "scale",
+      "count": 16
+    },
+    {
+      "label": "evaluation",
+      "count": 11
+    },
+    {
+      "label": "governance",
+      "count": 10
+    },
+    {
+      "label": "cost",
+      "count": 4
+    },
+    {
+      "label": "hiring",
+      "count": 4
+    },
+    {
+      "label": "collaboration",
+      "count": 1
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "scale charlotte ai's capabilities across the falcon platform",
+      "count": 4
+    },
+    {
+      "label": "transparent and trustworthy recommendations for security professionals",
+      "count": 2
+    },
+    {
+      "label": "reduce security operations complexity and cost",
+      "count": 2
+    },
+    {
+      "label": "production readiness and performance of large-scale training pipelines",
+      "count": 1
+    },
+    {
+      "label": "actionable insights from massive security data",
+      "count": 1
+    },
+    {
+      "label": "production-ready genai solutions",
+      "count": 1
+    },
+    {
+      "label": "cost-efficient genai solutions",
+      "count": 1
+    },
+    {
+      "label": "robust data governance",
+      "count": 1
+    },
+    {
+      "label": "enterprise architecture blueprints aligned with scalability and security requirements",
+      "count": 1
+    },
+    {
+      "label": "technical mentorship on ai integration patterns, observability, and performance tuning",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "commander-4 maps directly to the role's production ai platform work through rag, evaluation, guardrails, and workflow orchestration.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to fault-tolerant ai service design through multi-provider routing and circuit breaker patterns.",
+      "count": 1
+    },
+    {
+      "label": "technical lead experience at seven.one supports the mentoring and cross-team technical leadership parts, but the cv still needs explicit applied ml depth.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps to end-to-end genai solution design, rag-based workflows, and production governance.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to model / api routing and production reliability at the integration layer.",
+      "count": 1
+    },
+    {
+      "label": "cqrs, event-sourcing, microservices, and rabbitmq experience map to the architecture and orchestration side of the role.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to integration routing, service reliability, and circuit breaker design.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 maps to reusable ai platform services, rag, and governed enterprise workflows.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [],
+  "specific_domain_years": [
+    {
+      "label": "3+ years specialized in mlops",
+      "count": 1
+    },
+    {
+      "label": "2+ years applied machine learning / research experience",
+      "count": 1
+    },
+    {
+      "label": "7+ years backend development; 2+ years managing remote, international backend engineers",
+      "count": 1
+    }
+  ]
+}

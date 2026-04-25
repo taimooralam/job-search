@@ -1,0 +1,190 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "budget or p and l ownership",
+      "count": 4
+    },
+    {
+      "label": "formal hiring ownership and performance-review responsibility without explicit evidence",
+      "count": 3
+    },
+    {
+      "label": "react-heavy frontend leadership if the cv does not document it",
+      "count": 3
+    },
+    {
+      "label": "big-data platform scale beyond the documented 2,000-user ai workflow platform",
+      "count": 3
+    },
+    {
+      "label": "direct kubernetes, gitops, or terraform ownership unless explicitly shown on the cv",
+      "count": 3
+    },
+    {
+      "label": "public cloud platform administration by name",
+      "count": 3
+    },
+    {
+      "label": "operating at 35m-user infrastructure scale unless backed by measurable evidence",
+      "count": 3
+    },
+    {
+      "label": "english fluency unless explicitly stated",
+      "count": 3
+    },
+    {
+      "label": "hiring, performance management, or budget ownership",
+      "count": 3
+    },
+    {
+      "label": "deep hands-on ownership of public cloud, kubernetes, gitops, terraform, and helm unless explicitly evidenced",
+      "count": 2
+    },
+    {
+      "label": "running large-scale devops or sre operations for tens of millions of users",
+      "count": 2
+    },
+    {
+      "label": "building or managing a devops team, hiring process, or performance management",
+      "count": 2
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "delivery",
+      "count": 20
+    },
+    {
+      "label": "architecture",
+      "count": 17
+    },
+    {
+      "label": "scale",
+      "count": 15
+    },
+    {
+      "label": "reliability",
+      "count": 13
+    },
+    {
+      "label": "evaluation",
+      "count": 8
+    },
+    {
+      "label": "governance",
+      "count": 4
+    },
+    {
+      "label": "hiring",
+      "count": 3
+    },
+    {
+      "label": "cost",
+      "count": 2
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "help build and scale the platform",
+      "count": 5
+    },
+    {
+      "label": "manage, monitor and scale existing services",
+      "count": 5
+    },
+    {
+      "label": "help mid-market customers drive growth",
+      "count": 3
+    },
+    {
+      "label": "improve lead conversion",
+      "count": 3
+    },
+    {
+      "label": "timely delivery",
+      "count": 3
+    },
+    {
+      "label": "high-quality delivery",
+      "count": 3
+    },
+    {
+      "label": "support engineering teams",
+      "count": 3
+    },
+    {
+      "label": "provision infrastructure and platform services through infrastructure-as-code",
+      "count": 3
+    },
+    {
+      "label": "help define the roadmap",
+      "count": 3
+    },
+    {
+      "label": "find the best technical solutions",
+      "count": 3
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "technical lead at seven.one entertainment group: strongest match for hands-on leadership, cross-functional delivery, and shaping engineering practices.",
+      "count": 3
+    },
+    {
+      "label": "commander-4: best proof of shipping a scalable product platform with quality controls, evaluation, and guardrails under real user load.",
+      "count": 3
+    },
+    {
+      "label": "lantern llm gateway and prior microservices / cqrs work: supports claims around architecture, reliability, and system design.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps well because it shows ownership of a production ai platform with 42 plugins, 2,000 users, rag, semantic caching, evaluation, and guardrails, which is strong evidence for scaling and operating a platform.",
+      "count": 3
+    },
+    {
+      "label": "lantern maps well because multi-provider routing and circuit breaker work is directly relevant to service reliability, platform resilience, and operational engineering.",
+      "count": 3
+    },
+    {
+      "label": "the seven.one entertainment group technical lead role and earlier microservices / rabbitmq and cqrs / event-sourcing work are the best evidence for cross-functional engineering support and distributed-systems thinking.",
+      "count": 3
+    },
+    {
+      "label": "commander-4 maps to platform ownership, reliability, and scaling an ai workflow system with guardrails and evaluation.",
+      "count": 2
+    },
+    {
+      "label": "lantern maps to resilient platform design through multi-provider routing and circuit breaking, which is relevant to operating production services.",
+      "count": 2
+    }
+  ],
+  "native_language_requirements": [
+    {
+      "label": "english",
+      "count": 7
+    }
+  ],
+  "specific_domain_years": [
+    {
+      "label": "5+ years in public cloud, kubernetes, gitops, infrastructure-as-code",
+      "count": 3
+    },
+    {
+      "label": "4+ years on actual saas products; 2+ years as the primary technical contributor for a saas product",
+      "count": 1
+    },
+    {
+      "label": "5+ years of full-time professional full-stack experience building user-facing consumer web products; 3+ years with react, typescript, and graphql; 3+ years in python or similar programming language",
+      "count": 1
+    },
+    {
+      "label": "2+ years in a qa automation role",
+      "count": 1
+    },
+    {
+      "label": "10+ years in product management or data analytics; 5+ years focused on data products or analytics platforms",
+      "count": 1
+    }
+  ]
+}

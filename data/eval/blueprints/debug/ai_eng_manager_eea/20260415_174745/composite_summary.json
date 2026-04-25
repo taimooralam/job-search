@@ -1,0 +1,449 @@
+{
+  "signal_strength": {
+    "applied_count": 5,
+    "avg_score": 78.4,
+    "median_score": 82,
+    "score_range": [
+      22,
+      85
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "other": 23,
+      "engineering_manager": 8
+    },
+    "top_title_variants": {
+      "Product Manager, AI": 13,
+      "Engineering Manager, GenAI Platform Development Experience": 3,
+      "Senior AI Engineering Manager": 2,
+      "Technical Engineering Manager (AI Platform)": 2,
+      "AI Product Manager": 1,
+      "Engineering Manager, AI Agents": 1,
+      "Engineering Manager, AI/ML Infrastructure & GenAI Platforms": 1,
+      "Software & ML Engineering Manager - New Products": 1
+    },
+    "noisy_title_mode": true
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "manager": 10,
+      "senior_ic": 7,
+      "senior_manager": 6,
+      "executive": 1,
+      "mid_ic": 1
+    },
+    "role_scope_distribution": {
+      "manager": 14,
+      "ic": 11,
+      "player_coach": 5,
+      "executive": 1
+    },
+    "management_signals_weak": false
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 8,
+      "total": 31,
+      "pct": 25.8
+    },
+    "performance_management": {
+      "count": 8,
+      "total": 31,
+      "pct": 25.8
+    },
+    "org_building": {
+      "count": 12,
+      "total": 31,
+      "pct": 38.7
+    },
+    "budget_pnl": {
+      "count": 2,
+      "total": 31,
+      "pct": 6.5
+    },
+    "direct_reports_samples": [
+      "6-8",
+      "~10",
+      "4"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 54.8,
+    "greenfield_split": {
+      "both": 19,
+      "greenfield": 4,
+      "optimization": 1
+    },
+    "cloud_preference": {
+      "multi_cloud": 5,
+      "AWS": 2,
+      "Azure": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "airtable",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "asana",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "hubspot",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "notion",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "prototyping",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "sql analytics",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "video tools",
+      "count": 13,
+      "total": 31,
+      "pct": 41.9
+    },
+    {
+      "label": "canva",
+      "count": 12,
+      "total": 31,
+      "pct": 38.7
+    },
+    {
+      "label": "market research",
+      "count": 11,
+      "total": 31,
+      "pct": 35.5
+    },
+    {
+      "label": "product marketing",
+      "count": 10,
+      "total": 31,
+      "pct": 32.3
+    },
+    {
+      "label": "scaling ai products",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0
+    },
+    {
+      "label": "scaling software products",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0
+    },
+    {
+      "label": "analytical skills",
+      "count": 8,
+      "total": 31,
+      "pct": 25.8
+    },
+    {
+      "label": "0->1 product launches",
+      "count": 7,
+      "total": 31,
+      "pct": 22.6
+    },
+    {
+      "label": "design software",
+      "count": 7,
+      "total": 31,
+      "pct": 22.6
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "communication",
+      "count": 30,
+      "total": 31,
+      "pct": 96.8
+    },
+    {
+      "label": "collaboration",
+      "count": 27,
+      "total": 31,
+      "pct": 87.1
+    },
+    {
+      "label": "stakeholder management",
+      "count": 21,
+      "total": 31,
+      "pct": 67.7
+    },
+    {
+      "label": "ownership",
+      "count": 16,
+      "total": 31,
+      "pct": 51.6
+    },
+    {
+      "label": "entrepreneurial mindset",
+      "count": 10,
+      "total": 31,
+      "pct": 32.3
+    },
+    {
+      "label": "mentoring",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0
+    },
+    {
+      "label": "thriving in ambiguity",
+      "count": 9,
+      "total": 31,
+      "pct": 29.0
+    },
+    {
+      "label": "leadership",
+      "count": 6,
+      "total": 31,
+      "pct": 19.4
+    },
+    {
+      "label": "coaching",
+      "count": 5,
+      "total": 31,
+      "pct": 16.1
+    },
+    {
+      "label": "presentation",
+      "count": 4,
+      "total": 31,
+      "pct": 12.9
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 3,
+        "total": 31,
+        "pct": 9.7
+      },
+      {
+        "label": "c#",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      },
+      {
+        "label": "go",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      },
+      {
+        "label": "javascript",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      },
+      {
+        "label": "typescript",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      }
+    ],
+    "preferred": []
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 2,
+        "total": 31,
+        "pct": 6.5
+      },
+      "agents_orchestration": {
+        "count": 8,
+        "total": 31,
+        "pct": 25.8
+      },
+      "fine_tuning": {
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      },
+      "evaluation_quality": {
+        "count": 7,
+        "total": 31,
+        "pct": 22.6
+      },
+      "guardrails_governance": {
+        "count": 6,
+        "total": 31,
+        "pct": 19.4
+      },
+      "prompt_engineering": {
+        "count": 0,
+        "total": 31,
+        "pct": 0.0
+      },
+      "vector_search": {
+        "count": 2,
+        "total": 31,
+        "pct": 6.5
+      },
+      "model_serving_routing": {
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      }
+    },
+    "frameworks": [
+      {
+        "label": "hugging face",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      },
+      {
+        "label": "pytorch",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      },
+      {
+        "label": "tensorflow",
+        "count": 1,
+        "total": 31,
+        "pct": 3.2
+      }
+    ],
+    "observability": [
+      {
+        "label": "langsmith",
+        "count": 2,
+        "total": 31,
+        "pct": 6.5
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "gdpr",
+      "count": 10,
+      "total": 31,
+      "pct": 32.3
+    },
+    {
+      "label": "access control models",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    {
+      "label": "ai transparency requirements",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    {
+      "label": "ccpa",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    {
+      "label": "data retention",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    {
+      "label": "ndmo",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    {
+      "label": "ndmo for ksa",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    },
+    {
+      "label": "pii handling",
+      "count": 1,
+      "total": 31,
+      "pct": 3.2
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "define and prioritize ai product roadmaps",
+      "count": 6
+    },
+    {
+      "pain_point": "turn data and user feedback into actionable product decisions",
+      "count": 3
+    },
+    {
+      "pain_point": "prototype, test, and deploy ai product capabilities",
+      "count": 3
+    },
+    {
+      "pain_point": "create onboarding guides, training materials, dashboards, and playbooks",
+      "count": 3
+    },
+    {
+      "pain_point": "align priorities with engineering, design, leadership, and executives",
+      "count": 3
+    },
+    {
+      "pain_point": "drive adoption and end-to-end product outcomes",
+      "count": 3
+    },
+    {
+      "pain_point": "turning user feedback and data into actionable product strategy",
+      "count": 3
+    },
+    {
+      "pain_point": "driving ai product launches from concept to launch",
+      "count": 3
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "enterprise_saas": 4,
+      "consulting": 1
+    },
+    "company_stage": {
+      "enterprise": 5,
+      "startup": 3,
+      "consultancy": 2
+    },
+    "collaboration_model": {
+      "remote_first": 17,
+      "distributed": 3,
+      "hybrid": 2
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

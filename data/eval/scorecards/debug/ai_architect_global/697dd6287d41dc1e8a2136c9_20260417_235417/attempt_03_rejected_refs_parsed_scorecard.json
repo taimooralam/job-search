@@ -1,0 +1,78 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "697dd6287d41dc1e8a2136c9",
+  "dimension_scores": {
+    "ats_optimization": 5.5,
+    "impact_clarity": 6.5,
+    "jd_alignment": 4.0,
+    "executive_presence": 7.0,
+    "anti_hallucination": 6.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": false,
+    "persona_fit_gate": true
+  },
+  "overall_score": 5.73,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong enterprise platform architecture and governance experience with production delivery refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:10,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:27",
+    "AWS cloud experience with specific services (CloudFront, EventBridge, Lambda, ECS) backed by delivery refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:27,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:31",
+    "Clear stakeholder translation and cross-functional collaboration evidence refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:13,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:30",
+    "Appropriate senior IC/player-coach framing with mentoring scope refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:15,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:33"
+  ],
+  "top_failures": [
+    "Zero GenAI/AI platform experience - no RAG, agents, guardrails, or evaluation evidence refs=cv:17-21,data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:20",
+    "JD requires AI thought leader active in global tech communities but CV shows no AI community participation refs=data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:29,cv:1-85",
+    "No LLM, ML model, or AI-specific architecture delivery despite AI Solution Architect positioning refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3,data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:10",
+    "Missing AI governance and AI-specific security standards experience required by JD refs=data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:8,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:18"
+  ],
+  "unsupported_claims": [
+    "AI Solution Architect headline positioning without any AI/GenAI platform delivery evidence in experience refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3"
+  ],
+  "missing_must_haves": [
+    "GenAI stack component (agents, RAG, guardrails, evaluation) - zero coverage refs=data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:20,data/eval/blueprints/ai_architect_global_blueprint.json",
+    "AI platform architecture experience - JD core requirement refs=data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:8,data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:35",
+    "AI thought leadership and global tech community participation refs=data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:29"
+  ],
+  "persona_fit_notes": [
+    "Senior IC/player-coach framing appropriate but applied to non-AI architecture domain refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:25,data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:36",
+    "Technical leadership and mentoring evidence well-scoped without management inflation refs=data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:33"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "Agents/orchestration gap - 38.6% category signal but zero CV coverage refs=data/eval/blueprints/ai_architect_global_blueprint.json"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:3",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:10",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:13",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:15",
+    "cv:17-21",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:18",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:25",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:27",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:30",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:31",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:33",
+    "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md:36",
+    "cv:1-85",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:8",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:10",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:20",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:29",
+    "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md:35",
+    "data/eval/blueprints/ai_architect_global_blueprint.json"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:57:03Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/697dd6287d41dc1e8a2136c9.md",
+    "jd_path": "data/eval/calibration/jds/697dd6287d41dc1e8a2136c9.md"
+  }
+}

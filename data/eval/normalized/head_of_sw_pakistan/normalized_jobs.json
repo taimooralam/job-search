@@ -1,0 +1,2381 @@
+[
+  {
+    "job_id": "6929643c45fa3c355f849d73",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "derived",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI pipelines",
+      "evals",
+      "integrations",
+      "multi-agent orchestration",
+      "Cursor",
+      "Claude Code",
+      "Codex",
+      "Lovable",
+      "v0",
+      "conversational AI",
+      "event-driven systems",
+      "LLM applications",
+      "CX platforms",
+      "e-commerce",
+      "API integrations"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "collaboration",
+      "mentoring",
+      "high_agency",
+      "customer_focus",
+      "ambiguity_tolerance",
+      "culture_building",
+      "communication"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "Set technical roadmap aligned to business goals",
+      "Double the engineering team over 12-18 months",
+      "Ship weekly",
+      "Build culture that attracts top talent"
+    ],
+    "implied_pain_points": [
+      "Need to define technical strategy for an AI-native customer experience platform",
+      "Need to decide what to build versus buy",
+      "Need to scale the engineering org while maintaining velocity",
+      "Need to keep technical credibility while operating at executive level"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "697210f83da7d438ae4f612c",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "over 1.8 million members globally across the UK, India, Germany and France",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "architecture",
+      "scalability",
+      "distributed architectures",
+      "customer-facing applications on mobile and web",
+      "payments systems",
+      "fintech",
+      "logistics",
+      "retail",
+      "cross-platform",
+      "security",
+      "system design"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "communication",
+      "mentoring",
+      "continuous_learning",
+      "adaptability",
+      "product_mindset",
+      "data_driven_decisions"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "Fast, efficient onboarding",
+      "Optimise and globalise the onboarding experience",
+      "Scale commercially",
+      "Improve member activation and retention",
+      "Influence the entire Tide product portfolio"
+    ],
+    "implied_pain_points": [
+      "Need to improve and scale onboarding for SME members",
+      "Need to coordinate across product, design, and business functions",
+      "Need to lead engineering strategy across multiple product areas",
+      "Need to keep systems scalable while Tide expands globally"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years of engineering experience",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694aca4c056b4548bf9793ba",
+    "title_normalized": "Head of Engineering - Payments",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "process billions of dollars for tens of thousands of businesses worldwide",
+      "latency_reliability": "zero customer disruption"
+    },
+    "hard_skills_must_have": [
+      "payment systems",
+      "payment integrations",
+      "PCI DSS compliance",
+      "AWS",
+      "EC2",
+      "Lambda",
+      "RDS",
+      "S3",
+      "distributed Node/TypeScript microservices",
+      "CI/CD",
+      "automated quality standards",
+      "monitoring",
+      "reliability"
+    ],
+    "hard_skills_nice_to_have": [
+      "Node.js/TypeScript microservices",
+      "feature flags",
+      "gradual rollouts"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "Node.js",
+        "TypeScript"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "EC2",
+        "Lambda",
+        "RDS",
+        "S3"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "PCI DSS"
+    ],
+    "soft_skills": [
+      "leadership",
+      "mentoring",
+      "ownership",
+      "excellence",
+      "collaboration",
+      "execution"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "department",
+    "success_metrics": [
+      "Process billions of dollars for tens of thousands of businesses worldwide",
+      "Reduce compliance scope",
+      "Zero customer disruption",
+      "Deliver incrementally",
+      "Execute a phased rollout strategy",
+      "Establish monitoring and reliability practices"
+    ],
+    "implied_pain_points": [
+      "Need to extract and rebuild a monolithic payment engine into a standalone platform",
+      "Need to migrate from PHP to distributed Node/TypeScript microservices",
+      "Need to support multiple payment processors behind a unified API",
+      "Need to build a PCI DSS compliant system from day one",
+      "Need to handle high-volume transactions safely at scale"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694bc63b056b4548bf9793e8",
+    "title_normalized": "Head of Software Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "cloud-native SaaS platform architecture",
+      "AWS",
+      "Azure",
+      "DevOps",
+      "CI/CD",
+      "integrating complex systems",
+      "data pipelines",
+      "Airflow",
+      "Snowflake",
+      "dbt",
+      "custom ETL",
+      "Python",
+      "TensorFlow",
+      "PyTorch",
+      "Scikit-learn",
+      "JAX",
+      "microservices",
+      "API design",
+      "security best practices",
+      "ML-specific architecture"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure"
+      ]
+    },
+    "infrastructure": [
+      "DevOps",
+      "CI/CD",
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "TensorFlow",
+        "PyTorch",
+        "Scikit-learn",
+        "JAX"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "Airflow",
+      "Snowflake",
+      "dbt",
+      "custom ETL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "mentoring",
+      "customer-facing discussions"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "design and evolve the architecture of a cloud-native SaaS platform",
+      "ensure quality, scalability, and maintainability of architecture and code deliverables",
+      "build reliable data ingestion, transformation, and validation pipelines",
+      "align engineering work with product goals and user experience standards",
+      "meet scientific, technical, and business needs"
+    ],
+    "implied_pain_points": [
+      "Need a hands-on engineering leader to shape a cloud-native SaaS platform",
+      "Need reliable data pipelines and validation for scientific and customer data",
+      "Need to coordinate and hold outsourced development partners accountable",
+      "Need to translate scientific requirements into scalable software components",
+      "Need to support enterprise integrations and secure data exchange"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694e40406dd552ab7ec2caf0",
+    "title_normalized": "Consumer AI Co-Founder / Head of Engineering",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "derived",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "not_specified",
+    "success_metrics": [
+      "own, build, and run the startup",
+      "scale the startup to \u20ac100M+ in revenues",
+      "reach product-market-fit",
+      "raise millions in funding",
+      "build a \u20ac1B+ company"
+    ],
+    "implied_pain_points": [
+      "Need a founder who can build a consumer AI startup from scratch",
+      "Need support for hiring, product-market-fit, and fundraising",
+      "Need to build sales and marketing capacity alongside product development",
+      "Need someone willing to take full responsibility for scaling the venture"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695c26226dd552ab7ec2cfaf",
+    "title_normalized": "Head of Engineering (Credit)",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "derived",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "millions of users",
+      "latency_reliability": "performance, scalability, and reliability across all systems"
+    },
+    "hard_skills_must_have": [
+      "backend systems",
+      "microservices",
+      "distributed architectures",
+      "product architecture",
+      "solution architecture",
+      "code quality",
+      "code optimisation",
+      "data-driven decision-making",
+      "metrics"
+    ],
+    "hard_skills_nice_to_have": [
+      "credit products",
+      "lending platforms",
+      "BNPL services",
+      "global distributed engineering organisation",
+      "modern fintech compliance",
+      "security",
+      "risk frameworks"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "modern fintech compliance, security, and risk frameworks"
+    ],
+    "soft_skills": [
+      "ownership",
+      "leadership",
+      "communication",
+      "collaboration",
+      "influencing",
+      "clarity in ambiguous environments"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "enterprise",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "own end-to-end delivery from architecture to production",
+      "ship value fast",
+      "deliver high-impact credit features",
+      "drive technical excellence, performance, scalability, and reliability",
+      "increase the quality of engineering",
+      "build new products from scratch",
+      "scale existing platforms for millions of users"
+    ],
+    "implied_pain_points": [
+      "Need a leader to scale a critical credit vertical",
+      "Need to ship fast without sacrificing quality or reliability",
+      "Need to manage distributed engineering teams across multiple countries",
+      "Need to align engineering with Product, Data, and Operations",
+      "Need to improve engineering performance and consistency across the company"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6964b80b6dd552ab7ec2d85a",
+    "title_normalized": "Deputy Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "high-traffic applications",
+      "latency_reliability": "Web Vitals; backend latency"
+    },
+    "hard_skills_must_have": [
+      "Node.js",
+      "Next.js",
+      "TypeScript",
+      "AWS",
+      "Cloudflare",
+      "Postgres",
+      "Supabase",
+      "Drizzle",
+      "Prisma",
+      "Growthbook",
+      "Mixpanel",
+      "Google Analytics",
+      "GTM",
+      "CI/CD",
+      "OWASP",
+      "WAF",
+      "hosting-level protection",
+      "SSR",
+      "ISR",
+      "A/B testing"
+    ],
+    "hard_skills_nice_to_have": [
+      "MCP (Model Context Protocol)",
+      "Web Vitals",
+      "backend latency",
+      "custom AI agents",
+      "RAG"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "Cloudflare",
+        "RDS",
+        "compute",
+        "networking"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD",
+      "WAF"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Postgres",
+      "Supabase"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "mentoring",
+      "leadership",
+      "conflict handling",
+      "resilience"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "architectural integrity",
+      "security",
+      "technical excellence",
+      "long-term scalability",
+      "code quality across teams",
+      "projects set up correctly from Day 1",
+      "accurate data tracking",
+      "systematic A/B tests",
+      "Web Vitals",
+      "backend latency"
+    ],
+    "implied_pain_points": [
+      "need a technical guardian who can bridge engineering strategy and day-to-day execution",
+      "enforce architecture and code quality across teams",
+      "bootstrap new projects correctly from the start",
+      "raise security standards at code and hosting level",
+      "drive AI adoption and MCP-based developer productivity improvements",
+      "improve growth analytics and experimentation discipline"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "3+ years of intensive experience with Node.js/Next.js; 3+ years managing engineering teams",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6966b1ec7edca8b158fc9692",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "large single-tenant enterprise deployments; multiple AWS accounts and environments",
+      "latency_reliability": "highly available; reliability; uptime; scalability; environment consistency"
+    },
+    "hard_skills_must_have": [
+      "AWS",
+      "ECS",
+      "RDS",
+      "S3",
+      "CloudFront",
+      "IAM",
+      "networking fundamentals",
+      "CloudFormation",
+      "Python",
+      "PHP",
+      "Java",
+      "secure coding",
+      "DevOps",
+      "SRE fundamentals",
+      "modern CI/CD",
+      "code review",
+      "unit testing",
+      "regression workflows",
+      "logging",
+      "monitoring",
+      "observability",
+      "incident management"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "PHP",
+        "Java"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "ECS",
+        "RDS",
+        "S3",
+        "CloudFront",
+        "IAM",
+        "CloudFormation"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD",
+      "CloudFormation"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "RDS"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "leadership",
+      "mentoring",
+      "prioritisation",
+      "coordination",
+      "collaboration"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "technical delivery",
+      "reliability",
+      "evolution of the application and AWS infrastructure",
+      "roadmap execution",
+      "sprint commitments met",
+      "code health",
+      "architectural alignment",
+      "highly available operations",
+      "cost-efficient operations",
+      "operational excellence",
+      "QA processes",
+      "logging",
+      "monitoring",
+      "observability"
+    ],
+    "implied_pain_points": [
+      "reduce dependency on the CTO",
+      "coordinate internal developers, outsourced developers, and the external CloudOps provider",
+      "stabilize and evolve AWS infrastructure across multiple accounts and environments",
+      "improve CI/CD, QA, and observability",
+      "maintain reliability and cost control while scaling"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years of experience running web applications and services in the cloud",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696e0e5b3da7d438ae4f5e3b",
+    "title_normalized": "Head of Engineering - E-Commerce",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "serving millions of customers globally; ~250-person global engineering organization",
+      "latency_reliability": "platform scalability, performance, reliability; checkout performance"
+    },
+    "hard_skills_must_have": [
+      "large-scale distributed platforms",
+      "e-commerce",
+      "B2C platforms",
+      "complex digital platforms",
+      "modern platform architectures",
+      "headless",
+      "composable",
+      "API-first",
+      "microservices",
+      "distributed teams",
+      "international delivery partners",
+      "frontend performance",
+      "platform architecture",
+      "complex system integrations",
+      "Headless CMS",
+      "Sanity",
+      "commerce platforms",
+      "Crowdpick",
+      "CDP-driven personalization and activation",
+      "UX/UI optimization",
+      "experimentation",
+      "continuous improvement",
+      "AI-enabled production use cases",
+      "search",
+      "recommendations",
+      "personalization",
+      "content automation",
+      "English"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "CDP"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "people leadership",
+      "stakeholder management"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "modernize the e-commerce platform",
+      "improve platform scalability",
+      "improve platform performance",
+      "improve platform reliability",
+      "drive measurable improvements in UX/UI efficiency",
+      "improve checkout performance",
+      "increase conversion",
+      "strengthen engineering governance",
+      "improve standards",
+      "improve delivery predictability",
+      "optimize the internal / external engineering mix",
+      "increase customer engagement",
+      "increase operational efficiency"
+    ],
+    "implied_pain_points": [
+      "leading a major digital and e-commerce transformation",
+      "modernizing architecture across a large legacy platform",
+      "scaling delivery across a large distributed engineering organization",
+      "improving UX and checkout performance to support business growth",
+      "evolving the engineering operating model for speed, quality, and cost efficiency",
+      "aligning engineering execution with commercial priorities"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years in software engineering; 5+ years in senior engineering leadership; ownership of large organizations (150-300+ engineers)",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696e38913da7d438ae4f5e5c",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "not_specified",
+      "latency_reliability": "platform reliability"
+    },
+    "hard_skills_must_have": [
+      "React",
+      "TypeScript",
+      "Tailwind",
+      "Python",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Docker",
+      "CI_CD",
+      "GitHub Actions",
+      "GCP"
+    ],
+    "hard_skills_nice_to_have": [
+      "telecom integrations",
+      "usage-based billing",
+      "data pipelines"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "CI_CD",
+      "GitHub Actions"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "ownership",
+      "coaching",
+      "leadership",
+      "pragmatism",
+      "decision-making"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "technical strategy as the business scales",
+      "architecture and delivery",
+      "team growth",
+      "platform reliability",
+      "raise engineering standards",
+      "maintain speed and pragmatism"
+    ],
+    "implied_pain_points": [
+      "scale a live customer-facing platform into its next growth phase",
+      "improve engineering standards without slowing delivery",
+      "keep architecture, delivery, and reliability strong as the business grows"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69713def3da7d438ae4f5fef",
+    "title_normalized": "Head of Software Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "10+ countries, 50+ paying B2B customers, 100+ operators",
+      "latency_reliability": "reliability, data consistency, billing correctness, stable, secure, and compliant"
+    },
+    "hard_skills_must_have": [
+      "React",
+      "TypeScript",
+      "Tailwind",
+      "Python",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Docker",
+      "CI_CD",
+      "GitHub Actions",
+      "GCP"
+    ],
+    "hard_skills_nice_to_have": [
+      "billing systems",
+      "infrastructure-heavy products",
+      "telecom complexity",
+      "telecom integrations",
+      "usage data pipelines"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript",
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "CI_CD",
+      "GitHub Actions"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "ownership",
+      "coaching",
+      "leadership",
+      "collaboration",
+      "structured decision-making"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "startup_b",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "delivery is predictable, stable, and transparent",
+      "billing correctness",
+      "stable, secure, and compliant platform",
+      "connect 100+ operators",
+      "clear plans and engineering commitments",
+      "correct, transparent, and reliable mobile connectivity"
+    ],
+    "implied_pain_points": [
+      "unify fragmented telecom systems across borders",
+      "ensure reliability, data consistency, and billing correctness",
+      "connect many operators while keeping the platform stable, secure, and compliant"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "697338285239de5ec057b384",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "derived",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "not_specified",
+      "latency_reliability": "production stability, incident readiness, major release preparation, cost-optimized system performance"
+    },
+    "hard_skills_must_have": [
+      "Node.js",
+      "Java",
+      "Go",
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "distributed systems",
+      "microservices",
+      "APIs",
+      "event-driven architectures",
+      "AWS",
+      "GCP",
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "messaging systems",
+      "CI_CD",
+      "infrastructure as code",
+      "observability tooling",
+      "Kubernetes",
+      "ECS"
+    ],
+    "hard_skills_nice_to_have": [
+      "iGaming"
+    ],
+    "programming_languages": {
+      "required": [
+        "Java",
+        "Go",
+        "Python",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "ECS"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "infrastructure as code",
+      "Kubernetes",
+      "ECS",
+      "container ecosystems"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL",
+      "MySQL",
+      "Redis"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "communication",
+      "cross-functional collaboration",
+      "mentoring",
+      "ownership",
+      "decision-making"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "delivery of multiple complex projects",
+      "predictable delivery",
+      "operational excellence",
+      "production stability",
+      "incident readiness",
+      "major release preparation",
+      "cost-optimized system performance",
+      "clear career paths",
+      "improving efficiency"
+    ],
+    "implied_pain_points": [
+      "coordinate concurrent workstreams across multiple engineering functions",
+      "improve operational stability and release readiness",
+      "balance hands-on coding with architecture and people management",
+      "align engineering output with product and strategic goals"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "697764fcbd1bc3db54464ecd",
+    "title_normalized": "Head of Engineering - Telecom",
+    "title_family": "other",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "already live with customers; high-volume data pipelines",
+      "latency_reliability": "platform reliability"
+    },
+    "hard_skills_must_have": [
+      "telecom industry experience",
+      "telecom integrations",
+      "usage-based billing",
+      "high-volume data pipelines",
+      "production B2B platforms",
+      "Python",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Docker",
+      "CI/CD",
+      "GitHub Actions",
+      "React",
+      "TypeScript",
+      "Tailwind"
+    ],
+    "hard_skills_nice_to_have": [
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": [
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "Docker",
+      "CI_CD",
+      "GitHub Actions"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "React",
+        "Flask",
+        "FastAPI",
+        "Tailwind"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "communication",
+      "ownership",
+      "pragmatism"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "startup_b",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "scale the business in the telecom space",
+      "maintain platform reliability",
+      "raise engineering standards while maintaining speed and pragmatism",
+      "make clear, well-reasoned technical decisions",
+      "balance speed, quality, and technical debt"
+    ],
+    "implied_pain_points": [
+      "scale an already live telecom platform into its next growth phase",
+      "handle telecom complexity and regulatory, vendor, and operational constraints",
+      "grow the engineering team without slowing momentum",
+      "improve reliability while preserving delivery speed"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69779d5d7d41dc1e8a0c71bf",
+    "title_normalized": "Head of Product Engineering - Order & Buy Area",
+    "title_family": "other",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "up to 5 product teams",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "derived",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "up to five product teams",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "scalable web applications",
+      "PHP",
+      "JavaScript"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "PHP",
+        "JavaScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "alignment",
+      "transparency",
+      "communication",
+      "ownership",
+      "drive",
+      "mentoring",
+      "feedback",
+      "accountability",
+      "collaboration"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deliver products customers love",
+      "help engineers grow personally and professionally",
+      "ensure product delivery while balancing time, budget, and quality",
+      "raise the engineering bar",
+      "improve guidelines",
+      "define how we work as an organization"
+    ],
+    "implied_pain_points": [
+      "align and support up to five product teams",
+      "remove roadblocks and create transparency",
+      "improve engineering standards and organizational ways of working",
+      "grow engineers and engineering managers",
+      "balance delivery with time, budget, and quality"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "697d0d9f7d41dc1e8a1d65d1",
+    "title_normalized": "Head of Engineering - Platform",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "3-6 Engineering Managers",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "3-6 Engineering Managers; 20-40 engineers total; multiple product areas",
+      "latency_reliability": "reliability"
+    },
+    "hard_skills_must_have": [
+      "large-scale distributed systems",
+      "architecture",
+      "system design",
+      "code quality",
+      "reliability",
+      "security",
+      "monitoring",
+      "incident response",
+      "postmortems",
+      "simplicity",
+      "scalability",
+      "maintainability",
+      "operability",
+      "technical decision-making",
+      "modern software development practices"
+    ],
+    "hard_skills_nice_to_have": [
+      "multi-country or distributed engineering organizations",
+      "large-scale technical transformations",
+      "dev experience",
+      "platform thinking"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "coaching",
+      "team building",
+      "communication",
+      "judgement",
+      "prioritization",
+      "feedback",
+      "ownership",
+      "accountability",
+      "collaboration",
+      "mentoring"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "technical excellence",
+      "team health",
+      "engineering autonomy",
+      "delivery excellence",
+      "predictable timelines",
+      "high code quality",
+      "system reliability",
+      "security",
+      "operational excellence"
+    ],
+    "implied_pain_points": [
+      "align multiple engineering teams with business strategy",
+      "coach engineering managers through team building and delivery challenges",
+      "remove systemic bottlenecks",
+      "maintain high technical standards across teams",
+      "balance speed versus quality and keep systems from being at risk"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6981d5107d41dc1e8a3375de",
+    "title_normalized": "Deputy Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "high-traffic applications",
+      "latency_reliability": "optimize backend latency for high-traffic applications"
+    },
+    "hard_skills_must_have": [
+      "Node.js",
+      "Next.js",
+      "TypeScript",
+      "AWS",
+      "Cloudflare",
+      "Postgres",
+      "Supabase",
+      "Drizzle",
+      "Prisma",
+      "CI/CD",
+      "WAF",
+      "OWASP",
+      "Growthbook",
+      "Mixpanel",
+      "Google Analytics",
+      "GTM",
+      "A/B testing"
+    ],
+    "hard_skills_nice_to_have": [
+      "MCP (Model Context Protocol)",
+      "custom AI agents",
+      "complex RAG systems",
+      "Web Vitals tuning",
+      "backend latency optimization"
+    ],
+    "programming_languages": {
+      "required": [
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "Cloudflare",
+        "AWS RDS"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD",
+      "WAF",
+      "Cloudflare"
+    ],
+    "ai_ml_stack": {
+      "rag": "derived",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Postgres",
+      "Supabase"
+    ],
+    "governance_compliance": [
+      "OWASP"
+    ],
+    "soft_skills": [
+      "communication",
+      "resilience",
+      "leadership",
+      "mentoring",
+      "feedback",
+      "conflict management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "architectural integrity",
+      "security",
+      "technical excellence",
+      "long-term scalability",
+      "accurate data tracking",
+      "high code quality",
+      "projects set up correctly from day 1"
+    ],
+    "implied_pain_points": [
+      "architectural drift across projects",
+      "code quality bottlenecks",
+      "security gaps at code and hosting level",
+      "inaccurate analytics and tracking",
+      "outdated development workflows",
+      "need for AI-driven developer productivity improvements"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6981f11e7d41dc1e8a33f45e",
+    "title_normalized": "Head of Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "shipping high-quality software at scale; scaling early-stage products into mature platforms; 90%+ straight-through processing",
+      "latency_reliability": "high performance"
+    },
+    "hard_skills_must_have": [
+      "modern system design",
+      "backend architecture",
+      "engineering best practices",
+      "code review",
+      "debugging",
+      "prototyping",
+      "engineering processes",
+      "clean releases",
+      "rapid iteration",
+      "shipping high-quality software at scale"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "strategic thinking",
+      "communication",
+      "cross-functional collaboration",
+      "leadership",
+      "ability to simplify complex technical topics"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "startup_a",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "high performance",
+      "scalability",
+      "maintainability",
+      "clean releases",
+      "high code quality",
+      "rapid iteration",
+      "90%+ straight-through processing"
+    ],
+    "implied_pain_points": [
+      "scaling early-stage products into mature platforms",
+      "need for cleaner release processes",
+      "need for faster iteration without sacrificing quality",
+      "need for stronger architecture and engineering processes",
+      "need to align engineering with product, design, and leadership"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69844dca7d41dc1e8a3f3634",
+    "title_normalized": "Head of Product Engineering",
+    "title_family": "engineering_manager",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "explicit"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "several thousand sellers and millions of products; up to five product teams",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "PHP",
+      "JavaScript",
+      "scalable web applications",
+      "engineering management",
+      "cross-functional product teams"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "PHP",
+        "JavaScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "communication",
+      "mentoring",
+      "feedback",
+      "transparency",
+      "alignment",
+      "collaboration",
+      "drive"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "enterprise",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "department",
+    "success_metrics": [
+      "products customers love",
+      "business value",
+      "product delivery",
+      "balancing time, budget, and quality",
+      "raising the engineering bar",
+      "improving guidelines",
+      "defining how we work as an organization"
+    ],
+    "implied_pain_points": [
+      "need to remove roadblocks for multiple teams",
+      "need to create alignment and transparency across engineering",
+      "need to raise engineering standards",
+      "need to improve organizational guidelines and ways of working",
+      "need to help engineers and managers grow",
+      "need to balance delivery speed, budget, and quality across several teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "698469e97d41dc1e8a3f75f8",
+    "title_normalized": "Head of Engineering, MarTech",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "multiple IU websites; four major IU websites; millions of prospective students",
+      "latency_reliability": "fast; page speed; reliability"
+    },
+    "hard_skills_must_have": [
+      "Storyblok",
+      "Laravel",
+      "Vue.js",
+      "headless CMS",
+      "APIs",
+      "cloud-native environments",
+      "SEO",
+      "GEO optimization",
+      "Salesforce",
+      "performance monitoring",
+      "observability",
+      "CI/CD"
+    ],
+    "hard_skills_nice_to_have": [
+      "personalization",
+      "experimentation",
+      "data-driven optimization",
+      "AI-powered customer experiences"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "product_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "traffic growth",
+      "conversion",
+      "page speed",
+      "SEO",
+      "GEO optimization",
+      "reliable high-quality data flows"
+    ],
+    "implied_pain_points": [
+      "Improve speed and conversion across multiple websites",
+      "Scale and evolve a headless web platform safely",
+      "Keep data flows reliable across Salesforce and data platform systems",
+      "Increase personalization and AI-powered customer experiences",
+      "Raise engineering standards and developer experience"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "698a9efd7d41dc1e8a51fe4f",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "healthcare systems integrations",
+      "production-grade code",
+      "AI-assisted development tools",
+      "architecture decisions balancing speed, scalability, security, and compliance",
+      "HIPAA-compliance",
+      "data privacy/security",
+      "cloud infrastructure",
+      "AWS",
+      "automated testing",
+      "logging/monitoring tools",
+      "backend experience",
+      "systems experience",
+      "Flutter",
+      "React",
+      "Java"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Java"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "HIPAA"
+    ],
+    "soft_skills": [
+      "collaboration",
+      "problem-solving",
+      "process_improvement"
+    ],
+    "domain_industry": "healthcare",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "enhanced patient care",
+      "improved clinical workflows",
+      "optimized cloud spend",
+      "technology improvements translated into better patient care and clinical workflows"
+    ],
+    "implied_pain_points": [
+      "Build and integrate core components of a healthcare platform",
+      "Balance speed, scalability, security, compliance, and cost",
+      "Improve execution rhythm through planning and estimation",
+      "Use AI-assisted tools while maintaining code quality",
+      "Support cross-functional work that affects patient care and clinical workflows"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "699384ee87737d491c09f897",
+    "title_normalized": "Head of Technology",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "e-commerce platforms",
+      "ERP integrations",
+      "data infrastructure",
+      "AI-powered automation",
+      "system integrations",
+      "development practices",
+      "CI/CD pipelines",
+      "production-ready systems",
+      "Python",
+      "JavaScript",
+      "TypeScript",
+      "AI coding tools",
+      "Claude Code",
+      "Cursor"
+    ],
+    "hard_skills_nice_to_have": [
+      "Shopify"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "problem-solving",
+      "process_improvement",
+      "collaboration"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "growth",
+      "efficiency",
+      "impactful systems",
+      "business operations",
+      "production-ready systems"
+    ],
+    "implied_pain_points": [
+      "Turn CEO prototypes into production-ready systems",
+      "Own and unify the complete technology stack",
+      "Automate business operations with AI",
+      "Establish development practices and CI/CD pipelines",
+      "Improve business growth and efficiency through technology"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "699f000887737d491c3ab7b2",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "70+ million customers; 13,000+ people; millions of people around the world",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "software architecture",
+      "scalable distributed systems"
+    ],
+    "hard_skills_nice_to_have": [
+      "JVM languages",
+      "operating AI infrastructure",
+      "LLM inference at scale",
+      "LLM training at scale",
+      "GPU architecture",
+      "CUDA programming"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "JVM languages"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "mentoring",
+      "communication",
+      "collaboration",
+      "big-picture thinking",
+      "cross-functional collaboration",
+      "stakeholder management"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "quality control",
+      "code optimisation",
+      "improve engineering processes",
+      "raise the bar on quality and efficiency",
+      "define and execute the technical roadmap aligned with business goals",
+      "increase the quality of engineering"
+    ],
+    "implied_pain_points": [
+      "Need technical oversight across scaling engineering teams",
+      "Need stronger architecture and code quality as the company grows",
+      "Need better cross-functional alignment between engineering, product, and business leadership",
+      "Need a leader to improve engineering processes and efficiency",
+      "Need to hire and guide engineering talent"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "699f546687737d491c3c782f",
+    "title_normalized": "Head of Engineering",
+    "title_family": "other",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "close to 20m+ active users",
+      "latency_reliability": "stability, reliability, efficiency, predictable operation, minimal disruption"
+    },
+    "hard_skills_must_have": [
+      "hands-on software engineering",
+      "running stable, scalable platforms",
+      "engineering organization leadership"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "mentoring",
+      "accountability",
+      "knowledge sharing",
+      "stakeholder management",
+      "communication",
+      "judgment"
+    ],
+    "domain_industry": "ecommerce",
+    "company_stage": "scaleup",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "stability",
+      "reliability",
+      "efficiency",
+      "code quality",
+      "security",
+      "operational excellence",
+      "quick onboarding",
+      "continuity as people onboard, grow, and rotate between projects",
+      "long-term maintainability",
+      "lean and efficient organization"
+    ],
+    "implied_pain_points": [
+      "Need to keep the core platform stable while the company continues to grow",
+      "Need to retain knowledge and continuity as people onboard, rotate, and change focus",
+      "Need to prepare the platform and teams for scaling risks without unnecessary headcount growth",
+      "Need to align product, data, and engineering priorities around long-term maintainability",
+      "Need to preserve operational excellence while enabling selective experimentation"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  }
+]

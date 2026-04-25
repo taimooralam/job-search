@@ -1,0 +1,88 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "696ff4cb3da7d438ae4f5f49",
+  "dimension_scores": {
+    "ats_optimization": 6.0,
+    "impact_clarity": 7.5,
+    "jd_alignment": 5.0,
+    "executive_presence": 7.0,
+    "anti_hallucination": 6.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 6.35,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong AWS cloud-native architecture with production delivery evidence processing billions of events daily refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:11,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:28",
+    "Platform design ownership with quantified outcomes (3 years zero downtime, 75% incident reduction) refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:8,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:29",
+    "Event-driven architecture patterns (CQRS, event sourcing) applicable to agent orchestration refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:14,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:38",
+    "Appropriate senior IC framing with executive stakeholder management evidence refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:21,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:25"
+  ],
+  "top_failures": [
+    "No evidence of LLM-based systems despite JD requiring proven LLM experience refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:40,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:18",
+    "Multi-agent orchestration claimed without concrete implementation details or agent frameworks refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:18,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:10,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:27",
+    "Amazon Bedrock ecosystem (Bedrock, Nova, Textract, BDA) completely absent from CV refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:27,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:28,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:29,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:30",
+    "RAG, prompt engineering at scale, and AI guardrails not evidenced refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:45,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:41,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:51"
+  ],
+  "unsupported_claims": [
+    "Agentic AI Solutions Architect headline without LLM or multi-agent implementation evidence refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:3",
+    "Agentic AI initiative mentioned without specifying models, frameworks, or orchestration details refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:10,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:27"
+  ],
+  "missing_must_haves": [
+    "LLM-based systems proven experience refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:40",
+    "Multi-agent orchestration implementation refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:18,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:19,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:20,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:21",
+    "Amazon Bedrock ecosystem (model selection, prompt orchestration) refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:27,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:28",
+    "Amazon Nova agent orchestration refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:29,data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:30",
+    "RAG vs Agentic Retrieval strategy refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:45",
+    "Prompt engineering at scale refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:41",
+    "Prompt and output guardrails implementation refs=data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:51"
+  ],
+  "persona_fit_notes": [
+    "Senior IC architect framing appropriate for category refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:3,data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:25",
+    "Enterprise Platform Leader slightly ambitious but not disqualifying refs=data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:3"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "agents/orchestration gap - CV mentions agentic AI conceptually but lacks multi-agent implementation evidence refs=cv:10,cv:27"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:3",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:8",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:10",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:11",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:14",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:18",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:21",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:25",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:27",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:28",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:29",
+    "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md:38",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:18",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:19",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:20",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:21",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:27",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:28",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:29",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:30",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:40",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:41",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:45",
+    "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md:51"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:49:41Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/696ff4cb3da7d438ae4f5f49.md",
+    "jd_path": "data/eval/calibration/jds/696ff4cb3da7d438ae4f5f49.md"
+  }
+}

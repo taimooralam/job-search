@@ -1,0 +1,39 @@
+{
+  "batch_id": "step9_anchor_batch_v2_generated",
+  "description": "Step 9 v2: pipeline-generated CV snapshots for 4 anchor jobs, run root data/eval/generated_cvs/step9_v2_20260417_124150. Scores these against the same rubrics used in v1; compared in comparison_v1_v2.md.",
+  "run_root": "data/eval/generated_cvs/step9_v2_20260417_124150",
+  "pairs": [
+    {
+      "category_id": "ai_architect_global",
+      "job_id": "696808c4515e64c5ca05acee",
+      "jd_path": "data/eval/raw/ai_architect_global/jd_texts/01_algominds_software_architect_cloud_ai_distributed_systems.md",
+      "cv_path": "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/ai_architect_global/01_algominds_software_architect_cloud_ai_distributed_systems__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "capture_method=log_parse; pipeline_exit_code=0; elapsed_s=603.2; warnings=Dossier gen failed (non-blocking) for some; snapshot sha256=ec9f9f9a3748acac"
+    },
+    {
+      "category_id": "head_of_ai_global",
+      "job_id": "69825fa77d41dc1e8a360e27",
+      "jd_path": "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md",
+      "cv_path": "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/head_of_ai_global/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "capture_method=log_parse; pipeline_exit_code=0; elapsed_s=12501.7; warnings=Dossier gen failed (non-blocking) for some; snapshot sha256=ce62030168fce40d"
+    },
+    {
+      "category_id": "staff_ai_engineer_eea",
+      "job_id": "6957aaad6dd552ab7ec2ccd8",
+      "jd_path": "data/eval/raw/staff_ai_engineer_eea/jd_texts/01_reddit_inc_staff_software_engineer_ml_search.md",
+      "cv_path": "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/staff_ai_engineer_eea/01_reddit_inc_staff_software_engineer_ml_search__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "capture_method=log_parse; pipeline_exit_code=0; elapsed_s=1354.0; warnings=Dossier gen failed (non-blocking) for some; snapshot sha256=ceafeb998bec2a77"
+    },
+    {
+      "category_id": "tech_lead_ai_eea",
+      "job_id": "6925a6c845fa3c355f83f8ec",
+      "jd_path": "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md",
+      "cv_path": "data/eval/generated_cvs/step9_v2_20260417_124150/snapshots/tech_lead_ai_eea/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "capture_method=log_parse; pipeline_exit_code=0; elapsed_s=678.3; warnings=Dossier gen failed (non-blocking) for some; snapshot sha256=7226bf4470c05a0b"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "batch_id": "step9_expansion_batch_v1_generated",
+  "description": "Step 9 expansion batch: 4 new categories, pipeline-generated CV snapshots, run root data/eval/generated_cvs/step9_expansion_20260417_174209.",
+  "run_root": "data/eval/generated_cvs/step9_expansion_20260417_174209",
+  "pairs": [
+    {
+      "category_id": "ai_architect_eea",
+      "job_id": "69610d7b6dd552ab7ec2d666",
+      "jd_path": "data/eval/raw/ai_architect_eea/jd_texts/02_neurons_lab_ai_solution_architect.md",
+      "cv_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/ai_architect_eea/02_neurons_lab_ai_solution_architect__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "NEURONS LAB \u2014 clean AI Solution Architect with production LLM/agentic requirements; avoids sovereign/defense edge case",
+      "generation_notes": "capture_method=log_parse; exit_code=0; snapshot_sha=ef20dc310c1e900d; elapsed_s=887.8"
+    },
+    {
+      "category_id": "staff_ai_engineer_global",
+      "job_id": "6957aa9a6dd552ab7ec2ccd7",
+      "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md",
+      "cv_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "ZIP CO \u2014 cleanest Principal-IC Generative & Agentic AI with platform-scale signal",
+      "generation_notes": "capture_method=log_parse; exit_code=0; snapshot_sha=50562d9ba5fce2ba; elapsed_s=1011.7"
+    },
+    {
+      "category_id": "ai_eng_manager_eea",
+      "job_id": "69275eb345fa3c355f8435ab",
+      "jd_path": "data/eval/raw/ai_eng_manager_eea/jd_texts/01_zendesk_engineering_manager_ai_agents.md",
+      "cv_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/ai_eng_manager_eea/01_zendesk_engineering_manager_ai_agents__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "ZENDESK \u2014 player-coach eng manager leading 6-8 AI Agents engineers (not pure org-build)",
+      "generation_notes": "capture_method=log_parse; exit_code=0; snapshot_sha=137a831d8b38ee9c; elapsed_s=612.2"
+    },
+    {
+      "category_id": "senior_ai_engineer_eea",
+      "job_id": "69381c28c9b1888e56022ad3",
+      "jd_path": "data/eval/raw/senior_ai_engineer_eea/jd_texts/01_teamblue_senior_ai_software_engineer.md",
+      "cv_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/senior_ai_engineer_eea/01_teamblue_senior_ai_software_engineer__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "selection_notes": "TEAM.BLUE \u2014 production hands-on RAG/agents/LLMs with FastAPI + vector DBs",
+      "generation_notes": "capture_method=log_parse; exit_code=0; snapshot_sha=437583a7995788bc; elapsed_s=911.2"
+    }
+  ]
+}

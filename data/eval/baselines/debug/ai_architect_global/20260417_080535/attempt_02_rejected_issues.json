@@ -1,0 +1,11 @@
+[
+  "gap_analysis[4] pending curation item must cite upstream refs",
+  "evidence_ledger[0] supported_and_curated must cite curated refs",
+  "evidence_ledger[1] supported_and_curated must cite curated refs",
+  "evidence_ledger[2] curated_but_underrepresented must cite curated refs",
+  "evidence_ledger[3] supported_and_curated must cite curated refs",
+  "evidence_ledger[4] supported_and_curated must cite curated refs",
+  "evidence_ledger[6] supported_and_curated must cite curated refs",
+  "evidence_ledger[7] supported_and_curated must cite curated refs",
+  "evidence_ledger[8] curated_but_underrepresented must cite curated refs"
+]

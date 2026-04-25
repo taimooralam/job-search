@@ -1,0 +1,189 @@
+{
+  "unsafe_claims_top": [
+    {
+      "label": "deep production backend delivery in go",
+      "count": 2
+    },
+    {
+      "label": "ownership of slos, incident response, and reliability engineering programs",
+      "count": 2
+    },
+    {
+      "label": "direct mcp, openai, or anthropic platform experience if not documented",
+      "count": 2
+    },
+    {
+      "label": "formal people management or direct hiring authority",
+      "count": 2
+    },
+    {
+      "label": "claiming consumer-scale usage in the millions without that number on the cv",
+      "count": 1
+    },
+    {
+      "label": "claiming production self-correcting agent memory across sessions if only partial rag work was done",
+      "count": 1
+    },
+    {
+      "label": "claiming extensive typescript-first agent platform ownership if the work was primarily python",
+      "count": 1
+    },
+    {
+      "label": "claiming people-management responsibility or hiring authority if the role is still an ic principal position",
+      "count": 1
+    },
+    {
+      "label": "claiming company-wide ai developer tooling ownership at docker scale without matching adoption metrics",
+      "count": 1
+    },
+    {
+      "label": "claiming direct experience with specific tools such as claude code, cursor, or warp if that was not part of the work",
+      "count": 1
+    },
+    {
+      "label": "claiming hipaa or phi program ownership without healthcare delivery experience",
+      "count": 1
+    },
+    {
+      "label": "claiming full multi-cloud bedrock plus vertex ai implementation if the work was only on one cloud or one provider",
+      "count": 1
+    }
+  ],
+  "valued_evidence_types_top": [
+    {
+      "label": "architecture",
+      "count": 20
+    },
+    {
+      "label": "reliability",
+      "count": 18
+    },
+    {
+      "label": "delivery",
+      "count": 18
+    },
+    {
+      "label": "scale",
+      "count": 15
+    },
+    {
+      "label": "evaluation",
+      "count": 11
+    },
+    {
+      "label": "governance",
+      "count": 8
+    },
+    {
+      "label": "cost",
+      "count": 5
+    },
+    {
+      "label": "hiring",
+      "count": 2
+    }
+  ],
+  "success_metrics_top": [
+    {
+      "label": "reliability",
+      "count": 4
+    },
+    {
+      "label": "performance",
+      "count": 3
+    },
+    {
+      "label": "bring the product to market",
+      "count": 2
+    },
+    {
+      "label": "scalability",
+      "count": 2
+    },
+    {
+      "label": "security",
+      "count": 2
+    },
+    {
+      "label": "speed",
+      "count": 1
+    },
+    {
+      "label": "handling hallucinations",
+      "count": 1
+    },
+    {
+      "label": "structured output validation",
+      "count": 1
+    },
+    {
+      "label": "behaves as expected in production",
+      "count": 1
+    },
+    {
+      "label": "accelerate developer productivity",
+      "count": 1
+    }
+  ],
+  "candidate_mapping_themes_top": [
+    {
+      "label": "lantern: llm gateway with multi-provider routing and circuit breaker maps to secure routing, resilience, and gateway-style product work.",
+      "count": 2
+    },
+    {
+      "label": "commander-4: enterprise ai workflow platform with evaluation and guardrails maps to ai tooling, lifecycle safety, and developer-facing platform delivery.",
+      "count": 2
+    },
+    {
+      "label": "microservices / rabbitmq plus cqrs / event-sourcing experience maps to distributed systems, service-oriented architecture, and backend platform design.",
+      "count": 2
+    },
+    {
+      "label": "commander-4 maps directly to agent orchestration, rag, guardrails, and evaluation because it already shipped 42 plugins and 2000-user workflows.",
+      "count": 1
+    },
+    {
+      "label": "lantern maps to reliability and model / tool routing because multi-provider routing and circuit breaking are the same failure modes this role needs to solve.",
+      "count": 1
+    },
+    {
+      "label": "prior microservices and event-sourcing work supports the event-driven workflow design the jd asks for.",
+      "count": 1
+    },
+    {
+      "label": "commander-4 shows you can build reusable ai platforms that multiple users and plugins share, which matches docker's self-service platform goal.",
+      "count": 1
+    },
+    {
+      "label": "lantern shows routing, resilience, and abstraction across providers, useful for developer tools infrastructure.",
+      "count": 1
+    }
+  ],
+  "native_language_requirements": [],
+  "specific_domain_years": [
+    {
+      "label": "5+ years of hands-on delivery for enterprise cloud initiatives; 5+ years building or leading large-scale, mission-critical applications; 7+ years designing and developing modern microservices architectures and cost-effective apis; 7+ years managing stakeholder requirements",
+      "count": 1
+    },
+    {
+      "label": "5+ years focused, hands-on work with large language models (llms), agentic ai, and generative ai systems",
+      "count": 1
+    },
+    {
+      "label": "1+ years building production genai solutions in b2b saas environments",
+      "count": 1
+    },
+    {
+      "label": "5+ years in ml / ai or big-data environments",
+      "count": 1
+    },
+    {
+      "label": "7+ years ai / ml engineering",
+      "count": 1
+    },
+    {
+      "label": "12+ years backend engineering",
+      "count": 1
+    }
+  ]
+}

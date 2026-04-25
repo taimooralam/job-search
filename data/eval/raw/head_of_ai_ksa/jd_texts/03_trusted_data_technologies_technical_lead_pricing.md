@@ -1,0 +1,10 @@
+# Technical Lead Pricing
+
+**Company:** TRUSTED DATA TECHNOLOGIES
+**Location:** Saudi Arabia
+**Score:** 55 (Tier C)
+**Status:** N/A
+
+---
+
+Company DescriptionTrusted Data is dedicated to delivering ethical and effective AI solutions thataddress critical business challenges while fostering organizational developmentand driving measurable success. Specializing in People Analytics and SupplyChain, the company’s proprietary AI tools, PeopleEdge and SupplyEdge, empowerbusinesses to achieve efficiency, productivity, and sustainable outcomes.Trusted Data serves a wide range of industries, including telecommunications,automotive, FMCG, manufacturing, retail, banking, insurance, and publictransport. The team is committed to leveraging technology to reduce costs,manage risks, and create lasting value.Role DescriptionThis is a full-time remote position for a Technical Lead Pricing. The roleinvolves leading the development and enhancement of pricing strategies andsystems powered by Artificial Intelligence. Responsibilities include overseeingtechnical design, implementing robust solutions, and collaborating withcross-functional teams to ensure projects meet client requirements. The rolealso requires mentoring team members, staying updated with industry trends, andensuring the successful deployment of scalable and efficient pricing solutions.Qualifications * Strong programming skills, including proficiency in Python, Java, or other relevant languages * Experience with AI and Machine Learning tools and platforms * Knowledge of Pricing Analytics, optimization, and algorithm design * Proven ability in problem-solving, data analysis, and creating technical solutions * Leadership experience with the ability to mentor and guide technical teams * Excellent communication skills and experience collaborating with multidisciplinary teams * Familiarity with cloud computing platforms such as AWS, GCP, or Azure * Bachelor’s or Master’s degree in Computer Science, Data Science, Engineering, or a related field * Experience in supply chain, retail, or pricing systems is a plusShow more Show less

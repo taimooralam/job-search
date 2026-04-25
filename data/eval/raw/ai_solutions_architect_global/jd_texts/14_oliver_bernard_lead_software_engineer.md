@@ -1,0 +1,10 @@
+# Lead Software Engineer
+
+**Company:** OLIVER BERNARD
+**Location:** London Area, United Kingdom
+**Score:** 75 (Tier C)
+**Status:** N/A
+
+---
+
+Lead Software Engineer – React/TypeScript/AWS – £90-100kWe are partnering with a well-funded startup that is building an innovativeplatform empowering private investors to manage their portfolios not only forfinancial performance but also for sustainability and ESG impact.As an AI-native platform on an exciting growth journey, they are seeking a leadengineer to help shape their architecture as they scale.The RoleYou’ll take ownership across the full stack — from designing APIs and datamodels to crafting seamless, high-performing user interfaces. Working closelywith product and design teams, you’ll help bring to life tools that makeinvesting smarter, more transparent, and more sustainable.What you’ll bring * 6+ years of experience building production web applications and at least 2 years in a tech lead or staff role. * Solid experience with React, TypeScript, and Node.js * Familiarity with Next.js and GraphQL * Previous startup experience * A passion for clean code and intuitive product design * Interest in fintech, investing, or ESG innovationNice to Haves * Comfortable working with tools like Postgres, Prisma, GraphQL, or Next.js * Hands-on experience with AI or agent frameworks (such as LangChain or LangGraph) * Experience building something from scratch — whether a side project, startup, or open-source appTech Stack * Frontend: React, TypeScript, Next.js * Backend: Node.js, GraphQL * Database & Cloud: Postgres, AWSWhy Join? * Opportunity to contribute to a mission-driven product at the intersection of finance and sustainability * Work within a collaborative, high-performing team where individual input is valued * Play a key role in an early-stage company where contributions directly influence success * Competitive salary (£90-100k) * Fully Remote RoleLead Software Engineer- Fully Remote- £90-100kShow more Show less

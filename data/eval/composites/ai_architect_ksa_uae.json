@@ -1,0 +1,925 @@
+{
+  "category_id": "ai_architect_ksa_uae",
+  "category_name": "AI Architect \u2014 KSA/UAE",
+  "macro_family": "ai_architect",
+  "priority": "primary_target",
+  "confidence": "high",
+  "total_jobs": 30,
+  "deep_analysis_count": 20,
+  "tier_breakdown": {
+    "C": 22,
+    "B": 6,
+    "D": 1
+  },
+  "signal_strength": {
+    "applied_count": 7,
+    "avg_score": 81.8,
+    "median_score": 85,
+    "score_range": [
+      42,
+      92
+    ]
+  },
+  "title_variants": {
+    "AI Solution Architect": 4,
+    "GenAI Solutions Architect": 3,
+    "Azure AI Solution Architect": 2,
+    "AI Architect": 2,
+    "Solution Architect (Data & AI)": 2,
+    "Enterprise Architect - Data, AI & Platforms": 2,
+    "Software Architect": 1,
+    "Solutions Architect": 1,
+    "AI/ML Solution Architect": 1,
+    "Enterprise AI Architect": 1
+  },
+  "title_families": {
+    "solutions_architect": 19,
+    "ai_architect": 11
+  },
+  "seniority_distribution": {
+    "senior_ic": 27,
+    "mid_ic": 2,
+    "senior_manager": 1
+  },
+  "role_scope_distribution": {
+    "player_coach": 15,
+    "ic": 15
+  },
+  "hard_skills": [
+    {
+      "skill": "MLOps",
+      "count": 9,
+      "total": 30,
+      "pct": 30.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "RAG pipelines",
+      "count": 8,
+      "total": 30,
+      "pct": 26.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 7,
+      "total": 30,
+      "pct": 23.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "vector databases",
+      "count": 7,
+      "total": 30,
+      "pct": 23.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Azure",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Python",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "monitoring",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "LangChain",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "security",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "solution design",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Generative AI",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "LLMs",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "deployment",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "microservices",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "AWS",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "CI/CD pipelines",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Azure DevOps",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "NLP",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "data governance",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "TensorFlow",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "PyTorch",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "solution architecture",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Azure OpenAI",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "governance",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "GCP",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Terraform",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "serverless architectures",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Machine Learning",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "responsible AI practices",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "collaboration",
+      "count": 18,
+      "total": 30,
+      "pct": 60.0,
+      "band": "must_have"
+    },
+    {
+      "skill": "communication",
+      "count": 17,
+      "total": 30,
+      "pct": 56.7,
+      "band": "common"
+    },
+    {
+      "skill": "mentoring",
+      "count": 12,
+      "total": 30,
+      "pct": 40.0,
+      "band": "common"
+    },
+    {
+      "skill": "stakeholder_management",
+      "count": 10,
+      "total": 30,
+      "pct": 33.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "stakeholder management",
+      "count": 8,
+      "total": 30,
+      "pct": 26.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "leadership",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "coaching",
+      "count": 4,
+      "total": 30,
+      "pct": 13.3,
+      "band": "rare"
+    },
+    {
+      "skill": "analytical skills",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "strategic thinking",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "thought leadership",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "influence",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "stakeholder_engagement",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "community_engagement",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "influencing",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "training",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 7,
+        "total": 30,
+        "pct": 23.3,
+        "band": "differentiator"
+      },
+      {
+        "skill": "SQL",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7,
+        "band": "rare"
+      },
+      {
+        "skill": "Scala",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7,
+        "band": "rare"
+      },
+      {
+        "skill": "C#",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      }
+    ],
+    "preferred": [
+      {
+        "skill": "Python",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      }
+    ]
+  },
+  "infrastructure": [
+    {
+      "skill": "Kubernetes",
+      "count": 8,
+      "total": 30,
+      "pct": 26.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI_CD",
+      "count": 8,
+      "total": 30,
+      "pct": 26.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "microservices",
+      "count": 7,
+      "total": 30,
+      "pct": 23.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "serverless",
+      "count": 6,
+      "total": 30,
+      "pct": 20.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 5,
+      "total": 30,
+      "pct": 16.7,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Terraform",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "Docker",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "MLOps",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven systems",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "IaC",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "DevOps",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "infrastructure as code",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Infrastructure as Code",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Pulumi",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    },
+    {
+      "skill": "GPU autoscaling",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "data lakes",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "vector databases",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Snowflake",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Spark",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Airflow",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Kafka",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Hadoop",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "dbt",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Delta Lake",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Azure Synapse",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "GDPR",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "AI/ML Security & Compliance",
+      "count": 3,
+      "total": 30,
+      "pct": 10.0,
+      "band": "rare"
+    },
+    {
+      "skill": "data privacy standards",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "banking regulations",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "data privacy",
+      "count": 2,
+      "total": 30,
+      "pct": 6.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Responsible AI guidelines",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    },
+    {
+      "skill": "data governance",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    },
+    {
+      "skill": "security",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    },
+    {
+      "skill": "compliance requirements",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    },
+    {
+      "skill": "industry regulations",
+      "count": 1,
+      "total": 30,
+      "pct": 3.3,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 12,
+      "total": 30,
+      "pct": 40.0
+    },
+    "agents_orchestration": {
+      "count": 8,
+      "total": 30,
+      "pct": 26.7
+    },
+    "fine_tuning": {
+      "count": 6,
+      "total": 30,
+      "pct": 20.0
+    },
+    "evaluation_quality": {
+      "count": 2,
+      "total": 30,
+      "pct": 6.7
+    },
+    "guardrails_governance": {
+      "count": 15,
+      "total": 30,
+      "pct": 50.0
+    },
+    "prompt_engineering": {
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    "vector_search": {
+      "count": 5,
+      "total": 30,
+      "pct": 16.7
+    },
+    "model_serving_routing": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "top_frameworks": [
+      {
+        "skill": "LangChain",
+        "count": 7,
+        "total": 30,
+        "pct": 23.3,
+        "band": "differentiator"
+      },
+      {
+        "skill": "TensorFlow",
+        "count": 5,
+        "total": 30,
+        "pct": 16.7,
+        "band": "differentiator"
+      },
+      {
+        "skill": "PyTorch",
+        "count": 5,
+        "total": 30,
+        "pct": 16.7,
+        "band": "differentiator"
+      },
+      {
+        "skill": "HuggingFace",
+        "count": 3,
+        "total": 30,
+        "pct": 10.0,
+        "band": "rare"
+      },
+      {
+        "skill": "Semantic Kernel",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7,
+        "band": "rare"
+      },
+      {
+        "skill": "n8n",
+        "count": 2,
+        "total": 30,
+        "pct": 6.7,
+        "band": "rare"
+      },
+      {
+        "skill": "ComfyUI",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "LangGraph",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "LlamaIndex",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Model Context Protocol (MCP)",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Spark",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Airflow",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Kafka",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Hadoop",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      },
+      {
+        "skill": "dbt",
+        "count": 1,
+        "total": 30,
+        "pct": 3.3,
+        "band": "rare"
+      }
+    ],
+    "top_observability": []
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "performance_management": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "org_building": {
+      "count": 4,
+      "total": 30,
+      "pct": 13.3
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 30,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 96.7,
+    "greenfield_split": {
+      "both": 14,
+      "greenfield": 3
+    },
+    "cloud_preference": {
+      "multi_cloud": 12,
+      "Azure": 6
+    }
+  },
+  "domain_industry": {
+    "enterprise_saas": 2,
+    "consulting": 2,
+    "fintech": 2,
+    "banking": 2,
+    "ecommerce": 1
+  },
+  "company_stage": {
+    "consultancy": 5,
+    "enterprise": 4,
+    "startup_seed": 2,
+    "scaleup": 1
+  },
+  "collaboration_model": {
+    "onsite": 1
+  },
+  "pain_points": [
+    {
+      "pain_point": "design and deploy production-grade ai/ml systems",
+      "count": 2
+    },
+    {
+      "pain_point": "scale and optimize ai on oci and multi-cloud environments",
+      "count": 2
+    },
+    {
+      "pain_point": "align ai architecture with data strategy, devops, and security",
+      "count": 2
+    },
+    {
+      "pain_point": "provide technical governance and program oversight",
+      "count": 2
+    },
+    {
+      "pain_point": "support customer-facing gtm work and proposal development",
+      "count": 2
+    },
+    {
+      "pain_point": "grow the ai practice through coaching and community engagement",
+      "count": 2
+    },
+    {
+      "pain_point": "solving complex problems end-to-end",
+      "count": 1
+    },
+    {
+      "pain_point": "inventing scalable architectures",
+      "count": 1
+    },
+    {
+      "pain_point": "improving existing solutions and architectures",
+      "count": 1
+    },
+    {
+      "pain_point": "translating complexity into clarity for stakeholders",
+      "count": 1
+    },
+    {
+      "pain_point": "raising the level of the team",
+      "count": 1
+    },
+    {
+      "pain_point": "setting engineering standards and company culture",
+      "count": 1
+    },
+    {
+      "pain_point": "limitations of today's virtual try-on solutions",
+      "count": 1
+    },
+    {
+      "pain_point": "turning business vision into a cohesive technical blueprint",
+      "count": 1
+    },
+    {
+      "pain_point": "aligning cross-functional teams across business, product, ml, and fashion technologists",
+      "count": 1
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

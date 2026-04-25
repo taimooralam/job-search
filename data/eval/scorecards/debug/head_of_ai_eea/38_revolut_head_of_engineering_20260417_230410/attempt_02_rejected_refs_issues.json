@@ -1,0 +1,8 @@
+[
+  "top_failures[1] ref not a clean path: 'cv:17-21'",
+  "top_failures[3] ref not a clean path: 'jd:47-48'",
+  "persona_fit_notes[1] ref not a clean path: 'cv:6-16'",
+  "evidence_refs[1] not a clean path: 'cv:6-16'",
+  "evidence_refs[6] not a clean path: 'cv:17-21'",
+  "evidence_refs[15] not a clean path: 'jd:47-48'"
+]

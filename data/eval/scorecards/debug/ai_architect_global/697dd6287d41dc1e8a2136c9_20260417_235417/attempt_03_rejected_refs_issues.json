@@ -1,0 +1,6 @@
+[
+  "top_failures[0] ref not a clean path: 'cv:17-21'",
+  "top_failures[1] ref not a clean path: 'cv:1-85'",
+  "evidence_refs[4] not a clean path: 'cv:17-21'",
+  "evidence_refs[12] not a clean path: 'cv:1-85'"
+]

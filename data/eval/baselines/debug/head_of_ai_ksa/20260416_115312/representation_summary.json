@@ -1,0 +1,85 @@
+{
+  "representation_proxy_mode": true,
+  "headline_current_state": {
+    "text": "Engineering Leader / Software Architect",
+    "refs": [
+      "data/master-cv/role_metadata.json:3"
+    ]
+  },
+  "summary_current_state": {
+    "text": "Engineering Leader / Software Architect with 11 years of experience. Current role: Technical Lead (Addressable TV) at Seven.One Entertainment Group. Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+    "refs": [
+      "data/master-cv/role_metadata.json:3"
+    ]
+  },
+  "role_priority_current_state": [
+    {
+      "text": "Diagnosed and transformed legacy 2015-era JavaScript AdTech platform\u2014plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns\u2014into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity\u2014while continuously shipping features.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:28"
+    },
+    {
+      "text": "Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system components while continuously delivering business-critical features.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:54"
+    },
+    {
+      "text": "Led initiative to architect and realize data observability pipeline channeling billions of events daily to OpenSearch on AWS. Real-time dashboards uncovered issues and debug scenarios previously invisible, increasing shipping speed, faster issue resolution, and significant revenue increase.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:71"
+    },
+    {
+      "text": "Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.",
+      "ref": "data/master-cv/roles/01_seven_one_entertainment.md:88"
+    }
+  ],
+  "project_priority_current_state": [
+    {
+      "text": "Enterprise AI workflow platform at ProSiebenSat.1 serving 2,000 users with 42 plugins \u2014 hybrid retrieval, document ingestion, structured outputs, and semantic caching",
+      "ref": "data/master-cv/projects/commander4.md:2"
+    },
+    {
+      "text": "Engineered document ingestion pipeline processing Confluence XML (macro stripping, metadata extraction) and Jira ADF\u2192markdown conversion with sentence-boundary chunking (500-token windows, 50-token overlap), SHA-256 change detection for incremental updates, and RAPTOR hierarchical indexing for multi-granularity retrieval.",
+      "ref": "data/master-cv/projects/commander4.md:6"
+    },
+    {
+      "text": "Built hybrid retrieval pipeline combining BM25 scoring from scratch (no inverted index on S3 Vectors \u2014 corpus statistics computed in-memory) with RRF fusion (k=60) and LLM-as-judge reranking via Claude Sonnet/LiteLLM with parallel Promise.all execution.",
+      "ref": "data/master-cv/projects/commander4.md:7"
+    },
+    {
+      "text": "Multi-provider LLM gateway with semantic caching, eval-driven quality gates, and cost-aware routing",
+      "ref": "data/master-cv/projects/lantern.md:2"
+    },
+    {
+      "text": "Architected multi-provider LLM gateway with LiteLLM routing, model registry, and automatic fallback across OpenAI, Anthropic, and Azure endpoints.",
+      "ref": "data/master-cv/projects/lantern.md:7"
+    },
+    {
+      "text": "Built semantic caching layer using Redis + Qdrant vector similarity to deduplicate LLM calls, reducing redundant API spend by ~40% in testing.",
+      "ref": "data/master-cv/projects/lantern.md:8"
+    }
+  ],
+  "skills_priority_current_state": [
+    "Hybrid Search",
+    "RAG Pipeline",
+    "Document Ingestion Pipeline",
+    "Retrieval Evaluation (MRR, NDCG)",
+    "Semantic Caching",
+    "LLM-as-Judge Evaluation",
+    "Structured Outputs",
+    "MCP Tool Design",
+    "TypeScript",
+    "Python",
+    "S3 Vectors",
+    "LiteLLM",
+    "Redis",
+    "DynamoDB",
+    "SQS",
+    "Vercel AI SDK",
+    "LLM Gateway Design",
+    "Provider Fallback Chain"
+  ],
+  "underrepresented_signals": [
+    "Clary Icon \u2014 Client Delivery & Communication"
+  ],
+  "overstated_risks": [
+    "Representation is proxy-derived; treat headline and summary fit as provisional until a canonical master CV artifact exists."
+  ]
+}

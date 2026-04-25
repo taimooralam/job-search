@@ -1,0 +1,23 @@
+{
+  "category": "head_of_ai_eea",
+  "job_id": "699f001187737d491c3ab803",
+  "jd_path": "data/eval/raw/head_of_ai_eea/jd_texts/38_revolut_head_of_engineering.md",
+  "jd_stem": "38_revolut_head_of_engineering",
+  "exit_code": 0,
+  "elapsed_seconds": 661.1,
+  "expected_deterministic_path": "outputs/REVOLUT/cv_Head_of_Engineering.md",
+  "pre_state": {
+    "exists": false
+  },
+  "post_state": {
+    "exists": true,
+    "size": 7014,
+    "mtime": 1776457662.1967452,
+    "sha256": "e7f4d3602ae66164f359d9d600561981ce881bdc0698c977462e4d8da3603e3f"
+  },
+  "resolved_cv_path": "outputs/REVOLUT/cv_Head_of_Engineering.md",
+  "capture_method": "log_parse",
+  "snapshot_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_eea/38_revolut_head_of_engineering__generated.md",
+  "scoreable": true,
+  "log_tail": "  Scaling engineering quality to match 70M+ customer growth is the defining challenge for distributed systems at Revolut's scale. For the Head of Engineering role, I bring systematic frameworks that cut...\n\n\ud83d\udccb CV:\n  outputs/REVOLUT/cv_Head_of_Engineering.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-17 22:28:25 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+}

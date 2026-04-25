@@ -1,0 +1,485 @@
+{
+  "meta": {
+    "category_id": "ai_architect_global",
+    "category_name": "AI Architect \u2014 Global/Remote",
+    "macro_family": "ai_architect",
+    "priority": "primary_target",
+    "confidence": "high",
+    "representation_proxy_mode": true
+  },
+  "overall_assessment": {
+    "combined_fit_score": 7.8,
+    "readiness_tier": "GOOD",
+    "one_sentence_verdict": "Strong evidence for enterprise AI platform architecture with production RAG, evaluation harnesses, and guardrails at Commander-4 positions this candidate well for AI Architect roles, though agent orchestration and multi-provider experience need better surfacing.",
+    "uncertainty_note": "Representation is proxy-derived; player-coach scope and consulting-style stakeholder work are supported but underrepresented in current master CV framing.",
+    "citations": [
+      "Platform design 87/88 (98.9%) in category; Commander-4 serves 2,000 users with 42 plugins per data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "Architecture valued evidence 20/20; candidate shows hybrid search, evaluation harness, guardrails per data/master-cv/projects/commander4.md:6-10",
+      "Senior_ic 79% in category; candidate evidence shows mentoring 10+ engineers and stakeholder SME work per data/master-cv/roles/01_seven_one_entertainment.md:231 and :299"
+    ]
+  },
+  "score_breakdown": {
+    "candidate_evidence_coverage_score": 8.0,
+    "evidence_curation_completeness_score": 7.0,
+    "master_cv_representation_quality_score": 7.5,
+    "ai_architecture_fit_score": 8.5,
+    "leadership_scope_fit_score": 8.0,
+    "impact_proof_strength_score": 7.5,
+    "weighted_score_explanation": [
+      "Evidence coverage (8.0 \u00d7 0.30 = 2.40): Strong Commander-4 AI platform evidence with RAG, evaluation, guardrails, semantic caching, and MCP tools covering most category signals; agents/orchestration evidence exists but is less explicit.",
+      "Curation completeness (7.0 \u00d7 0.15 = 1.05): Commander-4 and Seven.One modernization well-curated; upstream STAR records show additional stakeholder and architecture evidence not yet promoted.",
+      "Representation quality (7.5 \u00d7 0.25 = 1.875): Headline fits category; summary captures AI platform work but underweights guardrails, evaluation, and stakeholder translation signals.",
+      "AI architecture fit (8.5 \u00d7 0.15 = 1.275): Direct match on platform design, RAG, evaluation harness, guardrails, enterprise integration, and production delivery at scale.",
+      "Leadership scope fit (8.0 \u00d7 0.10 = 0.80): Evidence supports senior IC/player-coach framing with mentoring and stakeholder alignment; no inflation into management claims.",
+      "Impact proof strength (7.5 \u00d7 0.05 = 0.375): Good quantification (2,000 users, 75% incident reduction, billions of events daily) but could strengthen cost and scalability metrics."
+    ],
+    "citations": [
+      "data/master-cv/roles/01_seven_one_entertainment.md:28 - Commander-4 platform lead with retrieval quality and runtime control",
+      "data/master-cv/projects/commander4.md:6 - governed structured outputs, MCP tools, per-silo guardrails",
+      "data/master-cv/roles/01_seven_one_entertainment.md:77 - 75% incident reduction, 3 years zero downtime",
+      "data/master-cv/roles/01_seven_one_entertainment.md:231 - mentored 10+ engineers, promoted 3"
+    ]
+  },
+  "strongest_supported_signals": [
+    {
+      "signal": "Enterprise AI platform architecture with production delivery",
+      "why_it_matters_for_category": "Platform design appears in 98.9% of roles and architecture is the top valued evidence type in 20/20 deep analyses. Commander-4 directly proves target-state design and shipped enterprise AI.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:2"
+      ],
+      "citation": "Platform design 87/88 (98.9%); architecture valued evidence 20/20; Commander-4 serves 2,000 users across 42 plugins"
+    },
+    {
+      "signal": "RAG pipeline with hybrid search and retrieval evaluation",
+      "why_it_matters_for_category": "RAG appears in 28.4% of roles and evaluation/quality in 20.5%. Evidence shows BM25+RRF hybrid search, LLM-as-judge reranking, MRR@k and NDCG@k scoring functions.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:7",
+        "data/master-cv/projects/commander4.md:8"
+      ],
+      "citation": "RAG 25/88 (28.4%); evaluation/quality 18/88 (20.5%); candidate implements BM25 scoring, RRF fusion, MRR@k, NDCG@k"
+    },
+    {
+      "signal": "Guardrails, governance, and per-silo access control",
+      "why_it_matters_for_category": "Guardrails/governance appears in 37.5% of roles. Evidence shows per-silo guardrail injection via LiteLLM proxy, access-control-aware workflow behavior, and content policy enforcement.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/projects/commander4.md:7",
+        "data/master-cv/roles/01_seven_one_entertainment.md:55"
+      ],
+      "citation": "Guardrails/governance 33/88 (37.5%); governance valued evidence 10/20; Commander-4 shows 42 workflow plugins with per-silo guardrail injection"
+    },
+    {
+      "signal": "Legacy modernization and distributed systems architecture",
+      "why_it_matters_for_category": "The category favors architects who can modernize existing systems as well as build greenfield. Evidence shows transformation from legacy JS to event-driven microservices with 75% incident reduction.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:77",
+        "data/master-cv/roles/01_seven_one_entertainment.md:103"
+      ],
+      "citation": "Greenfield_split: both 42 in category; delivery valued evidence 19/20; candidate shows 3 years zero downtime post-modernization"
+    },
+    {
+      "signal": "Semantic caching and LLM gateway architecture",
+      "why_it_matters_for_category": "Production AI platforms need runtime efficiency and cost control. Evidence shows two-tier semantic caching (L1 exact-match, L2 cosine similarity) and LiteLLM gateway design.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:354",
+        "data/master-cv/projects/commander4.md:9",
+        "data/master-cv/projects/lantern.md:10"
+      ],
+      "citation": "Cost valued evidence 7/20; performance 5/20; candidate shows L1 ~2ms, L2 ~200ms caching with SHA-256 and cosine similarity"
+    },
+    {
+      "signal": "Stakeholder translation and cross-functional collaboration",
+      "why_it_matters_for_category": "Communication appears in 76.1% and stakeholder management in 44.3% of roles. Evidence shows SME consultation, business stakeholder education on technical debt ROI, and product owner collaboration.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:172",
+        "data/master-cv/roles/01_seven_one_entertainment.md:299",
+        "data/master-cv/roles/01_seven_one_entertainment.md:315"
+      ],
+      "citation": "Communication 67/88 (76.1%); stakeholder management 39/88 (44.3%); candidate shows business stakeholder education and SME collaboration"
+    }
+  ],
+  "gap_analysis": [
+    {
+      "signal": "Agents and orchestration connected to enterprise systems",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Agents/orchestration appears in 38.6% of roles as the leading GenAI production signal. The category distinctly values agentic system design over isolated prompt work.",
+      "current_state": "Evidence shows 5 MCP server tools for external integrations and workflow plugins, but agent orchestration patterns, routing logic, and production controls around agentic flows are not prominently surfaced.",
+      "safe_interpretation": "MCP tool design implies agent-adjacent capability but explicit agent workflow evidence is underrepresented in current framing.",
+      "recommended_action": "Surface MCP tool design and workflow orchestration more explicitly in headline or summary; add agent-oriented language to Commander-4 bullets if accurate.",
+      "evidence_refs": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/roles/01_seven_one_entertainment.md:55"
+      ],
+      "citation": "Agents/orchestration 34/88 (38.6%); MCP tools exist in curated evidence but agent workflow framing is underrepresented"
+    },
+    {
+      "signal": "Player-coach mentoring and technical guidance scope",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Player_coach scope is material at 38% and mentoring appears in 20.5% of roles. The category rewards architecture leadership with technical coaching, not pure management.",
+      "current_state": "Evidence shows mentoring 10+ engineers and promoting 3, but this is not surfaced prominently in summary or headline. The player-coach angle is implicit rather than explicit.",
+      "safe_interpretation": "Mentoring evidence is curated and claimable but underweighted in representation.",
+      "recommended_action": "Strengthen player-coach language in summary; surface mentoring and design review evidence in role framing.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231",
+        "data/master-cv/roles/01_seven_one_entertainment.md:172"
+      ],
+      "citation": "Player_coach 38%; mentoring 18/88 (20.5%); candidate has mentored 10+ engineers per curated evidence"
+    },
+    {
+      "signal": "Consulting-style stakeholder translation in enterprise environments",
+      "gap_type": "supported_upstream_pending_curation",
+      "why_it_matters": "Consulting and consultancy appear 20 times in market context. The category leans toward consulting-flavored architecture translation for enterprise AI rollout.",
+      "current_state": "Upstream STAR records reference stakeholder collaboration, business metrics identification, and client-facing work more explicitly than curated evidence currently captures.",
+      "safe_interpretation": "Curated evidence shows stakeholder alignment but upstream records may strengthen consulting-style framing if promoted.",
+      "recommended_action": "Review upstream STAR records at docs/archive/knowledge-base.md:7 and :268 for client-facing and stakeholder translation details; promote to curated store if accurate.",
+      "evidence_refs": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "citation": "Consulting 17, consultancy 3 in domain context; upstream shows stakeholder collaboration evidence pending curation"
+    },
+    {
+      "signal": "Multi-cloud or provider-specific architecture authority",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "Azure and AWS each appear in 15.9% of roles and multi_cloud in 29%. Provider branding can differentiate but requires explicit delivery evidence.",
+      "current_state": "Evidence shows AWS Lambda, EventBridge, ECS, CloudFront but no Azure or GCP AI service delivery. Multi-cloud claims are not supported.",
+      "safe_interpretation": "AWS-native services are evidenced for platform infrastructure but not explicitly for AI/ML services. Azure and multi-cloud are unsafe claims.",
+      "recommended_action": "Do not claim Azure, GCP, or multi-cloud authority. AWS infrastructure is safe to claim but AWS AI services (Bedrock, SageMaker) are not evidenced.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:77"
+      ],
+      "citation": "Azure 14/88 (15.9%), AWS 14/88 (15.9%), multi_cloud 29%; candidate shows AWS infrastructure but not multi-cloud AI delivery"
+    },
+    {
+      "signal": "Hiring, org-building, or performance management ownership",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "Hiring appears in only 2.3% and org_building in 11.4% of roles. The category does not expect people management as a core signal.",
+      "current_state": "Evidence shows hiring process definition at one role but scope is limited. No performance management or org-building evidence.",
+      "safe_interpretation": "Hiring involvement is mentioned but not as ownership. Do not inflate into management claims.",
+      "recommended_action": "Keep hiring reference compressed; do not foreground people management or org-building in AI Architect positioning.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:266"
+      ],
+      "citation": "Hiring 2/88 (2.3%); performance management 2/88 (2.3%); org_building 10/88 (11.4%); management scope is weak evidence"
+    },
+    {
+      "signal": "GDPR, EU AI Act, or compliance program ownership",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "GDPR appears in 9.1% and EU AI Act in 2.3% of roles. Compliance signals can differentiate but require explicit ownership evidence.",
+      "current_state": "Evidence shows GDPR/TCF compliance program leadership with successful BLM regulatory audits, but this is not surfaced for AI Architect framing.",
+      "safe_interpretation": "GDPR compliance evidence exists but is AdTech-specific rather than AI-specific. Safe to mention as regulatory experience but not as AI compliance authority.",
+      "recommended_action": "Keep GDPR evidence available for compliance-sensitive roles but do not foreground as AI-specific governance ownership.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:155"
+      ],
+      "citation": "GDPR 8/88 (9.1%); EU AI Act 2/88 (2.3%); candidate shows GDPR/TCF success but in AdTech domain"
+    }
+  ],
+  "safe_claims_now": {
+    "headline_safe": [
+      "AI Solution Architect",
+      "AI Architect",
+      "AI Platform Architect",
+      "Enterprise AI Platform, Agents, Integration & Governance"
+    ],
+    "profile_safe": [
+      "Enterprise AI platform design and production delivery",
+      "RAG pipeline architecture with hybrid search and evaluation harnesses",
+      "Guardrails, governance, and per-silo access control for AI workflows",
+      "Semantic caching and LLM gateway design",
+      "Legacy platform modernization to event-driven microservices",
+      "Stakeholder translation and cross-functional collaboration"
+    ],
+    "experience_safe": [
+      "Commander-4 (Joyia) enterprise AI workflow platform serving 2,000 users",
+      "BM25 + RRF hybrid search with LLM-as-judge reranking",
+      "MRR@k and NDCG@k retrieval evaluation harness with 14 unit tests",
+      "42 workflow plugins with per-silo guardrail injection via LiteLLM proxy",
+      "5 MCP server tools for external integrations",
+      "Two-tier semantic caching (L1 exact-match, L2 cosine similarity)",
+      "Legacy JavaScript to TypeScript microservices transformation with 75% incident reduction",
+      "Observability pipeline processing billions of events daily"
+    ],
+    "leadership_safe": [
+      "Senior individual contributor and player-coach",
+      "Mentored 10+ senior engineers on architectural patterns",
+      "Stakeholder alignment and technical debt ROI education",
+      "Subject matter expert on enterprise architecture challenges",
+      "Collaborative architecture design and pattern guidance"
+    ],
+    "unsafe_or_too_weak": [
+      "Head of AI, Director of AI, VP AI, Engineering Manager titles",
+      "AWS or Azure AI services authority (Bedrock, SageMaker, Azure OpenAI)",
+      "Multi-cloud architecture ownership",
+      "Customer-facing solution architect or workshops",
+      "Hiring ownership or org-building",
+      "Research, PhD, or advanced experimentation framing",
+      "DevOps or infrastructure ownership (vs architecture collaboration)",
+      "GDPR/EU AI Act AI-specific compliance ownership"
+    ],
+    "citations": [
+      "Title families: solutions_architect 50%, ai_architect 37% per blueprint; candidate current title Technical Architect/AI Platform Architect fits",
+      "data/master-cv/roles/01_seven_one_entertainment.md:28 - Commander-4 evidence supports enterprise AI platform claims",
+      "data/master-cv/roles/01_seven_one_entertainment.md:231 - mentoring evidence supports player-coach but not management claims",
+      "Blueprint unsafe claims: AWS ownership, customer-facing architecture, DevOps ownership without explicit evidence"
+    ]
+  },
+  "representation_diagnosis": {
+    "well_represented_now": [
+      "Enterprise AI platform architecture via Commander-4 lead position",
+      "RAG pipeline with hybrid search (BM25, RRF, vector search)",
+      "Retrieval evaluation harness (MRR@k, NDCG@k)",
+      "Semantic caching architecture (two-tier L1/L2)",
+      "Legacy modernization to event-driven microservices",
+      "TypeScript and Python implementation depth"
+    ],
+    "underrepresented_now": [
+      "Agents and orchestration framing (MCP tools exist but agent language is weak)",
+      "Player-coach and mentoring scope in summary/headline",
+      "Guardrails and governance as explicit production control signals",
+      "Stakeholder translation and enterprise consulting-style work",
+      "Scale and reliability outcomes (cost, latency, throughput metrics)",
+      "Evaluation harness positioned as production quality gate"
+    ],
+    "overstated_risk_now": [
+      "Headline may imply broader Technical Architect scope than AI-focused category expects",
+      "AWS infrastructure evidence could be misread as AWS AI services authority",
+      "Hiring bullet could inflate management scope if not properly scoped"
+    ],
+    "representation_priorities": [
+      "P1: Add explicit agent/orchestration language to Commander-4 framing if accurate",
+      "P2: Surface player-coach mentoring in summary rather than buried in mid-priority bullet",
+      "P3: Strengthen guardrails/governance as production-ready AI signal in headline or summary",
+      "P4: Add cost/latency/reliability metrics to architecture outcomes where evidenced",
+      "P5: Position evaluation harness as production quality gate, not just test coverage"
+    ],
+    "citations": [
+      "data/master-cv/role_metadata.json:4 - current headline 'Technical Architect / AI Platform Architect'",
+      "data/master-cv/role_metadata.json:5 - summary mentions AI platform but underweights guardrails and stakeholder translation",
+      "data/master-cv/projects/commander4.md:6 - MCP tools exist but agent framing underrepresented",
+      "Blueprint: agents/orchestration 38.6%, guardrails/governance 37.5% - both material signals"
+    ]
+  },
+  "curation_priorities": [
+    {
+      "priority_rank": 1,
+      "action": "Promote stakeholder translation and consulting-style architecture work from upstream STAR records",
+      "why_now": "Category values consulting-flavored stakeholder work (consulting 17, consultancy 3 in context) and communication appears in 76.1% of roles. Upstream records show richer evidence than currently curated.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:268",
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "expected_category_impact": "Strengthens stakeholder management signal from curated-but-underrepresented to well-represented; improves representation quality score.",
+      "citation": "Communication 67/88 (76.1%); stakeholder management 39/88 (44.3%); upstream shows high overlap scores 23 and 20"
+    },
+    {
+      "priority_rank": 2,
+      "action": "Curate explicit agent workflow and orchestration evidence from Commander-4 work if exists",
+      "why_now": "Agents/orchestration is the top GenAI signal at 38.6%. MCP tools are curated but explicit agent workflow routing, multi-step orchestration, or tool-calling patterns need promotion.",
+      "target_files": [
+        "data/master-cv/projects/commander4.md",
+        "data/master-cv/roles/01_seven_one_entertainment.md"
+      ],
+      "source_refs": [
+        "data/master-cv/projects/commander4.md:6"
+      ],
+      "expected_category_impact": "Elevates agents/orchestration from curated-but-underrepresented to well-represented; improves AI architecture fit score.",
+      "citation": "Agents/orchestration 34/88 (38.6%); MCP Tool Design verified skill but agent workflow framing missing"
+    },
+    {
+      "priority_rank": 3,
+      "action": "Add cost, latency, and throughput metrics to architecture outcomes",
+      "why_now": "Scale valued evidence 15/20, reliability 11/20, cost 7/20 in deep analyses. Current metrics focus on incident reduction and users; cost efficiency and latency outcomes are underrepresented.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/projects/commander4.md"
+      ],
+      "source_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:354",
+        "data/master-cv/projects/lantern.md:10"
+      ],
+      "expected_category_impact": "Strengthens impact proof strength; improves production maturity signal.",
+      "citation": "Semantic cache shows ~2ms L1, ~200ms L2; Lantern shows ~40% API cost reduction - metrics exist but are buried"
+    },
+    {
+      "priority_rank": 4,
+      "action": "Review and promote Daypaio CQRS/event-sourcing evidence for distributed systems foundation",
+      "why_now": "Category pain points include CQRS/event sourcing as transferable evidence. Daypaio event-sourced CRM platform is curated but could be better positioned as architecture foundation.",
+      "target_files": [
+        "data/master-cv/roles/02_samdock_daypaio.md"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:734"
+      ],
+      "expected_category_impact": "Strengthens non-AI architecture foundation; supports modernization narrative.",
+      "citation": "Deep-analysis candidate mapping values CQRS/event sourcing; Daypaio shows EventStore, CQRS, NestJS"
+    }
+  ],
+  "master_cv_upgrade_actions": [
+    {
+      "priority_rank": 1,
+      "action": "Revise headline to emphasize AI Architect with enterprise platform, agents, and governance signals",
+      "section": "headline",
+      "why_now": "Current headline 'Technical Architect / AI Platform Architect' is acceptable but could better match category title families (solutions_architect 50%, ai_architect 37%).",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:6"
+      ],
+      "citation": "Blueprint recommends: [AI Solution Architect / AI Architect] | Enterprise AI Platforms, Agents, Integration & Governance"
+    },
+    {
+      "priority_rank": 2,
+      "action": "Add player-coach and mentoring language to summary",
+      "section": "summary",
+      "why_now": "Summary mentions player-coach but buries mentoring evidence. Category has player_coach 38% and mentoring 20.5%; this should be more prominent.",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231",
+        "data/master-cv/roles/01_seven_one_entertainment.md:172"
+      ],
+      "citation": "Player_coach 38%; mentoring 18/88 (20.5%); candidate evidence shows 10+ engineers mentored, 3 promoted"
+    },
+    {
+      "priority_rank": 3,
+      "action": "Surface guardrails and governance as explicit production control in summary or role lead",
+      "section": "summary",
+      "why_now": "Guardrails/governance appears in 37.5% of roles. Current summary mentions guardrails but not as prominently as RAG or structured outputs.",
+      "supported_by": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/projects/commander4.md:7"
+      ],
+      "citation": "Guardrails/governance 33/88 (37.5%); governance valued evidence 10/20"
+    },
+    {
+      "priority_rank": 4,
+      "action": "Reframe MCP tools as agent-adjacent capability with orchestration language",
+      "section": "role_bullets",
+      "why_now": "Agents/orchestration is the top GenAI signal at 38.6%. MCP tool design is curated but not framed with agent orchestration vocabulary.",
+      "supported_by": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/roles/01_seven_one_entertainment.md:55"
+      ],
+      "citation": "Agents/orchestration 34/88 (38.6%); MCP Tool Design verified skill needs agent framing"
+    },
+    {
+      "priority_rank": 5,
+      "action": "Add evaluation harness as production quality gate framing, not just test coverage",
+      "section": "projects",
+      "why_now": "Evaluation/quality appears in 20.5% of roles. Current framing mentions MRR/NDCG but positions it alongside unit tests rather than as production quality gate.",
+      "supported_by": [
+        "data/master-cv/projects/commander4.md:7",
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "citation": "Evaluation/quality 18/88 (20.5%); eval-driven quality gates distinguish production-ready architects"
+    },
+    {
+      "priority_rank": 6,
+      "action": "Compress or contextualize hiring bullet to avoid management inflation",
+      "section": "role_bullets",
+      "why_now": "Hiring appears in only 2.3% of roles. Current bullet could inflate management scope expectations for a category that is 79% senior_ic.",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:266"
+      ],
+      "citation": "Hiring 2/88 (2.3%); manager 1%; senior_ic 79%; hiring bullet should not foreground management"
+    }
+  ],
+  "evidence_ledger": [
+    {
+      "recommendation": "Lead with AI Architect branding showing enterprise platform design and production delivery",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Claim RAG pipeline with hybrid search, evaluation harness, and semantic caching",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:7",
+        "data/master-cv/projects/commander4.md:8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Claim guardrails and governance with per-silo access control",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/roles/01_seven_one_entertainment.md:55"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Strengthen agent/orchestration language using MCP tool evidence",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/projects/commander4.md:6"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "recommendation": "Promote stakeholder translation and consulting-style work from upstream STAR records",
+      "classification": "supported_upstream_pending_curation",
+      "support": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Surface player-coach mentoring more prominently in summary",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Claim legacy modernization and distributed systems as AI architecture foundation",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:77"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Do not claim AWS or Azure AI services authority without additional evidence",
+      "classification": "unsupported_or_unsafe",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:77"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Do not claim hiring, org-building, or management ownership",
+      "classification": "unsupported_or_unsafe",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:266"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Keep GDPR evidence available but do not frame as AI-specific compliance ownership",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:155"
+      ],
+      "confidence": "medium"
+    }
+  ]
+}

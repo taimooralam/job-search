@@ -1,0 +1,393 @@
+{
+  "signal_strength": {
+    "applied_count": 0,
+    "avg_score": 56.3,
+    "median_score": 70,
+    "score_range": [
+      0,
+      89
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "senior_engineer": 6,
+      "tech_lead": 1
+    },
+    "top_title_variants": {
+      "Senior AI Data Engineer": 1,
+      "Senior AI Software Engineer": 1,
+      "Senior AI/ML Developer": 1,
+      "Senior Agentic AI & LLM Engineer": 1,
+      "Senior ML Software Engineer": 1,
+      "Senior Software Applied AI Engineer": 1,
+      "Senior Software Engineer, AI Developer Tools": 1
+    },
+    "noisy_title_mode": false
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 7
+    },
+    "role_scope_distribution": {
+      "ic": 6,
+      "player_coach": 1
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "performance_management": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "org_building": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 7,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 100.0,
+    "greenfield_split": {
+      "both": 4,
+      "optimization": 1,
+      "greenfield": 2
+    },
+    "cloud_preference": {
+      "AWS": 1,
+      "GCP": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 4,
+      "total": 7,
+      "pct": 57.1
+    },
+    {
+      "label": "prompt engineering",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9
+    },
+    {
+      "label": "sql",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9
+    },
+    {
+      "label": "vector databases",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9
+    },
+    {
+      "label": "ai agents",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "context management",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "conversational ai",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "embeddings",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "langchain",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "retrieval-augmented generation (rag)",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "agentic frameworks",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "claude",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "event-driven architecture",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "faiss",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "fastapi",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 5,
+      "total": 7,
+      "pct": 71.4
+    },
+    {
+      "label": "problem solving",
+      "count": 3,
+      "total": 7,
+      "pct": 42.9
+    },
+    {
+      "label": "communication",
+      "count": 2,
+      "total": 7,
+      "pct": 28.6
+    },
+    {
+      "label": "accountability",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "customer obsession",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "data-driven decision making",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "documentation",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "first principles problem solving",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "independent work",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    },
+    {
+      "label": "integrity",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 4,
+        "total": 7,
+        "pct": 57.1
+      },
+      {
+        "label": "sql",
+        "count": 2,
+        "total": 7,
+        "pct": 28.6
+      },
+      {
+        "label": "javascript",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      },
+      {
+        "label": "typescript",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      }
+    ],
+    "preferred": [
+      {
+        "label": "c",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      },
+      {
+        "label": "c++",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 5,
+        "total": 7,
+        "pct": 71.4
+      },
+      "agents_orchestration": {
+        "count": 5,
+        "total": 7,
+        "pct": 71.4
+      },
+      "fine_tuning": {
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      },
+      "evaluation_quality": {
+        "count": 4,
+        "total": 7,
+        "pct": 57.1
+      },
+      "guardrails_governance": {
+        "count": 0,
+        "total": 7,
+        "pct": 0.0
+      },
+      "prompt_engineering": {
+        "count": 3,
+        "total": 7,
+        "pct": 42.9
+      },
+      "vector_search": {
+        "count": 3,
+        "total": 7,
+        "pct": 42.9
+      },
+      "model_serving_routing": {
+        "count": 0,
+        "total": 7,
+        "pct": 0.0
+      }
+    },
+    "frameworks": [
+      {
+        "label": "langchain",
+        "count": 2,
+        "total": 7,
+        "pct": 28.6
+      },
+      {
+        "label": "langgraph",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      },
+      {
+        "label": "llamaindex",
+        "count": 1,
+        "total": 7,
+        "pct": 14.3
+      }
+    ],
+    "observability": []
+  },
+  "governance_compliance_top": [
+    {
+      "label": "gdpr",
+      "count": 1,
+      "total": 7,
+      "pct": 14.3
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "unlock genai across the team.blue group",
+      "count": 1
+    },
+    {
+      "pain_point": "build scalable ai-driven products and experiences",
+      "count": 1
+    },
+    {
+      "pain_point": "integrate ai solutions into existing environments and workflows",
+      "count": 1
+    },
+    {
+      "pain_point": "deploy production rag systems and ai agents",
+      "count": 1
+    },
+    {
+      "pain_point": "shape ai offerings for smb customers",
+      "count": 1
+    },
+    {
+      "pain_point": "build and maintain internal ml operation services",
+      "count": 1
+    },
+    {
+      "pain_point": "support training and ci/cd pipelines in aws",
+      "count": 1
+    },
+    {
+      "pain_point": "integrate models into sophos products",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "consulting": 2,
+      "enterprise_saas": 2
+    },
+    "company_stage": {
+      "scaleup": 1
+    },
+    "collaboration_model": {
+      "remote_first": 2,
+      "distributed": 1,
+      "hybrid": 1
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

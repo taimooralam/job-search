@@ -1,0 +1,2136 @@
+[
+  {
+    "job_id": "697d239a7d41dc1e8a1dd814",
+    "title_normalized": "Data Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "high-concurrency customer analytics and multi-tenancy; scaling rapidly across products, customers, and acquisitions",
+      "latency_reliability": "reliable ingestion; secure, scalable, multi-tenant customer reporting"
+    },
+    "hard_skills_must_have": [
+      "Databricks",
+      "Delta Lake",
+      "Spark",
+      "Unity Catalog",
+      "Power BI",
+      "Power BI Semantic Models",
+      "Power BI Embedded",
+      "Python",
+      "SQL",
+      "SQL Server",
+      "Microsoft Fabric",
+      "ADF",
+      "ADLS Gen2",
+      "Snowflake",
+      "AI/agentic analytics"
+    ],
+    "hard_skills_nice_to_have": [
+      "Scala"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "SQL"
+      ],
+      "preferred": [
+        "Scala"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "Azure",
+      "services_mentioned": [
+        "ADF",
+        "ADLS Gen2",
+        "Databricks",
+        "Unity Catalog",
+        "Snowflake",
+        "Microsoft Fabric",
+        "Power BI",
+        "Power BI Embedded"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "derived",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL Server",
+      "ADLS Gen2",
+      "Delta Lake",
+      "Databricks",
+      "Snowflake"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "scaleup",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "One trusted semantic model powering all analytics and AI",
+      "Customer dashboards that scale independently and securely",
+      "AI-generated insights embedded directly into executive and customer reports",
+      "Fast, low-friction onboarding of new data sources and acquisitions",
+      "Clear governance, lineage, and documentation adopted across teams"
+    ],
+    "implied_pain_points": [
+      "create one trusted source of truth across products, customers, and acquisitions",
+      "make customer-facing analytics scale securely in a multi-tenant setup",
+      "enable AI summaries, narratives, and copilots only on governed data",
+      "accelerate onboarding of new products, data sources, and acquisitions",
+      "replace fragmented SQL Server warehouse patterns with a governed Microsoft-native analytics stack"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs direct evidence of designing governed analytics platforms, not just AI applications. The best proof would show production ownership of semantic layers, multi-tenant reporting, and AI outputs grounded in trusted data at real user scale.",
+      "most_valued_evidence_types": [
+        "scale",
+        "governance",
+        "architecture",
+        "delivery",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct ownership of Databricks Unity Catalog production architecture",
+        "hands-on Power BI Semantic Models and Power BI Embedded at customer scale",
+        "leading acquisition onboarding of multiple data sources as a proven delivery record",
+        "building Microsoft Fabric-based copilots on governed data end to end"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps best to the governed AI part of the role because it shows an enterprise AI workflow platform with RAG, semantic caching, evaluation, guardrails, and 2,000 users.",
+        "Lantern maps to platform reliability and controlled access patterns through multi-provider routing and circuit breaker design.",
+        "Lead Engineer work in CQRS/event sourcing helps prove architecture discipline, but there is no direct Databricks, Power BI, or embedded analytics evidence in the candidate summary."
+      ]
+    }
+  },
+  {
+    "job_id": "69856f0b7d41dc1e8a404f77",
+    "title_normalized": "Enterprise Data Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "customer profile management and MDM solutions at scale",
+      "latency_reliability": "secure, scalable, sustainable data ecosystem"
+    },
+    "hard_skills_must_have": [
+      "Microsoft Fabric",
+      "AKS",
+      "PostgreSQL",
+      "Oracle",
+      "MongoDB",
+      "Neo4j",
+      "change data capture",
+      "data governance frameworks",
+      "graph databases",
+      "customer profile management",
+      "Master Data Management (MDM)"
+    ],
+    "hard_skills_nice_to_have": [
+      "AWS certification",
+      "Azure certification",
+      "GCP certification",
+      "Kubernetes",
+      "integration tools",
+      "TOGAF",
+      "SAFe",
+      "metadata management",
+      "data cataloguing tools",
+      "AI/ML",
+      "Agentic AI"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "Azure",
+      "services_mentioned": [
+        "Microsoft Fabric",
+        "AKS"
+      ]
+    },
+    "infrastructure": [
+      "Kubernetes"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "derived",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL",
+      "Oracle",
+      "MongoDB",
+      "Neo4j"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "strategic_leadership",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [],
+    "implied_pain_points": [
+      "unify diverse source systems into a Guest 360 profile",
+      "deliver customer profile management and MDM at scale",
+      "apply governance, metadata, and catalog discipline across the enterprise",
+      "support compliance with data privacy regulations",
+      "align data architecture with business priorities, digital transformation, and regulatory requirements"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years in Enterprise Data Architecture",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs direct proof of enterprise data architecture at 10+ years, especially Customer 360 or MDM delivery. It should also show governance, metadata/catalog work, CDC, graph database use, and a regulated or enterprise environment.",
+      "most_valued_evidence_types": [
+        "scale",
+        "governance",
+        "architecture",
+        "delivery",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "owned a live Customer 360 or MDM program at airline scale",
+        "deep Neo4j or graph database delivery in production",
+        "direct Microsoft Fabric and AKS implementation ownership",
+        "TOGAF or SAFe certification if not explicitly held",
+        "led data privacy compliance architecture end to end"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it shows governed enterprise AI workflows, but it is still not a direct Customer 360 or MDM story.",
+        "Lantern adds evidence of platform control, routing, and reliability, which helps for enterprise architecture but not for graph or CDC specifically.",
+        "The rest of the candidate summary is strongest on software architecture and distributed systems, so the fit is adjacent unless there is separate data architecture, MDM, or governance evidence."
+      ]
+    }
+  },
+  {
+    "job_id": "695df0226dd552ab7ec2d199",
+    "title_normalized": "Solution Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "high-volume data processing and real-time analytics",
+      "latency_reliability": "robust, secure, resilient, optimized for scale-up; latency, throughput, and consistency tradeoffs"
+    },
+    "hard_skills_must_have": [
+      "solution architecture",
+      "data engineering",
+      "end-to-end data architecture",
+      "ingestion",
+      "processing",
+      "storage",
+      "visualization",
+      "cloud-native infrastructure",
+      "hybrid infrastructure",
+      "ETL",
+      "data pipelines",
+      "data store selection",
+      "cost-optimization",
+      "query performance tuning",
+      "CI/CD",
+      "documentation",
+      "Docker",
+      "Kubernetes",
+      "AWS",
+      "Azure",
+      "GCP",
+      "batch processing",
+      "stream processing",
+      "Python",
+      "Java",
+      "SQL",
+      "PostgreSQL",
+      "MySQL",
+      "SQL Server",
+      "MongoDB",
+      "Cassandra",
+      "Snowflake",
+      "Databricks",
+      "BigQuery",
+      "enterprise architecture"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "Java",
+        "SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Snowflake",
+        "Databricks",
+        "BigQuery"
+      ]
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL",
+      "MySQL",
+      "SQL Server",
+      "MongoDB",
+      "Cassandra",
+      "Snowflake",
+      "Databricks",
+      "BigQuery"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "technical_leadership",
+      "collaboration",
+      "communication"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [],
+    "implied_pain_points": [
+      "bridge business requirements and technical execution",
+      "design scalable pipelines and storage for high-volume and real-time analytics",
+      "modernize on-prem infrastructure to cloud-native or hybrid architectures",
+      "choose the right datastore for latency, throughput, and consistency needs",
+      "improve cost efficiency and query performance in existing systems"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8-10 years in IT; at least 4 years in a Solution Architect or Lead Data Eng",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs hands-on solution architecture across data pipelines, cloud migration, and datastore decisions. It should show Python or Java, SQL, Docker or Kubernetes, and measurable improvements in performance, resilience, or cost.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "cost",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep cloud-native data engineering at AWS, Azure, or GCP scale",
+        "expert-level Python or Java batch and stream processing ownership",
+        "production administration of PostgreSQL, MySQL, Cassandra, Snowflake, or BigQuery at scale",
+        "full on-prem to cloud-native migration ownership",
+        "broad multi-cloud native data services expertise without direct evidence"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lead Engineer work in CQRS/event sourcing is the strongest match because it shows systems design, data flow discipline, and architecture thinking.",
+        "The microservices/RabbitMQ background supports distributed-system and integration credibility, which fits the bridge between business needs and technical execution.",
+        "Commander-4 and Lantern help with platform design and reliability, and the IoT or real-time WebRTC work can support scale/latency stories, but the candidate summary does not show a deep data-engineering stack."
+      ]
+    }
+  },
+  {
+    "job_id": "698617ce7d41dc1e8a413684",
+    "title_normalized": "Senior Technology Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "enterprise architecture",
+      "solution architecture",
+      "digital reference architecture",
+      "technology standards",
+      "reusable architecture patterns",
+      "application development",
+      "cloud platforms",
+      "middleware",
+      "integration",
+      "data technologies",
+      "AI/ML/GenAI",
+      "IoT",
+      "blockchain",
+      "data analytics",
+      "cloud computing",
+      "enterprise integration",
+      "database technologies",
+      "relational databases",
+      "time-series databases",
+      "cloud-native enterprise applications",
+      "AWS",
+      "Azure",
+      "GCP",
+      "OpenShift",
+      "hybrid cloud environments",
+      "microservices",
+      "headless architectures",
+      "event-driven architectures",
+      "modern integration patterns",
+      "Data Lakehouse",
+      "Medallion Architecture",
+      "Data Fabric",
+      "Data Mesh",
+      "Data Virtualization",
+      "Data Governance",
+      "Privacy",
+      "Marketplace",
+      "fine-tuning",
+      "RAG",
+      "RAFT",
+      "agentic workflows",
+      "knowledge graphs",
+      "LangChain",
+      "Crew.ai",
+      "LangGraph",
+      "architecture frameworks",
+      "review boards",
+      "governance processes",
+      "stakeholder management",
+      "architecture runways",
+      "technical leadership"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "OpenShift",
+        "hybrid cloud"
+      ]
+    },
+    "infrastructure": [
+      "DevSecOps",
+      "microservices",
+      "headless architectures",
+      "event-driven architectures",
+      "modern integration patterns"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "Crew.ai",
+        "LangGraph"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "Data Lakehouse",
+      "Medallion Architecture",
+      "Data Fabric",
+      "Data Mesh",
+      "Data Virtualization",
+      "relational databases",
+      "time-series databases"
+    ],
+    "governance_compliance": [
+      "Data Governance",
+      "Privacy"
+    ],
+    "soft_skills": [
+      "stakeholder_management",
+      "communication",
+      "collaboration",
+      "leadership",
+      "coaching",
+      "mentoring"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "measurable business value",
+      "scalable solutions",
+      "sustainable solutions",
+      "alignment with business strategies",
+      "alignment with enterprise architecture direction",
+      "enterprise-wide digital transformation"
+    ],
+    "implied_pain_points": [
+      "translate business objectives into integrated digital solutions",
+      "set future-state architecture and modernization roadmaps",
+      "govern architecture across AI, data, cloud, and integration",
+      "evaluate emerging technologies and define reusable standards",
+      "align delivery teams to enterprise architecture direction"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "15+ years across enterprise architecture, solution design, application development, cloud platforms, middleware, integration, and data technologies",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs evidence of owning architecture across multiple domains, not just designing applications. It should show translating business goals into target-state platforms, governance and standards, plus shipping real AI/GenAI systems with RAG, routing, and reliability patterns.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "governance",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Owning enterprise architecture governance across a whole enterprise without explicit review-board or blueprint ownership",
+        "Deep hands-on delivery of AWS, Azure, GCP, or OpenShift hybrid architectures if not directly built",
+        "Production fine-tuning, RAFT, or knowledge-graph work if only adjacent to the candidate's AI platform work",
+        "Claiming broad data-architecture mastery of Lakehouse, Data Mesh, or Data Fabric if not demonstrated"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to AI/GenAI platform architecture, RAG, evaluation, guardrails, and reusable patterns",
+        "Lantern maps to multi-provider routing and resilient platform design",
+        "Lead Engineer CQRS/event-sourcing work maps to architecture patterns and modernization mindset"
+      ]
+    }
+  },
+  {
+    "job_id": "698f1d8e7d41dc1e8a68677a",
+    "title_normalized": "Associate Engineering Manager / Engineering Manager",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "multiple",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "derived",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "mission critical private cloud with over 800k cores; hundreds of Kubernetes clusters; OpenStack virtual machines; bare metal servers",
+      "latency_reliability": "platform stability, resilience, observability; reliable, high-quality data and tooling; delivery and operational outcomes"
+    },
+    "hard_skills_must_have": [
+      "engineering management",
+      "system design",
+      "code reviews",
+      "technical guidance",
+      "mentorship",
+      "agile delivery practices",
+      "inventory and compute platform tooling",
+      "platform stability",
+      "resilience",
+      "observability",
+      "testing",
+      "quality",
+      "delivery",
+      "CI/CD",
+      "OKRs",
+      "KPIs",
+      "Kubernetes",
+      "OpenStack",
+      "virtual machines",
+      "containers",
+      "bare metal infrastructure",
+      "Generative AI tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "Golang"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "OpenStack",
+      "virtual machines",
+      "containers",
+      "bare metal servers",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "mentoring",
+      "collaboration",
+      "ownership",
+      "continuous_improvement"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "team",
+    "success_metrics": [
+      "visibility",
+      "efficiency",
+      "reliability",
+      "lifecycle management",
+      "delivery",
+      "operational outcomes",
+      "platform health",
+      "delivery outcomes",
+      "performance",
+      "high-quality data and tooling",
+      "OKRs",
+      "KPIs"
+    ],
+    "implied_pain_points": [
+      "scale and evolve compute-platform tooling across bare metal, virtual machines, and Kubernetes",
+      "improve inventory visibility and lifecycle management",
+      "raise reliability, observability, and operational excellence",
+      "balance hands-on technical leadership with people leadership",
+      "make data-driven decisions about platform health and delivery"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "3+ years as an Engineering Manager leading, coaching, and developing engineers with a mix of seniority and experience levels",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV must show people leadership plus hands-on platform engineering in compute or infrastructure environments. It should prove concrete improvements to reliability, observability, delivery, and lifecycle tooling, with metrics and examples of coaching engineers.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "delivery",
+        "architecture",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Leading a large infrastructure team with multiple direct reports if the candidate's experience is primarily technical leadership",
+        "Deep production Go work if not evidenced by code shipped in Go",
+        "Operating Kubernetes, OpenStack, or bare-metal infrastructure at 800k-core scale without direct experience",
+        "Owning OKRs, KPIs, or platform-health metrics without concrete numbers"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern maps best to reliability and routing/circuit-breaker thinking for platform tooling",
+        "Commander-4 maps to platform ownership, quality, and operating an internal product at scale",
+        "Prior lead roles in CQRS/event-sourcing and microservices support hands-on system design and technical mentorship"
+      ]
+    }
+  },
+  {
+    "job_id": "698f1d9a7d41dc1e8a6867ce",
+    "title_normalized": "Associate Engineering Manager / Engineering Manager",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "multiple",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "derived",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "mission critical private cloud with over 800k cores; hundreds of Kubernetes clusters; OpenStack virtual machines; bare metal servers",
+      "latency_reliability": "platform stability, resilience, observability; reliable, high-quality data and tooling; delivery and operational outcomes"
+    },
+    "hard_skills_must_have": [
+      "engineering management",
+      "system design",
+      "code reviews",
+      "technical guidance",
+      "mentorship",
+      "agile delivery practices",
+      "inventory and compute platform tooling",
+      "platform stability",
+      "resilience",
+      "observability",
+      "testing",
+      "quality",
+      "delivery",
+      "CI/CD",
+      "OKRs",
+      "KPIs",
+      "Kubernetes",
+      "OpenStack",
+      "virtual machines",
+      "containers",
+      "bare metal infrastructure",
+      "Generative AI tools"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "Golang"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "OpenStack",
+      "virtual machines",
+      "containers",
+      "bare metal servers",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "mentoring",
+      "collaboration",
+      "ownership",
+      "continuous_improvement"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "team",
+    "success_metrics": [
+      "visibility",
+      "efficiency",
+      "reliability",
+      "lifecycle management",
+      "delivery",
+      "operational outcomes",
+      "platform health",
+      "delivery outcomes",
+      "performance",
+      "high-quality data and tooling",
+      "OKRs",
+      "KPIs"
+    ],
+    "implied_pain_points": [
+      "scale and evolve compute-platform tooling across bare metal, virtual machines, and Kubernetes",
+      "improve inventory visibility and lifecycle management",
+      "raise reliability, observability, and operational excellence",
+      "balance hands-on technical leadership with people leadership",
+      "make data-driven decisions about platform health and delivery"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "3+ years as an Engineering Manager leading, coaching, and developing engineers with a mix of seniority and experience levels",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV must show people leadership plus hands-on platform engineering in compute or infrastructure environments. It should prove concrete improvements to reliability, observability, delivery, and lifecycle tooling, with metrics and examples of coaching engineers.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "delivery",
+        "architecture",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Leading a large infrastructure team with multiple direct reports if the candidate's experience is primarily technical leadership",
+        "Deep production Go work if not evidenced by code shipped in Go",
+        "Operating Kubernetes, OpenStack, or bare-metal infrastructure at 800k-core scale without direct experience",
+        "Owning OKRs, KPIs, or platform-health metrics without concrete numbers"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern maps best to reliability and routing/circuit-breaker thinking for platform tooling",
+        "Commander-4 maps to platform ownership, quality, and operating an internal product at scale",
+        "Prior lead roles in CQRS/event-sourcing and microservices support hands-on system design and technical mentorship"
+      ]
+    }
+  },
+  {
+    "job_id": "6931f3a945fa3c355f862d00",
+    "title_normalized": "Engineering Manager for Agentic AI",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale, complex distributed software systems; scaling the company",
+      "latency_reliability": "performance, reliability, and maintainability"
+    },
+    "hard_skills_must_have": [
+      "agentic AI capabilities",
+      "SaaS product design and delivery",
+      "scalable architecture and design solutions",
+      "large-scale, complex distributed software systems",
+      "coding",
+      "security",
+      "testing",
+      "performance optimization"
+    ],
+    "hard_skills_nice_to_have": [
+      "LLM orchestration frameworks",
+      "multi-agent architectures",
+      "conversational AI pipelines"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "innovation",
+      "leadership",
+      "mentoring",
+      "communication",
+      "organizational skills"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "hire, lead, mentor, and manage engineers",
+      "conduct performance reviews and support career development",
+      "timely delivery and high-quality standards",
+      "engineering objectives aligned with business goals",
+      "scalable architecture and design solutions",
+      "performance, reliability, and maintainability",
+      "best practices for coding, security, testing, and performance optimization"
+    ],
+    "implied_pain_points": [
+      "Stand up and scale a new Agentic AI squad",
+      "Turn agentic AI capabilities into core product functionality across tools",
+      "Keep a SaaS product reliable, secure, and maintainable while moving quickly",
+      "Align engineering execution with business goals and product roadmap"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of leading engineers and shipping an AI or SaaS platform with measurable reliability and quality discipline. It should also show concrete experience with agentic or orchestration-heavy systems, plus evidence that the candidate can set standards, mentor others, and keep delivery moving.",
+      "most_valued_evidence_types": [
+        "hiring",
+        "delivery",
+        "architecture",
+        "reliability",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Formal people-management experience with hiring and performance reviews",
+        "Direct ownership of AML, anti-fraud, or banking products",
+        "Large-scale multi-agent program leadership as a people manager"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly: enterprise AI workflow platform, 42 plugins, 2,000 users, RAG, semantic caching, evaluation, and guardrails show agentic-platform thinking and product-scale delivery.",
+        "Lantern maps well: LLM gateway with multi-provider routing and circuit breaker demonstrates orchestration and reliability engineering relevant to the role.",
+        "Technical Lead at Seven.One Entertainment Group adds senior engineering leadership context, but it does not prove formal team management."
+      ]
+    }
+  },
+  {
+    "job_id": "696f763d3da7d438ae4f5f1e",
+    "title_normalized": "Senior Data Architect",
+    "title_family": "solutions_architect",
+    "seniority": "director",
+    "role_scope": "director",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale, data-driven platforms",
+      "latency_reliability": "real-time / streaming architectures"
+    },
+    "hard_skills_must_have": [
+      "GCP Data Stack",
+      "BigQuery",
+      "Dataflow",
+      "Pub/Sub",
+      "Cloud Composer",
+      "Vertex AI",
+      "real-time / streaming architectures",
+      "Kafka",
+      "IoT / operational technology integration",
+      "complex heterogeneous system integration",
+      "API-based architectures",
+      "batch architectures",
+      "event-driven architectures",
+      "data governance",
+      "security & IAM",
+      "PII and data privacy regulations",
+      "Python",
+      "SQL",
+      "Java or Scala"
+    ],
+    "hard_skills_nice_to_have": [
+      "Generative AI use cases",
+      "LLMs",
+      "vector databases",
+      "semantic search"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "SQL",
+        "Java or Scala"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": [
+        "BigQuery",
+        "Dataflow",
+        "Pub/Sub",
+        "Cloud Composer",
+        "Vertex AI"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "derived",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "BigQuery"
+    ],
+    "governance_compliance": [
+      "data governance",
+      "PII",
+      "data privacy regulations"
+    ],
+    "soft_skills": [
+      "leadership",
+      "strategic stakeholder engagement",
+      "influencing",
+      "team leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "design and delivery of large-scale, data-driven platforms",
+      "influencing strategic and architectural decisions",
+      "integration of complex, heterogeneous systems",
+      "support for real-time / streaming architectures",
+      "integration of live data sources",
+      "data governance, security, and privacy compliance",
+      "GenAI use case enablement"
+    ],
+    "implied_pain_points": [
+      "Design a GCP-centric data platform for a high-impact program",
+      "Integrate heterogeneous systems and live data sources without losing governance or security control",
+      "Support real-time streaming and possible GenAI use cases",
+      "Influence senior stakeholders on architecture and strategy"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10\u201315 years in Data Engineering, Software Architecture, or Technology Consulting",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of building and owning large-scale data platforms, especially with streaming and multi-source integration. It should also show executive stakeholder influence and concrete work on governance, security, and privacy-aware architecture.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "governance",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep production ownership of the full GCP stack named in the JD",
+        "Formal executive-level data architecture leadership across large technical teams",
+        "Explicit data-governance and privacy compliance ownership"
+      ],
+      "best_candidate_experience_mapping": [
+        "IoT work with CoAP/MQTT is the closest fit for the role's live-data integration requirement.",
+        "Microservices/RabbitMQ and CQRS/event-sourcing map to the JD's heterogeneous, batch/event-driven architecture needs.",
+        "Commander-4 adds relevant AI-platform and evaluation/guardrail experience, but it does not prove GCP data-platform ownership."
+      ]
+    }
+  },
+  {
+    "job_id": "698f1d8e7d41dc1e8a686777",
+    "title_normalized": "Associate Engineering Manager / Engineering Manager (Infra)",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "multiple",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "mission critical private cloud with over 800k cores, hundreds of Kubernetes clusters, OpenStack virtual machines, and bare metal servers",
+      "latency_reliability": "platform stability, resilience, and observability"
+    },
+    "hard_skills_must_have": [
+      "hands-on coding",
+      "system design",
+      "code reviews",
+      "platform tooling",
+      "large-scale compute or infrastructure environments",
+      "Kubernetes",
+      "OpenStack",
+      "virtual machines",
+      "bare metal servers",
+      "containers",
+      "platform stability",
+      "resilience",
+      "observability",
+      "testing",
+      "quality",
+      "modern CI/CD"
+    ],
+    "hard_skills_nice_to_have": [
+      "Generative AI tools"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": [
+        "Golang"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "private cloud",
+      "Kubernetes",
+      "OpenStack",
+      "virtual machines",
+      "bare metal servers",
+      "containers",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "mentorship",
+      "ownership",
+      "data-driven decision-making",
+      "continuous improvement",
+      "knowledge sharing"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "department",
+    "success_metrics": [
+      "improve visibility, efficiency, reliability, and lifecycle management",
+      "own the roadmap and delivery outcomes",
+      "maintain platform stability, resilience, and observability",
+      "foster operational excellence and engineering quality",
+      "support informed decision-making at scale"
+    ],
+    "implied_pain_points": [
+      "Scale and evolve a mission-critical compute platform across bare metal, virtual machines, and Kubernetes",
+      "Improve inventory, tooling, and lifecycle management across a very large private cloud",
+      "Keep the platform reliable and observable while balancing delivery and operational outcomes",
+      "Lead a small cross-functional infra team without losing technical depth"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of hands-on platform leadership across large-scale infrastructure with measurable reliability or operational improvements. It should also show the candidate can stay technical, lead a team, and own delivery in an environment where stability matters.",
+      "most_valued_evidence_types": [
+        "scale",
+        "reliability",
+        "delivery",
+        "architecture"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep Golang primary-language ownership",
+        "Hands-on Kubernetes, OpenStack, or bare-metal operations at 800k-core scale",
+        "Multiple direct reports in an infra organization"
+      ],
+      "best_candidate_experience_mapping": [
+        "Lantern maps best: multi-provider routing and circuit breaker work shows platform control, resilience, and operational thinking.",
+        "Commander-4 shows enterprise platform design, evaluation, and guardrails, which is relevant to owning tooling and reliability at scale.",
+        "Microservices/RabbitMQ and CQRS/event-sourcing demonstrate distributed-systems design, but the candidate does not have explicit infra-ops evidence for Kubernetes, OpenStack, or bare metal."
+      ]
+    }
+  },
+  {
+    "job_id": "6983125c7d41dc1e8a394787",
+    "title_normalized": "GCP Technical Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "enterprise-scale data platforms",
+      "latency_reliability": "reliability, performance, cost, and operations"
+    },
+    "hard_skills_must_have": [
+      "GCP",
+      "cloud architecture",
+      "data platform design",
+      "solution architecture",
+      "multi-cloud architecture",
+      "hybrid architecture",
+      "cloud networking",
+      "cloud security design",
+      "Kubernetes",
+      "GKE",
+      "microservices",
+      "CI/CD",
+      "Terraform",
+      "BigQuery architecture",
+      "BigQuery performance tuning",
+      "BigQuery cost optimization",
+      "batch pipelines",
+      "real-time pipelines",
+      "data governance",
+      "data quality frameworks",
+      "application modernization patterns",
+      "pre-sales architecture",
+      "RFP/RFI responses",
+      "technical presentations",
+      "demos",
+      "POCs"
+    ],
+    "hard_skills_nice_to_have": [
+      "AWS",
+      "Azure"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": [
+        "GCE",
+        "GKE",
+        "Cloud Run",
+        "App Engine",
+        "VPCs",
+        "Shared VPC",
+        "Interconnect",
+        "VPN",
+        "Load Balancing",
+        "IAM",
+        "KMS",
+        "Secret Manager",
+        "VPC-SC",
+        "Security Command Center",
+        "Pub/Sub",
+        "Dataflow",
+        "Dataproc",
+        "Cloud Storage",
+        "BigLake",
+        "BigQuery",
+        "Cloud SQL",
+        "Spanner",
+        "Firestore",
+        "Bigtable",
+        "DLP",
+        "Dataplex"
+      ]
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "GKE",
+      "microservices",
+      "CI/CD",
+      "Terraform"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "BigQuery",
+      "Cloud Storage",
+      "BigLake",
+      "Cloud SQL",
+      "Spanner",
+      "Firestore",
+      "Bigtable"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "whiteboarding",
+      "storytelling",
+      "executive communication",
+      "mentoring"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "secure, scalable, cost-optimized cloud and data architectures",
+      "commercial viability",
+      "delivery readiness",
+      "clean handover to delivery teams",
+      "early identification of architectural risks and mitigation",
+      "mentoring delivery teams on cloud and data best practices"
+    ],
+    "implied_pain_points": [
+      "translate business use cases into secure, scalable GCP cloud and data architectures",
+      "bridge pre-sales with delivery and de-risk handoff",
+      "create migration and modernization roadmaps for apps and data",
+      "balance technical depth with commercial realities"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10\u201316 years in cloud, data platforms, and customer-facing architecture",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show end-to-end architecture ownership across cloud and data platforms, ideally with customer-facing solutioning or pre-sales exposure. The best evidence is quantified modernization work that improved scale, cost, and reliability, plus examples of partnering with sales or delivery teams.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "cost",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim deep GCP or BigQuery ownership unless it is directly evidenced.",
+        "Do not claim multi-cloud solution leadership unless the CV shows it.",
+        "Do not overstate executive pre-sales ownership or delivery handover scope without proof."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to platform architecture, RAG, evaluation, and governance.",
+        "Lantern maps to routing, gateway-style architecture, and reliability-oriented design.",
+        "Lead Engineer work in CQRS/event-sourcing and microservices maps to distributed system architecture and modernization."
+      ]
+    }
+  },
+  {
+    "job_id": "6997abcc87737d491c1325dc",
+    "title_normalized": "HiAgent Product Solutions Architect",
+    "title_family": "solutions_architect",
+    "seniority": "mid_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "enterprise-grade AI platforms",
+      "AI Agents",
+      "LLM solutions",
+      "strategic solution design",
+      "technical exchanges",
+      "product demonstrations",
+      "POCs",
+      "requirement engineering",
+      "product iteration",
+      "bid management",
+      "technical document authoring",
+      "SOW authoring",
+      "project management",
+      "organizational skills",
+      "deploying intelligent agent demos"
+    ],
+    "hard_skills_nice_to_have": [
+      "HiAgent",
+      "Coze",
+      "Dify",
+      "n8n"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "growth-oriented",
+      "results-driven",
+      "adaptability",
+      "independent action"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "customer approval",
+      "business cooperation",
+      "successful lighthouse projects",
+      "scalable industry playbooks",
+      "internal product innovation and platform iteration",
+      "seamless transition from solution design to implementation and delivery",
+      "strong marketplace positioning"
+    ],
+    "implied_pain_points": [
+      "turn complex customer requirements into reusable AI agent solutions",
+      "convert lighthouse projects into scalable industry playbooks",
+      "bridge market needs and R&D iteration",
+      "support bid responses and delivery handoff"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "3+ years in enterprise-grade AI platforms, AI Agents, or LLM solutions",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should prove hands-on enterprise AI platform work that translated into reusable customer-facing solutions, with demos or POCs and a clear path from requirements to delivery. The strongest evidence is building an AI platform, turning one-off customer asks into repeatable patterns, and working across product and technical stakeholders.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not imply Mandarin or Arabic fluency unless the CV states it.",
+        "Do not claim direct sales ownership or quota responsibility.",
+        "Do not claim experience with HiAgent, Coze, Dify, or n8n unless directly shown."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest fit because it is an enterprise AI workflow platform with plugins, RAG, guardrails, and evaluation.",
+        "Lantern maps to gateway/routing and platform integration work that supports AI solution design.",
+        "Any demo or POC work on those platforms maps well to customer-facing solutioning and product iteration."
+      ]
+    }
+  },
+  {
+    "job_id": "6925c1c545fa3c355f83fce1",
+    "title_normalized": "Engineering Manager for Agentic AI",
+    "title_family": "engineering_manager",
+    "seniority": "manager",
+    "role_scope": "manager",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale, complex distributed software systems",
+      "latency_reliability": "performance, reliability, and maintainability"
+    },
+    "hard_skills_must_have": [
+      "software engineering",
+      "managing teams",
+      "architecting large-scale distributed software systems",
+      "managing complex distributed software systems",
+      "SaaS product development",
+      "Agentic AI",
+      "coding best practices",
+      "security best practices",
+      "testing best practices",
+      "performance optimisation",
+      "engineering objectives",
+      "data driven decision making",
+      "cross-functional engineering team leadership"
+    ],
+    "hard_skills_nice_to_have": [
+      "AML",
+      "Fraud",
+      "Banking",
+      "LLM orchestration frameworks",
+      "multi-agent architectures",
+      "conversational AI pipelines"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "hire",
+      "lead",
+      "mentor",
+      "manage",
+      "excellent communication",
+      "leadership",
+      "organizational skills",
+      "collaboration"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "scaleup",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "hire and manage a strong engineering team",
+      "support performance reviews and career development",
+      "timely delivery",
+      "high-quality standards",
+      "performance, reliability, and maintainability of the SaaS product",
+      "engineering objectives aligned with business goals",
+      "effective policies, standards, and procedures for the team"
+    ],
+    "implied_pain_points": [
+      "stand up and scale a new Agentic AI squad",
+      "keep a SaaS product performant and reliable while adding Agentic AI capabilities",
+      "create a high-performing engineering culture with strong hiring and performance management",
+      "align technical execution with product and business goals"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "12+ years of software engineering experience; 5+ years managing teams",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV needs evidence of leading engineers, hiring or performance management, and shipping reliable distributed systems at scale. It should show that the candidate can translate product goals into team execution while keeping quality, security, and performance under control.",
+      "most_valued_evidence_types": [
+        "hiring",
+        "scale",
+        "delivery",
+        "architecture",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Do not claim formal people management, performance review ownership, or hiring unless the CV explicitly shows it.",
+        "Do not overstate AML, Fraud, or Banking domain depth.",
+        "Do not claim prior ownership of LLM orchestration frameworks or multi-agent architecture unless directly evidenced."
+      ],
+      "best_candidate_experience_mapping": [
+        "Technical Lead at Seven.One Entertainment Group maps to technical leadership and cross-functional execution.",
+        "Commander-4 maps to owning an enterprise AI platform with architecture, guardrails, evaluation, and product discipline.",
+        "Lantern and earlier distributed-systems work map to reliability, routing, and large-scale system ownership."
+      ]
+    }
+  },
+  {
+    "job_id": "6938b546c9b1888e56022afd",
+    "title_normalized": "Technical Lead, Pricing",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "Java",
+      "AI and Machine Learning tools and platforms",
+      "Pricing Analytics",
+      "optimization",
+      "algorithm design",
+      "cloud computing platforms"
+    ],
+    "hard_skills_nice_to_have": [
+      "supply chain",
+      "retail",
+      "pricing systems"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "Java"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "GCP",
+        "Azure"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "problem-solving",
+      "data analysis",
+      "leadership",
+      "mentoring",
+      "communication",
+      "collaboration"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "projects meet client requirements",
+      "successful deployment of scalable and efficient pricing solutions"
+    ],
+    "implied_pain_points": [
+      "needs AI-powered pricing strategy and systems",
+      "needs robust technical design and scalable deployment",
+      "needs cross-functional coordination to satisfy client requirements",
+      "needs mentoring and technical leadership for the team"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV would show that you have led technical design and delivery for production AI systems, not just prototypes. It should quantify scale, reliability, and deployment outcomes, and ideally show adjacent analytics or optimization work if direct pricing experience is limited.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep pricing-analytics domain ownership",
+        "hands-on AWS/GCP/Azure pricing-system delivery if not actually done",
+        "leading a pricing team or owning budget",
+        "supply-chain or retail pricing expertise"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: closest match for production AI platform design, RAG, evaluation, guardrails, and scaling to 2,000 users.",
+        "Lantern: relevant for robust multi-provider AI integration and circuit-breaker style reliability.",
+        "Technical Lead at Seven.One: evidence of technical leadership, design oversight, and mentoring in a live product environment."
+      ]
+    }
+  },
+  {
+    "job_id": "6980ab1e7d41dc1e8a2e425b",
+    "title_normalized": "AI Engagement Manager",
+    "title_family": "other",
+    "seniority": "manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale creative and marketing operations transformations",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "generative AI",
+      "first-party AI models",
+      "third-party AI models",
+      "solution configuration and deployment",
+      "proof-of-concept implementations",
+      "scalable framework design",
+      "adoption planning"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "customer leadership",
+      "problem-solving",
+      "trust building",
+      "advocacy"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "value delivery",
+      "adoption",
+      "business value realization",
+      "customer happiness",
+      "project success"
+    ],
+    "implied_pain_points": [
+      "enterprise customers need help applying GenAI to creative and marketing workflows",
+      "business scenarios must be translated into Adobe solutions and requirements",
+      "customer issues must be mitigated before they affect program success",
+      "the org needs scalable frameworks for integrating first- and third-party AI into existing workflows",
+      "adoption and value realization must be demonstrated"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years in SaaS solution environment",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV would need to show enterprise GenAI delivery, customer-facing solution design, and measurable adoption or value realization. Evidence should include workshops, executive communication, POCs, and integration work with first- and third-party models.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "governance",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep Adobe-specific GenAI transformation leadership",
+        "direct ownership of C-suite customer programs at enterprise scale",
+        "5+ years of SaaS solution environment if not explicitly proven",
+        "hands-on ownership of first-party/third-party model strategy beyond platform integration"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: strongest analog for enterprise AI workflow enablement, evaluation, guardrails, and turning AI capabilities into usable product workflows.",
+        "Lantern: relevant for multi-provider routing and resilient AI integration patterns across models.",
+        "Technical Lead at Seven.One: shows technical leadership and cross-functional delivery, but the CV must still prove customer-facing engagement work to be competitive."
+      ]
+    }
+  },
+  {
+    "job_id": "696f4f733da7d438ae4f5ed5",
+    "title_normalized": "Dean, Academics",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "derived"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Computer Science",
+      "Artificial Intelligence",
+      "Machine Learning",
+      "curriculum development",
+      "content creation",
+      "UK Higher Education standards",
+      "quality assurance",
+      "evaluate code",
+      "evaluate technical projects",
+      "evaluate AI models",
+      "UK qualification frameworks",
+      "Saudi accreditation standards"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "RQF",
+      "QAA",
+      "NCAAA",
+      "TVTC",
+      "Pearson BTEC"
+    ],
+    "soft_skills": [
+      "leadership",
+      "team management",
+      "mentoring",
+      "strategic vision",
+      "adaptability",
+      "cultural intelligence",
+      "decisiveness"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "curricula aligned with UK qualification frameworks and Saudi accreditation standards",
+      "implementation of Internal Quality Assurance Cell (IQAC)",
+      "monitor student progression, retention, and graduation rates",
+      "capstone projects tackle real-world AI/ML problems",
+      "high-quality learning content and teaching standards"
+    ],
+    "implied_pain_points": [
+      "academy needs modern AI/ML curriculum design",
+      "faculty performance and quality assurance need stronger structure",
+      "student outcomes and progression need improvement",
+      "accreditation alignment and UK partnership management are core challenges",
+      "the institution needs industry partnerships and research visibility"
+    ],
+    "disqualifiers": {
+      "requires_phd": true,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years academic experience; 3-5 years as HoD, Dean, or Principal",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV would need a PhD, academic leadership, curriculum and accreditation ownership, and faculty management experience. Technical depth alone is not enough unless it is paired with higher-education governance and measurable student outcome results.",
+      "most_valued_evidence_types": [
+        "hiring",
+        "governance",
+        "evaluation",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "PhD in CS, AI, or ML",
+        "served as HoD, Dean, or Principal",
+        "ownership of UK higher-education accreditation and QA",
+        "faculty recruitment/appraisal leadership",
+        "publication record in reputable journals"
+      ],
+      "best_candidate_experience_mapping": [
+        "Technical Lead at Seven.One: demonstrates mentoring and technical leadership, but only loosely maps to faculty leadership.",
+        "Commander-4: shows evaluation rigor, guardrails, and structured platform delivery, which is the closest technical analog to quality assurance.",
+        "Lead Engineer and backend roles: show breadth and delivery, but they do not substitute for academic administration, accreditation, or the required PhD."
+      ]
+    }
+  },
+  {
+    "job_id": "6970aef93da7d438ae4f5fa6",
+    "title_normalized": "Dean, Computer Department",
+    "title_family": "other",
+    "seniority": "executive",
+    "role_scope": "executive",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Computer Science",
+      "Artificial Intelligence",
+      "Machine Learning",
+      "curriculum development",
+      "content creation for technical subjects",
+      "UK Higher Education standards",
+      "credit frameworks",
+      "quality assurance processes",
+      "evaluate code",
+      "evaluate technical projects",
+      "evaluate AI models",
+      "accreditation alignment",
+      "Saudi accreditation standards"
+    ],
+    "hard_skills_nice_to_have": [
+      "industry-standard tools and methodologies",
+      "British University partnerships",
+      "Pearson BTEC",
+      "RQF",
+      "QAA",
+      "NCAAA",
+      "TVTC"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "RQF",
+      "QAA",
+      "NCAAA",
+      "TVTC",
+      "Pearson BTEC"
+    ],
+    "soft_skills": [
+      "visionary leadership",
+      "leadership",
+      "team management",
+      "mentoring",
+      "strategic vision",
+      "cultural intelligence",
+      "decisiveness",
+      "adaptability",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "curricula aligned with UK qualification frameworks and Saudi accreditation standards",
+      "student progression, retention, and graduation rates",
+      "high-quality learning content",
+      "real-world AI/ML capstone projects",
+      "internal quality assurance for academic delivery",
+      "partnerships with tech giants and local industry leaders",
+      "faculty and student publication in reputable journals"
+    ],
+    "implied_pain_points": [
+      "bridge advanced technical education with academic administration",
+      "keep AI/ML and Computer Science curricula industry-relevant",
+      "maintain accreditation and academic quality across programs",
+      "build and sustain a high-performing faculty organization",
+      "improve student outcomes and intervention for at-risk students",
+      "grow research and industry partnerships"
+    ],
+    "disqualifiers": {
+      "requires_phd": true,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years of academic experience; 3-5 years as Head of Department, Dean, or Principal",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show real academic leadership: curriculum design, faculty hiring and appraisal, accreditation work, and measurable student outcomes. It also needs direct evidence of UK higher-education familiarity and the ability to evaluate code, technical projects, and AI models without relying on generic management language.",
+      "most_valued_evidence_types": [
+        "hiring",
+        "governance",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct academic dean or department-head experience",
+        "accreditation leadership in UK higher education",
+        "faculty performance management at a university or academy",
+        "student outcomes ownership such as retention or graduation rates",
+        "publication or research leadership",
+        "PhD-level subject authority"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the best adjacent evidence because it proves AI/ML platform judgment, evaluation, guardrails, and quality-focused leadership, which maps to assessing technical curriculum and technical work.",
+        "Lantern maps to architecture and resilient multi-provider AI systems, but it is still product/platform experience rather than academic administration.",
+        "Technical Lead at Seven.One and earlier lead/backend roles can support leadership, mentoring, and cross-functional delivery, but they do not directly prove accreditation, faculty management, or student-success ownership."
+      ]
+    }
+  }
+]

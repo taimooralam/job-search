@@ -1,0 +1,490 @@
+{
+  "signal_strength": {
+    "applied_count": 11,
+    "avg_score": 75.4,
+    "median_score": 85,
+    "score_range": [
+      22,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "solutions_architect": 20,
+      "ai_architect": 7,
+      "engineering_manager": 3,
+      "other": 2,
+      "tech_lead": 2
+    },
+    "top_title_variants": {
+      "Senior Solutions Architect": 3,
+      "Advisory Solutions Architect": 2,
+      "Data Architect": 2,
+      "Engineering Manager": 2,
+      "Enterprise Architect": 2,
+      "Software Architect": 2,
+      "Assistant Manager - Data Engineering / DataOps": 1,
+      "Senior Solutions Architect, Turkish Speaking": 1
+    },
+    "noisy_title_mode": true
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 26,
+      "director": 3,
+      "manager": 3,
+      "mid_ic": 2
+    },
+    "role_scope_distribution": {
+      "ic": 22,
+      "player_coach": 8,
+      "director": 3,
+      "manager": 2
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    "performance_management": {
+      "count": 3,
+      "total": 35,
+      "pct": 8.6
+    },
+    "org_building": {
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 35,
+      "pct": 0.0
+    },
+    "direct_reports_samples": [
+      "3 to 5"
+    ]
+  },
+  "architecture": {
+    "platform_design_pct": 100.0,
+    "greenfield_split": {
+      "both": 16,
+      "optimization": 5,
+      "greenfield": 1
+    },
+    "cloud_preference": {
+      "multi_cloud": 15,
+      "Azure": 5,
+      "AWS": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 10,
+      "total": 35,
+      "pct": 28.6
+    },
+    {
+      "label": "sql",
+      "count": 8,
+      "total": 35,
+      "pct": 22.9
+    },
+    {
+      "label": "aws",
+      "count": 7,
+      "total": 35,
+      "pct": 20.0
+    },
+    {
+      "label": "spark",
+      "count": 6,
+      "total": 35,
+      "pct": 17.1
+    },
+    {
+      "label": "azure",
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    {
+      "label": "ci / cd pipelines",
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    {
+      "label": "microservices",
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    {
+      "label": "mongodb",
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    {
+      "label": "apis",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "designing scalable and highly available distributed systems",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "devops",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "docker",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "gcp",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "hadoop",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "java",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "communication",
+      "count": 25,
+      "total": 35,
+      "pct": 71.4
+    },
+    {
+      "label": "collaboration",
+      "count": 23,
+      "total": 35,
+      "pct": 65.7
+    },
+    {
+      "label": "stakeholder management",
+      "count": 13,
+      "total": 35,
+      "pct": 37.1
+    },
+    {
+      "label": "leadership",
+      "count": 11,
+      "total": 35,
+      "pct": 31.4
+    },
+    {
+      "label": "mentoring",
+      "count": 10,
+      "total": 35,
+      "pct": 28.6
+    },
+    {
+      "label": "presentation",
+      "count": 6,
+      "total": 35,
+      "pct": 17.1
+    },
+    {
+      "label": "interpersonal skills",
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    {
+      "label": "problem-solving",
+      "count": 5,
+      "total": 35,
+      "pct": 14.3
+    },
+    {
+      "label": "analytical skills",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "continuous learning",
+      "count": 3,
+      "total": 35,
+      "pct": 8.6
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 13,
+        "total": 35,
+        "pct": 37.1
+      },
+      {
+        "label": "java",
+        "count": 8,
+        "total": 35,
+        "pct": 22.9
+      },
+      {
+        "label": "sql",
+        "count": 8,
+        "total": 35,
+        "pct": 22.9
+      },
+      {
+        "label": "c / c++",
+        "count": 5,
+        "total": 35,
+        "pct": 14.3
+      },
+      {
+        "label": "c#",
+        "count": 5,
+        "total": 35,
+        "pct": 14.3
+      },
+      {
+        "label": "node.js",
+        "count": 5,
+        "total": 35,
+        "pct": 14.3
+      }
+    ],
+    "preferred": []
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 4,
+        "total": 35,
+        "pct": 11.4
+      },
+      "agents_orchestration": {
+        "count": 9,
+        "total": 35,
+        "pct": 25.7
+      },
+      "fine_tuning": {
+        "count": 3,
+        "total": 35,
+        "pct": 8.6
+      },
+      "evaluation_quality": {
+        "count": 3,
+        "total": 35,
+        "pct": 8.6
+      },
+      "guardrails_governance": {
+        "count": 8,
+        "total": 35,
+        "pct": 22.9
+      },
+      "prompt_engineering": {
+        "count": 3,
+        "total": 35,
+        "pct": 8.6
+      },
+      "vector_search": {
+        "count": 2,
+        "total": 35,
+        "pct": 5.7
+      },
+      "model_serving_routing": {
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      }
+    },
+    "frameworks": [
+      {
+        "label": "pytorch",
+        "count": 3,
+        "total": 35,
+        "pct": 8.6
+      },
+      {
+        "label": "tensorflow",
+        "count": 3,
+        "total": 35,
+        "pct": 8.6
+      },
+      {
+        "label": "langchain",
+        "count": 2,
+        "total": 35,
+        "pct": 5.7
+      },
+      {
+        "label": "airflow",
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      },
+      {
+        "label": "huggingface",
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      },
+      {
+        "label": "semantic kernel",
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      },
+      {
+        "label": "spark",
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      }
+    ],
+    "observability": [
+      {
+        "label": "grafana",
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      },
+      {
+        "label": "prometheus",
+        "count": 1,
+        "total": 35,
+        "pct": 2.9
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "gdpr",
+      "count": 4,
+      "total": 35,
+      "pct": 11.4
+    },
+    {
+      "label": "business continuity",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    },
+    {
+      "label": "compliance management",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    },
+    {
+      "label": "governance of organizations",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    },
+    {
+      "label": "information security",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    },
+    {
+      "label": "iso 27001",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    },
+    {
+      "label": "privacy",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    },
+    {
+      "label": "qhse",
+      "count": 1,
+      "total": 35,
+      "pct": 2.9
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "customers need help designing reliable, scalable systems on mongodb",
+      "count": 3
+    },
+    {
+      "pain_point": "customers need guidance improving complex existing application architectures",
+      "count": 3
+    },
+    {
+      "pain_point": "sales leadership needs support identifying strategies for growth across multiple accounts and verticals",
+      "count": 2
+    },
+    {
+      "pain_point": "the broader organization needs reusable assets and shared best practices",
+      "count": 2
+    },
+    {
+      "pain_point": "core architecture needs to scale while staying maintainable",
+      "count": 1
+    },
+    {
+      "pain_point": "microservices and event-driven systems need to work across cloud providers",
+      "count": 1
+    },
+    {
+      "pain_point": "security, compliance, and reliability must be built into the architecture",
+      "count": 1
+    },
+    {
+      "pain_point": "product and engineering teams need architectural consistency",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "enterprise_saas": 6,
+      "fintech": 3,
+      "defense": 2,
+      "consulting": 1,
+      "ecommerce": 1
+    },
+    "company_stage": {
+      "enterprise": 3,
+      "agency": 1,
+      "consultancy": 1,
+      "startup_seed": 1
+    },
+    "collaboration_model": {
+      "onsite": 5,
+      "distributed": 4,
+      "hybrid": 2,
+      "remote_first": 1
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

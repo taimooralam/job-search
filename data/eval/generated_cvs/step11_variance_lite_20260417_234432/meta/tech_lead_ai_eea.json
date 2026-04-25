@@ -1,0 +1,23 @@
+{
+  "category": "tech_lead_ai_eea",
+  "job_id": "6929ad6245fa3c355f84b65a",
+  "jd_path": "data/eval/raw/tech_lead_ai_eea/jd_texts/03_zyte_core_ml_ops_team_lead_remote.md",
+  "jd_stem": "03_zyte_core_ml_ops_team_lead_remote",
+  "exit_code": 0,
+  "elapsed_seconds": 685.7,
+  "expected_deterministic_path": "outputs/ZYTE/cv_Core___ML_Ops_Team_Lead_-_Remote.md",
+  "pre_state": {
+    "exists": false
+  },
+  "post_state": {
+    "exists": true,
+    "size": 11801,
+    "mtime": 1776464305.3374796,
+    "sha256": "3ceec8f69bc17e09db5b3efb0aa4513896dad2b84ebdb6e79d3b4cceb019dcf3"
+  },
+  "resolved_cv_path": "outputs/ZYTE/cv_Core___ML_Ops_Team_Lead_-_Remote.md",
+  "capture_method": "log_parse",
+  "snapshot_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/tech_lead_ai_eea/03_zyte_core_ml_ops_team_lead_remote__generated.md",
+  "scoreable": true,
+  "log_tail": "  Zyte's ML platform challenge\u2014scaling model infrastructure across a 250-person engineering organization without standardized patterns or production-grade observability\u2014mirrors the platform fragmentatio...\n\n\ud83d\udccb CV:\n  outputs/ZYTE/cv_Core___ML_Ops_Team_Lead_-_Remote.md\n\n\ud83d\udcc1 Outputs:\n  Drive Folder: None\n  Sheets Row: None\n\n\u26a0\ufe0f  Warnings:\n  - [Dossier] Generation failed: object of type 'NoneType' has no len()\n======================================================================\n\n\u2705 Pipeline complete!\n2026-04-18 00:19:06 [WARNING] langsmith.client: Failed to send compressed multipart ingest: langsmith.utils.LangSmithError: Failed to POST https://api.smith.langchain.com/runs/multipart in LangSmith API. HTTPError('403 Client Error: Forbidden for url: https://api.smith.langchain.com/runs/multipart', '{\"error\":\"Forbidden\"}\\n')"
+}

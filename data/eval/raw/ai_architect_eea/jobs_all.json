@@ -1,0 +1,865 @@
+[
+  {
+    "_id": "6948fe05056b4548bf97934d",
+    "dedupeKey": "jobgether|sovereign ai enterprise architect - remote|united kingdom|linkedin",
+    "company": "JOBGETHER",
+    "createdAt": "2025-12-22T08:14:57.520Z",
+    "jobURL": "https://uk.linkedin.com/jobs/view/sovereign-ai-enterprise-architect-remote-at-jobgether-4328466939?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONInformation TechnologyINDUSTRIESInternet Marketplace Platforms",
+    "job_description": "This position is posted by Jobgether on behalf of a partner company. We arecurrently looking for a Sovereign AI Enterprise Architect. In this pivotal role,you will spearhead the architecture strategy for sovereign AI solutions,ensuring compliance with national regulations while delivering secure andhigh-performing platforms. As a trusted advisor, you'll bridge customer visionand technical execution, unlocking the full potential of AI responsibly. Yourexpertise will guide organizations through the complexities of AIinfrastructure, fostering innovation and performance optimization.Accountabilities * Design end-to-end sovereign AI architectures, including model lifecycle, data pipelines, and governance frameworks. * Embed responsible AI principles, security-by-design, and compliance into every solution. * Advise C-suite and technical leaders, translating complex requirements into actionable roadmaps. * Stay ahead of global AI sovereignty trends and contribute to industry-leading insights. Requirements * 10+ years in enterprise IT, cloud, AI/ML, or data/analytics. * Expertise in AI/ML architecture, MLOps, security/privacy frameworks, and cloud platforms (AWS/Azure/GCP/GreenLake). * Strong communication skills to influence senior stakeholders. * Familiarity with sovereignty regulations (EU AI Act, GDPR, FedRAMP, etc.) is a plus. Benefits * Work at the forefront of AI innovation. * Collaborate with global experts shaping digital sovereignty. * Hybrid flexibility and opportunities for growth. * Comprehensive benefits supporting physical, financial, and emotional wellbeing. * Investments in personal and professional development. * An inclusive work environment celebrating individual uniqueness. Why Apply Through Jobgether?We use an AI-powered matching process to ensure your application is reviewedquickly, objectively, and fairly against the role's core requirements. Oursystem identifies the top-fitting candidates, and this shortlist is then shareddirectly with the hiring company. The final decision and next steps (interviews,assessments) are managed by their internal team.We appreciate your interest and wish you the best!Data Privacy Notice: By submitting your application, you acknowledge thatJobgether will process your personal data to evaluate your candidacy and sharerelevant information with the hiring employer. This processing is based onlegitimate interest and pre-contractual measures under applicable dataprotection laws (including GDPR). You may exercise your rights (access,rectification, erasure, objection) at any time.We may use artificial intelligence (AI) tools to support parts of the hiringprocess, such as reviewing applications, analyzing resumes, or assessingresponses. These tools assist our recruitment team but do not replace humanjudgment. Final hiring decisions are ultimately made by humans. If you wouldlike more information about how your data is processed, please contact us.Show more Show less",
+    "location": "United Kingdom",
+    "score": 75,
+    "source": "linkedin",
+    "title": "Sovereign AI Enterprise Architect - REMOTE",
+    "url": "https://uk.linkedin.com/jobs/view/sovereign-ai-enterprise-architect-remote-at-jobgether-4328466939?position=1&pageNum=0&refId=PquH%2FkvhBg5TwBLOMm54bQ%3D%3D&trackingId=jWBbpNAY30NYhDvAq1Qx5Q%3D%3D",
+    "ai_categories": [
+      "ai_general",
+      "ai_mention",
+      "mlops_llmops",
+      "ai_governance"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "69610d7b6dd552ab7ec2d666",
+    "dedupeKey": "neurons lab|ai solution architect|romania|linkedin",
+    "company": "NEURONS LAB",
+    "createdAt": "2026-01-09T15:15:47.613Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/ai-solution-architect-at-neurons-lab-4359408366?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONEngineering and Information TechnologyINDUSTRIESIT Services and IT Consulting",
+    "job_description": "About The ProjectJoin Neurons Lab as Senior Solution Architect - the role combining technicalAI/ML and Cloud solutions development with cloud department operationalleadership. You'll lead day-to-day cloud operations (50%) while leading hands-onAI/ML implementations for BFSI clients (50%).Our Focus: We specialize in serving Banking, Financial Services, and Insurance(BFSI) enterprise customers with stringent compliance, security, and regulatoryrequirements. You'll architect and build mission-critical AI/ML systems whileensuring our cloud operations run smoothly - from AWS funding applications toteam capacity planning.This role is ideal for technical professionals who excel at both execution ANDcoordination. You'll manage AWS/GCP partnership operations (funding, governance,hiring coordination) while staying technically sharp through hands-on AI/ML andCloud architecture and implementation work.ObjectiveDeliver operational excellence and technical leadership across cloud operationsand AI/ML project delivery: * Cloud Operations Management: Maintain 95%+ AWS funding success rate, coordinate hiring pipeline, execute cloud governance processes, and support AWS/GCP partnership programs * AI/ML Technical Project Leadership: Design and implement production-grade AI/ML architectures on AWS for FSI clients, ensuring Well-Architected compliance and security best practices * Operational Efficiency: Streamline cloud department processes through automation, capacity planning, and cross-functional coordination * Knowledge Transfer: Create reusable IaC components, architectural patterns, and documentation that accelerate team capability Areas of Responsibility * Prepare funding application materials and communicate with AWS/GCP account teams * Coordinate recruitment pipeline: candidate tracking, interview scheduling, capacity planning * Execute Well-Architected Review scheduling and delivery coordination * Support competency applications with documentation and evidence collection * Design end-to-end cloud architectures for AI/ML/Agentic solutions * Calculate ROI, TCO, and cost-benefit analysis for proposed AI/ML solutions * Build production infrastructure using AWS CDK (primary) and Terraform * Develop Python applications: FastAPI backends, MLOps automation, data processing scripts * Lead small engineering teams (2-3 engineers) on project delivery Skills * Solution architecture with ability to translate business requirements into technical designs * AWS Well-Architected framework expertise and remediation experience * Cloud cost optimization, credits management, and consumption tracking * AWS/GCP partnership programs knowledge (PoC funding, MAP, Well-Architected Reviews) * Advanced Python programming for API development with FastAPI or Flask * Deploy infrastructure with Infrastructure as Code (AWS CDK and Terraform) * Hands-on experience with AWS Bedrock and Langchain or other AI agentic frameworks * Containerization for AI Applications (Docker, ECS, EKS) Knowledge * AWS Certified Solutions Architect Professional (required) OR AWS Certified Machine Learning - Specialty (required) * Working knowledge of AWS Partner Network structure and funding programs * Understanding of PoC funding, MAP program, and ISV Workload Migration * Well-Architected Review process and delivery methodology * AWS competency requirements and evidence collection Experience * 5+ years in cloud architecture, solution architecture, or cloud engineering roles * 2+ years working with AI/ML workloads on cloud platforms * Proven track record designing and implementing cloud solutions from scratch * Hands-on experience deploying and managing AI or Generative AI solutions in production Show more Show less",
+    "location": "Romania",
+    "score": 85,
+    "source": "linkedin",
+    "title": "AI Solution Architect",
+    "url": "https://ro.linkedin.com/jobs/view/ai-solution-architect-at-neurons-lab-4359408366?position=1&pageNum=0&refId=t6wiItOIYXTQPNe6PmuI1g%3D%3D&trackingId=frVvq76H2eP%2BqR8%2Bqm6ptA%3D%3D",
+    "ai_categories": [
+      "ai_general",
+      "ai_mention",
+      "genai_llm",
+      "agentic_ai",
+      "mlops_llmops"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "69611ba86dd552ab7ec2d671",
+    "dedupeKey": "scc services romania|ai solution architect|[https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?position=2&pagenum=0&refid=t6wiitoiyxtqpne6pmui1g%3d%3d&trackingid=dwgygt0i8eggvahqseuxoq%3d%3d]|linkedin",
+    "company": "SCC SERVICES ROMANIA",
+    "createdAt": "2026-01-09T15:15:47.613Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONInformation TechnologyINDUSTRIESIT Services and IT Consulting",
+    "job_description": "Role Overview:The AI Solution Architect (Power Platform Specialist) defines the solutionblueprint, integration contracts, security model, and ALM approach for scalabledelivery. They ensure the platform is governed, cost-efficient, and resilient,with clear boundaries between product teams and shared services. The first hirewill codify reference architectures and patterns that accelerate all futuresquads. Summary from source: Designs solution/ALM patterns, environment strategyand security; defines integration architecture for AI agents.Core Accountabilities: * Own end-to-end solution architecture and non-functional requirements (performance, resilience, security). * Define environment strategy, identity/role design, data loss prevention, and integration contracts. * Establish reference patterns for ALM, CI/CD, testing, telemetry, and cost management. * Review designs; chair architecture reviews and maintain a living architecture decision record (ADR). * Guide build-vs-buy decisions and simplify complexity through modularisation and reusability. * Coach developers and analysts; uplift engineering practices across squads.Experience & Qualifications: * Experienced hire with 10\u201312+ years across solution architecture and engineering, including 4+ years leading low-code/automation platforms at scale. * Deep security/governance understanding (authN/Z, data policies, segregation of duties). * Proven ability to produce reference architectures and lead design reviews.Ways of Working: * Operate with strong documentation and knowledge transfer; maintain playbooks and ADRs. * Participate in agile ceremonies; provide clear estimates and surface risks early. * Measure outcomes; use data/telemetry to guide continuous improvement. * Mentor juniors and model engineering and governance best practices.Technical Skills & Software: * Azure AI Foundry: solution blueprints, agent orchestration, deployment governance. * RAG architecture design: retrieval layers, grounding sources, vector databases/knowledge bases; latency and cost considerations. * Microsoft Power Platform: environment strategy, ALM patterns, DLP. * Microsoft Copilot Studio: multi-channel bot architecture and guardrails. * CI/CD and ALM: Azure DevOps or GitHub Actions; release management and segregation of duties. * Security and compliance: AuthN/Z, secrets management, DLP, Microsoft Purview alignment. * Observability: design for Azure Monitor/Application Insights, SLOs, cost management. * Reference architecture and ADR tooling; architecture review cadence.What we offer: * High-quality external and internal technical training with a dedicated training department. * Reimburse certificates and tuition fees for qualifications that are part of your individual training and development plans.Monthly benefits package:Fixed benefits: * Recommendation Bonuses for new team members; * Private medical subscription; * Work from home allowance; * Transportation allowance; * Easter/Christmas bonus; * Bookster corporate library subscription; * Career development opportunities.Flexible benefits: * Meal tickets; * Vacation & cultural vouchers; * Retail vouchers (eMAG, IKEA).Show more Show less",
+    "location": "[https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?position=2&pageNum=0&refId=t6wiItOIYXTQPNe6PmuI1g%3D%3D&trackingId=dWgYgT0I8EggVahqseUxOQ%3D%3D]",
+    "score": 85,
+    "source": "linkedin",
+    "title": "AI Solution Architect",
+    "url": "https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?position=2&pageNum=0&refId=t6wiItOIYXTQPNe6PmuI1g%3D%3D&trackingId=dWgYgT0I8EggVahqseUxOQ%3D%3D",
+    "ai_categories": [
+      "ai_mention",
+      "rag_retrieval",
+      "mlops_llmops"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "696129806dd552ab7ec2d67a",
+    "dedupeKey": "scc services romania|ai solution architect|[https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?position=1&pagenum=0&refid=zugjme0rrkjxssxl%2b58xjq%3d%3d&trackingid=h%2b8cwrk2kgags3huremllq%3d%3d]|linkedin",
+    "company": "SCC SERVICES ROMANIA",
+    "createdAt": "2026-01-09T16:14:51.633Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONInformation TechnologyINDUSTRIESIT Services and IT Consulting",
+    "job_description": "Role Overview:The AI Solution Architect (Power Platform Specialist) defines the solutionblueprint, integration contracts, security model, and ALM approach for scalabledelivery. They ensure the platform is governed, cost-efficient, and resilient,with clear boundaries between product teams and shared services. The first hirewill codify reference architectures and patterns that accelerate all futuresquads. Summary from source: Designs solution/ALM patterns, environment strategyand security; defines integration architecture for AI agents.Core Accountabilities: * Own end-to-end solution architecture and non-functional requirements (performance, resilience, security). * Define environment strategy, identity/role design, data loss prevention, and integration contracts. * Establish reference patterns for ALM, CI/CD, testing, telemetry, and cost management. * Review designs; chair architecture reviews and maintain a living architecture decision record (ADR). * Guide build-vs-buy decisions and simplify complexity through modularisation and reusability. * Coach developers and analysts; uplift engineering practices across squads.Experience & Qualifications: * Experienced hire with 10\u201312+ years across solution architecture and engineering, including 4+ years leading low-code/automation platforms at scale. * Deep security/governance understanding (authN/Z, data policies, segregation of duties). * Proven ability to produce reference architectures and lead design reviews.Ways of Working: * Operate with strong documentation and knowledge transfer; maintain playbooks and ADRs. * Participate in agile ceremonies; provide clear estimates and surface risks early. * Measure outcomes; use data/telemetry to guide continuous improvement. * Mentor juniors and model engineering and governance best practices.Technical Skills & Software: * Azure AI Foundry: solution blueprints, agent orchestration, deployment governance. * RAG architecture design: retrieval layers, grounding sources, vector databases/knowledge bases; latency and cost considerations. * Microsoft Power Platform: environment strategy, ALM patterns, DLP. * Microsoft Copilot Studio: multi-channel bot architecture and guardrails. * CI/CD and ALM: Azure DevOps or GitHub Actions; release management and segregation of duties. * Security and compliance: AuthN/Z, secrets management, DLP, Microsoft Purview alignment. * Observability: design for Azure Monitor/Application Insights, SLOs, cost management. * Reference architecture and ADR tooling; architecture review cadence.What we offer: * High-quality external and internal technical training with a dedicated training department. * Reimburse certificates and tuition fees for qualifications that are part of your individual training and development plans.Monthly benefits package:Fixed benefits: * Recommendation Bonuses for new team members; * Private medical subscription; * Work from home allowance; * Transportation allowance; * Easter/Christmas bonus; * Bookster corporate library subscription; * Career development opportunities.Flexible benefits: * Meal tickets; * Vacation & cultural vouchers; * Retail vouchers (eMAG, IKEA).Show more Show less",
+    "location": "[https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?position=1&pageNum=0&refId=zuGJME0RrkJxssXl%2B58XJQ%3D%3D&trackingId=h%2B8cwrk2KGAgS3hureMLLQ%3D%3D]",
+    "score": 85,
+    "source": "linkedin",
+    "title": "AI Solution Architect",
+    "url": "https://ro.linkedin.com/jobs/view/ai-solution-architect-at-scc-services-romania-4359417841?position=1&pageNum=0&refId=zuGJME0RrkJxssXl%2B58XJQ%3D%3D&trackingId=h%2B8cwrk2KGAgS3hureMLLQ%3D%3D",
+    "ai_categories": [
+      "ai_mention",
+      "rag_retrieval",
+      "mlops_llmops"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "696242e86dd552ab7ec2d767",
+    "dedupeKey": "neodustria|\ud83c\udf10 platform architect (hands-on) - industrial ai & simulation|romania|linkedin",
+    "company": "NEODUSTRIA",
+    "createdAt": "2026-01-10T12:15:30.579Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/%F0%9F%8C%90-platform-architect-hands-on-industrial-ai-simulation-at-neodustria-4360660761?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONEngineering and Information TechnologyINDUSTRIESTechnology, Information and Internet",
+    "job_description": "\ud83d\ude80 About NeodustriaNeodustria is building the Unified Cloud Platform for Next-GenerationEngineering, where AI, physics-aware simulation, and industrial automationconverge.We enable industrial innovators (automotive, construction, railway, naval,aerospace) to design, simulate, and optimize systems using SpecializedEngineering Models (SEMs) - reducing prototyping risks, acceleratingtime-to-market, and unlocking AI-assisted engineering at scale.This is not a research lab. This is production engineering for real industries.\ud83c\udfaf The RoleWe are hiring a Junior Platform Architect - a doer-architect who designs bybuilding.You will own and evolve production-grade platform architecture, sitting at theintersection of: * AI & physics-aware systems * Microservices & orchestration * Industrial simulation and digital twinsYou will write code, ship services, and operate platforms - not just drawdiagrams.\ud83d\udee0\ufe0f What You Will Build * Design and implement scalable microservices architectures * Develop high-performance APIs for simulation and AI pipelines * Orchestrate services on Kubernetes (Docker, Helm, CI/CD) * Integrate AI/ML systems (ML, DL, RL) into production workflows * Enable physics-aware AI (simulation-driven, surrogate models, digital twins) * Collaborate with simulation engineers (CFD, FEA, multi-physics) * Ensure observability, reliability, and performance at platform scale\ud83e\udde0 What You Must MasterCore Engineering * Golang (production APIs, concurrency, performance) * Python (AI/ML pipelines, orchestration, automation) * Microservices architecture (REST/gRPC, event-driven systems) * Docker & Kubernetes (real production usage) * PostgreSQL, APIs, distributed systemsAI & Industrial Intelligence * Machine Learning, Deep Learning, Reinforcement Learning * AI systems in production, not only research * 3D digital twins, simulation-driven workflows * Strong intuition for physics-aware AI systems\ud83c\udfed Industrial DNA (Mandatory)You must have exposure to industrial domains, such as: * Automotive * Construction * Railway * Naval * Aerospace / AviationSimulation, digital twins, or physics-based systems experience is a strong plus.\ud83e\uddec Our Engineering CultureWe optimize for execution density.You will thrive here if: * You prefer shipping code over debating abstractions * You design architectures by implementing them * You are comfortable owning systems end-to-end * You debug production issues instead of writing post-mortem slides * You believe \u201cdone\u201d beats \u201cperfectly discussed\u201d\u2705 Requirements * 5+ years hands-on engineering experience * Proven ownership of production platforms * Strong coding skills in Golang and Python * Real experience with Kubernetes in production * AI/ML systems deployed beyond notebooks * Industrial or physics-aware system exposure\ud83c\udf0d Why Join Neodustria * Build a deep-tech industrial platform, not a SaaS wrapper * Work at the frontier of AI + simulation + engineering * High autonomy, high responsibility, real impact * Remote-friendly, Europe-aligned time zones * Fast growth environment for true buildersShow more Show less",
+    "location": "Romania",
+    "score": 85,
+    "source": "linkedin",
+    "title": "\ud83c\udf10 Platform Architect (Hands-On) - Industrial AI & Simulation",
+    "url": "https://ro.linkedin.com/jobs/view/%F0%9F%8C%90-platform-architect-hands-on-industrial-ai-simulation-at-neodustria-4360660761?position=1&pageNum=0&refId=SiucRKDI45nTvXq9YqvuxQ%3D%3D&trackingId=rI4TvFjDjXLRoEWMhSCQHQ%3D%3D",
+    "ai_categories": [
+      "ai_general",
+      "ai_mention"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "696cdce23da7d438ae4f5db1",
+    "dedupeKey": "linkedin|4322391306",
+    "company": "GLOBALLOGIC",
+    "createdAt": "2026-02-08T18:15:08.022Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/ai-computer-vision-solution-architect-irc281985-at-globallogic-4322391306?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELNot ApplicableEMPLOYMENT TYPEFull-timeJOB FUNCTIONEngineering and Information TechnologyINDUSTRIESSoftware Development",
+    "job_description": "DescriptionJoin GlobalLogic\u2019s Architects Team within the Healthcare Business Unit,supporting clients across the EMEA region. This strategic role focuses onengaging new clients, designing advanced AI solutions for medical imageanalysis, and launching projects involving computer vision, deep learning, andgenerative AI. You\u2019ll work on cutting-edge use cases like diagnostic assistance,surgical planning, and radiology automation, bringing meaningful impact topatient care. If you\u2019re passionate about AI in healthcare and want to driveinnovation with real-world results, we\u2019d love to hear from you.Requirements * Master\u2019s or PhD in Computer Science, AI, Biomedical Engineering, or a related field. * 7+ years of experience in AI/ML with at least 4 years focused on computer vision and deep learning. * Proven experience with CNN architectures (e.g., ResNet, UNet, EfficientNet, VGG). * Experience with GANs (e.g., CycleGAN, StyleGAN, Pix2Pix) and synthetic image generation. * Hands-on with TensorFlow, PyTorch, OpenCV, and related vision libraries. * Strong understanding of preprocessing techniques for medical imaging data (e.g., DICOM, NIfTI). * Familiarity with training in cloud environments (Azure, AWS, GCP). * Experience in deploying models and integrating with PACS systems or cloud-native imaging stacks. * Solid understanding of model performance metrics and validation strategies for imaging. * Excellent communication skills and at least Upper-Intermediate English level. Preferred Qualifications (Nice To Have) * Experience with FDA/CE Class B or C medical imaging products. * Familiarity with explainable AI (Grad-CAM, LIME) and fairness techniques for imaging models. * Knowledge of FHIR, HL7, and healthcare data standards. * Understanding of HIPAA, GDPR, or other relevant data protection regulations. * Experience with AI for surgical robotics, augmented reality in healthcare, or histopathology image analysis. * Involvement in technical presales or client advisory initiatives. Job responsibilities * Design, develop, and optimize AI models for computer vision, segmentation, objects detection, image classification, etc. * Lead computer vision and AI solutioning in client engagements and presales discussions. * Build CNN- and GAN-based architectures tailored for healthcare and medical imaging use cases. * Prepare and preprocess large-scale datasets from modalities like X-ray, CT, MRI, and digital pathology. * Guide annotation strategies and quality control for labeled data. * Collaborate with cloud, DevOps, and QA teams to integrate models into production pipelines. * Ensure model robustness, explainability, and regulatory readiness (e.g., traceability, reproducibility). * Conduct technical workshops and communicate complex concepts to clients in an accessible way. * Stay current with research trends and evaluate new techniques for potential integration. * Contribute to internal accelerators, frameworks, and IP development. What we offerCulture of caring. At GlobalLogic, we prioritize a culture of caring. Acrossevery region and department, at every level, we consistently put people first.From day one, you\u2019ll experience an inclusive culture of acceptance andbelonging, where you\u2019ll have the chance to build meaningful connections withcollaborative teammates, supportive managers, and compassionate leaders.Learning and development. We are committed to your continuous learning anddevelopment. You\u2019ll learn and grow daily in an environment with manyopportunities to try new things, sharpen your skills, and advance your career atGlobalLogic. With our Career Navigator tool as just one example, GlobalLogicoffers a rich array of programs, training curricula, and hands-on opportunitiesto grow personally and professionally.Interesting & meaningful work. GlobalLogic is known for engineering impact forand with clients around the world. As part of our team, you\u2019ll have the chanceto work on projects that matter. Each is a unique opportunity to engage yourcuriosity and creative problem-solving skills as you help clients reimaginewhat\u2019s possible and bring new solutions to market. In the process, you\u2019ll havethe privilege of working on some of the most cutting-edge and impactfulsolutions shaping the world today.Balance and flexibility. We believe in the importance of balance andflexibility. With many functional career areas, roles, and work arrangements,you can explore ways of achieving the perfect balance between your work andlife. Your life extends beyond the office, and we always do our best to help youintegrate and balance the best of work and life, having fun along the way!High-trust organization. We are a high-trust organization where integrity iskey. By joining GlobalLogic, you\u2019re placing your trust in a safe, reliable, andethical global company. Integrity and trust are a cornerstone of our valueproposition to our employees and clients. You will find truthfulness, candor,and integrity in everything we do.About GlobalLogicGlobalLogic, a Hitachi Group Company, is a trusted digital engineering partnerto the world\u2019s largest and most forward-thinking companies. Since 2000, we\u2019vebeen at the forefront of the digital revolution \u2013 helping create some of themost innovative and widely used digital products and experiences. Today wecontinue to collaborate with clients in transforming businesses and redefiningindustries through intelligent products, platforms, and services.Show more Show less",
+    "location": "Romania",
+    "score": 85,
+    "source": "linkedin",
+    "title": "AI & Computer Vision Solution Architect IRC281985",
+    "url": "https://ro.linkedin.com/jobs/view/ai-computer-vision-solution-architect-irc281985-at-globallogic-4322391306?position=1&pageNum=0&refId=lBCJ%2Bl87lxl8Ot1zSO2aZw%3D%3D&trackingId=UN02vWxu0yiNa1UpSsA7pg%3D%3D",
+    "status": "discarded",
+    "ai_categories": [
+      "ai_general",
+      "ai_mention"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "697d1f657d41dc1e8a1dc154",
+    "dedupeKey": "linkedin|4367278749",
+    "company": "GLOBALLOGIC",
+    "createdAt": "2026-01-30T21:15:11.921Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/enterprise-solutions-architect-ai-focus-irc284182-at-globallogic-4367278749?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELNot ApplicableEMPLOYMENT TYPEFull-timeJOB FUNCTIONEngineering and Information TechnologyINDUSTRIESSoftware Development",
+    "job_description": "DescriptionAI Agents for industrial equipment maintenance and management. AI based solutionfor field service engineers which perform maintenance and equipment tuning, andsetup. The solution covers a wide range of use cases, including predictivemaintenance, inventory management automation, work schedule management, andplanning.RequirementsRequired Skills and Qualifications * 10+ years of professional experience in software engineering, with at least 5 years operating specifically as an Enterprise Architect, Solutions Architect, Principal Engineer, or similar architecture-focused role. * Proven experience in architecting, designing, and overseeing the implementation of large-scale, complex AI / Data / Cloud platform programs involving multiple cross-functional teams and external vendors. * Strong understanding of modern SDLC methodologies (Agile, CI/CD, DevSecOps) and distributed system design principles. * Hands-on experience with Azure/GCP cloud architecture, containerization, and API gateway-based microservice ecosystems. * Hands-on experience in building on-prem based solutions which can work in isolated/air-gaped environments. * Hands-on experience in building applications and services which are running on top of Kubernetes. * Demonstrated experience in multi-vendor program governance, including delivery coordination, RACI ownership, and risk management. * Deep understanding of data pipelines, ingestion frameworks, and AI/ML integration concepts. * Excellent communication and stakeholder management skills; able to interface effectively with both engineering and executive audiences. * Strong analytical, problem-solving, and conflict-resolution abilities in complex delivery environments. Must have a track record of driving technical consensus on high-stakes architectural decisions. Preferred Qualifications * Background in AI-driven platforms, AI Agents, ML based solutions. Familiarity with Azure AI Foundry or Google Agentspaces. * Experience in cross-organization alignment (client\u2013vendor\u2013partner triangle). * Experience in leading engineering teams. * Experience in managing globally distributed teams. Must-Have / Primary KeywordsEngineering Management, Program Delivery, Enterprise Architect, SolutionsArchitecture, Principal Engineer, AI/ML, Azure, Cloud Architecture, DataEngineering, DevOps, Stakeholder Management, Risk Mitigation, Cross-VendorCoordination, Agile Delivery, Technical Leadership, Generative AI, AI AgentsJob responsibilitiesWe are seeking an Enterprise Solutions Architect (senior level engineeringmanager, AI Focus) to lead the engineering execution and technical governance ofthe AI-driven project \u2014 a set of purpose built AI agents for industrialequipment maintenance and management.The ideal candidate is a seasoned solutions architect and senior technicalleader with proven experience in managing cross-functional engineering teams(backend, frontend, data, DevOps, and AI/ML), driving platform-levelarchitecture decisions, and ensuring technical alignment across multiplestakeholders (including vendors, partners) and serving as the final authority onall major design and technical trade-off.This role combines technical leadership, delivery management, and businessalignment \u2014 balancing strategic direction, engineering excellence, andpredictable delivery in a highly dynamic multi-vendor environment.ResponsibilitiesProject Leadership & Delivery Excellence: Drive the execution of the productroadmap, ensuring timely and high-quality delivery across multiple workstreams(data ingestion, backend, frontend, ML integration, UX). Establish strongcoordination with Product, Architecture, and DevOps leads.Architecture Leadership & System Design: Define and own Platform Architecture,serve as the Enterprise Architect, designing and owning the core platformblueprint for scalability, security, and performance across the organization.This includes definitive decision-making on component selection, cloud topologyand deployment model (on-prem/air-gapped).Technical Governance: Define and maintain engineering standards, architectureguidelines, and code quality practices. Collaborate with other tech leads toensure scalability, security, and compliance with policies and guardrails.Conduct deep technical reviews to ensure all implementations adhere to theapproved system architectureCross-Team Alignment: Manage dependencies across internal and external teams.Lead coordination of milestones, risks, and change management to maintainsynchronization across all partners.Stakeholder Management: Serve as a senior engineering counterpart for clientstakeholders, ensuring transparency, accountability, and clear communication onprogress, blockers, and technical decisions.Resource & Capacity Planning: Own capacity planning and workload distributionacross engineering domains. Anticipate resource constraints, propose mitigationplans, and support staffing decisions.Quality & Risk Management: Monitor engineering performance through metrics andKPIs. Identify risks early, ensure mitigation steps are tracked, and maintainquality assurance across all deliverables.Innovation & Continuous Improvement: Promote automation, reusable components,and AI-assisted engineering practices. Encourage continuous improvement throughlessons learned and engineering retrospectives.Team Leadership & Mentorship: Build and nurture a strong engineering culture.Provide mentorship to technical leads and senior engineers, fostering growth,ownership, and accountability.What we offerCulture of caring. At GlobalLogic, we prioritize a culture of caring. Acrossevery region and department, at every level, we consistently put people first.From day one, you\u2019ll experience an inclusive culture of acceptance andbelonging, where you\u2019ll have the chance to build meaningful connections withcollaborative teammates, supportive managers, and compassionate leaders.Learning and development. We are committed to your continuous learning anddevelopment. You\u2019ll learn and grow daily in an environment with manyopportunities to try new things, sharpen your skills, and advance your career atGlobalLogic. With our Career Navigator tool as just one example, GlobalLogicoffers a rich array of programs, training curricula, and hands-on opportunitiesto grow personally and professionally.Interesting & meaningful work. GlobalLogic is known for engineering impact forand with clients around the world. As part of our team, you\u2019ll have the chanceto work on projects that matter. Each is a unique opportunity to engage yourcuriosity and creative problem-solving skills as you help clients reimaginewhat\u2019s possible and bring new solutions to market. In the process, you\u2019ll havethe privilege of working on some of the most cutting-edge and impactfulsolutions shaping the world today.Balance and flexibility. We believe in the importance of balance andflexibility. With many functional career areas, roles, and work arrangements,you can explore ways of achieving the perfect balance between your work andlife. Your life extends beyond the office, and we always do our best to help youintegrate and balance the best of work and life, having fun along the way!High-trust organization. We are a high-trust organization where integrity iskey. By joining GlobalLogic, you\u2019re placing your trust in a safe, reliable, andethical global company. Integrity and trust are a cornerstone of our valueproposition to our employees and clients. You will find truthfulness, candor,and integrity in everything we do.About GlobalLogicGlobalLogic, a Hitachi Group Company, is a trusted digital engineering partnerto the world\u2019s largest and most forward-thinking companies. Since 2000, we\u2019vebeen at the forefront of the digital revolution \u2013 helping create some of themost innovative and widely used digital products and experiences. Today wecontinue to collaborate with clients in transforming businesses and redefiningindustries through intelligent products, platforms, and services.Show more Show less",
+    "location": "Romania",
+    "score": 85,
+    "source": "linkedin",
+    "title": "Enterprise Solutions Architect (AI Focus) IRC284182",
+    "url": "https://ro.linkedin.com/jobs/view/enterprise-solutions-architect-ai-focus-irc284182-at-globallogic-4367278749?position=1&pageNum=0&refId=WkCaKfSkOP3JB6Hpw%2BfRzQ%3D%3D&trackingId=txbpnJsdg%2FLhSHyEWaAuZA%3D%3D",
+    "status": "not processed",
+    "extracted_jd": {
+      "title": "Enterprise Solutions Architect (AI Focus)",
+      "company": "GlobalLogic",
+      "location": "Not specified",
+      "remote_policy": "not_specified",
+      "role_category": "staff_principal_engineer",
+      "seniority_level": "principal",
+      "competency_weights": {
+        "delivery": 25,
+        "process": 15,
+        "architecture": 40,
+        "leadership": 20
+      },
+      "responsibilities": [
+        "Drive execution of product roadmap ensuring timely and high-quality delivery across multiple workstreams (data ingestion, backend, frontend, ML integration, UX)",
+        "Define and own Platform Architecture as Enterprise Architect, designing core platform blueprint for scalability, security, and performance",
+        "Make definitive decisions on component selection, cloud topology, and deployment model (on-prem/air-gapped)",
+        "Define and maintain engineering standards, architecture guidelines, and code quality practices",
+        "Conduct deep technical reviews to ensure implementations adhere to approved system architecture",
+        "Manage dependencies across internal and external teams, lead coordination of milestones, risks, and change management",
+        "Serve as senior engineering counterpart for client stakeholders ensuring transparency and accountability",
+        "Own capacity planning and workload distribution across engineering domains",
+        "Monitor engineering performance through metrics and KPIs, identify risks early and ensure mitigation",
+        "Provide mentorship to technical leads and senior engineers, fostering growth, ownership, and accountability"
+      ],
+      "qualifications": [
+        "10+ years of professional experience in software engineering with at least 5 years as Enterprise Architect, Solutions Architect, Principal Engineer, or similar architecture-focused role",
+        "Proven experience architecting, designing, and overseeing implementation of large-scale, complex AI/Data/Cloud platform programs",
+        "Strong understanding of modern SDLC methodologies (Agile, CI/CD, DevSecOps) and distributed system design principles",
+        "Hands-on experience with Azure/GCP cloud architecture, containerization, and API gateway-based microservice ecosystems",
+        "Hands-on experience building on-prem solutions that work in isolated/air-gapped environments",
+        "Hands-on experience building applications and services running on Kubernetes",
+        "Demonstrated experience in multi-vendor program governance including delivery coordination, RACI ownership, and risk management",
+        "Deep understanding of data pipelines, ingestion frameworks, and AI/ML integration concepts"
+      ],
+      "nice_to_haves": [
+        "Background in AI-driven platforms, AI Agents, ML based solutions",
+        "Familiarity with Azure AI Foundry or Google Agentspaces",
+        "Experience in cross-organization alignment (client-vendor-partner triangle)",
+        "Experience in leading engineering teams",
+        "Experience in managing globally distributed teams"
+      ],
+      "technical_skills": [
+        "Azure",
+        "GCP",
+        "Kubernetes",
+        "AI/ML",
+        "Generative AI",
+        "AI Agents",
+        "Cloud Architecture",
+        "Microservices",
+        "API Gateway",
+        "Containerization",
+        "Data Pipelines",
+        "Data Engineering",
+        "DevOps",
+        "DevSecOps",
+        "CI/CD",
+        "On-Prem Solutions",
+        "Air-Gapped Environments",
+        "Distributed Systems",
+        "Azure AI Foundry",
+        "Google Agentspaces"
+      ],
+      "soft_skills": [
+        "Stakeholder Management",
+        "Technical Leadership",
+        "Communication",
+        "Problem-Solving",
+        "Conflict Resolution",
+        "Mentorship",
+        "Cross-Vendor Coordination",
+        "Risk Management",
+        "Analytical Skills",
+        "Driving Technical Consensus"
+      ],
+      "implied_pain_points": [
+        "Complex multi-vendor coordination requiring single point of technical authority",
+        "Need for unified platform architecture across disparate AI/ML workstreams",
+        "Challenges with on-prem/air-gapped deployment requirements for industrial clients",
+        "Lack of engineering standards and architecture governance across teams",
+        "Difficulty maintaining technical alignment across internal teams, vendors, and partners"
+      ],
+      "success_metrics": [
+        "Timely and high-quality delivery across all workstreams (data ingestion, backend, frontend, ML integration, UX)",
+        "Establishment of scalable, secure platform architecture blueprint",
+        "Successful technical governance with all implementations adhering to approved system architecture",
+        "Effective cross-team synchronization and dependency management across partners",
+        "Engineering performance improvements tracked through metrics and KPIs",
+        "Quality assurance maintained across all deliverables with early risk identification"
+      ],
+      "top_keywords": [
+        "Enterprise Architect",
+        "Solutions Architecture",
+        "AI/ML",
+        "AI Agents",
+        "Azure",
+        "Kubernetes",
+        "Cloud Architecture",
+        "Data Engineering",
+        "DevOps",
+        "Microservices",
+        "Technical Leadership",
+        "Stakeholder Management",
+        "Multi-Vendor Coordination",
+        "Platform Architecture",
+        "Generative AI"
+      ],
+      "industry_background": "Industrial/Manufacturing",
+      "years_experience_required": 10,
+      "education_requirements": "Not specified",
+      "ideal_candidate_profile": {
+        "identity_statement": "A seasoned solutions architect and senior technical leader who serves as the final authority on all major design and technical trade-offs, capable of balancing strategic direction with predictable delivery in a highly dynamic multi-vendor environment while owning the enterprise platform blueprint for AI-driven industrial solutions.",
+        "archetype": "technical_architect",
+        "key_traits": [
+          "Drives technical consensus on high-stakes architectural decisions",
+          "Balances strategic direction with engineering excellence and predictable delivery",
+          "Thrives in multi-vendor governance with RACI ownership",
+          "Systems thinker across cloud, on-prem, and air-gapped deployments",
+          "Builds through mentorship while maintaining technical authority"
+        ],
+        "experience_profile": "10+ years software engineering, 5+ years in architecture-focused roles (Enterprise Architect, Solutions Architect, Principal Engineer)",
+        "culture_signals": [
+          "Culture of caring with people-first approach",
+          "Continuous learning and development focus",
+          "High-trust organization valuing integrity",
+          "Balance and flexibility emphasized"
+        ]
+      }
+    },
+    "fit_score": 58,
+    "cv_generated_at": "2026-01-31T07:50:44.723000",
+    "ai_categories": [
+      "ai_mention",
+      "genai_llm",
+      "mlops_llmops"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "6983466f7d41dc1e8a3a5101",
+    "dedupeKey": "linkedin|4369065765",
+    "company": "YOURSOFT ALTERNATIVE",
+    "createdAt": "2026-02-04T13:15:21.786Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/enterprise-agentic-ai-ai-solutions-architect-at-yoursoft-alternative-4369065765?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONEngineering and Information TechnologyINDUSTRIESIT Services and IT Consulting",
+    "job_description": "Key Responsibilities:AI & Generative AI Architecture * Design scalable AI and Generative AI solutions aligned with client business needs and strategic objectives * Architect agentic and autonomous AI systems, including: * Planning and orchestration layers * Tool-use and function calling * Multi-agent collaboration and workflows * Define best practices for AI governance, explainability, and responsible AI usageEnd-to-End System Architecture * Architect complete AI platforms covering: * Data ingestion and processing pipelines * Model training, fine-tuning, and evaluation * Model deployment, monitoring, and lifecycle management * Integration with enterprise applications and data platforms * Ensure seamless interoperability between AI components and existing enterprise systemsCloud & Platform Design * Design and implement AI solutions on major cloud platforms: * AWS, Microsoft Azure, Google Cloud, and/or IBM Cloud * Leverage managed AI/ML and LLM services for scalable and cost-efficient delivery * Define cloud-native architectures ensuring high availability, security, scalability, and cost optimizationArchitecture Governance & Leadership * Provide architectural guidance and technical leadership to delivery teams * Review solution designs, ensure adherence to standards, and mitigate technical risks * Collaborate with stakeholders to define roadmaps, reference architectures, and reusable patterns * Document architecture decisions, solution blueprints, and best practicesRequired Skills & Experience:Core Expertise * Proven experience designing enterprise-scale AI and Generative AI solutions * Strong background in agentic AI architectures and autonomous systems * Deep understanding of AI system lifecycles, from data ingestion to production monitoring * Expertise in cloud architecture for AI workloadsCloud & Platform Skills * Hands-on architectural experience with AWS, Azure, Google Cloud, and/or IBM Cloud * Familiarity with managed AI/ML services and LLM platforms * Strong knowledge of cloud security, identity, governance, and cost managementProfessional & Consulting Skills * Ability to translate complex business requirements into technical AI architectures * Strong analytical, problem-solving, and decision-making skills * Excellent communication skills, capable of engaging both technical and executive stakeholders * Experience working in consulting, enterprise, or large-scale transformation environmentsNice to Have: * Experience with Business Intelligence and Analytics platforms integrated with AI * Knowledge of data governance, privacy, and regulatory requirements * Exposure to MLOps, AI observability, and model risk management * Relevant cloud or AI certificationsShow more Show less",
+    "location": "Romania",
+    "score": 92,
+    "source": "linkedin",
+    "title": "Enterprise & Agentic AI - AI Solutions Architect",
+    "url": "https://ro.linkedin.com/jobs/view/enterprise-agentic-ai-ai-solutions-architect-at-yoursoft-alternative-4369065765?position=1&pageNum=0&refId=mjVA%2BQ0S0uraMW6o9BqyXQ%3D%3D&trackingId=OGvrMu4tUt8o0RlYB6WZgA%3D%3D",
+    "status": "discarded",
+    "extracted_jd": {
+      "title": "Enterprise & Agentic AI - AI Solutions Architect",
+      "company": "Yoursoft Alternative",
+      "location": "Not specified",
+      "remote_policy": "not_specified",
+      "role_category": "staff_principal_engineer",
+      "seniority_level": "staff",
+      "competency_weights": {
+        "delivery": 20,
+        "process": 15,
+        "architecture": 50,
+        "leadership": 15
+      },
+      "responsibilities": [
+        "Design scalable AI and Generative AI solutions aligned with client business needs and strategic objectives",
+        "Architect agentic and autonomous AI systems including planning, orchestration, tool-use, and multi-agent workflows",
+        "Define best practices for AI governance, explainability, and responsible AI usage",
+        "Architect complete AI platforms covering data ingestion, model training, fine-tuning, deployment, and monitoring",
+        "Ensure seamless interoperability between AI components and existing enterprise systems",
+        "Design and implement AI solutions on major cloud platforms (AWS, Azure, GCP, IBM Cloud)",
+        "Define cloud-native architectures ensuring high availability, security, scalability, and cost optimization",
+        "Provide architectural guidance and technical leadership to delivery teams",
+        "Review solution designs, ensure adherence to standards, and mitigate technical risks",
+        "Document architecture decisions, solution blueprints, and best practices"
+      ],
+      "qualifications": [
+        "Proven experience designing enterprise-scale AI and Generative AI solutions",
+        "Strong background in agentic AI architectures and autonomous systems",
+        "Deep understanding of AI system lifecycles from data ingestion to production monitoring",
+        "Expertise in cloud architecture for AI workloads",
+        "Hands-on architectural experience with AWS, Azure, Google Cloud, and/or IBM Cloud",
+        "Ability to translate complex business requirements into technical AI architectures",
+        "Excellent communication skills capable of engaging both technical and executive stakeholders",
+        "Experience working in consulting, enterprise, or large-scale transformation environments"
+      ],
+      "nice_to_haves": [
+        "Experience with Business Intelligence and Analytics platforms integrated with AI",
+        "Knowledge of data governance, privacy, and regulatory requirements",
+        "Exposure to MLOps, AI observability, and model risk management",
+        "Relevant cloud or AI certifications"
+      ],
+      "technical_skills": [
+        "Generative AI",
+        "Agentic AI",
+        "Multi-agent systems",
+        "LLM platforms",
+        "AWS",
+        "Microsoft Azure",
+        "Google Cloud",
+        "IBM Cloud",
+        "AI/ML services",
+        "Data pipelines",
+        "Model training",
+        "Model fine-tuning",
+        "Model deployment",
+        "MLOps",
+        "Cloud-native architecture",
+        "AI governance",
+        "Function calling",
+        "Orchestration layers",
+        "Enterprise integration",
+        "AI observability"
+      ],
+      "soft_skills": [
+        "Technical leadership",
+        "Stakeholder communication",
+        "Problem-solving",
+        "Decision-making",
+        "Analytical thinking",
+        "Client engagement",
+        "Cross-functional collaboration",
+        "Executive communication"
+      ],
+      "implied_pain_points": [
+        "Clients need coherent enterprise AI strategy but lack architectural expertise",
+        "Existing AI initiatives are siloed and not integrated with enterprise systems",
+        "Organizations struggle to scale AI from proof-of-concept to production",
+        "Need for governance and responsible AI frameworks as AI adoption accelerates"
+      ],
+      "success_metrics": [
+        "Successful delivery of scalable AI architectures for enterprise clients",
+        "Adoption of reusable reference architectures and patterns across engagements",
+        "Client satisfaction with AI solution design and technical leadership",
+        "Adherence to AI governance and responsible AI standards in delivered solutions"
+      ],
+      "top_keywords": [
+        "AI Solutions Architect",
+        "Generative AI",
+        "Agentic AI",
+        "Multi-agent systems",
+        "LLM",
+        "AWS",
+        "Azure",
+        "Google Cloud",
+        "Cloud architecture",
+        "Enterprise AI",
+        "MLOps",
+        "AI governance",
+        "Model deployment",
+        "Technical leadership",
+        "Consulting"
+      ],
+      "industry_background": null,
+      "years_experience_required": null,
+      "education_requirements": null,
+      "ideal_candidate_profile": {
+        "identity_statement": "A seasoned AI architect who bridges cutting-edge generative and agentic AI capabilities with enterprise-grade requirements, translating complex business needs into scalable, governed AI platforms while providing technical leadership in consulting environments.",
+        "archetype": "technical_architect",
+        "key_traits": [
+          "Deep expertise in agentic and autonomous AI system design",
+          "Enterprise consulting mindset with client-facing communication skills",
+          "Cloud-native architecture thinking across major platforms",
+          "Governance and responsible AI advocate",
+          "Bridges technical depth with executive stakeholder engagement"
+        ],
+        "experience_profile": "Significant experience in enterprise AI architecture and consulting environments",
+        "culture_signals": [
+          "Consulting-driven delivery focus",
+          "Enterprise transformation mindset",
+          "Standards and governance oriented",
+          "Client outcome focused"
+        ]
+      }
+    },
+    "fit_score": 52,
+    "cv_generated_at": "2026-02-09T08:55:17.208000",
+    "ai_categories": [
+      "ai_mention",
+      "genai_llm",
+      "agentic_ai",
+      "mlops_llmops",
+      "ai_governance"
+    ],
+    "is_ai_job": true,
+    "cv_review": {
+      "reviewed_at": "2026-04-13T09:01:42.990715+00:00",
+      "model": "gpt-5.2",
+      "reviewer": "independent_gpt",
+      "verdict": "NEEDS_WORK",
+      "would_interview": false,
+      "confidence": 0.74,
+      "first_impression_score": 5,
+      "failure_modes": [
+        "headline_overclaim",
+        "tagline_proof_gap",
+        "thin_competencies",
+        "low_pain_point_coverage",
+        "hallucination_project_context",
+        "missing_ai_evidence"
+      ],
+      "headline_evidence_bounded": false,
+      "bridge_quality_score": 4,
+      "full_review": {
+        "verdict": "NEEDS_WORK",
+        "confidence": 0.74,
+        "would_interview": false,
+        "top_third_assessment": {
+          "headline_verdict": "Close on \u201cSolutions Architect\u201d but does not match the JD\u2019s exact identity (AI Solutions Architect focused on enterprise + agentic/LLM platforms). Current headline reads cloud/data-platform specialist, which can be screened out for an AI-architecture role.",
+          "headline_evidence_bounded": false,
+          "tagline_verdict": "Good absent-voice (no pronouns) and answers \u201cwho/what,\u201d but the proof points skew to cloud/data/observability; little to no explicit Generative AI / agentic / multi-agent / LLM platform evidence is front-loaded, so it does not answer \u201cwhy should I call you for THIS AI architect role?\u201d",
+          "tagline_proof_gap": true,
+          "achievements_verdict": "Mostly claims without defensible metrics (or metrics that conflict with the master CV). The few strong, defensible metrics from the master CV (e.g., 75% incident reduction, 3 years zero downtime, LLM gateway savings) are not used in the top third.",
+          "competencies_verdict": "Strong cloud/platform keywords (AWS, microservices, event-driven, observability) but thin on AI-architecture keywords (LLM platforms, function calling/tool-use, orchestration, agentic/multi-agent, MLOps, model deployment/monitoring, AI governance). Also includes GCP positioning that is not supported by the master CV.",
+          "bridge_quality_score": 4,
+          "first_impression_score": 5,
+          "first_impression_summary": "Strong cloud/platform architect with AWS + observability depth; unclear fit for enterprise agentic/GenAI architecture because AI/LLM platform proof is not front-loaded and several metrics/roles look unverified."
+        },
+        "pain_point_alignment": {
+          "addressed": [
+            "Scaling from legacy/PoC to production \u2014 shows modernization and production-grade architecture themes (stronger when grounded to master CV\u2019s 75% incident reduction and multi-year transformation).",
+            "Enterprise interoperability and distributed systems \u2014 repeated integration / event-driven / microservices language aligns to enterprise-system realities.",
+            "Governance/standards mindset \u2014 mentions governance frameworks and standards (but not explicitly AI governance/responsible AI).",
+            "Observability as a scaling enabler \u2014 positions observability pipelines and monitoring as core architectural concern (matches enterprise scaling pain point)."
+          ],
+          "missing": [
+            "Agentic AI architecture (planning/orchestration/tool-use/multi-agent workflows) \u2014 not explicit in top third.",
+            "End-to-end AI platform scope (ingestion \u2192 training/fine-tuning \u2192 deployment \u2192 monitoring) \u2014 no training/fine-tuning evidence and little model deployment/MLOps language.",
+            "AI governance / explainability / responsible AI \u2014 \u201cgovernance\u201d is generic, not AI-specific.",
+            "Multi-cloud delivery (Azure/GCP/IBM Cloud) \u2014 multi-cloud architecture leadership not evidenced; JD expects breadth."
+          ],
+          "coverage_ratio": 0.45,
+          "low_pain_point_coverage": true
+        },
+        "hallucination_flags": [
+          {
+            "claim": "\u201cspecializing in integrating complex distributed systems across AWS and GCP\u201d",
+            "issue": "GCP specialization not found in master CV",
+            "severity": "high"
+          },
+          {
+            "claim": "\u201cDesigned scalable multi-tenant architecture enabling 10x horizontal scaling\u201d (Professional Summary + Samdock bullets)",
+            "issue": "Not found in master CV",
+            "severity": "high"
+          },
+          {
+            "claim": "\u201creducing MTTR significantly\u201d (Professional Summary) and \u201cdefined alerting standards\u2026 significantly reducing MTTR\u201d (Seven.One bullets)",
+            "issue": "MTTR impact not found in master CV",
+            "severity": "medium"
+          },
+          {
+            "claim": "\u201cprocessing billions of events daily\u2014established governance standards\u2026 across 10+ integrated systems\u201d (Seven.One bullet)",
+            "issue": "\u201cbillions of events daily\u201d is supported, but \u201c10+ integrated systems\u201d is not found in master CV",
+            "severity": "medium"
+          },
+          {
+            "claim": "\u201creducing missed impressions by 20%\u201d (Seven.One bullet)",
+            "issue": "Not found in master CV",
+            "severity": "high"
+          },
+          {
+            "claim": "\u201cCloudWatch, SNS, and Slack integration\u201d (Seven.One bullet)",
+            "issue": "Slack integration not found in master CV",
+            "severity": "medium"
+          },
+          {
+            "claim": "\u201creducing release cycles from weeks to days\u201d (Seven.One bullet)",
+            "issue": "Not found in master CV",
+            "severity": "high"
+          },
+          {
+            "claim": "All roles outside Seven.One (Samdock/Daypaio, KI Labs, Fortis, OSRAM, Clary Icon) with their bullets/metrics/tech stacks",
+            "issue": "These roles and claims are not present in the master CV, so they cannot be verified",
+            "severity": "high"
+          }
+        ],
+        "ats_assessment": {
+          "keyword_coverage": "7/20 keywords found",
+          "missing_critical_keywords": [
+            "AI Solutions Architect",
+            "Generative AI",
+            "Agentic AI",
+            "Multi-agent systems",
+            "LLM",
+            "MLOps",
+            "AI governance",
+            "Model deployment",
+            "Model fine-tuning",
+            "AI observability",
+            "Azure",
+            "IBM Cloud"
+          ],
+          "acronym_issues": [
+            "MTTR mentioned but not expanded",
+            "CI/CD mentioned but not expanded",
+            "CQRS mentioned but not expanded",
+            "JWT mentioned but not expanded",
+            "E2E mentioned but not expanded",
+            "WebRTC mentioned but not expanded",
+            "CoAP mentioned but not expanded"
+          ],
+          "ats_survival_likely": false,
+          "thin_competencies": false
+        },
+        "strengths": [
+          "Clear positioning around cloud-native architecture, distributed systems, and event-driven microservices (AWS-heavy).",
+          "Strong observability framing (OpenSearch, monitoring) that maps to enterprise production readiness.",
+          "Master CV contains several high-signal, defensible metrics (75% incident reduction, 3 years zero downtime, 10x cost reduction, DDD impact) that could be leveraged better.",
+          "Master CV includes credible LLM-platform work (gateway, semantic caching, eval/observability tooling) that could align with the JD if surfaced."
+        ],
+        "weaknesses": [
+          "Top third does not read like an AI Solutions Architect (agentic/GenAI) candidate; AI/LLM platform keywords and proof are not front-loaded.",
+          "Multiple metrics and role claims appear in the CV but are not present in the master CV (high risk for credibility screening).",
+          "Headline does not match the JD title, increasing rejection risk at the first scan.",
+          "Multi-cloud breadth (Azure/GCP/IBM) and AI governance/responsible AI are not evidenced clearly."
+        ],
+        "rewrite_suggestions": {
+          "headline": {
+            "current": "Enterprise Solutions Architect \u00b7 Cloud & Data Platform Specialist",
+            "rewritten": "AI Solutions Architect (Enterprise LLM Platforms) \u00b7 Cloud-Native Architect (AWS)",
+            "reason": "Matches the JD\u2019s target title more closely while staying bounded to evidence: enterprise architecture + LLM platform work (gateway/workflow tooling) plus AWS architecture depth.",
+            "grounding": "grounded",
+            "source_evidence": "\u201cLantern \u2014 LLM Quality Gateway\u2026 multi-provider LLM gateway\u2026 fallback across OpenAI, Anthropic, and Azure endpoints.\u201d"
+          },
+          "tagline": {
+            "current": "Enterprise architect with 10+ years designing scalable cloud-native systems and data pipelines, specializing in integrating complex distributed systems across AWS and GCP. Proven track record transforming proof-of-concept initiatives into production-grade platforms processing billions of events daily, with deep expertise in governance frameworks, observability, and cross-functional technical leadership.",
+            "rewritten": "Enterprise AI / cloud architect with 11+ years designing AWS-based distributed systems and observability pipelines, plus hands-on LLM platform engineering (gateway routing, semantic caching, eval-driven quality gates, tracing) to productionize AI workflows with reliability and governance.",
+            "reason": "Removes unsupported GCP specialization, adds AI/LLM platform proof that exists in the master CV, and makes the value proposition match enterprise AI architecture pain points.",
+            "grounding": "grounded",
+            "source_evidence": "\u201cYears of Experience: 11+\u201d"
+          },
+          "core_competencies": {
+            "current": [
+              "Distributed Systems",
+              "Event-Driven Architecture",
+              "System Design",
+              "Microservices",
+              "Domain-Driven Design",
+              "API Design",
+              "Data Pipelines",
+              "Platform Integration",
+              "AWS (Lambda, ECS, EventBridge, S3, CloudFront, SNS, SQS, Fargate)",
+              "Google Cloud Platform",
+              "Container Orchestration",
+              "Infrastructure as Code",
+              "Terraform",
+              "OpenSearch",
+              "Grafana",
+              "Prometheus",
+              "Datadog",
+              "CloudWatch",
+              "Data Pipeline Architecture",
+              "Monitoring",
+              "Logging",
+              "Enterprise Governance",
+              "Cross-Functional Collaboration",
+              "Stakeholder Management",
+              "Technical Strategy",
+              "Mentoring",
+              "Knowledge Sharing"
+            ],
+            "rewritten": [
+              "AI Solutions Architecture",
+              "LLM Platforms (routing, fallback, model registry)",
+              "Tool-Use / Integrations (MCP)",
+              "Structured Outputs / Schema Validation (Zod, Pydantic)",
+              "Retrieval & Ingestion Pipelines (chunking, hybrid retrieval, evaluation)",
+              "AI Observability (Langfuse, Prometheus, Grafana)",
+              "AWS Cloud Architecture (Lambda, ECS, EventBridge, S3, CloudFront)",
+              "Event-Driven Microservices",
+              "Data/Platform Observability (OpenSearch)",
+              "Domain-Driven Design (DDD)",
+              "Enterprise Integration & API Design",
+              "Technical Leadership / Governance"
+            ],
+            "reason": "Re-centers competencies on the JD\u2019s AI-architecture keywords while staying grounded in the provided AI project files and Seven.One AWS/observability evidence; removes ungrounded GCP positioning.",
+            "grounding": "grounded",
+            "source_evidence": "\u201cstack: \u2026 LiteLLM \u2026 MCP \u2026 Prometheus, Grafana \u2026\u201d"
+          },
+          "key_achievements": {
+            "current": [
+              "Architected enterprise-grade observability pipeline on AWS processing billions of events daily\u2014established governance standards for data flow, monitoring, and operational visibility across distributed systems",
+              "Designed scalable multi-tenant architecture enabling 10x horizontal scaling\u2014critical foundation for enterprise platform expansion and system integration",
+              "Led platform modernization initiatives transforming legacy systems into production-ready cloud-native architectures with comprehensive monitoring and governance",
+              "Drove cross-functional collaboration translating stakeholder requirements into technical architectures through domain discovery workshops and iterative design",
+              "Established technical governance frameworks including API standards, documentation practices, and reliability monitoring reducing MTTR significantly"
+            ],
+            "rewritten": [
+              "Transformed a legacy AdTech platform into autonomous event-driven TypeScript microservices on AWS\u2014achieved 75% incident reduction and 3 years zero downtime.",
+              "Architected a real-time observability pipeline channeling billions of events daily to OpenSearch on AWS\u2014enabled previously impossible debugging scenarios and reduced operational costs by 10x.",
+              "Implemented an Architectural Runway strategy to modernize a complex distributed system while shipping features\u2014achieved ~70% refactoring over a multi-year roadmap.",
+              "Established Domain-Driven Design (DDD) standards (ubiquitous language, bounded contexts)\u2014reduced onboarding from 6 to 3 months and improved velocity by 25%.",
+              "Built an LLM quality gateway with semantic caching and eval-driven quality gates\u2014reduced redundant API spend by ~40% in testing and added production-grade observability (Prometheus/Grafana/Langfuse)."
+            ],
+            "reason": "Replaces unverified metrics/claims with the master CV\u2019s defensible proof points and adds explicit LLM-platform evidence that aligns to the JD\u2019s agentic/LLM platform expectations.",
+            "grounding": "grounded",
+            "source_evidence": "\u201cAchieved 75% incident reduction, 3 years zero downtime\u201d"
+          },
+          "experience_items": {
+            "Seven.One Entertainment Group": {
+              "type": "role",
+              "current": [
+                "Architected enterprise observability platform on AWS processing billions of events daily\u2014established data governance standards, monitoring protocols, and operational visibility across 10+ integrated systems",
+                "Led proof-of-concept to production transformation: migrated legacy 2015-era systems to modern TypeScript microservices with AWS-native infrastructure, demonstrating scalable enterprise architecture patterns",
+                "Designed integration architecture shifting from siloed client-side logic to centralized server-side intelligence\u2014enabled cross-system debugging and unified data visibility previously impossible",
+                "Scaled cloud infrastructure for enterprise workloads using Lambda and ECS auto-scaling, reducing missed impressions by 20% while maintaining governance standards",
+                "Established enterprise monitoring governance with CloudWatch, SNS, and Slack integration\u2014defined alerting standards and incident response protocols, significantly reducing MTTR",
+                "Facilitated CI/CD transformation enabling faster automated deployments, reducing release cycles from weeks to days while maintaining quality gates"
+              ],
+              "rewritten": [
+                "Transformed a legacy 2015-era platform into autonomous event-driven TypeScript microservices on AWS (Lambda, ECS, EventBridge, S3, CloudFront), shifting responsibilities from application code to AWS-native services.",
+                "Moved async workflow coordination from client-side orchestration to EventBridge choreography, improving service autonomy and scalability in a mixed-criticality environment.",
+                "Architected a real-time observability pipeline channeling billions of events daily to OpenSearch on AWS, enabling previously impossible debugging scenarios.",
+                "Delivered measurable reliability outcomes through platform transformation: 75% incident reduction and 3 years zero downtime.",
+                "Introduced engineering standards (DDD bounded contexts, ubiquitous language) that improved onboarding (6\u21923 months) and velocity (+25%)."
+              ],
+              "reason": "Removes unverified scope/metrics (e.g., \u201c10+ systems,\u201d \u201cmissed impressions 20%,\u201d Slack, CI/CD cycle claims) and anchors bullets to master CV evidence with clear architecture keywords aligned to enterprise delivery.",
+              "grounding": "grounded",
+              "source_evidence": "\u201cAchieved 75% incident reduction, 3 years zero downtime\u201d"
+            },
+            "Samdock (Daypaio)": {
+              "type": "role",
+              "current": [
+                "Designed enterprise-grade multi-tenant architecture on GCP using NestJS, EventStore, and MongoDB\u2014enabled 10x horizontal scaling for platform expansion",
+                "Led domain discovery workshops with stakeholders, translating business requirements into technical architecture through event storming methodology",
+                "Built RESTful APIs with comprehensive Swagger/OpenAPI documentation enabling 50% faster partner integrations and ecosystem growth",
+                "Implemented CQRS/event-sourcing architecture establishing audit trails and data lineage critical for enterprise governance",
+                "Established CI/CD governance reducing deployment time from hours to minutes while maintaining quality controls",
+                "Created standardized component library ensuring consistent patterns across enterprise platform development"
+              ],
+              "rewritten": [
+                "Designed multi-tenant architecture and core platform foundations for an enterprise SaaS product (details require master-CV grounding to retain cloud/stack specifics).",
+                "Ran stakeholder discovery sessions to translate requirements into an actionable technical architecture (keep methods and outcomes aligned to source evidence).",
+                "Built and documented REST APIs (Swagger/OpenAPI) to support integration use cases (remove unverified percentage claims).",
+                "Implemented event-sourcing/CQRS patterns where appropriate for auditability (retain only if verified).",
+                "Improved delivery automation and standards (CI/CD) while maintaining quality gates (remove unverified time reduction metrics).",
+                "Standardized reusable components/patterns to reduce implementation variance (verify scope before emphasizing)."
+              ],
+              "reason": "Master CV does not contain this role, so claims cannot be validated; rewrite keeps the intent but strips unverified metrics and flags items that should be re-grounded before use.",
+              "grounding": "inferred",
+              "source_evidence": "Not present in master CV (gap)"
+            },
+            "KI Labs": {
+              "type": "role",
+              "current": [
+                "Built scalable data pipeline architecture using Flask and onion architecture patterns with JWT authentication\u2014processing large-scale datasets for enterprise clients",
+                "Optimized data layer achieving 60% query response time reduction through MongoDB performance tuning",
+                "Established API governance with Swagger/OpenAPI documentation standards improving developer experience across consulting engagements",
+                "Built comprehensive test suite (unit, E2E, snapshot) for API contract verification, reducing production incidents by 35%",
+                "Delivered consistent quality across bi-weekly sprints in fast-paced consulting environment"
+              ],
+              "rewritten": [
+                "Delivered backend/data-platform work for client engagements (details require master-CV grounding to retain technologies and scope).",
+                "Improved database/query performance via tuning and profiling (remove unverified percentage claims unless sourced).",
+                "Defined and documented API standards (Swagger/OpenAPI) to improve integration consistency (verify impact claims).",
+                "Built automated testing for API contracts (unit/integration) to improve release confidence (remove unverified incident reduction metrics).",
+                "Sustained delivery cadence in sprint-based consulting environments (keep factual and source-aligned)."
+              ],
+              "reason": "Master CV does not contain this role; rewrite removes unverified metrics and keeps statements conservative until grounded.",
+              "grounding": "inferred",
+              "source_evidence": "Not present in master CV (gap)"
+            },
+            "Fortis (Research Project)": {
+              "type": "project",
+              "current": [
+                "Built microservices backend in Node.js with well-defined service interfaces for research platform",
+                "Defined API standards with Swagger/OpenAPI documentation ensuring interface consistency across services",
+                "Implemented RabbitMQ pub/sub messaging enabling asynchronous communication between microservices",
+                "SCRUM collaboration with research client demos and feedback integration"
+              ],
+              "rewritten": [
+                "Built a microservices backend for a research platform (verify stack and scope against source evidence before emphasizing).",
+                "Standardized service interfaces and API documentation for cross-service consistency (keep outcomes factual).",
+                "Implemented asynchronous messaging patterns (pub/sub) for decoupled service communication (verify RabbitMQ claim).",
+                "Collaborated in sprint-based delivery with demos and feedback loops (keep conservative)."
+              ],
+              "reason": "Not present in master CV; keep as a project entry but avoid stack/claims that cannot be verified.",
+              "grounding": "inferred",
+              "source_evidence": "Not present in master CV (gap)"
+            },
+            "OSRAM": {
+              "type": "role",
+              "current": [
+                "Developed CoAP-to-UDP translation middleware enabling seamless integration of heterogeneous device systems into unified platform",
+                "Integrated legacy products with modern CoAP ecosystem, establishing patterns for backward-compatible enterprise system integration",
+                "Enhanced protocol implementation with security features enabling secure multicast communication across IoT networks",
+                "Designed cross-platform Qt/C++ application controlling IoT systems via CoAP protocol across mobile and desktop platforms",
+                "Created comprehensive documentation adopted as team reference standard"
+              ],
+              "rewritten": [
+                "Developed middleware to integrate heterogeneous IoT device systems (verify protocol specifics against source evidence).",
+                "Designed backward-compatible integration patterns for legacy-to-modern device ecosystems (keep scope factual).",
+                "Improved protocol/security implementation for safer device communication (avoid unverified security scope).",
+                "Built cross-platform control tooling for IoT systems (verify Qt/C++ claim).",
+                "Produced documentation adopted for team enablement (keep conservative)."
+              ],
+              "reason": "Not present in master CV; rewrite keeps the narrative but avoids unverifiable technical specifics.",
+              "grounding": "inferred",
+              "source_evidence": "Not present in master CV (gap)"
+            },
+            "Clary Icon": {
+              "type": "role",
+              "current": [
+                "Built self-service onboarding system reducing support requests through guided self-enrollment\u2014Full-Stack: C#/WPF with text-to-speech and workflow guidance",
+                "Engineered Node.js playback service with WebSocket-based synchronization handling concurrent video streams",
+                "Developed WebRTC video recording system using Licode media server and FFmpeg transcoding pipeline",
+                "Delivered features across Node.js backend, Qt C++ desktop, and C# WPF platforms within unified product",
+                "Direct client engagement for requirements, demos, and feedback integration"
+              ],
+              "rewritten": [
+                "Built product features spanning onboarding and media workflows (verify stack and scope against source evidence).",
+                "Implemented real-time synchronization services for playback experiences (avoid unverified scale claims).",
+                "Developed video recording and transcoding workflows (verify WebRTC/Licode/FFmpeg claim).",
+                "Delivered across backend and desktop components in a single product (keep factual).",
+                "Engaged directly with clients for requirements and demos (keep conservative)."
+              ],
+              "reason": "Not present in master CV; rewrite removes implied metrics and keeps claims conservative until grounded.",
+              "grounding": "inferred",
+              "source_evidence": "Not present in master CV (gap)"
+            }
+          }
+        },
+        "ideal_candidate_fit": {
+          "archetype_match": "Partial match: strong enterprise cloud/platform architect signals, but the CV does not clearly present the \u201cagentic + generative AI solutions architect\u201d identity or end-to-end AI platform ownership expected at staff level.",
+          "trait_coverage": {
+            "present": [
+              "Cloud-native architecture mindset (AWS)",
+              "Enterprise integration language",
+              "Governance/standards orientation (generic)",
+              "Technical leadership framing"
+            ],
+            "missing": [
+              "Explicit agentic AI system design (planning/tool-use/orchestration/multi-agent)",
+              "AI governance/responsible AI specifics",
+              "MLOps/model deployment/monitoring ownership framing",
+              "Multi-cloud architecture breadth (Azure/GCP/IBM) with evidence"
+            ]
+          },
+          "experience_level_match": "Seniority signals are plausible for staff (architectural transformation, standards), but credibility risk exists due to multiple ungrounded roles/metrics versus the master CV and the lack of AI proof in the top third.",
+          "missing_ai_evidence": true
+        }
+      }
+    },
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "6995c99087737d491c0da50f",
+    "dedupeKey": "linkedin|4374765109",
+    "company": "NEURONS LAB",
+    "createdAt": "2026-02-18T14:15:39.014Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/ai-architect-bfsi-domain-at-neurons-lab-4374765109?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEContractJOB FUNCTIONDesign, Art/Creative, and Information TechnologyINDUSTRIESIT Services and IT Consulting",
+    "job_description": "About The Project (description, Duration, Stage)You'll be joining Neurons Lab as a Senior AI Solutions Architect, workingdirectly with our Head of AI Engineering to scale our FSI-only AI consultancy.This role is critical for supporting our existing client relationships whilebuilding technical capacity for our custom LLM solutions and AI-powered businessprocess transformation projects.Objective * Support business development through technical expertise and client communication * Enable engineering team growth and high-performance delivery * Contribute to critical AI system architecture and implementation KPI * Achieve 90%+ Customer Satisfaction Index (CSI) on technical delivery * Support team performance improvement and capability development * Deliver scalable AI system architectures that meet FSI compliance requirements Areas of ResponsibilityBusiness Development Support * Communicate project progress with customers, explaining business and technology logic clearly * Prepare upsell and account expansion ideas for existing clients * Assist in proposal preparation for new client engagements Engineering Team Enablement * Lead AI Engineers on customer projects, create tasks, control performance and share feedback * Help engineering team grow, identify and support high-performers * Participate in performance reviews and performance improvement plans Technical Architecture & Implementation * Take part in critical software pieces implementation * Define how AI transforms business processes; design end-to-end AI-powered experiences * Design scalable AI systems architecture; decide on model selection, deployment patterns, and infrastructure requirements * Bridge business stakeholders and technical teams; translate business needs into technical specifications * Design how multiple AI agents/models work together; define agent-to-agent communication protocols * Establish AI development standards, safety protocols, and compliance frameworks * Design systems for AI safety, bias mitigation, and failure modes; implement monitoring and intervention systems SkillsTechnical Excellence * AI system architecture design and implementation * Model selection and deployment pattern expertise * Multi-agent system design and communication protocols * AI safety and compliance framework development * Business process transformation through AI Leadership & Communication * Advanced written and oral communication in English * Technical team leadership and performance management * Business stakeholder communication and requirement translation * Client relationship management and technical explanation abilities Experience * 7+ years of hands-on AI/ML solutions development * 3+ years of technical leadership in AI project delivery * 2+ years of team management and performance development * Demonstrated success in designing scalable AI systems for enterprise clients * Experience working with financial services clients Show more Show less",
+    "location": "Romania",
+    "score": 92,
+    "source": "linkedin",
+    "title": "AI Architect (BFSI domain)",
+    "url": "https://ro.linkedin.com/jobs/view/ai-architect-bfsi-domain-at-neurons-lab-4374765109?position=2&pageNum=0&refId=im%2BAIu2jZKEarMMwo31jwA%3D%3D&trackingId=CLvvW87Ec0bdae7UyM3ilQ%3D%3D",
+    "ai_categories": [
+      "ai_mention",
+      "genai_llm",
+      "agentic_ai",
+      "ai_governance"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  },
+  {
+    "_id": "699c0c9c87737d491c2b5bfe",
+    "dedupeKey": "linkedin|4376540780",
+    "company": "SCC SERVICES ROMANIA",
+    "createdAt": "2026-02-23T08:15:20.278Z",
+    "jobURL": "https://ro.linkedin.com/jobs/view/agentic-ai-architect-at-scc-services-romania-4376540780?trk=public_jobs_topcard-title",
+    "job_criteria": "SENIORITY LEVELMid-Senior levelEMPLOYMENT TYPEFull-timeJOB FUNCTIONInformation TechnologyINDUSTRIESIT Services and IT Consulting",
+    "job_description": "Solution Architect \u2013 Modern Engineering & AutomationWe\u2019re looking for a Solution Architect who combines strong engineeringfundamentals with curiosity for modern AI, automation, and agentic systems. Youdon\u2019t need deep AI expertise on day one \u2014 but you should have experiencebuilding large-scale systems in Java, Python, or JavaScript/TypeScript and beeager to grow into next\u2011gen AI architectures.This is a hands-on, technical leadership role within our new Agentic AI &Process Automation Centre of Excellence, shaping how AI-powered agents,enterprise systems, and automation workflows transform business and IToperations.What You Will DoArchitect intelligent and agentic platforms * Design end-to-end architectures for conversational, automation, and multi\u2011agent systems. * Define how AI agents interact with enterprise tools, APIs, and human users. * Create secure, scalable patterns for knowledge retrieval and workflow automation. * Produce architecture diagrams and documentation for engineering and customer teams. * Ensure solutions are resilient, observable, secure, and production-ready.Partner with customers * Lead discovery sessions to understand goals, systems, and constraints. * Shape AI architecture for proposals, SoWs, and solution options. * Communicate complex concepts to both technical and business audiences. * Support PoCs and pilots to validate feasibility and value. * Guide customers from simple automation toward agentic ecosystems.Research & continuous improvement * Stay current with emerging AI models, frameworks, and tools. * Evaluate new tech through structured tests and experiments. * Contribute to reusable patterns, playbooks, and best practices. * Optimize for cost, scale, and performance.Embed governance & compliance * Incorporate guardrails, access control, and responsible\u2011AI principles. * Work with security and compliance teams to meet enterprise standards. * Define observability, auditability, and incident\u2011response requirements.What You BringBackground in roles such as Solution Architect, Software Architect, CloudArchitect, Integration Architect, or Lead Engineer, with strong expertise inJava, Python, or JavaScript/TypeScript.Experience with: * Distributed systems, APIs, and automation workflows. * Cloud-native architectures (Azure/AWS/GCP). * Prototyping and building PoCs. * Identity, security, and data protection. * Monitoring, observability, and operational readiness.You are: * Curious about modern AI patterns. * Comfortable experimenting and learning fast. * Skilled at simplifying complexity. * Able to balance strategy with hands-on work. * Excited to help shape a new Centre of Excellence.Show more Show less",
+    "location": "[https://ro.linkedin.com/jobs/view/agentic-ai-architect-at-scc-services-romania-4376540780?position=1&pageNum=0&refId=NLozIhCgW6VMK25wbRHIYA%3D%3D&trackingId=LlmjN5VN40YIw95dTmv0BQ%3D%3D]",
+    "score": 85,
+    "source": "linkedin",
+    "title": "Agentic AI Architect",
+    "url": "https://ro.linkedin.com/jobs/view/agentic-ai-architect-at-scc-services-romania-4376540780?position=1&pageNum=0&refId=NLozIhCgW6VMK25wbRHIYA%3D%3D&trackingId=LlmjN5VN40YIw95dTmv0BQ%3D%3D",
+    "ai_categories": [
+      "ai_mention",
+      "genai_llm",
+      "agentic_ai"
+    ],
+    "is_ai_job": true,
+    "_signal_tier": "C",
+    "_signal_weight": 0.65,
+    "_recency_multiplier": 1.0,
+    "_effective_weight": 0.65
+  }
+]

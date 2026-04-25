@@ -1,0 +1,89 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_global",
+  "job_id": "69825fa77d41dc1e8a360e27",
+  "dimension_scores": {
+    "ats_optimization": 4.0,
+    "impact_clarity": 6.0,
+    "jd_alignment": 3.5,
+    "executive_presence": 5.0,
+    "anti_hallucination": 5.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": false,
+    "persona_fit_gate": false
+  },
+  "overall_score": 4.68,
+  "verdict": "WEAK_MATCH",
+  "top_strengths": [
+    "Strong quantified delivery metrics including 35% incident reduction, 60% latency improvement, 30% velocity gains refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:49,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:50,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:39",
+    "Solid distributed systems and architecture evidence across multiple roles refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:10,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:27,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:38",
+    "Clear mentoring and practice-shaping outcomes with 10+ engineers mentored and 3 promoted refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:14,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:31"
+  ],
+  "top_failures": [
+    "Zero generative AI or AI/ML experience evidenced when JD explicitly requires generative AI refs=data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:42,cv:17-21",
+    "No full-stack development evidence when JD requires at least 1 year full-stack refs=data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:35,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:34,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:44",
+    "Executive framing (Head of Engineering, Engineering Executive) misaligned with IC SaaS engineer role refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:3,data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:1,data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:10",
+    "No EdTech or education domain experience when JD is EdTech-focused refs=jd:11-16,cv:25-79"
+  ],
+  "unsupported_claims": [
+    "Head of Engineering title in headline when actual role is Technical Lead refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:3,outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:25",
+    "Engineering Executive positioning without C-level or VP evidence refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:3",
+    "Terraform listed without project delivery evidence refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:20",
+    "Hiring & Interviewing competency claimed but no specific hiring numbers or outcomes refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:18"
+  ],
+  "missing_must_haves": [
+    "Generative AI experience explicitly required by JD refs=data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:42",
+    "Full-stack development experience (front and backend) required by JD refs=data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:35",
+    "AI platform or AI systems architecture evidence required by category refs=data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "Primary technical contributor for SaaS product (2+ years) unclear refs=data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:36"
+  ],
+  "persona_fit_notes": [
+    "CV headline uses Head of Engineering/Engineering Executive framing for IC Senior Software Engineer role refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:3,data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:1",
+    "Executive summary emphasizes team building and org-building when JD emphasizes individual technical ownership refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:8,data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:10",
+    "Competencies list Executive Leadership category when role is IC-scoped refs=outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:18,data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:10"
+  ],
+  "representation_gap_hits": [
+    "No AI/ML/generative AI keywords anywhere in CV despite being category and JD requirement refs=cv:1-90"
+  ],
+  "curation_gap_hits": [
+    "Backend-heavy positioning (Python, Node.js, TypeScript) with no frontend evidence for full-stack requirement refs=cv:34,cv:44,cv:53"
+  ],
+  "evidence_refs": [
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:3",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:8",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:10",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:14",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:17-21",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:18",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:20",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:25",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:27",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:31",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:34",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:38",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:39",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:44",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:49",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:50",
+    "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md:53",
+    "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:1",
+    "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:10",
+    "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:11-16",
+    "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:35",
+    "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:36",
+    "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md:42",
+    "data/eval/blueprints/head_of_ai_global_blueprint.json"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T10:14:50Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_global_baseline.json",
+    "cv_path": "outputs/cMatter__Reech_Corporations_Group_/cv_Head_of_Engineering_-_AI_Platform.md",
+    "jd_path": "data/eval/raw/head_of_ai_global/jd_texts/01_crossover_senior_software_engineer_learnwithai_remote_100000year_usd.md"
+  }
+}

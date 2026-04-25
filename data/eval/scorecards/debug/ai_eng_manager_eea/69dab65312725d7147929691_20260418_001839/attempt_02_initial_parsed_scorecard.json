@@ -1,0 +1,67 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_eng_manager_eea",
+  "job_id": "69dab65312725d7147929691",
+  "dimension_scores": {
+    "ats_optimization": 8.5,
+    "impact_clarity": 8.5,
+    "jd_alignment": 8.5,
+    "executive_presence": 7.5,
+    "anti_hallucination": 8.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 8.35,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Agentic AI platform serving 2,000 users with 42 plugins directly matches JD agentic AI requirement refs=cv:10,cv:23,jd:8",
+    "AWS/Azure cloud-native infrastructure with billions of events daily aligns with JD cloud platform scope refs=cv:11,cv:12,jd:6",
+    "MLOps with CI/CD automation reducing incidents 75% matches JD DevOps/MLOps emphasis refs=cv:13,jd:9",
+    "Kubernetes container orchestration explicitly mentioned matching JD K8s requirement refs=cv:10,cv:12,jd:10",
+    "Cost optimization and scalability evidence directly addresses JD pain points refs=cv:11,cv:15,jd:11,jd:47-48"
+  ],
+  "top_failures": [
+    "Stakeholder translation evidence implicit rather than explicit cross-functional collaboration proof refs=cv:32,jd:12",
+    "Mentorship and team capability growth understated relative to JD success metrics emphasis refs=cv:14,cv:49,jd:13,jd:59",
+    "Model training infrastructure experience less prominent than model serving/deployment refs=cv:13,jd:7,jd:17"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:10",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:11",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:12",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:13",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:14",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:15",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:23",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:32",
+    "data/eval/calibration/cvs/69dab65312725d7147929691.md:49",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:6",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:7",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:8",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:9",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:10",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:11",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:12",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:13",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:17",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:47",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:48",
+    "data/eval/calibration/jds/69dab65312725d7147929691.md:59"
+  ],
+  "meta": {
+    "generated_at": "2026-04-18T12:00:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_eng_manager_eea_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_eng_manager_eea_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_eng_manager_eea_baseline.json"
+  }
+}

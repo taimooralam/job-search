@@ -1,0 +1,76 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_ksa",
+  "job_id": "6925c1c545fa3c355f83fce1",
+  "dimension_scores": {
+    "ats_optimization": 7.5,
+    "impact_clarity": 8.0,
+    "jd_alignment": 7.5,
+    "executive_presence": 8.0,
+    "anti_hallucination": 8.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 7.775,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Platform architecture proof with Commander-4/Joyia serving 2,000 users across 42 plugins with governed outputs refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:10,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:30",
+    "Reliability differentiation via 75% incident reduction and 3 years zero downtime on transformed AdTech platform refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:34,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8",
+    "Player-coach positioning with hands-on delivery (hybrid search, caching) plus measured people leadership (10+ mentored, 3 promoted) refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:12,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:28,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:33",
+    "Stakeholder translation evidenced through transparent risk communication to business stakeholders for revenue-critical systems refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:37",
+    "Governed AI adoption with Zod schema validation, guardrail profiles via LiteLLM proxy, and MCP server tools refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:30,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:18"
+  ],
+  "top_failures": [
+    "Missing explicit 'agentic AI' or 'multi-agent architecture' terminology despite JD emphasizing Agentic AI Squad refs=data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:12,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:17",
+    "Experience stated as 10+ years vs JD requirement of 12+ years (though timeline suggests ~12 years actual) refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8,data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:36",
+    "No explicit AML/Fraud/Banking domain experience which JD lists as nice-to-have refs=data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:39",
+    "Core Competencies section shows some framework-density that could be trimmed for cleaner ATS signal refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:17,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:18"
+  ],
+  "unsupported_claims": [
+    "'75% incident reduction' lacks explicit baseline or incident count context refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:34",
+    "'billions of daily events' in observability claim without throughput verification refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:36"
+  ],
+  "missing_must_haves": [],
+  "persona_fit_notes": [
+    "Headline mirrors JD title exactly (Engineering Manager for Agentic AI) - appropriate for architecture-led EM role refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:3,data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:1",
+    "Technical Lead title at current role aligns with player-coach persona; no executive inflation refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:25",
+    "Maintains hands-on delivery proof (built core search, caching, evaluation components personally) alongside team leadership refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27"
+  ],
+  "representation_gap_hits": [
+    "CV lacks explicit 'agentic' or 'multi-agent' keywords despite strong LLM platform evidence refs=cv:17,cv:30"
+  ],
+  "curation_gap_hits": [],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:3",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:10",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:12",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:17",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:18",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:25",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:28",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:30",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:33",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:34",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:36",
+    "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:37",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:1",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:12",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:36",
+    "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:39"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:08:42Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_ksa_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_ksa_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_ksa_baseline.json",
+    "cv_path": "data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md",
+    "jd_path": "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md"
+  }
+}

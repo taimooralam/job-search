@@ -1,0 +1,57 @@
+{
+  "$schema": "cv-eval-stage-scorecard/v0-placeholder",
+  "rubric_version": "2026-04-17",
+  "job_id": null,
+  "category_id": null,
+  "stage": null,
+  "expected_stage_dimensions": {
+    "pain_point_extraction": [
+      "coverage",
+      "specificity",
+      "grounding",
+      "prioritization"
+    ],
+    "jd_extraction": [
+      "accuracy",
+      "completeness",
+      "seniority_detection"
+    ],
+    "role_bullet_selection": [
+      "pain_point_coverage",
+      "achievement_relevance",
+      "aris_format_compliance",
+      "metric_grounding",
+      "keyword_integration"
+    ],
+    "header_generation": [
+      "headline_accuracy",
+      "tagline_evidence_first",
+      "achievement_diversity",
+      "competency_coverage"
+    ],
+    "competency_selection": [
+      "section_coverage",
+      "jd_keyword_match",
+      "whitelist_compliance",
+      "ats_density"
+    ],
+    "grading": [
+      "score_accuracy",
+      "improvement_effectiveness",
+      "hallucination_detection"
+    ],
+    "fit_analysis": [
+      "score_calibration",
+      "rationale_quality",
+      "gap_identification"
+    ]
+  },
+  "stage_scores": {},
+  "stage_verdict": null,
+  "bottleneck_contribution": null,
+  "specific_failures": [],
+  "improvement_suggestions": [],
+  "meta": {
+    "note": "Step 8b placeholder \u2014 stage-level scoring not yet implemented. Future scorer should populate stage_scores using expected_stage_dimensions."
+  }
+}

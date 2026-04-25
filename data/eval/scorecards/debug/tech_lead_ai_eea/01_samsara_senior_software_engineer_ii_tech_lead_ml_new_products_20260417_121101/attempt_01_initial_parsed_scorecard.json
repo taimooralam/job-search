@@ -1,0 +1,78 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "tech_lead_ai_eea",
+  "job_id": "6925a6c845fa3c355f83f8ec",
+  "dimension_scores": {
+    "ats_optimization": 3.5,
+    "impact_clarity": 7.5,
+    "jd_alignment": 4.5,
+    "executive_presence": 7.5,
+    "anti_hallucination": 8.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": false
+  },
+  "overall_score": 6.1,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong quantified impact metrics: 75% incident reduction, zero downtime for 3 years, 25% velocity improvement refs=cv:18,cv:19,cv:20",
+    "Solid player-coach evidence: mentored 10+ engineers with 3 promoted to lead positions refs=cv:22",
+    "Genuine backend architecture experience with microservices transformation and event-driven patterns refs=cv:18,cv:29,cv:39",
+    "Relevant IoT domain experience at OSRAM aligns with Samsara's IoT focus refs=cv:47,cv:50,jd:37"
+  ],
+  "top_failures": [
+    "Zero Python experience evidenced; CV shows .NET Core, Node.js, TypeScript only refs=cv:5,cv:9",
+    "No AI/ML experience whatsoever; JD explicitly requires ML-enabled products experience refs=jd:55,jd:70",
+    "Tech stack mismatch: JD mentions GoLang, GraphQL; CV lacks both refs=jd:49,cv:9",
+    "No mobile development evidence; JD requires full-stack including mobile refs=jd:48,cv:9"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [
+    "Python backend experience (70.7% category requirement) - CV uses .NET/Node.js exclusively refs=cv:5,cv:9",
+    "AI/LLM integration in production systems - completely absent from CV refs=cv:4,cv:6",
+    "ML-enabled products experience (JD minimum requirement) refs=jd:70"
+  ],
+  "persona_fit_notes": [
+    "CV fits general backend tech lead persona but lacks AI/backend combined positioning required for tech_lead_ai_eea category refs=cv:4,cv:5",
+    "Player-coach framing is appropriate but AI dimension entirely missing from the persona refs=cv:5,cv:22"
+  ],
+  "representation_gap_hits": [
+    "Python as primary language (68.3% hard skill in category) not represented refs=cv:9",
+    "OpenAI/HuggingFace/LLM integration (39%/37% in category) not represented refs=cv:9"
+  ],
+  "curation_gap_hits": [
+    "Profile headline emphasizes .NET Core when category requires Python/AI positioning refs=cv:5",
+    "Core Competencies missing any AI/ML or Python keywords refs=cv:7,cv:8,cv:9"
+  ],
+  "evidence_refs": [
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:4",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:5",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:6",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:7",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:8",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:9",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:18",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:19",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:20",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:22",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:29",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:39",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:47",
+    "outputs/KAIZEN_GAMING/cv_Software_Engineering_Team_Lead__Backend_.md:50",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:37",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:48",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:49",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:55",
+    "data/eval/raw/tech_lead_ai_eea/jd_texts/01_samsara_senior_software_engineer_ii_tech_lead_ml_new_products.md:70"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T12:00:00Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/tech_lead_ai_eea_rubric.json",
+    "blueprint_path": "data/eval/blueprints/tech_lead_ai_eea_blueprint.json",
+    "baseline_path": "data/eval/baselines/tech_lead_ai_eea_baseline.json"
+  }
+}

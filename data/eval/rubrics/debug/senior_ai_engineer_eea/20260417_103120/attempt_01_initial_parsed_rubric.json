@@ -1,0 +1,577 @@
+{
+  "meta": {
+    "category_id": "senior_ai_engineer_eea",
+    "category_name": "Senior AI Engineer \u2014 EEA",
+    "macro_family": "ai_engineering_adjacent",
+    "priority": "secondary_target",
+    "confidence": "low",
+    "rubric_version": "2026-04-17"
+  },
+  "rubric_identity": {
+    "one_sentence_purpose": "Evaluate CV fit for hands-on senior IC roles designing and shipping production RAG and agent systems into real products, with emphasis on platform architecture, evaluation discipline, and reliability over research pedigree or management scope.",
+    "core_persona": "Senior IC platform builder who architects and delivers production AI systems with measurable quality controls, collaborates across product and engineering teams without formal management authority, and proves delivery through shipped integrations rather than academic credentials.",
+    "job_overlay_notes": [
+      "Stack emphasis varies: Python-heavy roles (4/7) vs TypeScript/polyglot; adjust language prominence accordingly",
+      "Domain context matters: consulting (2/7) and enterprise SaaS (2/7) appear but are not dominant; avoid over-indexing on single industry",
+      "Cloud preference is sparse (AWS 1/7, GCP 1/7); do not assume cloud-native depth unless JD specifies",
+      "Framework mentions are niche: LangChain 2/7, LangGraph 1/7, LlamaIndex 1/7; only foreground if JD explicitly requires",
+      "EEA region does not impose strong compliance signals in this sample (GDPR only 1/7); do not assume data-residency expertise"
+    ],
+    "citations": [
+      "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+      "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+    ]
+  },
+  "dimension_rubrics": [
+    {
+      "dimension": "ats_optimization",
+      "weight": 20,
+      "category_core": {
+        "what_good_looks_like": [
+          "Headline uses Senior AI Engineer title family with production RAG/agent clause (senior_engineer 6/7)",
+          "Platform design, RAG, agent orchestration, and evaluation appear 2-3 times each across headline/profile/experience when evidenced",
+          "Python mentioned 2-3 times if true (4/7 signal); SQL as secondary mention 1-2 times if applicable",
+          "Reliability, production, delivery, and integration keywords distributed across experience bullets",
+          "No framework-led identity; LangChain/LangGraph/LlamaIndex mentioned only if central to shipped outcomes"
+        ],
+        "common_failures": [
+          "Headline uses management titles (Head of AI, Director) instead of IC title family",
+          "RAG/agent keywords stacked without delivery context or metrics",
+          "Framework names dominate over architecture and outcome language",
+          "Python or SQL mentioned once in skills section but not woven into experience bullets",
+          "Generic AI/ML buzzwords without category-specific signals (platform design, evaluation, reliability)"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD emphasizes specific framework (LangChain, LlamaIndex), increase that keyword to 2 mentions if evidenced",
+          "If JD specifies cloud platform (AWS, GCP), add 1-2 mentions in infrastructure context",
+          "If JD mentions specific evaluation methods (A/B, offline metrics), mirror that vocabulary"
+        ],
+        "company_domain_overrides": [
+          "Consulting domain: add workflow automation and client delivery language",
+          "Enterprise SaaS: emphasize product integration and internal platform stories",
+          "Media/content companies: surface content understanding or recommendation context if available"
+        ],
+        "region_overrides": [
+          "EEA roles may mention GDPR but only 1/7 require it; include only if directly evidenced",
+          "No native language requirements detected; English proficiency is sufficient unless JD specifies"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Headline matches Senior AI Engineer family with production RAG/agent/platform clause",
+          "All table-stakes keywords (platform design, RAG, agent orchestration, evaluation, reliability) appear with appropriate frequency",
+          "Python and SQL integrated into experience narratives, not just skills list",
+          "No keyword stuffing; each mention tied to concrete delivery context"
+        ],
+        "7_8": [
+          "Headline is IC-appropriate but missing production qualifier or slightly generic",
+          "Most table-stakes keywords present but 1-2 appear only once or are underweighted",
+          "Language skills mentioned but not fully woven into experience bullets",
+          "Minor keyword distribution issues but no major gaps"
+        ],
+        "5_6": [
+          "Headline uses acceptable title but lacks category-specific positioning (e.g., just 'Senior Software Engineer')",
+          "RAG or agent orchestration keywords missing or appear without delivery context",
+          "Evaluation and reliability signals weak or absent",
+          "Framework names overweighted relative to platform architecture language"
+        ],
+        "0_4": [
+          "Headline uses management or executive title (Head of AI, Director, CTO)",
+          "Core signals (platform design, RAG, evaluation) absent or mentioned once without context",
+          "CV reads as generic ML/AI without category-specific positioning",
+          "Heavy research or academic framing instead of applied delivery language"
+        ]
+      },
+      "red_flags": [
+        "Head of AI, AI Director, CTO, or VP in headline without explicit player-coach evidence",
+        "Tech Lead title without player-coach scope demonstration",
+        "Framework names (LangChain, LangGraph) as headline identity rather than delivery support",
+        "GenAI buzzword stacking without architectural or outcome context",
+        "Research Scientist or ML Scientist framing for an applied IC category"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "impact_clarity",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Achievement bullets follow STAR/ARIS format with measurable production outcomes",
+          "Metrics include: users served, latency/throughput improvements, quality metrics (MRR, NDCG), incident reduction, adoption rates",
+          "Each RAG/agent claim backed by specific architecture choices and measurable results",
+          "Evaluation harness evidence includes test coverage or quality-gate metrics",
+          "Reliability evidence shows uptime, incident reduction, or failure-handling outcomes"
+        ],
+        "common_failures": [
+          "Responsibility statements without measurable outcomes ('responsible for AI platform')",
+          "Vague scale claims without numbers ('large-scale AI system')",
+          "Missing before/after framing for improvements",
+          "Evaluation mentioned but no quality metrics or test evidence",
+          "Reliability claims without operational proof (uptime, incident rates)"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD emphasizes cost optimization, foreground cost/latency reduction metrics",
+          "If JD mentions developer productivity, include team enablement or adoption metrics",
+          "If JD specifies scale requirements, ensure throughput/concurrency numbers are prominent"
+        ],
+        "company_domain_overrides": [
+          "B2B/enterprise context: emphasize client-facing reliability and SLA metrics",
+          "Internal platform context: emphasize team adoption and self-service rates",
+          "Product-integrated AI: emphasize user-facing quality and task-completion metrics"
+        ],
+        "region_overrides": [
+          "EEA context may value compliance-related metrics if GDPR relevant; otherwise standard production metrics apply"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every major achievement includes specific metrics (users, latency percentiles, quality scores, incident rates)",
+          "STAR/ARIS format clearly shows situation, action, and measurable result",
+          "Platform design claims backed by scale numbers (users, integrations, throughput)",
+          "Evaluation evidence includes specific metrics (MRR@k, NDCG@k, pass rates) with methodology clarity"
+        ],
+        "7_8": [
+          "Most achievements include metrics but 1-2 bullets lack quantification",
+          "STAR format present but result section could be more specific",
+          "Platform scale mentioned but numbers are approximate or contextual",
+          "Evaluation mentioned with some metrics but methodology less clear"
+        ],
+        "5_6": [
+          "Metrics present in some bullets but majority are responsibility statements",
+          "Scale claims vague ('thousands of users' without specifics)",
+          "Evaluation mentioned but no concrete quality metrics",
+          "Reliability claims lack operational proof"
+        ],
+        "0_4": [
+          "No measurable outcomes; purely responsibility-based bullets",
+          "Vague claims throughout ('improved performance', 'enhanced quality')",
+          "No evidence of production scale, evaluation, or reliability measurement",
+          "Impact entirely implied rather than demonstrated"
+        ]
+      },
+      "red_flags": [
+        "Round numbers without context suggesting fabrication (exactly 50% improvement, 10x scale)",
+        "Metrics that cannot be verified (company-wide revenue impact without role clarity)",
+        "Evaluation claims without any methodology or metric specifics",
+        "Platform claims without user/integration/throughput numbers",
+        "Reliability claims without incident, uptime, or SLA evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json",
+        "data/master-cv/projects/commander4.md:7"
+      ]
+    },
+    {
+      "dimension": "jd_alignment",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Platform design evidence directly addresses category's 100% signal (7/7 roles)",
+          "RAG implementation details match 71.4% category prevalence with retrieval architecture specifics",
+          "Agent orchestration evidence shows workflow automation, not just 'agent' buzzword",
+          "Evaluation and quality measurement evidence addresses 57.1% explicit mention and 6/7 deep-analysis value",
+          "Collaboration evidence shows cross-functional IC work without management claims"
+        ],
+        "common_failures": [
+          "Generic AI experience without platform design evidence",
+          "RAG mentioned without retrieval architecture, corpus handling, or grounding strategy",
+          "Agent claims without orchestration logic, state handling, or workflow outcomes",
+          "Missing evaluation or quality measurement evidence entirely",
+          "Leadership framing that implies management scope (hiring, org-building)"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD emphasizes specific retrieval tech (vector DB, embeddings), ensure matching evidence is prominent",
+          "If JD mentions specific agent patterns (multi-agent, tool-calling), mirror that architecture language",
+          "If JD specifies greenfield vs optimization scope, align project framing accordingly"
+        ],
+        "company_domain_overrides": [
+          "Internal platform focus: emphasize reusable tooling and developer enablement",
+          "Product-integrated focus: emphasize user-facing AI features and product collaboration",
+          "Data-heavy domain: surface SQL, data pipeline, and analytics integration if available"
+        ],
+        "region_overrides": [
+          "EEA-specific compliance rarely dominant (GDPR 1/7); do not assume unless JD specifies",
+          "Remote-friendly roles may emphasize async collaboration; surface distributed team evidence if available"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "All table-stakes signals (platform design, RAG, agent orchestration, evaluation, reliability) directly evidenced",
+          "Differentiator signals (vector search, embeddings, cost control) present where applicable",
+          "IC scope clearly demonstrated without management inflation",
+          "Collaboration and cross-functional evidence supports senior IC positioning"
+        ],
+        "7_8": [
+          "Table-stakes signals mostly covered but one area weaker (e.g., evaluation less detailed)",
+          "IC scope clear but collaboration evidence could be more explicit",
+          "Platform design or RAG evidence strong but agent orchestration less prominent",
+          "Minor gaps in differentiator signals"
+        ],
+        "5_6": [
+          "Platform design evidence present but RAG or agent orchestration weak",
+          "Evaluation mentioned but not substantiated with quality metrics or methodology",
+          "IC scope unclear; some bullets suggest management without explicit evidence",
+          "Key differentiators (vector search, cost control) missing entirely"
+        ],
+        "0_4": [
+          "Core signals (platform design, RAG, evaluation) missing or unsubstantiated",
+          "Management framing dominant despite IC category requirements",
+          "Research or academic positioning instead of applied delivery",
+          "Generic ML/AI CV without category-specific alignment"
+        ]
+      },
+      "red_flags": [
+        "Hiring, org-building, or budget ownership claims (all 0/7 in category)",
+        "Player-coach framing without explicit evidence (only 1/7 in category)",
+        "Research-heavy or PhD-led positioning (research_heavy 0/7, requires_phd 0/7)",
+        "Fine-tuning or custom embedding training claims without evidence (fine_tuning 1/7)",
+        "Company-wide AI ownership claims beyond actual scope"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "executive_presence",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "Senior IC authority demonstrated through architectural decision ownership and technical judgment",
+          "Cross-team influence shown through collaboration evidence, not org-building claims",
+          "Technical depth positions candidate as domain expert consulted by others",
+          "Communication evidence shows stakeholder translation without management vocabulary",
+          "Scale of impact demonstrates senior IC scope (platform serving users, integrations, teams)"
+        ],
+        "common_failures": [
+          "Management framing (led team of X, built org, hired engineers) for pure IC category",
+          "Player-coach claims without explicit evidence (player_coach only 1/7)",
+          "Executive vocabulary (strategic, visionary, org builder) misaligned with IC scope",
+          "Vague influence claims without concrete technical authority examples",
+          "Missing collaboration evidence that would prove cross-functional IC impact"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD mentions tech lead scope, look for player-coach evidence but do not assume it",
+          "If JD emphasizes mentorship, allow technical guidance framing but not formal management",
+          "If JD specifies staff-level scope, emphasize architectural influence over team size"
+        ],
+        "company_domain_overrides": [
+          "Startup context: IC authority may include broader scope; still avoid management claims without evidence",
+          "Enterprise context: emphasize navigating complex stakeholder environments",
+          "Consulting context: emphasize client-facing technical authority"
+        ],
+        "region_overrides": [
+          "EEA context does not change IC vs management framing; standard senior IC authority applies"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Architectural authority clearly demonstrated through design decisions and technical ownership",
+          "Cross-team influence proven through shipped integrations and collaboration outcomes",
+          "Domain expertise consultation by others explicitly evidenced",
+          "No management inflation; all authority claims supported by IC-scope evidence"
+        ],
+        "7_8": [
+          "Technical authority evident but cross-team influence less explicitly demonstrated",
+          "Architectural ownership claimed but fewer concrete examples of judgment calls",
+          "Collaboration mentioned but could be more prominently positioned",
+          "Minor ambiguity in IC vs management scope"
+        ],
+        "5_6": [
+          "Technical depth present but authority claims vague",
+          "Cross-functional work mentioned without clear influence evidence",
+          "Some management vocabulary creeping in without supporting evidence",
+          "Senior IC positioning unclear"
+        ],
+        "0_4": [
+          "Management framing dominant (hiring, org-building, team leadership)",
+          "No technical authority evidence; presence claims unsubstantiated",
+          "Executive vocabulary misaligned with IC category requirements",
+          "Player-coach or management scope claimed without any evidence"
+        ]
+      },
+      "red_flags": [
+        "Hiring or performance management claims (hiring 0/7, performance_management 0/7)",
+        "Org-building or budget/P&L ownership claims (org_building 0/7, budget_pnl 0/7)",
+        "Head of AI, Director, VP, or CTO positioning for pure IC roles",
+        "Tech Lead title without demonstrated player-coach evidence (player_coach 1/7)",
+        "Strategic, visionary, or thought leader vocabulary",
+        "Unsupported people-management framing of any kind"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ]
+    },
+    {
+      "dimension": "anti_hallucination",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "All metrics traceable to specific projects with verifiable context",
+          "Titles match actual positions held; no inflation to architect/principal without evidence",
+          "Claims bounded to actual scope (team vs company-wide, product vs platform)",
+          "Technical capabilities claimed only where implementation evidence exists",
+          "No research/PhD positioning for applied delivery category"
+        ],
+        "common_failures": [
+          "Unsourced metrics (revenue impact, user numbers without project context)",
+          "Title inflation (claiming Senior AI Engineer when actual title was different)",
+          "Scope inflation (claiming company-wide impact for team-level work)",
+          "Capability claims without implementation evidence (fine-tuning, model serving)",
+          "Framework mastery claims for tools used peripherally"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "If JD requires specific stack depth, verify claims against actual implementation evidence",
+          "If JD specifies scale requirements, ensure metrics are verifiable and scoped correctly",
+          "If JD mentions compliance (GDPR), only claim if directly evidenced"
+        ],
+        "company_domain_overrides": [
+          "Enterprise context: verify claims about internal vs customer-facing scope",
+          "Startup context: be especially careful about company-wide claims in small orgs",
+          "Consulting context: verify client vs internal work framing"
+        ],
+        "region_overrides": [
+          "EEA compliance claims (GDPR) only valid if directly evidenced (GDPR 1/7 in category)"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "All metrics tied to specific, verifiable projects",
+          "Titles exactly match positions held",
+          "Scope claims bounded appropriately (no company-wide claims for team work)",
+          "Technical capabilities fully supported by implementation evidence",
+          "No unsupported claims from unsafe_or_weak_framing list"
+        ],
+        "7_8": [
+          "Metrics mostly verifiable with minor ambiguity in 1-2 cases",
+          "Titles accurate but presentation could be clearer",
+          "Scope generally appropriate with minor inflation risk",
+          "Technical claims supported but depth not fully demonstrated"
+        ],
+        "5_6": [
+          "Some metrics lack clear project attribution",
+          "Title framing slightly inflated but not fabricated",
+          "Scope claims occasionally exceed demonstrated evidence",
+          "1-2 technical claims not fully supported by implementation details"
+        ],
+        "0_4": [
+          "Unsourced metrics throughout",
+          "Fabricated or significantly inflated titles",
+          "Company-wide claims for narrow-scope work",
+          "Technical capabilities claimed without any implementation evidence",
+          "Multiple claims from unsafe_or_weak_framing list"
+        ]
+      },
+      "red_flags": [
+        "Fine-tuning or custom embedding training claims without evidence (fine_tuning 1/7)",
+        "Model serving infrastructure claims (model_serving_routing 0/7)",
+        "GDPR program ownership without direct evidence (GDPR 1/7)",
+        "Claude, MCP-server agents, vLLM/TGI, FAISS/OpenSearch at scale claims without evidence",
+        "PhD or publication-driven scientist positioning (requires_phd 0/7, research_heavy 0/7)",
+        "Hiring leadership or org-building claims (all 0/7)",
+        "Company-wide AI infrastructure ownership without scoped evidence",
+        "Round numbers suggesting fabrication (exactly 50%, 10x, 100%)",
+        "Tech Lead claims without player-coach demonstration (player_coach 1/7)"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json",
+        "data/master-cv/projects/commander4_skills.json:42"
+      ]
+    }
+  ],
+  "gates": {
+    "must_have_coverage_gate": {
+      "pass_criteria": [
+        "Platform design evidence present (7/7 category signal)",
+        "At least one of RAG (5/7) or agent orchestration (5/7) substantiated with architecture details",
+        "Senior IC scope clearly demonstrated without management inflation",
+        "Production delivery evidence with measurable outcomes",
+        "Evaluation or quality measurement evidence present (4/7 explicit, 6/7 valued)"
+      ],
+      "fail_conditions": [
+        "No platform design or system architecture evidence",
+        "Neither RAG nor agent orchestration substantiated",
+        "Management framing dominates despite IC category requirements",
+        "No production delivery evidence; purely conceptual or research framing",
+        "Evaluation and reliability evidence entirely absent"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json"
+      ]
+    },
+    "unsafe_claim_gate": {
+      "pass_criteria": [
+        "No hiring, org-building, or budget ownership claims (all 0/7)",
+        "No fine-tuning claims without implementation evidence (1/7)",
+        "No GDPR program ownership without direct proof (1/7)",
+        "No research/PhD positioning for applied category (0/7)",
+        "All metrics traceable to specific projects",
+        "Titles match actual positions held"
+      ],
+      "fail_conditions": [
+        "Hiring or performance management claims present",
+        "Fine-tuning, RLHF, or custom embedding training claimed without evidence",
+        "GDPR ownership claimed beyond actual scope",
+        "Research scientist or publication-led positioning",
+        "Unsourced or fabricated metrics",
+        "Inflated titles (Head of AI, Director, CTO for IC roles)",
+        "Company-wide AI infrastructure ownership without scoped evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ]
+    },
+    "persona_fit_gate": {
+      "pass_criteria": [
+        "Presents as hands-on senior IC, not manager or executive",
+        "Technical depth demonstrated through architecture and implementation details",
+        "Collaboration framed as IC contribution, not org leadership",
+        "Applied delivery orientation, not research or academic framing",
+        "Cross-functional influence shown without people-management vocabulary"
+      ],
+      "fail_conditions": [
+        "Manager or executive persona presentation",
+        "Player-coach claims without supporting evidence (player_coach 1/7)",
+        "Research scientist or academic positioning",
+        "Strategic or visionary vocabulary misaligned with IC scope",
+        "Org-builder or team-builder identity claims"
+      ],
+      "citations": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ]
+    }
+  },
+  "verdict_thresholds": {
+    "strong_match_min": 8.5,
+    "good_match_min": 7.0,
+    "needs_work_min": 5.5,
+    "weak_match_max": 5.49
+  },
+  "scoring_guidance": {
+    "how_to_interpret_executive_presence": "For this senior IC category, executive_presence measures architectural authority, technical judgment, and cross-team influence WITHOUT formal management. High scores require demonstrated design ownership and collaboration outcomes. Penalize any management/hiring/org-building framing as persona mismatch since hiring 0/7, org_building 0/7, and player_coach is only 1/7.",
+    "how_to_penalize_unsupported_claims": "Apply multiplicative penalty: each unsupported claim from the red_flags list reduces the dimension score by 1-2 points. Multiple unsupported claims should trigger unsafe_claim_gate failure. Specific high-risk claims (fine-tuning without evidence, fabricated titles, unsourced metrics) warrant immediate gate failure regardless of other dimension scores.",
+    "how_to_handle_category_vs_job_tradeoffs": "Category signals take precedence for table-stakes (platform design 7/7, senior_ic 7/7). Job-specific requirements can elevate differentiators (vector search, cost control, specific frameworks) but cannot override category fundamentals. If JD requests management scope but category is pure IC, flag the mismatch rather than rewarding management framing.",
+    "citations": [
+      "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+      "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+    ]
+  },
+  "scorecard_template_mapping": {
+    "dimension_keys": [
+      "ats_optimization",
+      "impact_clarity",
+      "jd_alignment",
+      "executive_presence",
+      "anti_hallucination"
+    ],
+    "gate_keys": [
+      "must_have_coverage_gate",
+      "unsafe_claim_gate",
+      "persona_fit_gate"
+    ],
+    "required_output_fields": [
+      "overall_score",
+      "verdict",
+      "top_strengths",
+      "top_failures",
+      "unsupported_claims",
+      "missing_must_haves"
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "rubric_rule": "Platform design is universal table-stakes signal requiring 2-3 keyword mentions and architectural evidence",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "RAG and agent orchestration each appear in 5/7 roles (71.4%); require architecture details not just buzzwords",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Senior IC scope is universal (7/7); management claims (hiring, org-building) are 0/7 and trigger gate failure",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Evaluation quality signals valued in 6/7 deep analyses; require metrics like MRR, NDCG, or quality-gate pass rates",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/master-cv/projects/commander4.md:7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Fine-tuning claims require direct evidence (only 1/7 in category); absence does not harm score",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/master-cv/projects/commander4_skills.json:42"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Player-coach framing is risky (only 1/7); Tech Lead title requires explicit player-coach evidence",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Python is most common language at 4/7 (57.1%); 2-3 mentions appropriate when evidenced but not universal requirement",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "rubric_rule": "Framework mentions (LangChain 2/7, LangGraph 1/7, LlamaIndex 1/7) are niche; should support delivery story not define identity",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "rubric_rule": "Reliability is valued in 7/7 deep analyses; operational evidence (uptime, incidents, SLA) strengthens production credibility",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json",
+        "data/eval/baselines/senior_ai_engineer_eea_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Research/PhD positioning is unsafe (requires_phd 0/7, research_heavy 0/7); applied delivery framing required",
+      "support": [
+        "data/eval/blueprints/senior_ai_engineer_eea_blueprint.json"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

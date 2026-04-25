@@ -1,0 +1,47 @@
+{
+  "batch_id": "step11_variance_batch_v1_generated",
+  "description": "Step 11 variance: 2nd JD for 4 key categories (trimmed). Run root data/eval/generated_cvs/step11_variance_lite_20260417_234432.",
+  "run_root": "data/eval/generated_cvs/step11_variance_lite_20260417_234432",
+  "pairs": [
+    {
+      "category_id": "ai_architect_global",
+      "job_id": "698dee577d41dc1e8a624f16",
+      "jd_path": "data/eval/raw/ai_architect_global/jd_texts/04_softserve_mlllm_technical_architect.md",
+      "cv_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/ai_architect_global/04_softserve_mlllm_technical_architect__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "output_subdir": "variance_v1/ai_architect_global",
+      "selection_notes": "B1 variance \u2014 2nd JD for ai_architect_global",
+      "generation_notes": "exit=0; capture=log_parse; elapsed_s=619.1; sha=2bf4713e7e2e54bf"
+    },
+    {
+      "category_id": "head_of_ai_global",
+      "job_id": "6941566fba31ffd053ff5d56",
+      "jd_path": "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md",
+      "cv_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "output_subdir": "variance_v1/head_of_ai_global",
+      "selection_notes": "B1 variance \u2014 2nd JD for head_of_ai_global",
+      "generation_notes": "exit=0; capture=log_parse; elapsed_s=753.5; sha=12b35a0900953774"
+    },
+    {
+      "category_id": "tech_lead_ai_eea",
+      "job_id": "6929ad6245fa3c355f84b65a",
+      "jd_path": "data/eval/raw/tech_lead_ai_eea/jd_texts/03_zyte_core_ml_ops_team_lead_remote.md",
+      "cv_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/tech_lead_ai_eea/03_zyte_core_ml_ops_team_lead_remote__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "output_subdir": "variance_v1/tech_lead_ai_eea",
+      "selection_notes": "B1 variance \u2014 2nd JD for tech_lead_ai_eea",
+      "generation_notes": "exit=0; capture=log_parse; elapsed_s=685.7; sha=3ceec8f69bc17e09"
+    },
+    {
+      "category_id": "staff_ai_engineer_global",
+      "job_id": "694e696d6dd552ab7ec2caf7",
+      "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/03_relativity_staff_ai_software_engineer.md",
+      "cv_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/staff_ai_engineer_global/03_relativity_staff_ai_software_engineer__generated.md",
+      "cv_source": "generated_for_target_jd_snapshot",
+      "output_subdir": "variance_v1/staff_ai_engineer_global",
+      "selection_notes": "B1 variance \u2014 2nd JD for staff_ai_engineer_global",
+      "generation_notes": "exit=0; capture=log_parse; elapsed_s=517.6; sha=c07c5d06b53c6362"
+    }
+  ]
+}

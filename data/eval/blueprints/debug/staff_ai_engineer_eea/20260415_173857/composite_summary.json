@@ -1,0 +1,551 @@
+{
+  "signal_strength": {
+    "applied_count": 0,
+    "avg_score": 39.6,
+    "median_score": 49,
+    "score_range": [
+      0,
+      94
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "staff_engineer": 20,
+      "principal_engineer": 13,
+      "senior_engineer": 1
+    },
+    "top_title_variants": {
+      "Principal AI Engineer": 1,
+      "Principal AI/ML Engineer": 1,
+      "Senior Staff Machine Learning Engineer \u2013 GenAI": 1,
+      "Staff AI Engineer": 1,
+      "Staff ML Engineer, Dynamic World Perception": 1,
+      "Staff Software Engineer (Platform - GenAI)": 1,
+      "Staff Software Engineer - Applied AI": 1,
+      "Staff Software Engineer, Conversion ML": 1
+    },
+    "noisy_title_mode": false
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 34
+    },
+    "role_scope_distribution": {
+      "ic": 19,
+      "player_coach": 15
+    },
+    "management_signals_weak": false
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 3,
+      "total": 34,
+      "pct": 8.8
+    },
+    "performance_management": {
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    "org_building": {
+      "count": 8,
+      "total": 34,
+      "pct": 23.5
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 34,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 100.0,
+    "greenfield_split": {
+      "both": 28,
+      "greenfield": 1,
+      "optimization": 1
+    },
+    "cloud_preference": {
+      "multi_cloud": 6,
+      "AWS": 3,
+      "Azure": 1
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 11,
+      "total": 34,
+      "pct": 32.4
+    },
+    {
+      "label": "aws",
+      "count": 7,
+      "total": 34,
+      "pct": 20.6
+    },
+    {
+      "label": "pytorch",
+      "count": 6,
+      "total": 34,
+      "pct": 17.6
+    },
+    {
+      "label": "llms",
+      "count": 5,
+      "total": 34,
+      "pct": 14.7
+    },
+    {
+      "label": "rag",
+      "count": 5,
+      "total": 34,
+      "pct": 14.7
+    },
+    {
+      "label": "azure",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "ci / cd pipelines",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "distributed systems",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "kubernetes",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "microservices",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "monitoring",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "postgresql",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "prompt engineering",
+      "count": 4,
+      "total": 34,
+      "pct": 11.8
+    },
+    {
+      "label": "agentic workflows",
+      "count": 3,
+      "total": 34,
+      "pct": 8.8
+    },
+    {
+      "label": "apis",
+      "count": 3,
+      "total": 34,
+      "pct": 8.8
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 29,
+      "total": 34,
+      "pct": 85.3
+    },
+    {
+      "label": "communication",
+      "count": 23,
+      "total": 34,
+      "pct": 67.6
+    },
+    {
+      "label": "mentoring",
+      "count": 20,
+      "total": 34,
+      "pct": 58.8
+    },
+    {
+      "label": "leadership",
+      "count": 14,
+      "total": 34,
+      "pct": 41.2
+    },
+    {
+      "label": "stakeholder management",
+      "count": 9,
+      "total": 34,
+      "pct": 26.5
+    },
+    {
+      "label": "cross-functional collaboration",
+      "count": 8,
+      "total": 34,
+      "pct": 23.5
+    },
+    {
+      "label": "mentorship",
+      "count": 3,
+      "total": 34,
+      "pct": 8.8
+    },
+    {
+      "label": "presentation",
+      "count": 3,
+      "total": 34,
+      "pct": 8.8
+    },
+    {
+      "label": "teaching",
+      "count": 3,
+      "total": 34,
+      "pct": 8.8
+    },
+    {
+      "label": "consensus building",
+      "count": 2,
+      "total": 34,
+      "pct": 5.9
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 12,
+        "total": 34,
+        "pct": 35.3
+      },
+      {
+        "label": "golang",
+        "count": 3,
+        "total": 34,
+        "pct": 8.8
+      },
+      {
+        "label": "typescript",
+        "count": 3,
+        "total": 34,
+        "pct": 8.8
+      },
+      {
+        "label": "java",
+        "count": 2,
+        "total": 34,
+        "pct": 5.9
+      },
+      {
+        "label": "c#",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "c++",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      }
+    ],
+    "preferred": [
+      {
+        "label": "python",
+        "count": 3,
+        "total": 34,
+        "pct": 8.8
+      },
+      {
+        "label": "c++",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "golang",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "kotlin",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "objective-c",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "swift",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 10,
+        "total": 34,
+        "pct": 29.4
+      },
+      "agents_orchestration": {
+        "count": 9,
+        "total": 34,
+        "pct": 26.5
+      },
+      "fine_tuning": {
+        "count": 4,
+        "total": 34,
+        "pct": 11.8
+      },
+      "evaluation_quality": {
+        "count": 15,
+        "total": 34,
+        "pct": 44.1
+      },
+      "guardrails_governance": {
+        "count": 5,
+        "total": 34,
+        "pct": 14.7
+      },
+      "prompt_engineering": {
+        "count": 8,
+        "total": 34,
+        "pct": 23.5
+      },
+      "vector_search": {
+        "count": 6,
+        "total": 34,
+        "pct": 17.6
+      },
+      "model_serving_routing": {
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      }
+    },
+    "frameworks": [
+      {
+        "label": "pytorch",
+        "count": 6,
+        "total": 34,
+        "pct": 17.6
+      },
+      {
+        "label": "langchain",
+        "count": 4,
+        "total": 34,
+        "pct": 11.8
+      },
+      {
+        "label": "airflow",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "deepspeech",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "espnet",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "hugging face transformers",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "huggingface transformers",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "kaldi",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "langgraph",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "llamaindex",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      }
+    ],
+    "observability": [
+      {
+        "label": "grafana",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "loki",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "open telemetry",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "prometheus",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      },
+      {
+        "label": "tempo",
+        "count": 1,
+        "total": 34,
+        "pct": 2.9
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "classification",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "compliance",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "fairness",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "licensing",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "reliability",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "responsible ai standards and protocols",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "rights",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    },
+    {
+      "label": "security",
+      "count": 1,
+      "total": 34,
+      "pct": 2.9
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "make search and recommendation systems more relevant across reddit's large corpus of human conversation",
+      "count": 1
+    },
+    {
+      "pain_point": "move models into production search experiences with robust data flows, ranking, retrieval, and serving apis",
+      "count": 1
+    },
+    {
+      "pain_point": "build reusable ml infrastructure that supports training, deployment, and iteration",
+      "count": 1
+    },
+    {
+      "pain_point": "keep systems maintainable, scalable, and low latency at very large user scale",
+      "count": 1
+    },
+    {
+      "pain_point": "build scalable ml solutions for adtech use cases",
+      "count": 1
+    },
+    {
+      "pain_point": "integrate ai/ml into the demand-side platform and ad tech stack",
+      "count": 1
+    },
+    {
+      "pain_point": "run real-time bidding, targeting, and optimization under low-latency, high-throughput constraints",
+      "count": 1
+    },
+    {
+      "pain_point": "use llms and agents to automate campaign operations and creative generation",
+      "count": 1
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "fintech": 3,
+      "healthcare": 3,
+      "consulting": 2,
+      "enterprise_saas": 2
+    },
+    "company_stage": {
+      "enterprise": 6,
+      "consultancy": 2,
+      "scaleup": 2
+    },
+    "collaboration_model": {
+      "remote_first": 11,
+      "distributed": 5,
+      "hybrid": 3
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 2.9,
+    "research_heavy_pct": 2.9
+  }
+}

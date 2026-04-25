@@ -1,0 +1,1054 @@
+{
+  "category_id": "ai_architect_global",
+  "category_name": "AI Architect \u2014 Global/Remote",
+  "macro_family": "ai_architect",
+  "priority": "primary_target",
+  "confidence": "high",
+  "total_jobs": 88,
+  "deep_analysis_count": 20,
+  "tier_breakdown": {
+    "B": 13,
+    "C": 72,
+    "D": 2
+  },
+  "signal_strength": {
+    "applied_count": 13,
+    "avg_score": 86.9,
+    "median_score": 85,
+    "score_range": [
+      42,
+      92
+    ]
+  },
+  "title_variants": {
+    "AI Solution Architect": 14,
+    "Azure AI Architect": 3,
+    "Generative AI Solution Architect": 3,
+    "AI Software Architect": 2,
+    "Senior Solution Architect": 2,
+    "GenAI / Agentic AI Solution Architect": 2,
+    "Software Architect": 1,
+    "Sovereign AI Enterprise Architect": 1,
+    "Senior AI Solution Architect / Developer": 1,
+    "ML/LLM Technical Architect": 1
+  },
+  "title_families": {
+    "solutions_architect": 50,
+    "ai_architect": 37,
+    "tech_lead": 1
+  },
+  "seniority_distribution": {
+    "senior_ic": 79,
+    "senior_manager": 3,
+    "mid_ic": 2,
+    "manager": 1
+  },
+  "role_scope_distribution": {
+    "player_coach": 38,
+    "ic": 49,
+    "manager": 1
+  },
+  "hard_skills": [
+    {
+      "skill": "Python",
+      "count": 29,
+      "total": 88,
+      "pct": 33.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "vector databases",
+      "count": 21,
+      "total": 88,
+      "pct": 23.9,
+      "band": "differentiator"
+    },
+    {
+      "skill": "MLOps",
+      "count": 17,
+      "total": 88,
+      "pct": 19.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 16,
+      "total": 88,
+      "pct": 18.2,
+      "band": "differentiator"
+    },
+    {
+      "skill": "data pipelines",
+      "count": 15,
+      "total": 88,
+      "pct": 17.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "LangChain",
+      "count": 15,
+      "total": 88,
+      "pct": 17.0,
+      "band": "differentiator"
+    },
+    {
+      "skill": "AWS",
+      "count": 14,
+      "total": 88,
+      "pct": 15.9,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Azure",
+      "count": 14,
+      "total": 88,
+      "pct": 15.9,
+      "band": "differentiator"
+    },
+    {
+      "skill": "LLMs",
+      "count": 12,
+      "total": 88,
+      "pct": 13.6,
+      "band": "rare"
+    },
+    {
+      "skill": "microservices",
+      "count": 12,
+      "total": 88,
+      "pct": 13.6,
+      "band": "rare"
+    },
+    {
+      "skill": "Generative AI",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5,
+      "band": "rare"
+    },
+    {
+      "skill": "solution architecture",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5,
+      "band": "rare"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5,
+      "band": "rare"
+    },
+    {
+      "skill": "prompt engineering",
+      "count": 11,
+      "total": 88,
+      "pct": 12.5,
+      "band": "rare"
+    },
+    {
+      "skill": "APIs",
+      "count": 10,
+      "total": 88,
+      "pct": 11.4,
+      "band": "rare"
+    },
+    {
+      "skill": "Docker",
+      "count": 10,
+      "total": 88,
+      "pct": 11.4,
+      "band": "rare"
+    },
+    {
+      "skill": "RAG",
+      "count": 10,
+      "total": 88,
+      "pct": 11.4,
+      "band": "rare"
+    },
+    {
+      "skill": "PyTorch",
+      "count": 9,
+      "total": 88,
+      "pct": 10.2,
+      "band": "rare"
+    },
+    {
+      "skill": "security",
+      "count": 9,
+      "total": 88,
+      "pct": 10.2,
+      "band": "rare"
+    },
+    {
+      "skill": "data governance",
+      "count": 9,
+      "total": 88,
+      "pct": 10.2,
+      "band": "rare"
+    },
+    {
+      "skill": "Terraform",
+      "count": 9,
+      "total": 88,
+      "pct": 10.2,
+      "band": "rare"
+    },
+    {
+      "skill": "distributed systems",
+      "count": 8,
+      "total": 88,
+      "pct": 9.1,
+      "band": "rare"
+    },
+    {
+      "skill": "Databricks",
+      "count": 8,
+      "total": 88,
+      "pct": 9.1,
+      "band": "rare"
+    },
+    {
+      "skill": "TensorFlow",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "SQL",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "RAG pipelines",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "API design",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "observability",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "GCP",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "orchestration frameworks",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    }
+  ],
+  "soft_skills": [
+    {
+      "skill": "communication",
+      "count": 67,
+      "total": 88,
+      "pct": 76.1,
+      "band": "must_have"
+    },
+    {
+      "skill": "collaboration",
+      "count": 56,
+      "total": 88,
+      "pct": 63.6,
+      "band": "must_have"
+    },
+    {
+      "skill": "stakeholder_management",
+      "count": 33,
+      "total": 88,
+      "pct": 37.5,
+      "band": "common"
+    },
+    {
+      "skill": "leadership",
+      "count": 21,
+      "total": 88,
+      "pct": 23.9,
+      "band": "differentiator"
+    },
+    {
+      "skill": "mentoring",
+      "count": 18,
+      "total": 88,
+      "pct": 20.5,
+      "band": "differentiator"
+    },
+    {
+      "skill": "problem-solving",
+      "count": 7,
+      "total": 88,
+      "pct": 8.0,
+      "band": "rare"
+    },
+    {
+      "skill": "stakeholder management",
+      "count": 6,
+      "total": 88,
+      "pct": 6.8,
+      "band": "rare"
+    },
+    {
+      "skill": "presentation",
+      "count": 6,
+      "total": 88,
+      "pct": 6.8,
+      "band": "rare"
+    },
+    {
+      "skill": "mentorship",
+      "count": 5,
+      "total": 88,
+      "pct": 5.7,
+      "band": "rare"
+    },
+    {
+      "skill": "documentation",
+      "count": 5,
+      "total": 88,
+      "pct": 5.7,
+      "band": "rare"
+    },
+    {
+      "skill": "problem_solving",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "technical leadership",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "cross-functional collaboration",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "coordination",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "knowledge_sharing",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "skill": "Python",
+        "count": 31,
+        "total": 88,
+        "pct": 35.2,
+        "band": "common"
+      },
+      {
+        "skill": "C#",
+        "count": 5,
+        "total": 88,
+        "pct": 5.7,
+        "band": "rare"
+      },
+      {
+        "skill": "C++",
+        "count": 5,
+        "total": 88,
+        "pct": 5.7,
+        "band": "rare"
+      },
+      {
+        "skill": "Java",
+        "count": 5,
+        "total": 88,
+        "pct": 5.7,
+        "band": "rare"
+      },
+      {
+        "skill": "TypeScript",
+        "count": 4,
+        "total": 88,
+        "pct": 4.5,
+        "band": "rare"
+      },
+      {
+        "skill": "SQL",
+        "count": 4,
+        "total": 88,
+        "pct": 4.5,
+        "band": "rare"
+      },
+      {
+        "skill": "Node.js",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "JavaScript",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "CUDA",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "Rust",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      }
+    ],
+    "preferred": [
+      {
+        "skill": "R",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "CUDA",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      }
+    ]
+  },
+  "infrastructure": [
+    {
+      "skill": "microservices",
+      "count": 17,
+      "total": 88,
+      "pct": 19.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "Kubernetes",
+      "count": 16,
+      "total": 88,
+      "pct": 18.2,
+      "band": "differentiator"
+    },
+    {
+      "skill": "CI/CD",
+      "count": 13,
+      "total": 88,
+      "pct": 14.8,
+      "band": "rare"
+    },
+    {
+      "skill": "Docker",
+      "count": 12,
+      "total": 88,
+      "pct": 13.6,
+      "band": "rare"
+    },
+    {
+      "skill": "Terraform",
+      "count": 9,
+      "total": 88,
+      "pct": 10.2,
+      "band": "rare"
+    },
+    {
+      "skill": "containers",
+      "count": 6,
+      "total": 88,
+      "pct": 6.8,
+      "band": "rare"
+    },
+    {
+      "skill": "CI_CD",
+      "count": 5,
+      "total": 88,
+      "pct": 5.7,
+      "band": "rare"
+    },
+    {
+      "skill": "MLOps",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "InfiniBand",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "event-driven systems",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "serverless",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "Bicep",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "containerization",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "Infrastructure as Code",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "DevSecOps",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    }
+  ],
+  "data_stack": [
+    {
+      "skill": "vector databases",
+      "count": 17,
+      "total": 88,
+      "pct": 19.3,
+      "band": "differentiator"
+    },
+    {
+      "skill": "PostgreSQL",
+      "count": 5,
+      "total": 88,
+      "pct": 5.7,
+      "band": "rare"
+    },
+    {
+      "skill": "Databricks",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "NoSQL",
+      "count": 4,
+      "total": 88,
+      "pct": 4.5,
+      "band": "rare"
+    },
+    {
+      "skill": "MongoDB",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "MySQL",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "SQL",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "Snowflake",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "feature stores",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3,
+      "band": "rare"
+    },
+    {
+      "skill": "Redis",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3,
+      "band": "rare"
+    }
+  ],
+  "governance_compliance": [
+    {
+      "skill": "GDPR",
+      "count": 8,
+      "total": 88,
+      "pct": 9.1,
+      "band": "rare"
+    },
+    {
+      "skill": "security",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "governance",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "compliance",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "Responsible AI",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "regulatory compliance",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "responsible AI",
+      "count": 3,
+      "total": 88,
+      "pct": 3.4,
+      "band": "rare"
+    },
+    {
+      "skill": "EU AI Act",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3,
+      "band": "rare"
+    },
+    {
+      "skill": "privacy",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3,
+      "band": "rare"
+    },
+    {
+      "skill": "data governance",
+      "count": 2,
+      "total": 88,
+      "pct": 2.3,
+      "band": "rare"
+    }
+  ],
+  "ai_ml_stack": {
+    "rag": {
+      "count": 25,
+      "total": 88,
+      "pct": 28.4
+    },
+    "agents_orchestration": {
+      "count": 34,
+      "total": 88,
+      "pct": 38.6
+    },
+    "fine_tuning": {
+      "count": 16,
+      "total": 88,
+      "pct": 18.2
+    },
+    "evaluation_quality": {
+      "count": 18,
+      "total": 88,
+      "pct": 20.5
+    },
+    "guardrails_governance": {
+      "count": 33,
+      "total": 88,
+      "pct": 37.5
+    },
+    "prompt_engineering": {
+      "count": 15,
+      "total": 88,
+      "pct": 17.0
+    },
+    "vector_search": {
+      "count": 19,
+      "total": 88,
+      "pct": 21.6
+    },
+    "model_serving_routing": {
+      "count": 3,
+      "total": 88,
+      "pct": 3.4
+    },
+    "top_frameworks": [
+      {
+        "skill": "LangChain",
+        "count": 20,
+        "total": 88,
+        "pct": 22.7,
+        "band": "differentiator"
+      },
+      {
+        "skill": "PyTorch",
+        "count": 13,
+        "total": 88,
+        "pct": 14.8,
+        "band": "rare"
+      },
+      {
+        "skill": "LangGraph",
+        "count": 9,
+        "total": 88,
+        "pct": 10.2,
+        "band": "rare"
+      },
+      {
+        "skill": "TensorFlow",
+        "count": 8,
+        "total": 88,
+        "pct": 9.1,
+        "band": "rare"
+      },
+      {
+        "skill": "LlamaIndex",
+        "count": 6,
+        "total": 88,
+        "pct": 6.8,
+        "band": "rare"
+      },
+      {
+        "skill": "Megatron-LM",
+        "count": 4,
+        "total": 88,
+        "pct": 4.5,
+        "band": "rare"
+      },
+      {
+        "skill": "Nemo",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4,
+        "band": "rare"
+      },
+      {
+        "skill": "Transformers",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4,
+        "band": "rare"
+      },
+      {
+        "skill": "TRL",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4,
+        "band": "rare"
+      },
+      {
+        "skill": "VeRL",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4,
+        "band": "rare"
+      },
+      {
+        "skill": "JAX",
+        "count": 3,
+        "total": 88,
+        "pct": 3.4,
+        "band": "rare"
+      },
+      {
+        "skill": "AutoGen",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Agno",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "vLLM",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "Spring AI",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      }
+    ],
+    "top_observability": [
+      {
+        "skill": "Azure Monitor",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "GCP Operations Suite",
+        "count": 2,
+        "total": 88,
+        "pct": 2.3,
+        "band": "rare"
+      },
+      {
+        "skill": "tracing",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "feedback monitoring",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "drift monitoring",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "Application Insights",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "MLflow",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "Prometheus",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "Azure Purview",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      },
+      {
+        "skill": "OpenTelemetry",
+        "count": 1,
+        "total": 88,
+        "pct": 1.1,
+        "band": "rare"
+      }
+    ]
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 2,
+      "total": 88,
+      "pct": 2.3
+    },
+    "performance_management": {
+      "count": 2,
+      "total": 88,
+      "pct": 2.3
+    },
+    "org_building": {
+      "count": 10,
+      "total": 88,
+      "pct": 11.4
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 88,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 98.9,
+    "greenfield_split": {
+      "both": 42,
+      "optimization": 6,
+      "greenfield": 7
+    },
+    "cloud_preference": {
+      "multi_cloud": 29,
+      "Azure": 15,
+      "AWS": 11,
+      "GCP": 1
+    }
+  },
+  "domain_industry": {
+    "consulting": 17,
+    "enterprise_saas": 5,
+    "consultancy": 3,
+    "enterprise": 2,
+    "adtech": 1
+  },
+  "company_stage": {
+    "consultancy": 25,
+    "enterprise": 12,
+    "scaleup": 2,
+    "agency": 1
+  },
+  "collaboration_model": {
+    "hybrid": 14,
+    "remote_first": 13,
+    "onsite": 5,
+    "distributed": 1
+  },
+  "pain_points": [
+    {
+      "pain_point": "build secure, scalable ai agents that can connect to external systems through mcp",
+      "count": 2
+    },
+    {
+      "pain_point": "integrate ai and data components into java/spring-based microservices",
+      "count": 2
+    },
+    {
+      "pain_point": "optimize relational and nosql data access and caching for performance",
+      "count": 2
+    },
+    {
+      "pain_point": "apply strong application security to agent and mcp integrations",
+      "count": 2
+    },
+    {
+      "pain_point": "guide team members through ai integration patterns and code quality",
+      "count": 2
+    },
+    {
+      "pain_point": "need to solve complex enterprise architecture problems end-to-end",
+      "count": 1
+    },
+    {
+      "pain_point": "need to scale cloud platforms for large enterprise environments",
+      "count": 1
+    },
+    {
+      "pain_point": "need to improve existing architectures and algorithms",
+      "count": 1
+    },
+    {
+      "pain_point": "need reusable frameworks to accelerate other engineers",
+      "count": 1
+    },
+    {
+      "pain_point": "need to raise the technical level across the team",
+      "count": 1
+    },
+    {
+      "pain_point": "need sovereign ai architectures that comply with national and global regulations",
+      "count": 1
+    },
+    {
+      "pain_point": "need secure and high-performing ai platforms",
+      "count": 1
+    },
+    {
+      "pain_point": "need a bridge between customer vision and technical execution",
+      "count": 1
+    },
+    {
+      "pain_point": "need guidance on ai infrastructure and responsible ai adoption",
+      "count": 1
+    },
+    {
+      "pain_point": "need an end-to-end ai solution owner",
+      "count": 1
+    }
+  ],
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 0.0
+  }
+}

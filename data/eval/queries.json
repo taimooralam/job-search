@@ -1,0 +1,25 @@
+{
+  "analysis_date": "2026-04-13T00:00:00+00:00",
+  "collection": "jobs.level-2",
+  "base_query": {
+    "job_description": {
+      "$exists": true,
+      "$ne": null
+    }
+  },
+  "tier_definitions": {
+    "A": "applied + response/interview/callback (weight 1.00)",
+    "B": "applied + score >= 60 (weight 0.85)",
+    "C": "is_ai_job + score >= 50 + JD present (weight 0.65)",
+    "D": "is_ai_job + scored + JD present (weight 0.40)"
+  },
+  "total_fetched": 10015,
+  "excluded": 7698,
+  "duplicates_removed": 562,
+  "final_eligible": 2317,
+  "tier_counts": {
+    "C": 987,
+    "B": 218,
+    "D": 1112
+  }
+}

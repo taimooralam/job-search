@@ -1,0 +1,76 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "staff_ai_engineer_global",
+  "job_id": "6957aa9a6dd552ab7ec2ccd7",
+  "dimension_scores": {
+    "ats_optimization": 8.0,
+    "impact_clarity": 7.5,
+    "jd_alignment": 6.5,
+    "executive_presence": 6.5,
+    "anti_hallucination": 8.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 7.35,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Agentic AI architecture with MCP server tools, Zod-validated structured outputs, and per-silo guardrail profiles demonstrates production orchestration depth refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:10,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:30",
+    "Production RAG pipeline with hybrid retrieval (BM25+RRF), LLM-as-judge reranking, and evaluation harness (MRR@k, NDCG@k) shows enterprise-grade AI quality refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:11,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:31,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:32",
+    "Multi-provider LLM gateway with semantic caching reducing API spend by 40% demonstrates cost-aware AI infrastructure refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:12,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:44,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:46",
+    "Platform reliability transformation with observability pipeline, CloudWatch/SNS alerting, and quantified MTTR reduction refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:17,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:37,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:45"
+  ],
+  "top_failures": [
+    "Years of experience gap: CV shows 10+ years vs JD requirement of 15+ years software engineering refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:8,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:57",
+    "No RLHF experience mentioned despite JD explicitly requiring applied RLHF integration refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:65,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:20,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:21",
+    "No fintech or regulated domain experience demonstrated for fintech company emphasizing regulatory compliance refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:15,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:26,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28",
+    "Mentoring and cross-functional influence understated despite JD emphasis on mentoring engineers and cultivating culture refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:27,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:56"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [],
+  "persona_fit_notes": [],
+  "representation_gap_hits": [
+    "Continuous learning systems not addressed despite JD listing as technical requirement refs=jd:58"
+  ],
+  "curation_gap_hits": [
+    "PhD strongly preferred by JD but CV shows MS only; may impact candidate ranking refs=jd:55,cv:97"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:10",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:30",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:11",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:31",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:32",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:12",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:44",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:46",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:17",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:37",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:45",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:8",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:57",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:65",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:20",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:21",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:15",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:26",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:27",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:56",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:97",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:55",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:58"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T16:48:14Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/staff_ai_engineer_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/staff_ai_engineer_global_baseline.json",
+    "cv_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md",
+    "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md"
+  }
+}

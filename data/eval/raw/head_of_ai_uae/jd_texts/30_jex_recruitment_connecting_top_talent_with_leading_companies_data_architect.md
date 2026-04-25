@@ -1,0 +1,10 @@
+# Data Architect
+
+**Company:** JEX RECRUITMENT | CONNECTING TOP TALENT WITH LEADING COMPANIES
+**Location:** Dubai, United Arab Emirates
+**Score:** 22 (Tier D)
+**Status:** N/A
+
+---
+
+🚀 Data Architect (AI / Agentic AI)📍 Dubai | Hybrid ModelWe’re partnering with a rapidly expanding fintech startup in Dubai that’sbuilding next-generation financial infrastructure across the region.They’re looking for a Data Architect with deep AI and Agentic AI experience todesign the foundation that will power intelligent automation, advancedanalytics, and autonomous financial systems.The Role:You’ll architect and scale the company’s data ecosystem to support: * Advanced ML & LLM-driven products * Agentic AI systems capable of autonomous task execution * Real-time decisioning engines * High-volume transactional data environments * Secure, compliant financial data processingWhat You’ll Be Doing * Designing modern data architectures (Lakehouse / Data Mesh / Cloud-native) * Building scalable pipelines for structured & unstructured data * Enabling LLM integration, vector databases, and RAG frameworks * Architecting data layers for agent orchestration systems * Implementing governance, security & compliance in fintech environments * Collaborating with ML Engineers, Backend Engineers & Product teamsWhat We’re Looking For * 6+ years in Data Engineering / Data Architecture roles * Proven experience designing enterprise-scale data platforms * Hands-on exposure to AI systems, LLM pipelines, or Agentic AI frameworks * Experience with cloud platforms (AWS / GCP / Azure) * Strong understanding of data modelling, warehousing & streaming architectures * Exposure to vector databases, embeddings, or knowledge graph design is highly desirable * Fintech, payments, trading or high-regulated industry experience is a plusShow more Show less

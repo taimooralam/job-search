@@ -1,0 +1,10 @@
+# Software Solution Architect
+
+**Company:** CODENINJA INC.
+**Location:** 
+**Score:** 85 (Tier C)
+**Status:** discarded
+
+---
+
+About the CompanyCodeNinja is a global AI and engineering services company helping enterprisesbuild, scale, and operate intelligent systems. With 350+ engineers across fourcontinents and 400+ successful deployments, CodeNinja enables organizations toharness artificial intelligence through Global Capability Centers, Work AI,Physical AI, and AI Labs. Recognized among Pakistan’s fastest-growing AI firmsand a multi-award recipient on Clutch, CodeNinja empowers over 250 clientsworldwide to innovate, automate, and compete in the intelligence economy.Key ResponsibilitiesDesign end-to-end application architectures for complex, distributed softwaresystems, focusing on scalability, performance, security, and maintainability.Make core architectural decisions around APIs, service boundaries, data models,integration patterns, and synchronous/asynchronous communication.Design and integrate AI/GenAI features (e.g., LLM-powered features, RAG systems,AI-assisted workflows) into production applications.Review and validate solution designs and implementations, identifying technicaldebt, architectural risks, and modernization opportunities.Collaborate with customers, business analysts, and engineering teams totranslate business requirements into clear, implementable softwarearchitectures.Qualifications * 8+ years of professional software development experience, primarily in backend or full-stack engineering roles. * Proven experience designing and delivering production-grade distributed systems, not just proof-of-concept architectures. * Strong understanding of application architecture including APIs, data modeling, system integration, scalability, and fault tolerance. * Hands-on experience with cloud-native application design on AWS, with clear separation from infrastructure or DevOps ownership. * Experience integrating AI/GenAI into software applications, including LLM APIs, data pipelines, or AI-enabled workflows (training and MLOps not required).Show more Show less

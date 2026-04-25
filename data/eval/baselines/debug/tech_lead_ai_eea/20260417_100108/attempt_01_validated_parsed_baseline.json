@@ -1,0 +1,441 @@
+{
+  "meta": {
+    "category_id": "tech_lead_ai_eea",
+    "category_name": "Tech Lead AI \u2014 EEA",
+    "macro_family": "ai_engineering_adjacent",
+    "priority": "secondary_target",
+    "confidence": "high",
+    "representation_proxy_mode": true
+  },
+  "overall_assessment": {
+    "combined_fit_score": 7.85,
+    "readiness_tier": "GOOD",
+    "one_sentence_verdict": "Candidate has strong curated evidence for player-coach AI tech lead positioning with production RAG/LLM platform work and backend architecture leadership, but the current master CV underrepresents Python and frames as 'Technical Architect' rather than the category-preferred 'Tech Lead' positioning.",
+    "uncertainty_note": "Representation is proxy-derived; headline and summary fit are provisional until canonical master CV artifact exists. Python depth is evidenced but TypeScript dominates visible curated artifacts.",
+    "citations": [
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:77",
+      "data/master-cv/roles/01_seven_one_entertainment.md:231",
+      "data/master-cv/role_metadata.json:4"
+    ]
+  },
+  "score_breakdown": {
+    "candidate_evidence_coverage_score": 8.0,
+    "evidence_curation_completeness_score": 7.5,
+    "master_cv_representation_quality_score": 7.0,
+    "ai_architecture_fit_score": 9.0,
+    "leadership_scope_fit_score": 8.0,
+    "impact_proof_strength_score": 8.5,
+    "weighted_score_explanation": [
+      "Evidence coverage (8.0 \u00d7 0.30 = 2.40): Strong AI platform, backend architecture, and mentoring evidence curated. Python verified but TypeScript more prominent in artifacts.",
+      "Curation completeness (7.5 \u00d7 0.15 = 1.125): Commander-4 and legacy modernization well-curated. Upstream knowledge-base entries for Seven.One and Daypaio roles pending promotion.",
+      "Representation quality (7.0 \u00d7 0.25 = 1.75): Current headline uses 'Architect' framing vs category-preferred 'Tech Lead'. Summary captures player-coach but underweights mentoring and Python.",
+      "AI architecture fit (9.0 \u00d7 0.15 = 1.35): Excellent RAG pipeline, LLM-as-judge, semantic caching, evaluation harness evidence directly matches category table-stakes.",
+      "Leadership scope fit (8.0 \u00d7 0.10 = 0.80): Mentoring 10+ engineers and promoting 3 to leads matches player-coach scope. No budget/P&L claims, correctly aligned with category.",
+      "Impact proof (8.5 \u00d7 0.05 = 0.425): Quantified metrics include 2,000 users, 42 plugins, 75% incident reduction, 3 years zero downtime, 25% velocity improvement."
+    ],
+    "citations": [
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:77",
+      "data/master-cv/roles/01_seven_one_entertainment.md:231",
+      "data/master-cv/projects/commander4_skills.json:2",
+      "data/master-cv/role_metadata.json:4",
+      "data/master-cv/role_metadata.json:5"
+    ]
+  },
+  "strongest_supported_signals": [
+    {
+      "signal": "Production AI/LLM platform integration with RAG, hybrid search, and evaluation harness",
+      "why_it_matters_for_category": "Category table-stakes require AI/LLM integration into backend products with evaluation signals as differentiator. Commander-4 evidence shows BM25+RRF hybrid search, LLM-as-judge reranking, MRR@k/NDCG@k evaluation functions, and semantic caching\u2014all production-deployed.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/roles/01_seven_one_entertainment.md:354",
+        "data/master-cv/projects/commander4.md:6"
+      ],
+      "citation": "Platform design 95.1%; OpenAI 16/41 (39.0%); evaluation_quality 9/41 (22.0%); RAG 9/41 (22.0%)"
+    },
+    {
+      "signal": "Legacy-to-microservices platform transformation with production reliability",
+      "why_it_matters_for_category": "Category values architecture-led backend platform builds and reliability proof. Evidence shows monolith decomposition to event-driven TypeScript microservices on AWS with 75% incident reduction and 3 years zero downtime.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:77",
+        "data/master-cv/roles/01_seven_one_entertainment.md:103"
+      ],
+      "citation": "Distributed systems 19/41 (46.3%); microservices 17/41 (41.5%); valued evidence type 'reliability' count 20"
+    },
+    {
+      "signal": "Player-coach mentoring with engineer promotions",
+      "why_it_matters_for_category": "Category is 90.2% player-coach with 73.2% mentoring signal. Evidence shows mentored 10+ senior engineers on architectural patterns, promoted 3 engineers to lead positions, maintained low turnover.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231",
+        "data/master-cv/roles/01_seven_one_entertainment.md:172"
+      ],
+      "citation": "Mentoring 30/41 (73.2%); collaboration 36/41 (87.8%); player_coach 37/41 (90.2%)"
+    },
+    {
+      "signal": "Technical vision establishment and stakeholder alignment",
+      "why_it_matters_for_category": "Category values leads who translate architecture into delivery plans and align stakeholders on technical debt ROI. Evidence shows 'intelligent servers, dumb clients' north star and securing investment in system health.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:172",
+        "data/master-cv/roles/01_seven_one_entertainment.md:315"
+      ],
+      "citation": "Communication 29/41 (70.7%); stakeholder management 12/41 (29.3%)"
+    },
+    {
+      "signal": "DDD and engineering excellence standards",
+      "why_it_matters_for_category": "Category values production readiness and technical quality. Evidence shows DDD framework introduction reducing onboarding from 6 to 3 months, 25% velocity improvement, 40% requirement misalignment reduction.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:137"
+      ],
+      "citation": "Success metric 'code quality' count 6; valued evidence type 'architecture' count 20"
+    },
+    {
+      "signal": "CI/CD and deployment excellence",
+      "why_it_matters_for_category": "Category shows CI/CD 19/41 (46.3%) and production readiness count 13. Evidence shows release cycle reduction from weeks to days, 25% delivery predictability improvement.",
+      "status": "supported_and_curated",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:282"
+      ],
+      "citation": "CI/CD 19/41 (46.3%); success metric 'production readiness' count 13"
+    }
+  ],
+  "gap_analysis": [
+    {
+      "signal": "Python backend leadership prominence",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Python is the category's clearest technical anchor at 68.3% hard skill and 70.7% required language. It appears above all other languages.",
+      "current_state": "Python is verified in commander4_skills.json and appears in Commander-4 achievement text (S3VectorSemanticCache Python class, evaluation functions). However, TypeScript dominates the curated role bullets and headline emphasis.",
+      "safe_interpretation": "Candidate has production Python work on the AI platform layer, safely claimable but underweighted in current representation.",
+      "recommended_action": "Surface Python more prominently in headline and summary. Ensure role bullets explicitly name Python for AI/LLM integration work alongside TypeScript.",
+      "evidence_refs": [
+        "data/master-cv/projects/commander4_skills.json:2",
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "citation": "Python hard skill 28/41 (68.3%); Python required 29/41 (70.7%)"
+    },
+    {
+      "signal": "Tech Lead title framing vs Architect framing",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Category title family skew is tech_lead 31/41 (75.6%) vs engineering_manager 7/41 (17.1%) vs ai_architect 2/41 (4.9%). Current headline uses 'Technical Architect / AI Platform Architect' framing.",
+      "current_state": "Current headline emphasizes 'Architect' identity. Category blueprint recommends 'Tech Lead' or 'Technical Lead' as safe title families, with Architect as lower-frequency variant.",
+      "safe_interpretation": "Candidate scope supports Tech Lead framing given player-coach and mentoring evidence. Architect is not unsafe but is lower category frequency.",
+      "recommended_action": "Reframe headline toward 'Tech Lead' or 'Technical Lead' for category-specific CV variants. Keep 'Architect' as secondary identity.",
+      "evidence_refs": [
+        "data/master-cv/role_metadata.json:4",
+        "data/master-cv/roles/01_seven_one_entertainment.md:231"
+      ],
+      "citation": "Title family tech_lead 31/41 (75.6%); player_coach 37/41 (90.2%)"
+    },
+    {
+      "signal": "Flask/FastAPI framework depth",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "Category shows FastAPI 20/41 (48.8%), Flask 17/41 (41.5%), Django 15/41 (36.6%). Blueprint warns against claiming named Python framework depth unless CV shows it.",
+      "current_state": "Curated evidence shows Flask at KI Labs (REST APIs in Flask over large-scale data pipeline) but no FastAPI or Django claims. Commander-4 Python work is on semantic caching and evaluation, not framework-level API development.",
+      "safe_interpretation": "Flask can be safely claimed from KI Labs evidence. FastAPI and Django are unsupported and unsafe to claim.",
+      "recommended_action": "Do not claim FastAPI or Django expertise. Flask can appear in skills if KI Labs role is included. Focus Python claims on AI/LLM integration layer rather than web framework depth.",
+      "evidence_refs": [
+        "data/master-cv/roles/03_ki_labs.md:27"
+      ],
+      "citation": "Blueprint warning: 'specific fastapi or django production leadership if not shown' count 3"
+    },
+    {
+      "signal": "Distributed team coordination across borders",
+      "gap_type": "supported_upstream_pending_curation",
+      "why_it_matters": "Category shows distributed collaboration 18/41 (43.9%) and pain point 'coordinate work across onshore/offshore teams' count 3. This is a differentiator.",
+      "current_state": "Upstream knowledge-base entries reference international/distributed team context but curated evidence does not explicitly surface cross-border coordination.",
+      "safe_interpretation": "Candidate likely has distributed team experience from enterprise context, but curated claims should be conservative until upstream evidence is promoted.",
+      "recommended_action": "Review knowledge-base.md entries for Seven.One to extract explicit distributed team coordination evidence for curation.",
+      "evidence_refs": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "citation": "Collaboration model 'distributed' 18/41 (43.9%); 'remote_first' 12/41 (29.3%)"
+    },
+    {
+      "signal": "Budget, P&L, or org-building ownership",
+      "gap_type": "unsupported_or_unsafe",
+      "why_it_matters": "Category shows budget/P&L 0/41 (0.0%), hiring 3/41 (7.3%), performance management 4/41 (9.8%). Blueprint explicitly warns against these claims.",
+      "current_state": "Hiring evidence exists at Seven.One (defined selection criteria, designed interview strategies) but scope is limited. No budget or performance review ownership evidence.",
+      "safe_interpretation": "Do not claim budget ownership, P&L, or formal performance management. Hiring involvement can be mentioned but should not be headlined.",
+      "recommended_action": "Compress hiring evidence into supporting context rather than lead bullet. Never claim budget or P&L ownership for this category.",
+      "evidence_refs": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:266"
+      ],
+      "citation": "Hiring 3/41 (7.3%); budget/P&L 0/41 (0.0%); deep-analysis warning 'budget or p and l ownership' count 12"
+    },
+    {
+      "signal": "Guardrails and governance depth",
+      "gap_type": "curated_but_underrepresented",
+      "why_it_matters": "Category shows guardrails_governance 4/41 (9.8%) as a selective differentiator. Commander-4 evidence includes per-silo guardrail injection via LiteLLM proxy.",
+      "current_state": "Guardrails evidence is curated in Commander-4 project but appears in project bullets, not prominently in role achievement or summary.",
+      "safe_interpretation": "Guardrails/governance work is safely claimable and differentiating but currently underweighted in representation.",
+      "recommended_action": "Surface guardrails and access-control work more prominently when targeting this category, as it differentiates from pure feature builders.",
+      "evidence_refs": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/roles/01_seven_one_entertainment.md:55"
+      ],
+      "citation": "Guardrails_governance 4/41 (9.8%); valued evidence type 'evaluation' count 12"
+    }
+  ],
+  "safe_claims_now": {
+    "headline_safe": [
+      "Tech Lead / Technical Lead",
+      "Python Backend + AI Systems",
+      "AI/LLM Platform Architecture",
+      "Production Readiness and Delivery",
+      "Mentoring and Technical Leadership"
+    ],
+    "profile_safe": [
+      "Player-coach tech lead with hands-on backend architecture and AI/LLM integration",
+      "11 years building distributed systems and production AI platforms",
+      "Combines platform modernization with enterprise AI workflow delivery",
+      "Leads through architecture decisions, code quality, mentoring, and delivery discipline"
+    ],
+    "experience_safe": [
+      "Enterprise AI platform (Commander-4/Joyia) serving 2,000 users with 42 plugins",
+      "RAG pipeline with BM25+RRF hybrid search, LLM-as-judge reranking, semantic caching",
+      "Retrieval evaluation harness with MRR@k and NDCG@k scoring functions",
+      "Legacy monolith transformation to event-driven TypeScript microservices on AWS",
+      "75% incident reduction and 3 years zero downtime",
+      "DDD framework introduction reducing onboarding from 6 to 3 months",
+      "Mentored 10+ senior engineers, promoted 3 to lead positions"
+    ],
+    "leadership_safe": [
+      "Player-coach scope: hands-on design, code review, mentoring, delivery ownership",
+      "Technical vision establishment and stakeholder alignment on technical debt ROI",
+      "Mentoring engineers on architectural patterns, event-driven design, cloud best practices",
+      "Cross-functional collaboration and technical communication"
+    ],
+    "unsafe_or_too_weak": [
+      "Budget or P&L ownership",
+      "Formal people management with direct reports and performance reviews",
+      "Hiring or org-design ownership beyond interview involvement",
+      "FastAPI or Django production leadership",
+      "Deep multi-cloud ownership across AWS, Azure, and GCP simultaneously",
+      "Fine-tuning, custom embedding training, or RLHF",
+      "PhD, publication, or research-led positioning"
+    ],
+    "citations": [
+      "data/master-cv/roles/01_seven_one_entertainment.md:28",
+      "data/master-cv/roles/01_seven_one_entertainment.md:77",
+      "data/master-cv/roles/01_seven_one_entertainment.md:231",
+      "data/master-cv/projects/commander4_skills.json:42"
+    ]
+  },
+  "representation_diagnosis": {
+    "well_represented_now": [
+      "AI platform architecture with RAG, hybrid search, and evaluation harness",
+      "Legacy modernization and event-driven microservices transformation",
+      "Production reliability metrics (75% incident reduction, 3 years zero downtime)",
+      "Semantic caching and LLM cost optimization",
+      "TypeScript and AWS backend work"
+    ],
+    "underrepresented_now": [
+      "Python backend leadership (verified but TypeScript dominates visible emphasis)",
+      "Tech Lead framing (current headline uses 'Architect' identity)",
+      "Mentoring and team development (curated but not prominently surfaced)",
+      "Guardrails and governance work (in project bullets but not in headline signals)",
+      "CI/CD and deployment excellence (curated but lower in priority order)"
+    ],
+    "overstated_risk_now": [
+      "Architect-heavy framing may overclaim architecture-first scope when category is 75.6% tech_lead",
+      "AI Platform Architect headline may suggest ML research adjacency when category is 0% research-heavy"
+    ],
+    "representation_priorities": [
+      "1. Reframe headline to foreground Tech Lead identity and Python alongside TypeScript",
+      "2. Surface mentoring evidence (10+ engineers, 3 promotions) earlier in summary",
+      "3. Elevate guardrails and access-control work as differentiating AI governance signal",
+      "4. Ensure Python appears explicitly in role bullets for Commander-4 AI work"
+    ],
+    "citations": [
+      "data/master-cv/role_metadata.json:4",
+      "data/master-cv/role_metadata.json:5",
+      "data/master-cv/roles/01_seven_one_entertainment.md:231",
+      "data/master-cv/projects/commander4_skills.json:2"
+    ]
+  },
+  "curation_priorities": [
+    {
+      "priority_rank": 1,
+      "action": "Promote Seven.One Lead Software Engineer / Technical Architect STAR records from knowledge-base.md to curated role file",
+      "why_now": "Upstream evidence contains detailed STAR records with high category overlap scores (29, 25) that would strengthen player-coach and distributed team coordination signals.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md",
+        "data/master-cv/role_metadata.json"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:98",
+        "docs/archive/knowledge-base.md:181"
+      ],
+      "expected_category_impact": "Would strengthen player-coach evidence and potentially surface distributed team coordination claims for differentiator coverage.",
+      "citation": "Upstream signal 'Seven.One Entertainment Group \u2014 Lead Software Engineer / Technical Architect' overlap score 29"
+    },
+    {
+      "priority_rank": 2,
+      "action": "Promote Technical Lead - Addressable TV STAR records to extract mentoring and stakeholder alignment specifics",
+      "why_now": "Knowledge-base entries for this title variant have overlap scores of 25-29 and likely contain additional mentoring, technical vision, and cross-functional evidence.",
+      "target_files": [
+        "data/master-cv/roles/01_seven_one_entertainment.md"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:268",
+        "docs/archive/knowledge-base.md:360"
+      ],
+      "expected_category_impact": "Would strengthen mentoring and stakeholder collaboration evidence, both high-frequency category signals.",
+      "citation": "Upstream signal 'Seven.One Entertainment Group \u2014 Technical Lead - Addressable TV' overlap score 29"
+    },
+    {
+      "priority_rank": 3,
+      "action": "Curate DAYPAIO Tech Lead STAR record for 0\u21921 and event-sourced architecture evidence",
+      "why_now": "Daypaio role adds event-sourced platform 0\u21921 evidence with CQRS/NestJS that supports architecture-led delivery claims. Overlap score 27.",
+      "target_files": [
+        "data/master-cv/roles/02_samdock_daypaio.md"
+      ],
+      "source_refs": [
+        "docs/archive/knowledge-base.md:734"
+      ],
+      "expected_category_impact": "Strengthens 0\u21921 platform delivery and event-driven architecture signals as secondary role evidence.",
+      "citation": "Upstream signal 'DAYPAIO GmbH \u2014 Senior Software Engineer Full Stack - Tech Lead' overlap score 27"
+    }
+  ],
+  "master_cv_upgrade_actions": [
+    {
+      "priority_rank": 1,
+      "action": "Reframe headline from 'Technical Architect / AI Platform Architect' to 'Tech Lead | Python Backend + AI Systems | Architecture, Production, Mentoring'",
+      "section": "headline",
+      "why_now": "Category title family is 75.6% tech_lead vs 4.9% ai_architect. Current framing undersells the player-coach and Python signals that are category table-stakes.",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231",
+        "data/master-cv/projects/commander4_skills.json:2",
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "citation": "Title family tech_lead 31/41 (75.6%); Python hard skill 28/41 (68.3%)"
+    },
+    {
+      "priority_rank": 2,
+      "action": "Add mentoring metrics to summary: 'Mentored 10+ engineers and promoted 3 to lead positions'",
+      "section": "summary",
+      "why_now": "Mentoring is 73.2% category signal. Current summary mentions player-coach but does not quantify mentoring impact. This is curated but underrepresented.",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231"
+      ],
+      "citation": "Mentoring 30/41 (73.2%); collaboration 36/41 (87.8%)"
+    },
+    {
+      "priority_rank": 3,
+      "action": "Explicitly name Python in Commander-4 role bullet: 'TypeScript/Python' \u2192 foreground Python for AI/LLM work",
+      "section": "role_bullets",
+      "why_now": "Python is category's #1 technical anchor. Current bullet mentions both but Python appears secondary. Category expects Python frontend for AI/LLM integration.",
+      "supported_by": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4_skills.json:2"
+      ],
+      "citation": "Python required 29/41 (70.7%); Python hard skill 28/41 (68.3%)"
+    },
+    {
+      "priority_rank": 4,
+      "action": "Elevate guardrails and per-silo governance work from project bullet to role achievement",
+      "section": "role_bullets",
+      "why_now": "Guardrails_governance is 9.8% selective differentiator. Current evidence is in project bullets but not prominently in role achievements. Surfacing this differentiates from pure feature builders.",
+      "supported_by": [
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/roles/01_seven_one_entertainment.md:55"
+      ],
+      "citation": "Guardrails_governance 4/41 (9.8%); valued evidence type 'evaluation' count 12"
+    },
+    {
+      "priority_rank": 5,
+      "action": "Add 'Python' to top skills list, currently dominated by TypeScript-adjacent items",
+      "section": "skills",
+      "why_now": "Skills priority list shows Hybrid Search, RAG Pipeline, TypeScript, Python at position 10. For this category, Python should appear in top 3.",
+      "supported_by": [
+        "data/master-cv/projects/commander4_skills.json:2"
+      ],
+      "citation": "Python required 29/41 (70.7%)"
+    }
+  ],
+  "evidence_ledger": [
+    {
+      "recommendation": "Position candidate as player-coach tech lead, not formal manager or pure architect",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231",
+        "data/master-cv/roles/01_seven_one_entertainment.md:172",
+        "data/master-cv/roles/01_seven_one_entertainment.md:28"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Anchor CV on Python backend architecture and AI/LLM platform integration",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4_skills.json:2",
+        "data/master-cv/roles/01_seven_one_entertainment.md:77"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Show applied AI as backend/system integration work, not standalone experimentation",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/roles/01_seven_one_entertainment.md:354"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Quantify production readiness, technical quality, and delivery predictability",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:77",
+        "data/master-cv/roles/01_seven_one_entertainment.md:282",
+        "data/master-cv/roles/01_seven_one_entertainment.md:137"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Use mentoring, collaboration, and communication as primary leadership proof",
+      "classification": "curated_but_underrepresented",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:231",
+        "data/master-cv/roles/01_seven_one_entertainment.md:172"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Promote distributed team coordination evidence from upstream knowledge-base",
+      "classification": "supported_upstream_pending_curation",
+      "support": [
+        "docs/archive/knowledge-base.md:7",
+        "docs/archive/knowledge-base.md:268"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "recommendation": "Treat RAG, guardrails, and evaluation as selective differentiators when true",
+      "classification": "supported_and_curated",
+      "support": [
+        "data/master-cv/roles/01_seven_one_entertainment.md:28",
+        "data/master-cv/projects/commander4.md:6",
+        "data/master-cv/projects/commander4.md:7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "recommendation": "Do not claim budget, P&L, deep multi-cloud, or fine-tuning/RLHF expertise",
+      "classification": "unsupported_or_unsafe",
+      "support": [
+        "data/master-cv/projects/commander4_skills.json:42"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

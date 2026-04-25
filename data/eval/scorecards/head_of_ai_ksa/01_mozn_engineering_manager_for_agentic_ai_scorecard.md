@@ -1,0 +1,71 @@
+# Scorecard — head_of_ai_ksa / 01_mozn_engineering_manager_for_agentic_ai
+
+## Identity
+- Category: head_of_ai_ksa
+- Job ID: 6925c1c545fa3c355f83fce1
+- JD path: data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md
+- CV path: data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md
+- CV source: 
+- Rubric version: 2026-04-17
+- Scorer model: claude-opus-4-5-20251101
+- Generated at: 2026-04-17T21:09:58Z
+
+## Overall: **7.5** — **GOOD_MATCH**
+
+## Dimension Scores
+- ats_optimization (20%): **7.5**
+- impact_clarity (25%): **8.0**
+- jd_alignment (25%): **7.0**
+- executive_presence (15%): **7.5**
+- anti_hallucination (15%): **7.5**
+
+## Gate Outcomes
+- must_have_coverage_gate: **True**
+- unsafe_claim_gate: **True**
+- persona_fit_gate: **True**
+
+## Top Strengths
+- Strong platform architecture proof with Commander-4/Joyia enterprise AI system serving 2,000 users across 42 plugins with governed outputs refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:30
+- Quantified reliability outcomes: 75% incident reduction, 3 years zero downtime, observability pipeline processing billions of events refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:34,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:36
+- Measured team development: mentored 10+ engineers, promoted 3 to lead positions, established DDD framework cutting onboarding 50% refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:33,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:35
+- Hybrid retrieval architecture with BM25/RRF fusion, LLM-as-judge reranking, semantic caching demonstrates hands-on AI platform delivery refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:28,data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:29
+
+## Top Failures
+- CV states 10+ years experience but JD requires 12+ years; actual timeline shows ~12 years but summary undersells refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8,data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:42
+- Agentic AI experience is implicit through AI workflow platform but not explicitly framed as multi-agent orchestration refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27,data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:18
+- B2B SaaS experience limited to Samdock CRM; current role is AdTech/media which is B2C-adjacent refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:43,data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:42
+- LLM orchestration frameworks mentioned but no explicit multi-agent architecture or conversational AI pipeline evidence refs=data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:18,data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:47
+
+## Unsupported Claims
+- (none)
+
+## Missing Must-Haves
+- (none)
+
+## Persona Fit Notes
+- (none)
+
+## Representation Gap Hits
+- CV headline mirrors JD title 'Engineering Manager for Agentic AI' while actual role is 'Technical Lead' - acceptable positioning convention refs=cv:3,cv:25
+
+## Curation Gap Hits
+- AML/Fraud/Banking domain experience (JD nice-to-have) absent from CV refs=jd:46
+
+## Evidence Refs
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:27
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:30
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:34
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:36
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:33
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:35
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:28
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:29
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:8
+- data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:42
+- data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:18
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:43
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:18
+- data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:47
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:3
+- data/eval/generated_cvs/step9_coverage_20260417_221712/snapshots/head_of_ai_ksa/01_mozn_engineering_manager_for_agentic_ai__generated.md:25
+- data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md:46

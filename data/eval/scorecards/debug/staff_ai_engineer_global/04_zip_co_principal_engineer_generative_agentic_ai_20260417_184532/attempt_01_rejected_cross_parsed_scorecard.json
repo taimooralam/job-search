@@ -1,0 +1,86 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "staff_ai_engineer_global",
+  "job_id": "6957aa9a6dd552ab7ec2ccd7",
+  "dimension_scores": {
+    "ats_optimization": 8.0,
+    "impact_clarity": 7.5,
+    "jd_alignment": 6.5,
+    "executive_presence": 6.5,
+    "anti_hallucination": 7.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": true,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 7.2,
+  "verdict": "GOOD_MATCH",
+  "top_strengths": [
+    "Exact title match 'Principal Engineer, Generative & Agentic AI' with strong architecture-first positioning refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:3,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:1",
+    "Production RAG pipeline with quantified evaluation harness (MRR@k, NDCG@k) directly addresses JD agent orchestration requirement refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:11,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:31,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:29",
+    "MCP server tools and Zod-validated structured outputs demonstrate agentic AI architecture depth refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:10,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:30,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:23",
+    "Multi-provider LLM gateway with semantic caching and eval-driven quality gates shows production AI platform ownership refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:12,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:44,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:29",
+    "Quantified reliability outcomes (MTTR reduction, 20% missed impressions reduction) align with JD enterprise-grade reliability requirement refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:15,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:17,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:36"
+  ],
+  "top_failures": [
+    "JD requires 15+ years software engineering but CV timeline shows ~10-12 years (2014-Present) refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:86,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:61",
+    "JD explicitly requires RLHF experience but CV contains no RLHF claims refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:71",
+    "JD emphasizes fintech regulated domain but CV background is entertainment/media with no fintech evidence refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:23",
+    "5+ years focused LLM/Agentic AI work required but Commander-4 AI work timeline unclear within 2020-Present role refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:62",
+    "Limited explicit mentoring evidence despite JD emphasis on mentoring engineers and cultivating culture refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:37,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:56"
+  ],
+  "unsupported_claims": [
+    "Enterprise scale claim for 2,000 users may be modest for enterprise designation refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:8,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:10"
+  ],
+  "missing_must_haves": [
+    "RLHF applied experience explicitly required by JD refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:71",
+    "15+ years software engineering experience (CV shows ~10-12) refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:61",
+    "5+ years focused hands-on LLM/Agentic AI work unclear from timeline refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:62",
+    "Fintech or regulated domain experience emphasized by JD refs=data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:23,data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:36"
+  ],
+  "persona_fit_notes": [
+    "Technical Lead title at Seven.One is appropriate senior IC framing without management inflation refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28",
+    "Architecture-first positioning with production delivery emphasis matches category persona refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:8",
+    "No Director/VP/Head claims - appropriate for IC-scoped role refs=data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28,data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:49"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "CV lacks Go/Rust/C# production evidence listed as JD plus factors refs=jd:65"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:3",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:8",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:10",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:11",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:12",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:15",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:17",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:28",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:30",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:31",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:44",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:49",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:56",
+    "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md:86",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:1",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:23",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:29",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:36",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:37",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:61",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:62",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:65",
+    "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md:71"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T16:46:36Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/staff_ai_engineer_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/staff_ai_engineer_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/staff_ai_engineer_global_baseline.json",
+    "cv_path": "data/eval/generated_cvs/step9_expansion_20260417_174209/snapshots/staff_ai_engineer_global/04_zip_co_principal_engineer_generative_agentic_ai__generated.md",
+    "jd_path": "data/eval/raw/staff_ai_engineer_global/jd_texts/04_zip_co_principal_engineer_generative_agentic_ai.md"
+  }
+}

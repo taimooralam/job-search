@@ -1,0 +1,10 @@
+# Data Architect / Data Modeler
+
+**Company:** AVANZA SOLUTIONS
+**Location:** Dubai, Dubai, United Arab Emirates
+**Score:** 82 (Tier C)
+**Status:** N/A
+
+---
+
+Company DescriptionAvanza Solutions has been a leader in driving global digital transformationsince 2000 by offering innovative digital platforms and services. Specializingin fields such as Digital Banking, Artificial Intelligence, Blockchain, SmartCity applications, and Business Automation, Avanza provides advancedtechnologies to enhance organizational performance. By deliveringstate-of-the-art solutions, Avanza has transformed industries including Banking,Finance, Telecommunications, Insurance, Pharmaceuticals, and Government. Thecompany is committed to people-centric innovation and has earned a reputationfor excellence across sectors worldwide.Role DescriptionAvanza Solutions is seeking a Data Architect / Data Modeler for a full-time,on-site role based in Dubai. The role involves developing and maintaining dataarchitecture, designing data models to support business requirements, andensuring the quality and security of data. Responsibilities include implementingdata governance best practices, building ETL workflows, and developing datawarehousing solutions to optimize data storage and retrieval processes.Qualifications * Proficiency in Data Architecture and Data Modeling. * Experience with Data Governance principles and practices. * Strong knowledge in Extract-Transform-Load (ETL) processes and Data Warehousing. * Understanding of database management systems and data integration tools. * Excellent problem-solving and analytical skills, with strong attention to detail. * Bachelor’s degree in Computer Science, Information Systems, or a related field. * Professional experience in enterprise-level data solutions is highly beneficial. * Ability to work collaboratively with cross-functional teams and stakeholders.Show more Show less

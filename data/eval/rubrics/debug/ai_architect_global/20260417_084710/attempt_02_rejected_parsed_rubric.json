@@ -1,0 +1,592 @@
+{
+  "meta": {
+    "category_id": "ai_architect_global",
+    "category_name": "AI Architect \u2014 Global/Remote",
+    "macro_family": "ai_architect",
+    "priority": "primary_target",
+    "confidence": "high",
+    "rubric_version": "2026-04-17"
+  },
+  "rubric_identity": {
+    "one_sentence_purpose": "Evaluate CVs for senior IC AI Architect roles requiring enterprise AI platform design, production delivery, secure integration, and stakeholder translation rather than people management or advanced research.",
+    "core_persona": "Senior individual contributor or player-coach architect who owns target-state AI platform design, ships production systems with guardrails and evaluation, integrates GenAI into enterprise environments, and translates technical tradeoffs for cross-functional stakeholders.",
+    "job_overlay_notes": [
+      "Adjust cloud provider emphasis (Azure, AWS, GCP) only when JD explicitly requires certified or demonstrated provider-specific delivery",
+      "Weight consulting-style stakeholder translation higher for client-facing or advisory-positioned roles",
+      "Increase guardrails/governance weight for regulated industries (finance, healthcare, public sector)",
+      "Weight agents/orchestration higher when JD explicitly mentions agentic AI, MCP, or workflow automation",
+      "Adjust language requirements (German, Polish) only when JD explicitly mandates native or C1+ proficiency"
+    ],
+    "citations": [
+      "data/eval/blueprints/ai_architect_global_blueprint.json",
+      "data/eval/baselines/ai_architect_global_baseline.json"
+    ]
+  },
+  "dimension_rubrics": [
+    {
+      "dimension": "ats_optimization",
+      "weight": 20,
+      "category_core": {
+        "what_good_looks_like": [
+          "Headline uses architect-family titles (AI Solution Architect, AI Architect, Generative AI Solution Architect) matching the 87% solutions_architect + ai_architect title family distribution",
+          "Keywords distributed across headline, summary, experience, and skills sections with appropriate density: primary keywords 2-3 mentions, secondary 1-2 mentions, niche terms once only",
+          "Platform design, enterprise architecture, production delivery, stakeholder alignment appear as primary signals",
+          "GenAI stack keywords (agents, RAG, guardrails, evaluation) appear only when backed by shipped work",
+          "Cloud provider branding (Azure, AWS) appears only with explicit delivery evidence, not as default positioning"
+        ],
+        "common_failures": [
+          "Using executive titles (Head of AI, Director, VP) when category is 79% senior_ic and only 3% senior_manager",
+          "Overloading skills section with framework lists without tying to architecture outcomes",
+          "Missing core architecture keywords (platform design, solution architecture, enterprise integration) that appear in 98.9% of roles",
+          "Keyword stuffing agent/RAG/LangChain terms without production delivery evidence",
+          "Claiming multi-cloud authority when Azure and AWS each appear in only 15.9% of roles"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Add provider-specific keywords (AWS, Azure, GCP) only when JD requires certified or demonstrated cloud AI delivery",
+          "Increase RAG and vector search keyword density when JD emphasizes retrieval-augmented systems",
+          "Add agents/orchestration/MCP keywords when JD explicitly mentions agentic AI or workflow automation",
+          "Include MLOps/Kubernetes/CI-CD keywords when JD emphasizes operationalization and platform tooling"
+        ],
+        "company_domain_overrides": [
+          "Consulting firms: emphasize stakeholder translation, workshops, client alignment vocabulary",
+          "Enterprise SaaS: emphasize multi-tenant architecture, scale, reliability vocabulary",
+          "Regulated industries: emphasize guardrails, governance, compliance, security vocabulary"
+        ],
+        "region_overrides": [
+          "DACH region: include German language proficiency only if evidenced and JD requires it",
+          "EU roles: include GDPR, EU AI Act vocabulary only when explicitly required and evidenced",
+          "Global/remote: emphasize remote-first collaboration and async communication"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Headline uses exact architect-family title matching JD with supporting evidence",
+          "Primary architecture keywords appear 2-3 times across sections with natural distribution",
+          "GenAI stack keywords match JD requirements and are backed by production delivery evidence",
+          "No keyword stuffing; all technical terms tied to architecture outcomes",
+          "Cloud provider branding precisely matches evidenced delivery experience"
+        ],
+        "7_8": [
+          "Headline uses safe architect-family title but could be more JD-specific",
+          "Primary keywords present but distribution could be optimized across sections",
+          "Most GenAI keywords backed by evidence with minor gaps",
+          "Some technical terms appear without clear architecture outcome ties"
+        ],
+        "5_6": [
+          "Headline generic or misaligned with architect-family expectations",
+          "Key architecture signals (platform design, enterprise integration) underrepresented",
+          "GenAI keywords present but poorly distributed or lacking evidence backing",
+          "Notable keyword gaps compared to JD requirements"
+        ],
+        "0_4": [
+          "Headline uses executive/manager titles unsupported by category profile",
+          "Missing core architecture keywords that appear in 98.9% of category roles",
+          "Keyword stuffing without evidence or excessive framework lists",
+          "Cloud provider claims without delivery evidence"
+        ]
+      },
+      "red_flags": [
+        "Executive titles (Head of AI, Director, VP) when evidence supports only IC/player-coach scope",
+        "Multi-cloud architecture claims without named Azure/AWS delivery examples",
+        "LangChain/LangGraph/LlamaIndex keyword lists without production integration evidence",
+        "AWS or Azure AI services keywords (Bedrock, SageMaker, Azure OpenAI) without explicit delivery evidence",
+        "Research or PhD-oriented keywords when category shows 0% research_heavy requirement"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json",
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ]
+    },
+    {
+      "dimension": "impact_clarity",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Architecture achievements quantified with business units served, production environments launched, time-to-production, uptime/SLO attainment",
+          "GenAI production outcomes quantified with systems integrated, workflow success rates, latency metrics, security findings reduced",
+          "Governance and evaluation outcomes quantified with pass rates, error/hallucination reduction, policy coverage, incident rates",
+          "Performance outcomes quantified with latency reduction, throughput increase, cost reduction, cache hit rates, availability improvements",
+          "STAR/ARIS format with architecture constraint first, design decision, then production outcome"
+        ],
+        "common_failures": [
+          "Generic claims of AI strategy or platform work without shipped system evidence",
+          "Listing technologies without architecture outcomes or production results",
+          "Missing scale, reliability, and cost metrics that appear in 15/20, 11/20, and 7/20 deep analyses respectively",
+          "Vague leadership claims without concrete delivery or stakeholder alignment outcomes",
+          "Prototype or POC work presented as production delivery"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Weight scale and reliability metrics higher for enterprise/high-traffic roles",
+          "Weight cost efficiency metrics higher for optimization-focused roles",
+          "Weight integration and system count metrics higher for enterprise integration roles",
+          "Weight evaluation and quality metrics higher for governance-focused roles"
+        ],
+        "company_domain_overrides": [
+          "Enterprise: emphasize multi-tenant scale, enterprise rollout metrics, stakeholder count",
+          "Consulting: emphasize client engagement outcomes, delivery acceleration, decision lead time",
+          "Regulated industries: emphasize compliance outcomes, audit pass rates, security metrics"
+        ],
+        "region_overrides": [
+          "EU roles: include GDPR compliance metrics only when explicitly evidenced",
+          "Global roles: emphasize cross-region deployment and distributed team delivery metrics"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Every major architecture claim backed by quantified production outcome",
+          "Scale, reliability, and cost metrics explicitly stated with concrete numbers",
+          "GenAI production metrics (latency, success rate, quality scores) clearly evidenced",
+          "Before/after improvements quantified for modernization work",
+          "Stakeholder impact quantified (teams enabled, adoption rates, decision acceleration)"
+        ],
+        "7_8": [
+          "Most architecture claims backed by metrics with some gaps",
+          "Production outcomes clear but some metrics could be more specific",
+          "GenAI delivery evidenced but quality/evaluation metrics underrepresented",
+          "Good quantification in flagship projects with weaker coverage elsewhere"
+        ],
+        "5_6": [
+          "Some metrics present but majority of claims lack quantification",
+          "Production delivery implied but not clearly evidenced with outcomes",
+          "GenAI work mentioned but integration and scale metrics missing",
+          "Modernization work described without before/after measurements"
+        ],
+        "0_4": [
+          "No quantified outcomes for architecture or delivery claims",
+          "Technology lists without production results or business impact",
+          "Generic AI/ML experience claims without shipped system evidence",
+          "Leadership claims without concrete delivery or alignment outcomes"
+        ]
+      },
+      "red_flags": [
+        "Unsourced metrics (percentages, user counts, cost savings) that cannot be verified from role context",
+        "POC or prototype work presented as enterprise production delivery",
+        "Scale claims (millions of users, billions of events) without supporting context",
+        "Cost reduction claims without baseline or methodology evidence",
+        "Leadership impact claims (teams enabled, engineers mentored) without verification pathway"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json",
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ]
+    },
+    {
+      "dimension": "jd_alignment",
+      "weight": 25,
+      "category_core": {
+        "what_good_looks_like": [
+          "Platform design and architecture ownership evidence matching the 98.9% category requirement",
+          "Production delivery evidence matching architecture + delivery valued evidence (20/20 and 19/20 respectively)",
+          "Senior IC or player-coach positioning matching 79% senior_ic and 38% player_coach category distribution",
+          "GenAI production stack evidence (agents 38.6%, guardrails 37.5%, RAG 28.4%, evaluation 20.5%) where JD requires",
+          "Stakeholder translation evidence matching 76.1% communication and 44.3% stakeholder management signals"
+        ],
+        "common_failures": [
+          "Positioning as people manager when category is only 1% manager and 2.3% hiring",
+          "Leading with research or experimentation when category shows 0% research_heavy requirement",
+          "Missing enterprise integration evidence when microservices (13.6%) and APIs (11.4%) appear in JDs",
+          "Generic AI strategy positioning without architecture decisions or production results",
+          "Over-indexing on one cloud provider when category shows multi-cloud presence at only 29%"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Weight agents/orchestration evidence higher when JD emphasizes agentic AI or workflow automation",
+          "Weight RAG/vector search evidence higher when JD emphasizes retrieval systems",
+          "Weight guardrails/governance evidence higher when JD emphasizes security or responsible AI",
+          "Weight cloud-specific evidence when JD requires certified or demonstrated provider expertise",
+          "Weight consulting/advisory evidence when JD positions role as client-facing"
+        ],
+        "company_domain_overrides": [
+          "Enterprise product companies: weight production scale and reliability evidence higher",
+          "Consulting firms: weight stakeholder translation and delivery methodology evidence higher",
+          "Regulated industries: weight governance, security, and compliance evidence higher",
+          "Startups: weight greenfield delivery and velocity evidence higher"
+        ],
+        "region_overrides": [
+          "DACH region: verify German language evidence if JD requires it",
+          "EU roles: verify GDPR/EU AI Act compliance evidence if JD requires it",
+          "Global/remote: weight async collaboration and distributed delivery evidence"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Direct match on platform design and architecture ownership with production evidence",
+          "GenAI stack evidence precisely matches JD requirements (agents, RAG, guardrails, evaluation)",
+          "Seniority and scope positioning matches senior IC/player-coach category profile",
+          "Cloud provider and technology stack evidence matches JD specifics",
+          "Stakeholder translation evidence matches consulting or enterprise context"
+        ],
+        "7_8": [
+          "Strong architecture and delivery evidence with minor JD-specific gaps",
+          "Most GenAI stack requirements covered with some evidence gaps",
+          "Seniority positioning appropriate but scope could be more JD-aligned",
+          "Technology evidence mostly matches with some stack gaps"
+        ],
+        "5_6": [
+          "Architecture evidence present but not clearly tied to JD requirements",
+          "GenAI evidence generic rather than JD-specific",
+          "Seniority positioning unclear or misaligned with JD scope",
+          "Notable technology or domain gaps compared to JD requirements"
+        ],
+        "0_4": [
+          "No clear architecture ownership evidence matching category profile",
+          "GenAI experience missing or irrelevant to JD requirements",
+          "Seniority positioning misaligned (executive or junior vs senior IC)",
+          "Technology stack fundamentally misaligned with JD requirements"
+        ]
+      },
+      "red_flags": [
+        "Executive or management positioning when JD seeks senior IC/player-coach",
+        "Research or experimentation focus when JD requires production delivery",
+        "Single cloud provider expertise when JD requires different provider",
+        "Customer-facing solution architect framing when JD is internal platform role",
+        "DevOps or infrastructure ownership claims when JD seeks architecture collaboration"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json",
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ]
+    },
+    {
+      "dimension": "executive_presence",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "Architectural authority demonstrated through platform ownership, reference architecture design, and technology governance",
+          "System ownership evidenced through end-to-end delivery accountability from design to production",
+          "Stakeholder translation showing ability to align product, engineering, and business stakeholders on technical tradeoffs",
+          "Technical mentoring and design review leadership without inflating into formal people management",
+          "Production AI governance authority through guardrails design, evaluation frameworks, and security controls"
+        ],
+        "common_failures": [
+          "Framing as C-suite advisor or executive leadership when category is 79% senior IC",
+          "Claiming hiring ownership or performance management when these appear in only 2.3% of roles",
+          "Org-building language when org_building appears in only 11.4% of roles",
+          "Generic leadership adjectives without concrete architecture ownership evidence",
+          "Boardroom or P&L language incompatible with senior IC architect positioning"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Weight stakeholder translation higher for consulting or client-facing roles",
+          "Weight platform governance authority higher for enterprise platform roles",
+          "Weight technical mentoring higher when JD mentions player-coach or team enablement",
+          "Weight architecture decision ownership higher for principal or staff-level roles"
+        ],
+        "company_domain_overrides": [
+          "Consulting: emphasize client alignment, workshop facilitation, advisory authority",
+          "Enterprise: emphasize cross-functional stakeholder alignment, technology governance",
+          "Startups: emphasize architecture decision authority, hands-on delivery credibility"
+        ],
+        "region_overrides": [
+          "German market: verify ability to translate technical concepts for German-speaking stakeholders if required",
+          "Global/remote: emphasize async stakeholder alignment and written communication authority"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "Clear platform or system ownership with end-to-end delivery accountability",
+          "Demonstrated architectural authority through reference architecture or technology governance",
+          "Concrete stakeholder translation examples with measurable alignment outcomes",
+          "Technical mentoring evidence with specific engineers coached or design reviews led",
+          "Production AI governance authority with guardrails, evaluation, or security ownership"
+        ],
+        "7_8": [
+          "Good architectural authority evidence with some ownership gaps",
+          "Stakeholder translation implied but could be more concretely evidenced",
+          "Player-coach scope present but not prominently featured",
+          "Platform ownership clear but governance authority underrepresented"
+        ],
+        "5_6": [
+          "Architectural authority unclear or buried in implementation details",
+          "Stakeholder interaction mentioned but translation outcomes missing",
+          "Limited evidence of system ownership or delivery accountability",
+          "Mentoring or coaching mentioned without concrete examples"
+        ],
+        "0_4": [
+          "No evidence of architectural or system ownership",
+          "Executive or management framing without supporting evidence",
+          "Pure implementation focus without architecture authority signals",
+          "Stakeholder translation claims without concrete examples"
+        ]
+      },
+      "red_flags": [
+        "Unsupported people-management framing (hiring ownership, performance management, org-building) when evidence is IC/player-coach",
+        "C-suite, boardroom, or P&L language incompatible with senior IC architect category",
+        "Head of AI, Director, or VP titles without supporting management evidence",
+        "Generic leadership adjectives (strategic leader, executive presence) without architectural authority evidence",
+        "Claiming team size or direct reports without explicit evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json",
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ]
+    },
+    {
+      "dimension": "anti_hallucination",
+      "weight": 15,
+      "category_core": {
+        "what_good_looks_like": [
+          "All metrics traceable to specific roles, projects, or verifiable contexts",
+          "Title claims match evidenced scope (architect titles for architecture work, not inflated executive titles)",
+          "Cloud provider claims backed by named delivery examples on those specific platforms",
+          "GenAI stack claims (agents, RAG, guardrails) tied to shipped production systems",
+          "Leadership scope claims (mentoring, teams enabled) proportionate to evidenced role scope"
+        ],
+        "common_failures": [
+          "Fabricating or inflating metrics (user counts, cost savings, performance improvements) without role context support",
+          "Title inflation from senior IC to executive titles when management evidence is missing",
+          "Claiming multi-cloud or provider-specific authority without named delivery evidence",
+          "PhD, research, or publication claims when none exist in the record",
+          "Inventing stakeholder scope (C-suite engagement, board presentations) without explicit evidence"
+        ]
+      },
+      "job_specific_overlay": {
+        "what_to_adjust_per_jd": [
+          "Scrutinize cloud provider claims more heavily when JD requires specific certified expertise",
+          "Verify compliance claims (GDPR, EU AI Act) when JD emphasizes regulated environment",
+          "Check language proficiency claims when JD requires specific language capability",
+          "Verify domain expertise claims when JD requires specific industry background"
+        ],
+        "company_domain_overrides": [
+          "Consulting: verify client-facing and stakeholder translation claims with explicit evidence",
+          "Regulated industries: verify compliance and governance claims with auditable evidence",
+          "Enterprise: verify scale and production delivery claims with contextual support"
+        ],
+        "region_overrides": [
+          "DACH: verify German language and DSGVO claims with explicit evidence",
+          "EU: verify GDPR and EU AI Act compliance claims with delivery evidence",
+          "Global: verify remote collaboration claims with distributed team evidence"
+        ]
+      },
+      "score_anchors": {
+        "9_10": [
+          "All metrics have clear provenance from role context or project evidence",
+          "Title claims precisely match evidenced scope without inflation",
+          "Technology and cloud claims limited to explicitly evidenced platforms",
+          "Leadership scope claims proportionate to role evidence",
+          "No unsupported compliance, language, or domain claims"
+        ],
+        "7_8": [
+          "Most claims verifiable with minor ambiguous areas",
+          "Title and scope claims appropriate with some precision gaps",
+          "Technology claims mostly evidenced with minor extrapolations",
+          "Leadership claims reasonable but some specifics unclear"
+        ],
+        "5_6": [
+          "Several claims lack clear evidence backing",
+          "Some title or scope inflation beyond evidenced roles",
+          "Technology claims include items not clearly delivered",
+          "Metrics present but provenance unclear"
+        ],
+        "0_4": [
+          "Multiple fabricated or clearly inflated claims",
+          "Title claims misrepresent evidenced scope",
+          "Metrics appear invented without role context support",
+          "Leadership or stakeholder claims exceed any evidence"
+        ]
+      },
+      "red_flags": [
+        "Metrics (percentages, counts, dollar amounts) without traceable role or project context",
+        "PhD or publication claims when record shows no academic credentials",
+        "AWS, Azure, or GCP AI services authority without named delivery evidence",
+        "Multi-cloud architecture ownership without explicit multi-provider delivery",
+        "GDPR, EU AI Act, or compliance program ownership without hands-on delivery evidence",
+        "Hiring ownership or performance management claims when evidence shows only 2.3% category incidence",
+        "Customer-facing solution architecture claims without explicit stakeholder interaction evidence",
+        "DevOps or infrastructure ownership claims when evidence supports only architecture collaboration",
+        "Public sector or government deployment claims without explicit evidence",
+        "Native language claims (German C1, Polish) without explicit proficiency evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json",
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ]
+    }
+  ],
+  "gates": {
+    "must_have_coverage_gate": {
+      "pass_criteria": [
+        "Platform design or enterprise AI architecture ownership evidence present (appears in 98.9% of category roles)",
+        "Production delivery evidence with shipped systems rather than only prototypes or POCs",
+        "Senior IC or player-coach positioning consistent with 79% senior_ic and 38% player_coach category profile",
+        "At least one GenAI production signal present (agents, RAG, guardrails, or evaluation)"
+      ],
+      "fail_conditions": [
+        "No architecture ownership evidence despite platform design appearing in 98.9% of roles",
+        "Only prototype, research, or experimentation evidence without production delivery",
+        "Executive or pure management positioning when category is 79% senior IC",
+        "No GenAI stack evidence when category centers on agents (38.6%), guardrails (37.5%), RAG (28.4%)"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ]
+    },
+    "unsafe_claim_gate": {
+      "pass_criteria": [
+        "No fabricated metrics without traceable role context",
+        "Title claims match evidenced scope without inflation to executive levels",
+        "Cloud provider claims limited to explicitly evidenced platforms",
+        "Leadership scope claims proportionate to IC/player-coach evidence"
+      ],
+      "fail_conditions": [
+        "Head of AI, Director, VP, or Engineering Manager titles without management evidence",
+        "Multi-cloud or specific provider AI authority without named delivery examples",
+        "Hiring, performance management, or org-building ownership when evidence shows only 2.3% category incidence",
+        "PhD, research, or publication claims when record lacks academic credentials",
+        "GDPR, EU AI Act, or compliance ownership without explicit delivery evidence",
+        "Customer-facing architecture or DevOps ownership without explicit evidence"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json",
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ]
+    },
+    "persona_fit_gate": {
+      "pass_criteria": [
+        "Positioning as senior IC architect or player-coach rather than executive or pure manager",
+        "Architecture and delivery focus rather than research or experimentation focus",
+        "Stakeholder translation framed as technical alignment rather than business leadership",
+        "GenAI stack positioned as production capability rather than advanced experimentation"
+      ],
+      "fail_conditions": [
+        "Executive leadership persona when category is 79% senior IC and only 1% manager",
+        "Research scientist or ML researcher persona when category shows 0% research_heavy",
+        "Pure people manager persona when hiring and performance management at 2.3%",
+        "Generic full-stack or DevOps persona without architecture authority focus"
+      ],
+      "citations": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ]
+    }
+  },
+  "verdict_thresholds": {
+    "strong_match_min": 8.5,
+    "good_match_min": 7.0,
+    "needs_work_min": 5.5,
+    "weak_match_max": 5.49
+  },
+  "scoring_guidance": {
+    "how_to_interpret_executive_presence": "For AI Architect roles, executive_presence means architectural authority and system ownership, NOT literal executive leadership. Score based on: platform design ownership, technology governance authority, end-to-end delivery accountability, stakeholder translation capability, and technical mentoring scope. Penalize C-suite, boardroom, P&L, or people-management framing when evidence supports only senior IC or player-coach scope. A score of 9-10 requires demonstrated platform ownership with architectural decision authority and stakeholder alignment outcomes, not org-building or hiring ownership.",
+    "how_to_penalize_unsupported_claims": "Apply immediate 2-point penalty per fabricated metric lacking role context. Apply 3-point penalty for title inflation (IC evidence with executive claims). Apply 2-point penalty per technology claim without delivery evidence (especially cloud providers, GenAI stack). Apply 3-point penalty for PhD, publication, or research claims when record lacks academic credentials. Apply 2-point penalty for management scope claims (hiring, performance, org-building) when evidence shows only IC/player-coach work. Multiple violations compound: three unsupported claims should push score below 5.0 regardless of other strengths.",
+    "how_to_handle_category_vs_job_tradeoffs": "Category signals set the baseline (platform design 98.9%, senior_ic 79%, agents 38.6%, guardrails 37.5%). JD-specific requirements override category defaults only for explicit JD mentions: weight cloud provider evidence when JD requires it, weight consulting-style evidence when JD positions as client-facing, weight compliance evidence when JD emphasizes regulated environment. When JD differs from category profile, prioritize JD alignment but flag persona divergence. A CV perfectly aligned to a misfit JD should still score well on jd_alignment but may fail persona_fit_gate.",
+    "citations": [
+      "data/eval/blueprints/ai_architect_global_blueprint.json",
+      "data/eval/baselines/ai_architect_global_baseline.json"
+    ]
+  },
+  "scorecard_template_mapping": {
+    "dimension_keys": [
+      "ats_optimization",
+      "impact_clarity",
+      "jd_alignment",
+      "executive_presence",
+      "anti_hallucination"
+    ],
+    "gate_keys": [
+      "must_have_coverage_gate",
+      "unsafe_claim_gate",
+      "persona_fit_gate"
+    ],
+    "required_output_fields": [
+      "overall_score",
+      "verdict",
+      "top_strengths",
+      "top_failures",
+      "unsupported_claims",
+      "missing_must_haves"
+    ]
+  },
+  "evidence_ledger": [
+    {
+      "rubric_rule": "Platform design and architecture ownership is table-stakes (appears in 98.9% of category roles)",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Senior IC positioning (79%) with player-coach scope (38%) dominates category; management is only 1%",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Agents/orchestration (38.6%), guardrails/governance (37.5%), RAG (28.4%), evaluation (20.5%) are key GenAI signals",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Communication (76.1%) and stakeholder management (44.3%) are material soft-skill requirements",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Title families skew to solutions_architect (50%) and ai_architect (37%); avoid executive titles",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "No hard skill reaches 60%; Python leads at only 35.2% \u2014 avoid treating one stack as universal",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Azure (15.9%) and AWS (15.9%) appear equally; multi_cloud at 29% \u2014 provider claims need explicit evidence",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Hiring (2.3%), performance management (2.3%), org_building (11.4%) are weak signals \u2014 do not inflate management scope",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Research_heavy (0%) and requires_phd (0%) \u2014 do not use research or academic framing",
+      "support": [
+        "data/eval/blueprints/ai_architect_global_blueprint.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Baseline assessment shows candidate at 7.8 combined fit with GOOD readiness tier",
+      "support": [
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Candidate strongest signals: enterprise AI platform (Commander-4), RAG with hybrid search, guardrails/governance, legacy modernization",
+      "support": [
+        "data/eval/baselines/ai_architect_global_baseline.json",
+        "data/master-cv/projects/commander4.md"
+      ],
+      "confidence": "high"
+    },
+    {
+      "rubric_rule": "Candidate gaps: agents/orchestration underrepresented, player-coach scope buried, consulting-style evidence pending curation",
+      "support": [
+        "data/eval/baselines/ai_architect_global_baseline.json"
+      ],
+      "confidence": "medium"
+    }
+  ]
+}

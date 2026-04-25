@@ -1,0 +1,542 @@
+{
+  "signal_strength": {
+    "applied_count": 3,
+    "avg_score": 75.4,
+    "median_score": 85,
+    "score_range": [
+      0,
+      92
+    ]
+  },
+  "title_signals": {
+    "title_families": {
+      "other": 32,
+      "senior_engineer": 24,
+      "engineering_manager": 11,
+      "tech_lead": 8,
+      "vp_ai": 3
+    },
+    "top_title_variants": {
+      "Senior DevOps Engineer": 13,
+      "Software Development Manager": 12,
+      "Group Product Manager": 4,
+      "Customer Success Manager": 2,
+      "Senior Engineering Manager": 2,
+      "Senior Ruby-on-Rails Engineer": 2,
+      "Senior Software Engineer": 2,
+      "Vice President of Product Engineering": 2
+    },
+    "noisy_title_mode": true
+  },
+  "role_archetype_signals": {
+    "seniority_distribution": {
+      "senior_ic": 47,
+      "manager": 19,
+      "senior_manager": 9,
+      "mid_ic": 4,
+      "executive": 3,
+      "director": 1
+    },
+    "role_scope_distribution": {
+      "ic": 45,
+      "manager": 23,
+      "player_coach": 11,
+      "executive": 3,
+      "director": 1
+    },
+    "management_signals_weak": true
+  },
+  "management_leadership": {
+    "hiring": {
+      "count": 2,
+      "total": 83,
+      "pct": 2.4
+    },
+    "performance_management": {
+      "count": 13,
+      "total": 83,
+      "pct": 15.7
+    },
+    "org_building": {
+      "count": 14,
+      "total": 83,
+      "pct": 16.9
+    },
+    "budget_pnl": {
+      "count": 0,
+      "total": 83,
+      "pct": 0.0
+    },
+    "direct_reports_samples": []
+  },
+  "architecture": {
+    "platform_design_pct": 66.3,
+    "greenfield_split": {
+      "both": 34,
+      "greenfield": 10,
+      "optimization": 10
+    },
+    "cloud_preference": {
+      "AWS": 9,
+      "GCP": 2
+    }
+  },
+  "hard_skills_top": [
+    {
+      "label": "python",
+      "count": 27,
+      "total": 83,
+      "pct": 32.5
+    },
+    {
+      "label": "react",
+      "count": 18,
+      "total": 83,
+      "pct": 21.7
+    },
+    {
+      "label": "kubernetes",
+      "count": 17,
+      "total": 83,
+      "pct": 20.5
+    },
+    {
+      "label": "helm",
+      "count": 14,
+      "total": 83,
+      "pct": 16.9
+    },
+    {
+      "label": "gitops",
+      "count": 13,
+      "total": 83,
+      "pct": 15.7
+    },
+    {
+      "label": "infrastructure-as-code",
+      "count": 13,
+      "total": 83,
+      "pct": 15.7
+    },
+    {
+      "label": "public cloud",
+      "count": 13,
+      "total": 83,
+      "pct": 15.7
+    },
+    {
+      "label": "terraform",
+      "count": 13,
+      "total": 83,
+      "pct": 15.7
+    },
+    {
+      "label": "agile development methodologies",
+      "count": 12,
+      "total": 83,
+      "pct": 14.5
+    },
+    {
+      "label": "big data architectures",
+      "count": 12,
+      "total": 83,
+      "pct": 14.5
+    },
+    {
+      "label": "large-scale system design",
+      "count": 12,
+      "total": 83,
+      "pct": 14.5
+    },
+    {
+      "label": "nosql databases",
+      "count": 12,
+      "total": 83,
+      "pct": 14.5
+    },
+    {
+      "label": "relational databases",
+      "count": 12,
+      "total": 83,
+      "pct": 14.5
+    },
+    {
+      "label": "observability through logs, metrics and tracing",
+      "count": 11,
+      "total": 83,
+      "pct": 13.3
+    },
+    {
+      "label": "ability to read and understand application code",
+      "count": 10,
+      "total": 83,
+      "pct": 12.0
+    }
+  ],
+  "soft_skills_top": [
+    {
+      "label": "collaboration",
+      "count": 57,
+      "total": 83,
+      "pct": 68.7
+    },
+    {
+      "label": "communication",
+      "count": 56,
+      "total": 83,
+      "pct": 67.5
+    },
+    {
+      "label": "mentoring",
+      "count": 27,
+      "total": 83,
+      "pct": 32.5
+    },
+    {
+      "label": "ownership",
+      "count": 23,
+      "total": 83,
+      "pct": 27.7
+    },
+    {
+      "label": "problem-solving",
+      "count": 20,
+      "total": 83,
+      "pct": 24.1
+    },
+    {
+      "label": "leadership",
+      "count": 18,
+      "total": 83,
+      "pct": 21.7
+    },
+    {
+      "label": "commitment",
+      "count": 16,
+      "total": 83,
+      "pct": 19.3
+    },
+    {
+      "label": "analytical skills",
+      "count": 15,
+      "total": 83,
+      "pct": 18.1
+    },
+    {
+      "label": "user-centricity",
+      "count": 15,
+      "total": 83,
+      "pct": 18.1
+    },
+    {
+      "label": "open to feedback",
+      "count": 14,
+      "total": 83,
+      "pct": 16.9
+    }
+  ],
+  "programming_languages": {
+    "required": [
+      {
+        "label": "python",
+        "count": 38,
+        "total": 83,
+        "pct": 45.8
+      },
+      {
+        "label": "go",
+        "count": 14,
+        "total": 83,
+        "pct": 16.9
+      },
+      {
+        "label": "shell",
+        "count": 13,
+        "total": 83,
+        "pct": 15.7
+      },
+      {
+        "label": "typescript",
+        "count": 7,
+        "total": 83,
+        "pct": 8.4
+      },
+      {
+        "label": "ruby",
+        "count": 4,
+        "total": 83,
+        "pct": 4.8
+      },
+      {
+        "label": "java",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      }
+    ],
+    "preferred": [
+      {
+        "label": "c",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "python",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "golang",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "sql",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      }
+    ]
+  },
+  "ai_ml_stack": {
+    "signals": {
+      "rag": {
+        "count": 7,
+        "total": 83,
+        "pct": 8.4
+      },
+      "agents_orchestration": {
+        "count": 16,
+        "total": 83,
+        "pct": 19.3
+      },
+      "fine_tuning": {
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      "evaluation_quality": {
+        "count": 11,
+        "total": 83,
+        "pct": 13.3
+      },
+      "guardrails_governance": {
+        "count": 8,
+        "total": 83,
+        "pct": 9.6
+      },
+      "prompt_engineering": {
+        "count": 4,
+        "total": 83,
+        "pct": 4.8
+      },
+      "vector_search": {
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      "model_serving_routing": {
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      }
+    },
+    "frameworks": [
+      {
+        "label": "tensorrt",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "torchserve",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "triton",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "vllm",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "databricks",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "hazelcast",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "pyspark",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "quarkus",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "ruby on rails",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "spark",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      }
+    ],
+    "observability": [
+      {
+        "label": "tracing",
+        "count": 4,
+        "total": 83,
+        "pct": 4.8
+      },
+      {
+        "label": "logs",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "metrics",
+        "count": 3,
+        "total": 83,
+        "pct": 3.6
+      },
+      {
+        "label": "cloudwatch",
+        "count": 2,
+        "total": 83,
+        "pct": 2.4
+      },
+      {
+        "label": "datadog",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "grafana",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "structured logging",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      },
+      {
+        "label": "sumologic",
+        "count": 1,
+        "total": 83,
+        "pct": 1.2
+      }
+    ]
+  },
+  "governance_compliance_top": [
+    {
+      "label": "gdpr",
+      "count": 14,
+      "total": 83,
+      "pct": 16.9
+    },
+    {
+      "label": "fedramp",
+      "count": 1,
+      "total": 83,
+      "pct": 1.2
+    },
+    {
+      "label": "mitre att and ck",
+      "count": 1,
+      "total": 83,
+      "pct": 1.2
+    },
+    {
+      "label": "sox",
+      "count": 1,
+      "total": 83,
+      "pct": 1.2
+    }
+  ],
+  "pain_points_top": [
+    {
+      "pain_point": "translate business needs into technical execution",
+      "count": 9
+    },
+    {
+      "pain_point": "drive adoption of the audio ai platform across southern europe",
+      "count": 7
+    },
+    {
+      "pain_point": "deliver scalable, high-quality software solutions",
+      "count": 6
+    },
+    {
+      "pain_point": "rapidly expanding user base",
+      "count": 5
+    },
+    {
+      "pain_point": "rapidly expanding tech team",
+      "count": 5
+    },
+    {
+      "pain_point": "lead a new product initiative",
+      "count": 3
+    },
+    {
+      "pain_point": "remove blockers to keep delivery on track",
+      "count": 3
+    },
+    {
+      "pain_point": "shape engineering practices",
+      "count": 3
+    }
+  ],
+  "market_context": {
+    "domain_industry": {
+      "enterprise_saas": 13,
+      "healthcare": 7,
+      "fintech": 2,
+      "ecommerce": 1,
+      "software": 1
+    },
+    "company_stage": {
+      "scaleup": 20,
+      "enterprise": 10,
+      "startup_a": 1
+    },
+    "collaboration_model": {
+      "remote_first": 70,
+      "distributed": 13
+    }
+  },
+  "disqualifiers": {
+    "requires_phd_pct": 0.0,
+    "research_heavy_pct": 1.2
+  }
+}

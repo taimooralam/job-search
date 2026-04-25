@@ -1,0 +1,10 @@
+# Senior Software Engineer - JavaScript / Node.JS
+
+**Company:** TALENER
+**Location:** 
+**Score:** 0 (Tier D)
+**Status:** N/A
+
+---
+
+Senior Software EngineerJob DescriptionAs a senior engineer on the platform team, you will be responsible for design,implementation, and maintenance of components that support our client's suite ofreal-time support products, including our internal and external API,authentication schemes, platform security, data storage/analytics, and thirdparty service integrations.The focus of this role is on the integration of products and services withexternal platforms including ServiceNow, Salesforce, and others.Requirements * 5 years experience working with cloud-deployed web applications * 5 years of relational database experience in an web application * 3 years of professional node.js/TypeScript experience * Strong experience developing on both back-end and front-end in TypeScript/JavaScript (React) * Strong experience with node.js/TypeScript tooling pipelines and test driven development * Ability to provide technical leadership and ownership of components, supporting other engineers as needed with documentation and assistance * Ability to write well structured, idiomatic code in the languages required by specific integration platforms * Ability to design, plan, execute complex technical tasks in a micro-service environment * Experience working in an agile team environment using tools like JIRA Ideally Has Some Experience With * CRM integration/development (Salesforce/ServiceNOW) * REST API design/development * WebRTC or other real time communication standards * Experience with LLM API’s, prompt engineering, and prompt management * TypeScript/Web Component Frameworks (React/Angular/etc.) * Web sockets / proxies / networking * AWS or similar cloud infrastructure * Monorepo development using nx or similar technologies * UI development technologies such as Storybook * Experience with AI/LLM technologies Logistics * 100% Remote * Base Salary: $180k-$200k, based on experience * Comprehensive Benefits Package For more info, contact Maggie at mmclaughlin@talener.comShow more Show less

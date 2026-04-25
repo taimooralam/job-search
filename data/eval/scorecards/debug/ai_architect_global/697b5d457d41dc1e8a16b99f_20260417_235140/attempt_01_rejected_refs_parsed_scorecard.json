@@ -1,0 +1,86 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "ai_architect_global",
+  "job_id": "697b5d457d41dc1e8a16b99f",
+  "dimension_scores": {
+    "ats_optimization": 3.5,
+    "impact_clarity": 5.5,
+    "jd_alignment": 2.0,
+    "executive_presence": 5.5,
+    "anti_hallucination": 7.5
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": false
+  },
+  "overall_score": 4.45,
+  "verdict": "WEAK_MATCH",
+  "top_strengths": [
+    "Solution Architect title aligns with JD title family and category prevalence refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:3,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:1",
+    "MS Computer Science from TUM matches education requirement refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:83,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:27",
+    "Strong Python experience (6+ years) matches JD requirement refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:19,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:47,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:29",
+    "Quantified architecture outcomes with billions of events and 10x scaling metrics refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:8,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:14",
+    "Cross-functional collaboration evidence with engineering and stakeholders refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:21,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:79"
+  ],
+  "top_failures": [
+    "Zero LLM training or fine-tuning experience; JD requires deep expertise in post-training refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:2,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5,cv:1-91",
+    "No deep learning frameworks (PyTorch, Megatron-LM, Nemo, TRL, VeRL) anywhere in CV refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:25,cv:17-21",
+    "No RLHF, SFT, or any LLM alignment techniques evidenced refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:6,cv:1-91",
+    "No data curation or synthetic data generation experience for ML training refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:4,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:12,cv:1-91",
+    "Traditional software architecture background (event-driven, CQRS) without any AI/ML production work refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:8,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:18,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:2"
+  ],
+  "unsupported_claims": [],
+  "missing_must_haves": [
+    "Deep expertise in AI/Deep Learning with hands-on LLM training/finetuning refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:24,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:2",
+    "Deep learning frameworks for LLMs (PyTorch, Megatron-LM, Nemo, Transformers, TRL, VeRL) refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:25",
+    "LLM alignment techniques (RLHF, SFT) refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:6",
+    "Data preparation and curation for large-scale model training refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:4,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:12",
+    "GenAI stack coverage (agents, RAG, guardrails, evaluation) refs=data/eval/blueprints/ai_architect_global_blueprint.json"
+  ],
+  "persona_fit_notes": [
+    "CV presents traditional software/platform architect persona with no AI/ML experience refs=cv:6-16,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:18",
+    "Domain expertise entirely in event-driven systems, observability, and backend development\u2014not GenAI refs=data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:18,data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:30",
+    "JD requires AI specialist persona with LLM post-training depth; CV lacks this domain entirely refs=data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:10,data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:24"
+  ],
+  "representation_gap_hits": [],
+  "curation_gap_hits": [
+    "Agents/orchestration gap (38.6% category signal) completely unaddressed refs=data/eval/blueprints/ai_architect_global_blueprint.json"
+  ],
+  "evidence_refs": [
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:3",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:6-16",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:8",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:14",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:17-21",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:18",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:19",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:21",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:30",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:47",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:79",
+    "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md:83",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:1",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:2",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:4",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:5",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:6",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:10",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:12",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:24",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:25",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:27",
+    "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md:29",
+    "data/eval/blueprints/ai_architect_global_blueprint.json"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T21:52:29Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/ai_architect_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/ai_architect_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/ai_architect_global_baseline.json",
+    "cv_path": "data/eval/calibration/cvs/697b5d457d41dc1e8a16b99f.md",
+    "jd_path": "data/eval/calibration/jds/697b5d457d41dc1e8a16b99f.md"
+  }
+}

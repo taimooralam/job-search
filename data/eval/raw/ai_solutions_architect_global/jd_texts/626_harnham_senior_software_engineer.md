@@ -1,0 +1,10 @@
+# Senior Software Engineer
+
+**Company:** HARNHAM
+**Location:** United States
+**Score:** 42 (Tier D)
+**Status:** N/A
+
+---
+
+Title: Senior or Lead Software Engineer - AILocation: 100% Remote - Must be U.S. BasedCompensation: $140-160k base + annual bonus (10-15%)About the RoleOur client, a leading global EdTech company, is expanding its AI Platform teamand seeking an experienced Senior Software Engineer with hands-on expertise inNLP and Generative AI. This fully remote role focuses on building scalable,production-ready infrastructure and frameworks that power enterprise-level AIuse cases across the organization.Responsibilities * Design and deploy production-grade AI infrastructure to support Generative AI and NLP applications. * Build and optimize RAG (Retrieval-Augmented Generation) pipelines and agentic architectures for enterprise AI adoption. * Develop full-stack features using Angular on the frontend and Python with Node.js or Go on the backend. * Implement and manage cloud infrastructure using AWS (primary) and Azure (for AI services). * Configure and maintain CI/CD workflows with GitHub Actions and Infrastructure as Code via Terraform. * Monitor system performance and reliability through New Relic, DataDog, or similar tools. * Collaborate cross-functionally with AI researchers, data scientists, and product teams to scale AI services and integrations.Key Technologies * Frontend: Angular * Backend: Python, Node.js or Go * Cloud & IaC: AWS, Azure AI Services, Terraform * CI/CD: GitHub Actions * Monitoring: New Relic, DataDog (or similar) * AI & ML Tooling: LangChain, LangGraph, vector databases for retrieval and model optimizationQualifications * Deep understanding of software engineering fundamentals, system design, and distributed systems. * Full-stack development proficiency across Angular, Python, and Node.js or Go. * Practical experience with LLMs, RAG architecture, and production GenAI implementations. * Strong infrastructure and DevOps background across AWS/Azure ecosystems. * Proven ability to own and deliver complex projects end-to-end while collaborating across teams.Show more Show less

@@ -1,0 +1,4 @@
+[
+  "unsafe_claim_gate=true contradicts non-empty unsupported_claims",
+  "persona_fit_gate=true contradicts non-empty persona_fit_notes"
+]

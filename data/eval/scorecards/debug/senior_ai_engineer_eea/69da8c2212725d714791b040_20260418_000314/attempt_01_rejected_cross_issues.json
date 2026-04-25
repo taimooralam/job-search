@@ -1,0 +1,4 @@
+[
+  "must_have_coverage_gate=true contradicts non-empty missing_must_haves",
+  "persona_fit_gate=true contradicts non-empty persona_fit_notes"
+]

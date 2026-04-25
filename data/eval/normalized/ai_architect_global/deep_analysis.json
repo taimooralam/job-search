@@ -1,0 +1,2582 @@
+[
+  {
+    "job_id": "6978ac397d41dc1e8a0e88bf",
+    "title_normalized": "Senior AI Solution Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "modern AI architectures",
+      "LLM ecosystems",
+      "LangChain",
+      "vLLM",
+      "RAG pipelines",
+      "embedding models",
+      "data engineering concepts",
+      "software reference architectures",
+      "API design",
+      "microservices",
+      "Docker",
+      "Kubernetes",
+      "MLOps",
+      "AIOps",
+      "privacy",
+      "information security",
+      "compliance requirements",
+      "integration into existing IT landscapes",
+      "on-premise architectures",
+      "cloud architectures",
+      "hybrid architectures"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "microservices",
+      "containerization"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "derived",
+      "prompt_engineering": "not_specified",
+      "vector_search": "derived",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "vLLM"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "DSGVO",
+      "EU AI Act"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "consulting",
+      "conceptual_thinking",
+      "customer_orientation"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "consultancy",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "tragf\u00e4hige Zielbilder",
+      "L\u00f6sungsarchitekturen",
+      "Umsetzungsroadmaps",
+      "Qualit\u00e4tssicherung",
+      "Reviews von Pipelines, APIs und Infrastrukturkonzepten bis zur Produktivsetzung beim Kunden",
+      "sichere Integration in bestehende IT-Landschaften",
+      "Ber\u00fccksichtigung von Sicherheit, Compliance und europ\u00e4ischen Standards"
+    ],
+    "implied_pain_points": [
+      "AI-L\u00f6sungen m\u00fcssen in bestehende Beh\u00f6rden- und Fachverfahren integriert werden",
+      "Architekturen m\u00fcssen Datenschutz-, Sicherheits- und EU-AI-Act-Anforderungen erf\u00fcllen",
+      "Komplexe KI-Agenten-Systeme sollen von der Idee bis zur Produktion gebracht werden",
+      "On-prem-, Cloud- und Hybrid-Setups m\u00fcssen sauber konzipiert und betrieben werden"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "German",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "mehrj\u00e4hrige Erfahrung in der Konzeption und Umsetzung datenbasierter L\u00f6sungen; idealerweise Public Sector",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show end-to-end AI architecture work in regulated environments, not just experimentation. It should prove you can design, integrate, and productionize AI systems while handling legacy integration, compliance, and stakeholder communication.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "governance",
+        "delivery",
+        "reliability",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct public-sector delivery in administration, mobility data platforms, or smart cities",
+        "German C1 if the CV does not show it explicitly",
+        "hands-on ownership of DSGVO and EU AI Act compliance programs",
+        "on-prem or hybrid government deployment experience if not evidenced"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps well because it is an enterprise AI workflow platform with RAG, guardrails, evaluation, and production usage, which matches end-to-end AI architecture and rollout.",
+        "Lantern maps to LLM ecosystem integration and operational architecture because it handles multi-provider routing and circuit breaking.",
+        "Technical Lead at Seven.One Entertainment Group maps to architecture leadership, cross-functional coordination, and converting technical design into production systems."
+      ]
+    }
+  },
+  {
+    "job_id": "6968eccd515e64c5ca05ad59",
+    "title_normalized": "Software Solutions Architect (Cloud & AI)",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "performance, fault tolerance"
+    },
+    "hard_skills_must_have": [
+      "production-grade distributed systems",
+      "APIs",
+      "data modeling",
+      "system integration",
+      "scalability",
+      "fault tolerance",
+      "cloud-native application design on AWS",
+      "AI/GenAI integration",
+      "LLM APIs",
+      "data pipelines",
+      "AI-enabled workflows"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "customer_orientation"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalability",
+      "performance",
+      "security",
+      "maintainability",
+      "production-grade delivery",
+      "identifying technical debt",
+      "identifying architectural risks",
+      "modernization opportunities"
+    ],
+    "implied_pain_points": [
+      "Customers need a software-first architect who can turn requirements into implementable architectures",
+      "The role must integrate AI features into real products rather than prototypes",
+      "The company needs help reducing technical debt and modernizing distributed systems",
+      "Architectural decisions must balance scalability, fault tolerance, and maintainability"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years of professional software development experience",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to demonstrate you have designed and shipped production distributed systems, not just architecture diagrams. It should show concrete AI integration, strong API and data-model decisions, and evidence that your systems hold up under real-world scale and reliability demands.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "reliability",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "hands-on AWS architecture ownership if the CV does not show AWS explicitly",
+        "full-stack delivery if the CV only supports backend and platform work",
+        "customer-facing solution architecture if the CV does not show client interaction",
+        "DevOps or infrastructure ownership if the CV does not support it"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps directly to AI-enabled workflows in production and shows platform-level architecture choices at enterprise scale.",
+        "Lantern maps to LLM API integration, routing, resilience, and production controls such as circuit breaking.",
+        "CQRS/event-sourcing, microservices, and RabbitMQ experience maps to distributed system design, service boundaries, and fault tolerance."
+      ]
+    }
+  },
+  {
+    "job_id": "696e32cb3da7d438ae4f5e58",
+    "title_normalized": "Solution Architect (Cloud & AI)",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "performance, fault tolerance"
+    },
+    "hard_skills_must_have": [
+      "production-grade distributed systems",
+      "APIs",
+      "data modeling",
+      "system integration",
+      "scalability",
+      "fault tolerance",
+      "cloud-native application design on AWS",
+      "AI/GenAI integration",
+      "LLM APIs",
+      "data pipelines",
+      "AI-enabled workflows"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "customer_orientation"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalability",
+      "performance",
+      "security",
+      "maintainability",
+      "production-grade delivery",
+      "identifying technical debt",
+      "identifying architectural risks",
+      "modernization opportunities"
+    ],
+    "implied_pain_points": [
+      "The company needs a senior architect who can convert business needs into clear software architecture",
+      "AI features must be integrated into production software systems without sacrificing reliability",
+      "Modernization work is needed for existing distributed systems",
+      "Architectural guidance must bridge customers, business analysts, and engineering teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years of professional software development experience",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should prove you can design production systems, integrate AI features, and make tradeoffs that survive real delivery constraints. The best evidence is a mix of system design, production rollout, and operational resilience rather than AI experimentation alone.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "reliability",
+        "delivery",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "hands-on AWS architecture ownership if not shown explicitly",
+        "full-stack delivery if the CV is primarily backend/platform work",
+        "customer or business analyst facilitation if not evidenced",
+        "infrastructure or DevOps ownership if not supported"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps to AI-enabled workflows, production delivery, and architecture decisions for a real enterprise platform.",
+        "Lantern maps to LLM APIs, routing, and resilience patterns in production.",
+        "CQRS/event-sourcing, microservices, RabbitMQ, and real-time systems map to distributed system design, service boundaries, and fault tolerance."
+      ]
+    }
+  },
+  {
+    "job_id": "697873eb7d41dc1e8a0df229",
+    "title_normalized": "Senior Solution Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "PreSales",
+      "Discovery",
+      "architecture workshops",
+      "ERP systems",
+      "Warenwirtschaftssysteme",
+      "planning systems",
+      "REST APIs",
+      "APIs",
+      "data models",
+      "integration architectures",
+      "data quality",
+      "data validation",
+      "integration logic"
+    ],
+    "hard_skills_nice_to_have": [
+      "Allocation",
+      "Replenishment",
+      "Warenplanung",
+      "Bestandssteuerung",
+      "Fashion processes",
+      "Retail processes"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "retail",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "Go-Live",
+      "saubere \u00dcbergaben",
+      "Knowledge-Transfer",
+      "Enablement nach der Implementierung"
+    ],
+    "implied_pain_points": [
+      "Retail customers need help replacing manual, siloed planning with AI-driven allocation and replenishment decisions.",
+      "Customer data and legacy ERP/warenwirtschaft landscapes are likely messy and require validation and gap analysis.",
+      "The team needs someone who can turn business requirements into scalable target architectures and keep implementations on track through go-live."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "German",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show customer-facing solution architecture in enterprise software, especially where messy business processes and data integrations had to be translated into workable technical designs. It should prove the candidate has owned delivery through go-live and can work credibly with senior business and IT stakeholders.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "governance"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep fashion or retail domain expertise",
+        "direct ownership of ERP, OMS, or retail planning system implementations",
+        "native-level German if it is not explicitly evidenced",
+        "hands-on allocation, replenishment, or inventory planning expertise",
+        "formal pre-sales leadership in DACH enterprise accounts if not evidenced"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it shows enterprise AI workflow architecture, RAG, evaluation, guardrails, and integration-heavy delivery.",
+        "Lantern maps well to the integration and reliability side of the role because it demonstrates routing, gateway, and circuit-breaker thinking.",
+        "The Seven.One Technical Lead background supports senior architecture ownership and cross-team delivery, even though the retail domain itself is a gap."
+      ]
+    }
+  },
+  {
+    "job_id": "6994cc3587737d491c0c0e25",
+    "title_normalized": "Data & AI Solution Architect - Forward Deployed",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI/GenAI",
+      "Agentic AI",
+      "Machine Learning",
+      "data pipelines",
+      "scalable architectures",
+      "MLOps lifecycle",
+      "modern data architectures",
+      "data engineering",
+      "Cloud-AI platforms",
+      "Databricks",
+      "Snowflake",
+      "MS Fabric",
+      "AWS",
+      "Azure",
+      "GCP",
+      "IONOS",
+      "Docker",
+      "Kubernetes"
+    ],
+    "hard_skills_nice_to_have": [
+      "on-premise",
+      "HPC"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Databricks",
+        "Snowflake",
+        "MS Fabric",
+        "AWS",
+        "Azure",
+        "GCP",
+        "IONOS"
+      ]
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "on-premise",
+      "HPC"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "presentation_skills"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "end-to-end project responsibility",
+      "prototypes",
+      "POCs",
+      "productive solutions",
+      "reusable solution assets",
+      "reference architectures",
+      "best practices",
+      "proposal concepts",
+      "RFP concepts",
+      "up-selling potential",
+      "cross-selling potential"
+    ],
+    "implied_pain_points": [
+      "Clients need complete AI and data architectures that move from analysis to implementation and optimization.",
+      "The business line needs reusable assets and reference architectures so delivery can scale across customers.",
+      "Sales teams need technical credibility in customer conversations, proposals, and RFPs, while the company also wants tech scouting and portfolio evolution."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show end-to-end ownership of AI solutions from discovery and architecture through prototype and production delivery. It should also prove comfort with cloud/data platforms, reusable architecture patterns, and customer-facing work that supports sales and proposal development.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "direct Databricks, Snowflake, or MS Fabric delivery if not explicitly evidenced",
+        "hands-on MLOps platform ownership across multiple public clouds",
+        "HPC or on-prem deployment leadership if not clearly shown",
+        "formal thought leadership through whitepapers or conference talks if not evidenced",
+        "business development ownership or quota-bearing sales work"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is a strong match because it demonstrates enterprise AI platform architecture, evaluation, guardrails, and real delivery to users.",
+        "Lantern fits the solution-architecture side through multi-provider routing, reliability patterns, and reusable gateway design.",
+        "The Seven.One Technical Lead role maps to the cross-functional delivery and architecture ownership expected in a forward-deployed architect role."
+      ]
+    }
+  },
+  {
+    "job_id": "699ddcbf87737d491c350c58",
+    "title_normalized": "Solution Architect - Generative AI and Post-Training",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale model training; large-scale data curation; large-scale post-training",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Generative AI post-training",
+      "Large Language Models",
+      "data processing",
+      "data preparation",
+      "data curation",
+      "data cleaning",
+      "Synthetic Data Generation",
+      "supervised fine-tuning",
+      "reinforcement learning",
+      "Python",
+      "C++",
+      "software development",
+      "AI/Deep Learning",
+      "training LLMs",
+      "finetuning LLMs"
+    ],
+    "hard_skills_nice_to_have": [
+      "NVIDIA NeMo Collection",
+      "Nemo-Curator",
+      "Nemo-RL",
+      "Megatron-Bridge",
+      "reinforcement learning for LLM alignment",
+      "HPC systems",
+      "InfiniBand",
+      "cluster storage",
+      "scheduling"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "C++"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "HPC",
+      "InfiniBand",
+      "cluster storage",
+      "scheduling"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "PyTorch",
+        "Megatron-LM",
+        "NeMo",
+        "Transformers",
+        "TRL",
+        "VeRL"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "technical_presentation",
+      "learning",
+      "sharing_insights",
+      "growth_mindset"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "proof-of-concept solutions",
+      "demonstrations",
+      "customer adaptation of foundation models",
+      "customer optimization of foundation models",
+      "product feature growth through customer feedback",
+      "proof-of-concept evaluations"
+    ],
+    "implied_pain_points": [
+      "Customers need help turning foundation models into domain-specific systems through post-training, data curation, and alignment.",
+      "NVIDIA needs a field architect who can translate advanced AI research into POCs and production-adjacent solutions on its platform.",
+      "The team needs someone who can bridge engineering, product, sales, and customer executives while feeding practical feedback into product development."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV must prove hands-on LLM post-training or finetuning experience, especially around data curation, alignment, and large-scale model customization. It should also show the ability to build credible POCs on deep-learning frameworks and communicate technical tradeoffs to both engineers and executives.",
+      "most_valued_evidence_types": [
+        "evaluation",
+        "architecture",
+        "scale",
+        "delivery"
+      ],
+      "unsafe_claims_for_candidate": [
+        "large-scale RLHF or supervised fine-tuning experience",
+        "direct Megatron-LM or NeMo training experience",
+        "HPC cluster design or InfiniBand operations experience",
+        "Python/C++ model-training work at scale if not explicitly evidenced",
+        "research publications or academic deep-learning credentials"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it shows enterprise AI platform work with RAG, evaluation, and guardrails, which is adjacent to applied GenAI delivery.",
+        "Lantern maps to platform routing and reliability patterns, but it does not prove post-training expertise.",
+        "The candidate's broader software architecture and technical lead experience supports the customer-facing solutioning aspect, but the core gap is explicit LLM post-training and alignment work."
+      ]
+    }
+  },
+  {
+    "job_id": "69a5efc48c9216422c5e9801",
+    "title_normalized": "AI Solution Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI platform architecture",
+      "cloud tech",
+      "microservices",
+      "CI/CD",
+      "DevSecOps",
+      "enterprise architecture",
+      "governance",
+      "security standards",
+      "architectural standards"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices",
+      "CI/CD",
+      "DevSecOps"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "compliance"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "facilitation",
+      "customer_focus"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "measurable business value",
+      "company-wide AI adoption",
+      "clear governance and security standards",
+      "sustainable personalization solutions",
+      "sustainable delivery and quality",
+      "self-service innovation"
+    ],
+    "implied_pain_points": [
+      "TUI needs a central AI platform that teams can adopt consistently across the organization",
+      "The role must translate business opportunities into AI solutions while preserving enterprise architecture alignment",
+      "Governance, security, and compliance standards need to be established across the IT landscape",
+      "Teams need help balancing rapid AI experimentation with long-term maintainability"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show that the candidate can design and govern an enterprise AI platform, not just prototype isolated models. The best evidence is a shipped AI system with adoption metrics, clear governance/security controls, and examples of translating business needs into durable architecture decisions.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "governance",
+        "scale",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "company-wide AI transformation ownership across a global enterprise",
+        "formal ownership of enterprise AI governance and security policy across the entire IT landscape",
+        "recognized global thought leadership with proven community leadership at large scale"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 at Seven.One Entertainment Group is the best fit: it is an enterprise AI workflow platform with 42 plugins, 2,000 users, RAG, evaluation, and guardrails, which maps directly to platform design, adoption, and governance.",
+        "Lantern maps well to the platform and reliability side because multi-provider routing and circuit breaking show architecture for maintainability and controlled rollout.",
+        "Technical Lead experience at Seven.One supports the senior stakeholder and cross-boundary communication parts of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "696808c4515e64c5ca05acee",
+    "title_normalized": "Software Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "planetary scale",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "C#",
+      ".NET",
+      "mathematics",
+      "algorithms",
+      "computational theory",
+      "algorithm design",
+      "complexity analysis",
+      "performance optimization",
+      "distributed systems",
+      "microservice architectures",
+      "cloud platforms",
+      "Kubernetes",
+      "Pulumi",
+      "NoSQL databases",
+      "CI/CD pipelines",
+      "practical AI/ML experience"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "C#"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "Kubernetes"
+      ]
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "Pulumi",
+      "CI/CD",
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "derived",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "MongoDB",
+      "Cassandra"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "mentoring",
+      "knowledge_sharing",
+      "technical_leadership",
+      "collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "production-ready solutions",
+      "performance",
+      "scalability",
+      "long-term maintainability",
+      "architectural standards and best practices",
+      "reusable frameworks and components",
+      "faster delivery for other engineers"
+    ],
+    "implied_pain_points": [
+      "Existing architectures likely need analysis and optimization for correctness, scalability, and maintainability",
+      "The team needs reusable frameworks and components that let other engineers move faster",
+      "The role must bring AI capabilities into production-grade distributed systems",
+      "The company wants stronger architectural standards and higher technical quality across projects"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV needs to show deep system design ability plus production delivery on distributed platforms. The best evidence is work that combines architecture, performance optimization, reusable platform components, and practical AI features integrated into real systems.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "reliability"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep C#/.NET specialization without substantial production evidence",
+        "expert-level Pulumi ownership",
+        "formal algorithm-theory or complexity-analysis leadership at a research level",
+        "proven planetary-scale cloud delivery across AWS, Azure, and GCP"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is relevant because it shows an enterprise AI platform with evaluation, guardrails, and reusable components.",
+        "Lantern is a strong fit for distributed architecture because multi-provider routing and circuit breakers map to production resilience and platform design.",
+        "Lead Engineer work in CQRS/event sourcing and microservices/RabbitMQ is the cleanest match for distributed systems, architectural trade-offs, and maintainability."
+      ]
+    }
+  },
+  {
+    "job_id": "69777e48bd1bc3db54464edf",
+    "title_normalized": "Principal AI Solutions Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale AI programmes",
+      "latency_reliability": "performance"
+    },
+    "hard_skills_must_have": [
+      "AI architecture",
+      "GenAI",
+      "ML engineering",
+      "MLOps",
+      "vector databases",
+      "orchestration platforms",
+      "cloud AI stacks",
+      "performance",
+      "security",
+      "explainability",
+      "regulatory compliance",
+      "executive-level communication",
+      "client advisory",
+      "cross-functional leadership"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "derived",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [
+      "responsible AI",
+      "regulatory compliance"
+    ],
+    "soft_skills": [
+      "communication",
+      "stakeholder_management",
+      "client_advisory",
+      "cross_functional_collaboration",
+      "leadership"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "success of multi-vendor, multi-cloud AI environments",
+      "enterprise-grade AI solutions from concept through deployment",
+      "responsible AI",
+      "regulatory compliance",
+      "capability development through assets, accelerators, and governance frameworks"
+    ],
+    "implied_pain_points": [
+      "The firm needs a senior architect who can lead complex AI programmes from concept to deployment",
+      "Cross-functional delivery teams and multiple vendors need technical direction and governance",
+      "The role must provide enterprise-grade architecture while satisfying security, explainability, and regulatory requirements",
+      "The company wants reusable assets and accelerators to strengthen its broader AI capability"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV should show principal-level AI architecture across complex enterprise programmes, especially where governance, security, and delivery had to be coordinated across multiple stakeholders. The strongest evidence is production AI platform work that demonstrates reliability, platform control, and the ability to turn architecture into repeatable assets or standards.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "governance",
+        "delivery",
+        "scale",
+        "reliability",
+        "evaluation"
+      ],
+      "unsafe_claims_for_candidate": [
+        "C-suite client advisory experience in a consulting or strategy firm",
+        "ownership of multi-vendor, multi-cloud AI programmes across the GCC",
+        "formal regulatory-compliance leadership for public-sector AI deployments",
+        "consulting-firm background with client delivery at executive level"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest fit because it shows enterprise AI workflow platform design, 2,000-user adoption, evaluation, and guardrails, which map directly to enterprise AI architecture and governance.",
+        "Lantern maps well to the multi-vendor and reliability side of the role because routing, circuit breaking, and gateway design are relevant to controlled production AI environments.",
+        "Technical Lead at Seven.One provides the best evidence for cross-functional coordination and senior stakeholder communication, though it does not fully prove consulting/client-advisory depth."
+      ]
+    }
+  },
+  {
+    "job_id": "69791ccb7d41dc1e8a0f525e",
+    "title_normalized": "Solution Architect (Cloud, AI & Automation)",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale on-premise and hybrid cloud business applications",
+      "latency_reliability": "performance, scalability, availability"
+    },
+    "hard_skills_must_have": [
+      "cloud architecture",
+      "Azure and/or AWS",
+      "multi-cloud strategy",
+      "hybrid cloud strategy",
+      "cloud-native architectures",
+      "AI/ML integration and lifecycle management",
+      "Azure Cognitive Services",
+      "AWS SageMaker",
+      "microservices",
+      "API management",
+      "event-driven architectures",
+      "Terraform",
+      "Bicep",
+      "CI/CD pipelines",
+      "security best practices",
+      "data lakes",
+      "data warehouses",
+      "ETL pipelines",
+      "application architecture",
+      "integration architecture",
+      "infrastructure architecture",
+      "security architecture",
+      "federated identity providers",
+      "non-functional requirements",
+      "performance",
+      "scalability",
+      "availability"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure Cognitive Services",
+        "AWS SageMaker",
+        "Application Insights",
+        "Redis Cache",
+        "Service Bus"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "API management",
+      "event-driven architectures",
+      "IaC",
+      "Terraform",
+      "Bicep",
+      "CI/CD",
+      "serverless",
+      "containers",
+      "Kubernetes"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": [
+        "Application Insights"
+      ]
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "GDPR",
+      "ISO"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "documentation"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "scalable, secure, cost-effective cloud and AI solutions",
+      "alignment with business goals",
+      "architectural governance",
+      "compliance with governance processes",
+      "high-quality architecture documentation",
+      "performance, scalability, availability"
+    ],
+    "implied_pain_points": [
+      "Need someone who can unify Azure/AWS cloud architecture with AI/ML integration.",
+      "Need secure, governed, cost-conscious designs that still meet performance and availability requirements.",
+      "Need architecture leadership across microservices, event-driven integration, and data platforms in hybrid environments."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years in ICT Infrastructure, operations and cloud, solution and technical architecture",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of enterprise architecture across cloud, AI, and automation, including hybrid or multi-cloud design, IaC, CI/CD, and secure integration patterns. The best evidence is shipping production platforms that balance scale, cost, governance, and stakeholder alignment, not just prototypes.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "governance",
+        "reliability",
+        "cost",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Direct ownership of Azure and AWS platform decisions, including Bicep or Terraform rollout, if not explicitly shown.",
+        "Formal accountability for GDPR or ISO compliance and architecture governance bodies.",
+        "Hands-on delivery of data lakes, data warehouses, and ETL pipelines at enterprise scale.",
+        "Direct people management, hiring, or budget/P&L ownership."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps well because it demonstrates enterprise AI platform delivery, guardrails, evaluation, and real user scale, which supports the AI architecture and governance side of the role.",
+        "Lantern maps well because multi-provider routing and circuit breakers are strong evidence for resilient platform architecture and integration thinking.",
+        "Lead Engineer work in CQRS/event-sourcing maps to the event-driven and architectural rigor expectations in the JD."
+      ]
+    }
+  },
+  {
+    "job_id": "698087307d41dc1e8a2da410",
+    "title_normalized": "AI Architect / Solution Architect - GenAI & Data Platforms",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "pilot to full-scale implementation",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "GenAI technologies (OpenAI, Mistral, Gemini, Claude, etc.)",
+      "AI architecture and system design",
+      "machine learning",
+      "cloud services",
+      "cloud-based data platforms",
+      "architecture lambda",
+      "architecture kappa",
+      "data lakehouse",
+      "data mesh",
+      "pilot-to-production implementation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "problem_solving"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "solutions from pilot stages to full-scale implementation",
+      "scalable and effective solutions",
+      "successful implementations beyond pilot phases",
+      "real-world applications of AI solutions",
+      "reusable solutions across teams and industries"
+    ],
+    "implied_pain_points": [
+      "Need to move GenAI ideas from pilot into production across multiple domains.",
+      "Need to translate business requirements into reusable AI and data architectures.",
+      "Need someone who can coordinate stakeholders and engineering teams on complex multi-component solutions."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof that GenAI work has gone beyond pilot into production on real platforms and real business problems. The best evidence is end-to-end solutioning across cloud and data layers, plus stakeholder-facing delivery that turns requirements into reusable architecture.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Explicit hands-on delivery with OpenAI, Mistral, Gemini, or Claude specifically.",
+        "Ownership of GCP, AWS, or Azure data-platform programs such as data mesh or lakehouse at scale.",
+        "Business development or client acquisition responsibility.",
+        "Evidence of leading many-domain GenAI architecture programs beyond a few platform projects."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match because it shows a production AI platform with real users, reusable workflows, and enterprise rollout rather than a one-off proof of concept.",
+        "Lantern maps well because it demonstrates modular AI infrastructure, routing, and resilience patterns that support production GenAI architecture.",
+        "Prior microservices and CQRS/event-sourcing work helps show the ability to decompose complex, multi-component solutions and work across teams."
+      ]
+    }
+  },
+  {
+    "job_id": "69a5a97c8c9216422c5e6317",
+    "title_normalized": "Agentic AI Solution Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "100+ use cases",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Large Language Models (LLM)",
+      "RAG (Retrieval-Augmented Generation)",
+      "vector databases",
+      "agentic workflows",
+      "agentic architectures",
+      "LangChain",
+      "LangGraph",
+      "modular architecture design",
+      "end-to-end solution review across ETL, data ingestion, AI layer, and UI/UX"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "LangGraph"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "agency",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "end-to-end GenAI/LLM architecture across business domains",
+      "scalable and repeatable architectural patterns",
+      "reuse of components across teams",
+      "support for 100+ use cases",
+      "successful progression from POC to MVP"
+    ],
+    "implied_pain_points": [
+      "Need reusable agentic AI patterns across many use cases.",
+      "Need to translate business needs into end-to-end architecture quickly without becoming monolithic.",
+      "Need to coordinate multiple pods and keep architecture standards coherent while delivery moves fast."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of production-grade agentic and LLM architecture, especially RAG, vector search, and reusable workflows. The best evidence is a platform or framework that standardized solutions across multiple use cases while coordinating several teams and keeping delivery fast.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Specific production leadership with LangChain or LangGraph if not already demonstrated.",
+        "Large-scale vector database ownership if not explicitly shown.",
+        "Standardizing agentic patterns across 100+ use cases as a proven claim.",
+        "Formal architectural governance-board ownership across multiple pods."
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the closest match because it already shows enterprise AI workflow orchestration, RAG, semantic caching, evaluation, and guardrails across many plugins and users.",
+        "Lantern maps well because multi-provider routing and circuit breaking show platform-level orchestration and resilience for AI systems.",
+        "Microservices and RabbitMQ experience helps demonstrate modular distributed architecture, which is relevant to decomposing agentic systems into reusable components."
+      ]
+    }
+  },
+  {
+    "job_id": "6957b6ed6dd552ab7ec2cceb",
+    "title_normalized": "Lead Solution Architect (Cloud, Data & AI)",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "global scale; massive, continuous event flows",
+      "latency_reliability": "reliability, security and performance"
+    },
+    "hard_skills_must_have": [
+      "cloud architecture",
+      "distributed systems",
+      "large-scale data pipelines",
+      "event streaming technologies",
+      "API design",
+      "React",
+      "machine learning in production",
+      "behavioral models",
+      "inference pipelines",
+      "security",
+      "privacy",
+      "data governance"
+    ],
+    "hard_skills_nice_to_have": [
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "Rust",
+        "Go",
+        "Java",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": [
+        "Pub/Sub",
+        "Kafka",
+        "Beam",
+        "Dataflow",
+        "Flink",
+        "Spark"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "influence",
+      "curiosity",
+      "proactivity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "reliability",
+      "security",
+      "performance",
+      "global scale"
+    ],
+    "implied_pain_points": [
+      "Need to define the architecture for a new cloud platform from scratch.",
+      "Need to handle massive continuous event flows with reliable distributed-system design.",
+      "Need to make security-related systems more adaptive while preserving privacy and data governance.",
+      "Need to turn long-term product vision into hands-on technical execution across teams."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should show that the candidate has designed and shipped cloud-native, distributed platforms, not just advised on them. It should demonstrate hands-on prototyping, explicit trade-off decisions across reliability, security, performance and cost, and at least one production AI or behavioral system.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "scale",
+        "reliability",
+        "delivery",
+        "evaluation",
+        "governance",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "deep GCP production ownership",
+        "global-scale event streaming ownership",
+        "formal security and privacy governance ownership",
+        "front-end React implementation leadership",
+        "owned anomaly-detection or behavioral-risk models end to end"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps strongly because it is a production AI workflow platform with RAG, evaluation, guardrails and 2,000 users.",
+        "Lantern maps to the resilience and routing side through multi-provider model routing and circuit breaking.",
+        "CQRS/event-sourcing and microservices/RabbitMQ experience maps well to the distributed-system and event-driven architecture needs."
+      ]
+    }
+  },
+  {
+    "job_id": "6957d2d66dd552ab7ec2cd35",
+    "title_normalized": "AI Architect (m/w/d)",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "performance, reliability, efficiency"
+    },
+    "hard_skills_must_have": [
+      "software architecture",
+      "RAG",
+      "MCP (Multi-Chain Processing)",
+      "LLMs",
+      "agentic frameworks",
+      "OpenAI",
+      "Anthropic",
+      "Gemini",
+      "LangChain",
+      "AutoGen",
+      "CrewAI",
+      "LlamaIndex",
+      "PydanticAI",
+      "Agno",
+      "PromptFlow",
+      "LangGraph",
+      "agentic reasoning",
+      "tool orchestration",
+      "evaluation",
+      "testing",
+      "metrics",
+      "vector databases",
+      "SQL",
+      "distributed systems (on premise)",
+      "data engineering principles",
+      "agent-to-agent communication (A2A)",
+      "production software development"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "AutoGen",
+        "CrewAI",
+        "LlamaIndex",
+        "PydanticAI",
+        "Agno",
+        "PromptFlow",
+        "LangGraph"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL",
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "strategic_thinking",
+      "ownership",
+      "teamwork",
+      "innovation"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "not_specified",
+    "success_metrics": [
+      "performance",
+      "reliability",
+      "efficiency"
+    ],
+    "implied_pain_points": [
+      "Need to make agentic AI systems production-ready.",
+      "Need to combine multiple LLMs and frameworks into one coherent architecture.",
+      "Need to create evaluation methods and metrics for complex AI systems.",
+      "Need to extend existing model capabilities for more complex use cases.",
+      "Need to work in on-premise distributed environments with strong data-engineering discipline."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "German",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to demonstrate production AI architecture work: RAG pipelines, multi-model orchestration, evaluation discipline and integration across agents or frameworks. It should also show that the candidate can turn ambiguous AI ideas into implementable systems and communicate the design clearly.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "evaluation",
+        "delivery",
+        "governance",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "hands-on MCP/A2A implementation at scale",
+        "direct vector-database operations ownership",
+        "C1 German fluency",
+        "banking or insurance domain ownership",
+        "built PromptFlow or LangGraph systems in production"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 is the strongest match because it already demonstrates RAG, evaluation and guardrails in a production AI workflow platform.",
+        "Lantern maps to LLM selection and orchestration through multi-provider routing and resilience patterns.",
+        "Distributed backend leadership in CQRS, event sourcing and microservices supports the architecture and integration expectations."
+      ]
+    }
+  },
+  {
+    "job_id": "698b13407d41dc1e8a545023",
+    "title_normalized": "Data Solution Architect / AI Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "enterprise scale ML and LLM solutions",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "data architecture",
+      "data mesh",
+      "AWS",
+      "AWS SageMaker",
+      "DevOps",
+      "Cloud Operations",
+      "ML engineering",
+      "AWS administration",
+      "permission management",
+      "enterprise scale ML solutions",
+      "enterprise scale LLM solutions",
+      "data enrichment pipelines",
+      "training large language models",
+      "evaluating large language models",
+      "deploying large language models",
+      "MLOps",
+      "MLflow",
+      "Docker",
+      "Terraform",
+      "CI/CD",
+      "Atlassian Bamboo"
+    ],
+    "hard_skills_nice_to_have": [
+      "vector databases",
+      "deploying LLMs at scale",
+      "Kafka"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "SageMaker"
+      ]
+    },
+    "infrastructure": [
+      "Docker",
+      "Terraform",
+      "CI/CD",
+      "Atlassian Bamboo"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "communication"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "enterprise scale ML and LLM solutions",
+      "experimentation and deployment of AI systems",
+      "improved ML workflows and software development standards"
+    ],
+    "implied_pain_points": [
+      "Need to create a common architecture for data access and publishing in a data mesh.",
+      "Need to standardize AI/ML experimentation and deployment across scientists and MLEs.",
+      "Need to analyze and improve existing AWS account configuration and permissions.",
+      "Need to modernize current AI pipelines and their integration with surrounding services.",
+      "Need to raise the quality of ML workflows and engineering standards."
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV should prove cloud ML platform design, not only app-layer AI integration. It should show production delivery of AI infrastructure, IaC and CI/CD discipline, and repeated collaboration with data science or ML engineering teams.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "scale",
+        "evaluation",
+        "reliability",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "hands-on AWS SageMaker ownership",
+        "built MLflow or MLOps platform in production",
+        "managed AWS permissions and accounts",
+        "enterprise AWS governance leadership",
+        "direct DevOps ownership across cloud operations"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4 maps well to the AI platform side because it demonstrates production orchestration, evaluation and rollout discipline.",
+        "Lantern maps to reliable AI infrastructure through multi-provider routing and circuit breaking.",
+        "CQRS/event-sourcing and microservices/RabbitMQ show backend architecture depth, but the CV would still need explicit AWS and MLOps evidence to be a top fit."
+      ]
+    }
+  },
+  {
+    "job_id": "695ebee76dd552ab7ec2d30f",
+    "title_normalized": "AI Solution Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "AI system architectures",
+      "machine learning models",
+      "data pipelines",
+      "infrastructure requirements",
+      "classical machine learning",
+      "deep learning",
+      "generative AI",
+      "AI models and algorithms",
+      "model selection",
+      "fine-tuning algorithms",
+      "cloud AI/ML services (AWS, GCP, or Azure)",
+      "feasibility assessment across cloud environments",
+      "performance optimization strategies"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": [
+        "AWS",
+        "GCP",
+        "Azure"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "derived",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "presentation"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "feasibility of AI solutions",
+      "successful implementation of AI solutions",
+      "improving model performance, accuracy, and efficiency",
+      "defining precise project scope and AI solution specifications",
+      "articulating AI value propositions to clients"
+    ],
+    "implied_pain_points": [
+      "translate complex AI capabilities into actionable business solutions",
+      "evaluate whether AI solutions are feasible in real customer contexts",
+      "define business requirements, technical constraints, and success criteria",
+      "support customer-facing meetings and technical presentations",
+      "choose appropriate models and cloud AI services while balancing trade-offs"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "Polish",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years developing customer-facing AI solutions; preferably 2+ years in a similar role",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to show end-to-end AI solution architecture for customer-facing use cases, not just experimentation. It should prove the candidate can turn business discovery into feasible cloud AI designs, select or tune models, and explain trade-offs around cost and performance.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "evaluation",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Full-time pre-sales or sales-support ownership if not already shown",
+        "Deep-learning research or model-training-from-scratch expertise",
+        "Fluent Polish or residency in Poland",
+        "Named AWS/GCP/Azure AI/ML service ownership beyond what is already documented"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: enterprise AI workflow platform with RAG, semantic caching, evaluation, and guardrails is the closest match to building customer-facing AI solutions with clear implementation trade-offs.",
+        "Lantern: LLM gateway with multi-provider routing and circuit breaking maps well to cloud trade-offs, reliability, and feasibility decisions.",
+        "Technical Lead at Seven.One Entertainment Group: supports the cross-functional architecture and delivery expectations."
+      ]
+    }
+  },
+  {
+    "job_id": "69610d356dd552ab7ec2d665",
+    "title_normalized": "AI Solution Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_manager",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "2-3",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "solution architecture",
+      "cloud architecture",
+      "AI/ML architectures",
+      "production AI/Generative AI solutions",
+      "AWS",
+      "GCP",
+      "AWS Well-Architected framework",
+      "AWS CDK",
+      "Terraform",
+      "Python",
+      "FastAPI or Flask",
+      "AWS Bedrock",
+      "LangChain or other AI agentic frameworks",
+      "Docker",
+      "ECS",
+      "EKS",
+      "cloud cost optimization",
+      "credits management",
+      "consumption tracking",
+      "ROI/TCO analysis",
+      "AWS Partner Network structure and funding programs",
+      "PoC funding",
+      "MAP program",
+      "ISV Workload Migration",
+      "AWS competency requirements",
+      "evidence collection",
+      "MLOps automation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS",
+        "GCP",
+        "AWS Bedrock",
+        "AWS CDK",
+        "ECS",
+        "EKS"
+      ]
+    },
+    "infrastructure": [
+      "AWS CDK",
+      "Terraform",
+      "Docker",
+      "ECS",
+      "EKS"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "AWS Well-Architected"
+    ],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "stakeholder_management",
+      "leadership",
+      "cross_functional_coordination"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "95%+ AWS funding success rate",
+      "production-grade AI/ML architectures on AWS",
+      "Well-Architected compliance",
+      "streamlined cloud department processes through automation",
+      "reusable IaC components, architectural patterns, and documentation",
+      "ROI, TCO, and cost-benefit analysis for proposed AI/ML solutions"
+    ],
+    "implied_pain_points": [
+      "run cloud operations and AI/ML delivery in parallel",
+      "secure AWS and GCP funding and partner-program support",
+      "keep AI/ML systems compliant, secure, and well-architected for BFSI clients",
+      "improve hiring coordination and team capacity planning",
+      "reduce manual work with automation and reusable components"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years in cloud architecture, solution architecture, or cloud engineering; 2+ years working with AI/ML workloads on cloud platforms",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs to prove production AI/ML architecture on AWS, plus hands-on cloud operations discipline around IaC, cost control, and governance. It should also show the candidate can coordinate delivery with small teams and partners while still shipping working systems.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "governance",
+        "cost",
+        "reliability",
+        "hiring"
+      ],
+      "unsafe_claims_for_candidate": [
+        "AWS or GCP partnership program ownership or funding-success metrics if not explicitly shown",
+        "AWS certifications unless they are already listed on the CV",
+        "BFSI client delivery or regulatory-compliance leadership unless explicitly shown",
+        "Formal people-management, hiring pipeline ownership, or capacity-planning responsibility if not documented",
+        "AWS Bedrock or LangChain implementation if not already on the CV"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: enterprise AI workflow platform with 42 plugins, 2000 users, RAG, evaluation, and guardrails demonstrates production AI delivery and architecture depth.",
+        "Lantern: multi-provider routing and circuit breaker are a strong fit for cloud resilience, operational control, and platform-level decision-making.",
+        "Lead Engineer / Technical Lead roles: CQRS/event-sourcing, microservices, and distributed systems background support the solution-architecture and coordination parts of the role."
+      ]
+    }
+  },
+  {
+    "job_id": "6996f0cc87737d491c0f8cb1",
+    "title_normalized": "Generative AI Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "generative AI architecture knowledge",
+      "design patterns",
+      "solution blueprints",
+      "enterprise adoption of generative AI",
+      "AWS",
+      "Amazon SageMaker",
+      "Amazon Bedrock",
+      "vector databases",
+      "MCP (Model Context Protocol)",
+      "generative AI models",
+      "orchestration frameworks",
+      "agentic approaches",
+      "solution architecture",
+      "system integrations",
+      "APIs",
+      "data pipelines",
+      "deployment strategies",
+      "ethical standards",
+      "governance frameworks",
+      "responsible AI"
+    ],
+    "hard_skills_nice_to_have": [
+      "TOGAF",
+      "Zachman"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "Amazon SageMaker",
+        "Amazon Bedrock"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "technical leadership",
+      "mentorship",
+      "stakeholder management",
+      "communication",
+      "presentation",
+      "challenge and influence"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "meet business requirements",
+      "scalable architectures",
+      "secure architectures",
+      "cost-efficient architectures",
+      "validate architectural decisions",
+      "demonstrate business value",
+      "align on architectural direction",
+      "comply with ethical standards, governance frameworks, and regulatory requirements"
+    ],
+    "implied_pain_points": [
+      "Translate complex business challenges into GenAI architecture",
+      "Choose the right frameworks and patterns for performance, scalability, and maintainability",
+      "Embed responsible AI and governance into solution design",
+      "Communicate architecture effectively to technical and non-technical stakeholders"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years in AI/ML solution architecture and 1+ year focused on generative AI solution design and delivery",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of designing and shipping enterprise GenAI platforms, not just experimenting with prompts. The best evidence is a production system with RAG, evaluation, guardrails, cloud architecture choices, and stakeholder-facing technical leadership.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "evaluation",
+        "governance",
+        "delivery",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Built a production enterprise GenAI architecture on AWS without direct evidence of SageMaker or Bedrock work",
+        "Owned org design, hiring, or budget/P&L",
+        "Implemented TOGAF or Zachman-based governance",
+        "Led regulated AI compliance end to end without clear proof",
+        "Shipped MCP-based agentic systems if that was not actually done"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: enterprise AI workflow platform with RAG, evaluation, guardrails, semantic caching, and 2,000 users; strongest proof of end-to-end GenAI architecture",
+        "Lantern: LLM gateway with multi-provider routing and circuit breaker; supports model selection, resilience, and platform thinking",
+        "Technical Lead at Seven.One: shows architecture leadership, mentoring, and stakeholder communication"
+      ]
+    }
+  },
+  {
+    "job_id": "698dee577d41dc1e8a624f16",
+    "title_normalized": "ML/LLM Technical Architect",
+    "title_family": "ai_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "enterprise-scale",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "enterprise-scale AI/ML solution design and implementation in AWS",
+      "Amazon SageMaker",
+      "AWS Bedrock",
+      "Amazon Kendra",
+      "AWS Glue",
+      "AWS Data Pipelines",
+      "Amazon Kinesis",
+      "Amazon Athena",
+      "Amazon Redshift",
+      "sustainable architectures",
+      "scalable architectures",
+      "secure architectures",
+      "trade-off analysis",
+      "architecture tactics and patterns",
+      "proven architecture design approaches and methodologies",
+      "GenAI solutions",
+      "LLM-based solutions",
+      "Agentic AI systems",
+      "Amazon Bedrock Agents",
+      "EKS",
+      "ECS",
+      "cloud architecture",
+      "DevOps",
+      "MLOps",
+      "LLMOps"
+    ],
+    "hard_skills_nice_to_have": [
+      "model explainability",
+      "fairness",
+      "security",
+      "pre-sales",
+      "enterprise consulting",
+      "AI/ML advisory roles"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "Amazon SageMaker",
+        "AWS Bedrock",
+        "Amazon Kendra",
+        "AWS Glue",
+        "AWS Data Pipelines",
+        "Amazon Kinesis",
+        "Amazon Athena",
+        "Amazon Redshift",
+        "Amazon Bedrock Agents"
+      ]
+    },
+    "infrastructure": [
+      "EKS",
+      "ECS"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "Amazon Bedrock Agents"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "Amazon Kendra",
+      "AWS Glue",
+      "AWS Data Pipelines",
+      "Amazon Kinesis",
+      "Amazon Athena",
+      "Amazon Redshift"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "customer-facing",
+      "communication",
+      "stakeholder management",
+      "collaboration",
+      "mentoring",
+      "technical leadership"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deliver enterprise-grade solutions efficiently, predictably, and sustainably",
+      "take projects from requirements gathering to go-live",
+      "continuous improvement",
+      "prototype and demonstrate innovative solutions",
+      "develop reusable components and accelerators",
+      "guide teams on the production lifecycle of ML systems"
+    ],
+    "implied_pain_points": [
+      "Operationalize AI/ML/GenAI on AWS across the full lifecycle",
+      "Bridge requirements, architecture, and production rollout",
+      "Build reusable internal accelerators for GenAI and LLMOps",
+      "Support customer-facing discovery and delivery for complex AI projects",
+      "Guide engineering and data science teams on production best practices"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "English",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "2+ years designing and implementing enterprise-scale AI/ML solutions in AWS",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "The CV needs concrete evidence of shipping enterprise AI and LLM systems on AWS from discovery through production, including architecture trade-offs, rollout, and operational ownership. It should show client-facing delivery, reusable platform components, and enough MLOps/LLMOps depth to support long-lived systems.",
+      "most_valued_evidence_types": [
+        "delivery",
+        "architecture",
+        "reliability",
+        "scale",
+        "cost"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Deep hands-on with every listed AWS service if only some were used",
+        "Built Amazon Bedrock Agents in production if not shown",
+        "Led formal pre-sales or enterprise advisory work",
+        "Owned EKS/ECS-based ML workloads without evidence",
+        "Delivered mature LLMOps if only general platform work exists"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: enterprise AI workflow platform with RAG, evaluation, guardrails, and 2,000 users; closest proof of production AI delivery",
+        "Lantern: LLM gateway with multi-provider routing and circuit breaker; strong fit for LLMOps, resilience, and reusable components",
+        "Lead Engineer / microservices work: supports distributed-system delivery and rollout discipline, though it is weaker on the exact AWS ML stack"
+      ]
+    }
+  },
+  {
+    "job_id": "695782ec6dd552ab7ec2cca4",
+    "title_normalized": "Principal AI & Data Solutions Architect",
+    "title_family": "solutions_architect",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "enterprise-scale; large-scale environments",
+      "latency_reliability": "enterprise SLAs"
+    },
+    "hard_skills_must_have": [
+      "Data Science",
+      "Machine Learning",
+      "AI Engineering",
+      "Advanced Analytics",
+      "TensorFlow",
+      "PyTorch",
+      "Scikit-learn",
+      "Apache Spark",
+      "Databricks",
+      "Kafka",
+      "Airflow",
+      "Microsoft Azure",
+      "AWS",
+      "GCP",
+      "MLflow",
+      "Kubeflow",
+      "Azure ML",
+      "SageMaker",
+      "Vertex AI",
+      "Microsoft Fabric",
+      "Lakehouse",
+      "Data Factory",
+      "Synapse",
+      "OneLake",
+      "Power BI",
+      "Microsoft SQL Server",
+      "MySQL",
+      "data architecture",
+      "distributed systems",
+      "data modeling",
+      "governance frameworks",
+      "cloud-native",
+      "cost-optimized",
+      "production-ready"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "Azure",
+      "services_mentioned": [
+        "Microsoft Fabric",
+        "Lakehouse",
+        "Data Factory",
+        "Synapse",
+        "OneLake",
+        "Power BI",
+        "Azure ML",
+        "SageMaker",
+        "Vertex AI"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "TensorFlow",
+        "PyTorch",
+        "Scikit-learn",
+        "Apache Spark",
+        "Databricks",
+        "Kafka",
+        "Airflow",
+        "MLflow",
+        "Kubeflow"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "Microsoft SQL Server",
+      "MySQL",
+      "OneLake"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "technical leadership",
+      "mentorship",
+      "communication",
+      "stakeholder management",
+      "executive presentations",
+      "trusted advisor"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "translate business requirements into robust technical architectures",
+      "deploy machine learning models, data pipelines, and analytics solutions into production",
+      "meet enterprise SLAs and governance standards",
+      "drive continuous improvement in solution quality, reliability, and operational efficiency",
+      "present solution roadmaps and architecture proposals to decision-makers",
+      "ensure measurable business outcomes"
+    ],
+    "implied_pain_points": [
+      "Modernize enterprise AI and data platforms across cloud and hybrid environments",
+      "Design secure, resilient data pipelines and model lifecycle processes",
+      "Govern complex data, AI, and technology choices",
+      "Troubleshoot large-scale AI, data, and performance issues",
+      "Bridge business and executive stakeholders with technical architecture"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "6\u201310+ years in Data Science, Machine Learning, AI Engineering, or Advanced Analytics; 3+ years in a Solution Architect / AI Architect / ML Architect role",
+      "research_heavy": false
+    },
+    "cv_translation": {
+      "what_strong_cv_proves": "A strong CV needs proof of architecting production AI platforms that span data pipelines, model lifecycle management, and governance, not just isolated ML features. It should also show executive-facing communication and the ability to make hard trade-offs across cloud, data, and analytics stacks.",
+      "most_valued_evidence_types": [
+        "architecture",
+        "delivery",
+        "reliability",
+        "governance",
+        "scale"
+      ],
+      "unsafe_claims_for_candidate": [
+        "Hands-on Spark, Databricks, Fabric, or Power BI delivery if not evidenced",
+        "Deep data engineering ownership across the named stack",
+        "Formal MLflow, Kubeflow, Azure ML, or Vertex AI operation if not used",
+        "Executive client advisory experience if only internal leadership is proven",
+        "Enterprise SLA ownership for analytics workloads without proof"
+      ],
+      "best_candidate_experience_mapping": [
+        "Commander-4: strongest evidence for production AI architecture, evaluation, guardrails, and platform reliability",
+        "Lantern: proves model routing, resilience, and platform abstraction",
+        "Lead Engineer / microservices and event-sourcing work: useful for distributed systems and architecture rigor, but the CV still needs explicit data-engineering and analytics-platform evidence"
+      ]
+    }
+  }
+]

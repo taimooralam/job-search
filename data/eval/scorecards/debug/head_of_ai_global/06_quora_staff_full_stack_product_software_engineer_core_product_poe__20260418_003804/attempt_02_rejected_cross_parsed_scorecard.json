@@ -1,0 +1,78 @@
+{
+  "$schema": "cv-eval-scorecard/v1",
+  "rubric_version": "2026-04-17",
+  "category_id": "head_of_ai_global",
+  "job_id": "6941566fba31ffd053ff5d56",
+  "dimension_scores": {
+    "ats_optimization": 5.5,
+    "impact_clarity": 7.5,
+    "jd_alignment": 5.0,
+    "executive_presence": 7.5,
+    "anti_hallucination": 7.0
+  },
+  "gate_outcomes": {
+    "must_have_coverage_gate": false,
+    "unsafe_claim_gate": true,
+    "persona_fit_gate": true
+  },
+  "overall_score": 6.35,
+  "verdict": "NEEDS_WORK",
+  "top_strengths": [
+    "Strong TypeScript/Python full-stack evidence with quantified platform outcomes refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:8,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:27,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:30",
+    "Platform architecture credibility with 2,000-user AI workflow system and event-driven backends refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:10,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:27",
+    "Player-coach profile with 4-engineer SCRUM team leadership and mentoring evidence refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:13,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:43",
+    "Reliability metrics quantified: 75% incident reduction, 3 years zero downtime refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:30"
+  ],
+  "top_failures": [
+    "Missing React experience\u2014JD requires 5+ years React but CV shows Angular instead refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:17,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:40,data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:41",
+    "Missing GraphQL experience\u2014JD requires 5+ years GraphQL but CV omits entirely refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:16,data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:41",
+    "Consumer web product experience weak\u2014CV emphasizes enterprise AI and B2B SaaS over consumer products refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:25,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:36,data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:39",
+    "Missing MySQL/Memcached backend storage\u2014JD requires these but CV shows MongoDB/Redis refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:19,data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:43"
+  ],
+  "unsupported_claims": [
+    "Terraform listed in skills without specific project delivery evidence refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:20"
+  ],
+  "missing_must_haves": [
+    "React 5+ years professional experience refs=data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:41",
+    "GraphQL 5+ years professional experience refs=data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:41",
+    "User-facing consumer web products experience refs=data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:39,data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:40"
+  ],
+  "persona_fit_notes": [
+    "Technical Lead and Platform Lead framing appropriate for staff IC/player-coach scope refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:25,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:27",
+    "Team leadership limited to 4-engineer team\u2014fits player-coach profile without executive inflation refs=data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:13,data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:43"
+  ],
+  "representation_gap_hits": [
+    "Angular vs React frontend framework mismatch refs=cv:17,jd:41"
+  ],
+  "curation_gap_hits": [
+    "Enterprise/B2B positioning vs consumer web product requirement refs=cv:8,jd:39"
+  ],
+  "evidence_refs": [
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:8",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:10",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:13",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:16",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:17",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:19",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:20",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:25",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:27",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:30",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:36",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:40",
+    "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md:43",
+    "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:39",
+    "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:40",
+    "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:41",
+    "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md:43"
+  ],
+  "meta": {
+    "generated_at": "2026-04-17T22:39:52Z",
+    "scorer_model": "claude-opus-4-5-20251101",
+    "rubric_path": "data/eval/rubrics/head_of_ai_global_rubric.json",
+    "blueprint_path": "data/eval/blueprints/head_of_ai_global_blueprint.json",
+    "baseline_path": "data/eval/baselines/head_of_ai_global_baseline.json",
+    "cv_path": "data/eval/generated_cvs/step11_variance_lite_20260417_234432/snapshots/head_of_ai_global/06_quora_staff_full_stack_product_software_engineer_core_product_poe___generated.md",
+    "jd_path": "data/eval/raw/head_of_ai_global/jd_texts/06_quora_staff_full_stack_product_software_engineer_core_product_poe_.md"
+  }
+}

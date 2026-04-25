@@ -1,0 +1,22 @@
+[
+  {
+    "category_id": "head_of_ai_eea",
+    "job_id": "699f001187737d491c3ab803",
+    "jd_path": "data/eval/raw/head_of_ai_eea/jd_texts/38_revolut_head_of_engineering.md"
+  },
+  {
+    "category_id": "head_of_ai_ksa",
+    "job_id": "6925c1c545fa3c355f83fce1",
+    "jd_path": "data/eval/raw/head_of_ai_ksa/jd_texts/01_mozn_engineering_manager_for_agentic_ai.md"
+  },
+  {
+    "category_id": "head_of_ai_uae",
+    "job_id": "6978c1aa7d41dc1e8a0eabe1",
+    "jd_path": "data/eval/raw/head_of_ai_uae/jd_texts/16_technology_innovation_institute_senior_architect.md"
+  },
+  {
+    "category_id": "ai_architect_ksa_uae",
+    "job_id": "69296b3b45fa3c355f849ed4",
+    "jd_path": "data/eval/raw/ai_architect_ksa_uae/jd_texts/01_novapilot_fz_llc_software_architect_cloud_ai_distributed_systems.md"
+  }
+]

@@ -1,0 +1,2902 @@
+[
+  {
+    "job_id": "69381c4bc9b1888e56022ad5",
+    "title_normalized": "Principal Java Software Engineer",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "Oracle cloud subscription data travels to multiple systems; highly scalable and efficient",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Java",
+      "cloud infrastructure and networking design",
+      "cloud infrastructure maintenance",
+      "cloud native application deployment and operations",
+      "DevOps best practices",
+      "Linux systems and tooling",
+      "Git",
+      "Kubernetes",
+      "Terraform",
+      "Ansible",
+      "RESTful API design",
+      "LLM source code generation"
+    ],
+    "hard_skills_nice_to_have": [
+      "Jenkins",
+      "Python",
+      "SQL",
+      "Bash",
+      "JQ",
+      "Podman",
+      "Oracle database administration",
+      "Elasticsearch administration",
+      "MLOps",
+      "LLMs",
+      "RAG",
+      "Hugging Face",
+      "LangChain",
+      "ML pipelines",
+      "NLP",
+      "chatbot solutions",
+      "Streamlit",
+      "Gradio",
+      "Pinecone",
+      "FAISS",
+      "AutoGen",
+      "CrewAI",
+      "MCP",
+      "prompt engineering",
+      "fine-tuning",
+      "deployment strategies"
+    ],
+    "programming_languages": {
+      "required": [
+        "Java"
+      ],
+      "preferred": [
+        "Python",
+        "SQL",
+        "Bash",
+        "JQ"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "OCI",
+        "OCI Gen AI Service",
+        "Oracle Cloud Infrastructure (IaaS, PaaS)"
+      ]
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "Terraform",
+      "Ansible"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "derived",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "Hugging Face",
+        "LangChain",
+        "AutoGen",
+        "CrewAI",
+        "MCP"
+      ],
+      "observability": [
+        "Grafana",
+        "Prometheus"
+      ]
+    },
+    "data_stack": [
+      "Oracle",
+      "Elasticsearch"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "self-motivation",
+      "ability to learn",
+      "experimentation",
+      "independent work"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "build the entire technical stack",
+      "highly scalable and efficient",
+      "improving existing code quality",
+      "finding appropriate solutions and technologies for challenging problems"
+    ],
+    "implied_pain_points": [
+      "complex system integration as Oracle cloud subscription data travels to multiple systems",
+      "need to build cloud native DevOps capabilities on OCI",
+      "need to troubleshoot application and infrastructure issues in test and prod",
+      "need to choose appropriate solutions through PoCs",
+      "need to modernize and improve code quality while integrating AI services"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "693ab137c9b1888e56022b85",
+    "title_normalized": "Principal AI Engineer",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "large-scale automation; large-scale machine learning infrastructures",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "PyTorch",
+      "TensorFlow",
+      "JAX",
+      "large language models",
+      "generative AI architectures",
+      "model serving",
+      "orchestration",
+      "distributed training",
+      "scalable inference systems",
+      "cloud deployment",
+      "data engineering",
+      "MLOps",
+      "model governance",
+      "ML lifecycle best practices",
+      "AI/ML engineering",
+      "production-grade AI systems"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "Java",
+        "Scala"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "GCP",
+        "Azure"
+      ]
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "explicit",
+      "frameworks": [
+        "PyTorch",
+        "TensorFlow",
+        "JAX"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "security",
+      "governance"
+    ],
+    "soft_skills": [
+      "leadership",
+      "mentoring",
+      "collaboration",
+      "stakeholder management",
+      "strategic thinking"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "shape the long-term AI direction",
+      "influence key engineering decisions",
+      "deliver solutions that have significant impact on the company's technical evolution",
+      "align technical strategy with business goals"
+    ],
+    "implied_pain_points": [
+      "need to define and drive AI technical strategy",
+      "need to build and scale advanced AI systems in production",
+      "need to establish ML engineering standards, security, and governance",
+      "need to mentor teams and coordinate across engineering, data, and product stakeholders",
+      "need to turn cross-functional AI opportunities into technical solutions"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "694e696d6dd552ab7ec2caf7",
+    "title_normalized": "Staff AI Software Engineer",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "billions of documents; global scale",
+      "latency_reliability": "secure, reliable, and cost-effective at global scale"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "Java",
+      "Scala",
+      "Docker",
+      "Kubernetes",
+      "Helm",
+      "Terraform",
+      "Pulumi",
+      "CI/CD pipelines for ML",
+      "MLOps",
+      "training systems",
+      "inference systems",
+      "monitoring systems",
+      "sparsity",
+      "quantization",
+      "pruning",
+      "data protection",
+      "responsible AI practices"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "Java",
+        "Scala"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "Helm",
+      "Terraform",
+      "Pulumi",
+      "CI/CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "data protection",
+      "responsible AI"
+    ],
+    "soft_skills": [
+      "curiosity",
+      "experimentation",
+      "mentorship",
+      "collaboration",
+      "learning",
+      "knowledge sharing"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "secure, reliable, and cost-effective at global scale",
+      "meet demanding timelines",
+      "extensibility, performance, and scale goals",
+      "minimizing risks and maximizing opportunities"
+    ],
+    "implied_pain_points": [
+      "need for a multi-year ML platform vision across teams",
+      "need to design training, inference, and monitoring systems at scale",
+      "need to evaluate and adopt emerging MLOps tooling",
+      "need to improve cost and performance through advanced optimization techniques",
+      "need to uphold data protection and responsible AI practices"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6957aa9a6dd552ab7ec2ccd7",
+    "title_normalized": "Principal Engineer, Generative & Agentic AI",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "enterprise-grade reliability at scale"
+    },
+    "hard_skills_must_have": [
+      "Large Language Models (LLMs)",
+      "Agentic AI",
+      "generative AI systems",
+      "Python",
+      "backend systems",
+      "distributed architecture",
+      "production-grade AI/ML systems",
+      "large-scale inference",
+      "context management",
+      "continuous learning",
+      "orchestration frameworks",
+      "vector databases",
+      "memory strategies",
+      "tooling",
+      "performance",
+      "observability",
+      "scalability",
+      "responsible AI",
+      "regulatory compliance"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [
+      "responsible AI",
+      "regulatory compliance"
+    ],
+    "soft_skills": [
+      "collaboration",
+      "mentoring",
+      "curiosity"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "drive measurable product value",
+      "deliver intelligent systems that are resilient, secure, and deeply aligned with user needs",
+      "operate with trust, regulatory compliance, and enterprise-grade reliability at scale",
+      "deploy frequently and iterate continuously"
+    ],
+    "implied_pain_points": [
+      "reimagine the platform with Generative AI and Agentic AI at its core",
+      "turn autonomous and adaptive AI ideas into resilient production systems",
+      "select and integrate the right AI foundation stack",
+      "build intelligent customer experience and support capabilities in a regulated fintech environment",
+      "establish best practices for AI-powered engineering"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "5+ years of focused, hands-on work with LLMs, Agentic AI, and generative AI systems",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "69580cd76dd552ab7ec2cd6a",
+    "title_normalized": "Principal Software Engineer, AI Tools and Security",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "20 million monthly users; 20 billion image pulls",
+      "latency_reliability": "secure, resilient, high-throughput backend services with SLOs, observability, and incident response"
+    },
+    "hard_skills_must_have": [
+      "backend engineering",
+      "production-grade distributed systems at scale",
+      "technical leadership across multiple teams or domains",
+      "cloud-native systems",
+      "distributed computing",
+      "service-oriented architecture",
+      "performance optimization",
+      "secure backend services",
+      "resilient backend services",
+      "high-throughput backend services",
+      "reliability engineering",
+      "SLOs",
+      "observability",
+      "incident response",
+      "CI/CD",
+      "testing strategy",
+      "source control",
+      "deployment automation",
+      "cloud platforms",
+      "infrastructure-as-code"
+    ],
+    "hard_skills_nice_to_have": [
+      "Kubernetes",
+      "Docker",
+      "microservices architecture",
+      "OpenAI APIs",
+      "Anthropic APIs",
+      "MCP specification"
+    ],
+    "programming_languages": {
+      "required": [
+        "Go or another modern systems language"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "CI/CD",
+      "testing strategy",
+      "source control",
+      "deployment automation",
+      "Kubernetes",
+      "Docker",
+      "microservices",
+      "infrastructure-as-code"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "mentoring",
+      "ownership",
+      "bias for action",
+      "autonomy"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "bring the product to market",
+      "define the technical solution for a new product",
+      "shape the product with Product and Design",
+      "provide feedback on current exploration and propose next steps in line with Product and Design",
+      "help grow the team by participating in hiring loops"
+    ],
+    "implied_pain_points": [
+      "build the technical foundation for a new secure AI gateway product",
+      "help developers safely connect, observe, and secure AI agents and tools",
+      "translate product exploration into shippable services and APIs",
+      "balance fast iteration with long-term architectural health"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "12+ years of backend engineering experience",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695a5b8b6dd552ab7ec2ce94",
+    "title_normalized": "Staff Software Engineer, AI/ML",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "millions of users",
+      "latency_reliability": "performance, scalability, and security in multi-agent environments"
+    },
+    "hard_skills_must_have": [
+      "AI agent frameworks",
+      "Google ADK",
+      "LangChain",
+      "CrewAI",
+      "AutoGen",
+      "AI/ML projects",
+      "REST APIs",
+      "microservices",
+      "cloud platforms",
+      "Generative AI",
+      "LLM orchestration",
+      "multi-agent frameworks",
+      "LLM integration",
+      "prompt engineering",
+      "orchestration of multi-agent workflows",
+      "vector databases",
+      "embeddings",
+      "retrieval-augmented generation (RAG)",
+      "NLP",
+      "reinforcement learning concepts",
+      "enterprise systems integration"
+    ],
+    "hard_skills_nice_to_have": [
+      "PL/SQL",
+      "Java",
+      "custom AI agents for enterprise workflows",
+      "agent lifecycle management",
+      "AI profiles for model selection and orchestration",
+      "multi-agent collaboration",
+      "autonomous decision-making systems",
+      "service request triage",
+      "summarization",
+      "proactive support"
+    ],
+    "programming_languages": {
+      "required": [
+        "Go, Rust, or Python"
+      ],
+      "preferred": [
+        "PL/SQL",
+        "Java"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "REST APIs",
+      "microservices",
+      "cloud platforms"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "derived",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "Google ADK",
+        "LangChain",
+        "CrewAI",
+        "AutoGen"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "vector databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "build intelligent, autonomous agents that transform workflows and customer experiences",
+      "align agent capabilities with business needs",
+      "impact millions of users",
+      "explore emerging technologies in Generative AI, LLM orchestration, and multi-agent frameworks"
+    ],
+    "implied_pain_points": [
+      "need AI agents that integrate with external enterprise systems",
+      "need performance, scalability, and security in multi-agent environments",
+      "need agents that can be deployed across enterprise workflows",
+      "need to keep up with emerging agent technologies"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years in software development with exposure to AI/ML projects",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695cfe876dd552ab7ec2d074",
+    "title_normalized": "Staff Software Engineer, AI/ML",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "More than 2,000 employers and health plans trust Maven's platform; world's largest virtual clinic for women and families",
+      "latency_reliability": "scalability, safety, performance"
+    },
+    "hard_skills_must_have": [
+      "foundation models",
+      "OpenAI",
+      "Gemini",
+      "Google Vertex AI",
+      "RAG",
+      "multi-call prompting",
+      "agent frameworks",
+      "LangChain",
+      "vector search",
+      "ML pipelines",
+      "model experimentation",
+      "fine-tuning",
+      "training from scratch",
+      "deployment in production environments",
+      "Python",
+      "backend engineering",
+      "platform engineering",
+      "cloud-native systems",
+      "containerization",
+      "orchestration",
+      "distributed systems",
+      "health-related datasets",
+      "data preprocessing"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python"
+      ],
+      "preferred": [
+        "Go",
+        "Java"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": [
+        "Google Vertex AI"
+      ]
+    },
+    "infrastructure": [
+      "containerization",
+      "orchestration",
+      "distributed systems"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "derived",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "mentoring",
+      "curiosity",
+      "experimentation"
+    ],
+    "domain_industry": "healthcare",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "improve clinical outcomes",
+      "reduce healthcare costs",
+      "provide equity in benefits programs",
+      "improve the care journey for members and providers",
+      "productionize AI-driven features"
+    ],
+    "implied_pain_points": [
+      "turn rich healthcare data into actionable insights and intelligent workflows",
+      "build scalable, safe, production-ready AI/ML systems",
+      "prototype and productionize personalization, care routing, decision support, and summarization features",
+      "raise AI model coding, design, and evaluation practices across teams"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695d1b236dd552ab7ec2d0b1",
+    "title_normalized": "Staff Engineer - Go/PHP/AI",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "Europe's leading B2B platform connecting brands and independent retailers",
+      "latency_reliability": "performance, scalability, reliability"
+    },
+    "hard_skills_must_have": [
+      "PHP 8.3",
+      "Laravel 10",
+      "Golang",
+      "modular architecture",
+      "API-first design",
+      "event-driven architecture",
+      "data-centric design",
+      "distributed systems",
+      "microservices",
+      "domain modeling",
+      "system design",
+      "code quality",
+      "testing",
+      "observability",
+      "documentation",
+      "AI integration",
+      "MCP",
+      "home-made agents",
+      "GCP",
+      "Kubernetes",
+      "Istio/Envoy",
+      "MySQL",
+      "Redis",
+      "Docker",
+      "CircleCI",
+      "Sentry",
+      "Grafana"
+    ],
+    "hard_skills_nice_to_have": [
+      "Vue 2/3",
+      "Nuxt 3/4",
+      "TypeScript",
+      "Vuex",
+      "Pinia",
+      "Sass",
+      "PostCSS",
+      "Vite",
+      "Storybook",
+      "Chromatic",
+      "Tailwind",
+      "Vitest",
+      "Jest",
+      "Cypress",
+      "Notion",
+      "Jira",
+      "Figma"
+    ],
+    "programming_languages": {
+      "required": [
+        "PHP",
+        "Go"
+      ],
+      "preferred": [
+        "TypeScript"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "GCP",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "Docker",
+      "Kubernetes",
+      "Istio/Envoy",
+      "CircleCI"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": [
+        "Sentry",
+        "Grafana"
+      ]
+    },
+    "data_stack": [
+      "MySQL",
+      "Redis"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "leadership",
+      "coaching",
+      "collaboration",
+      "ownership",
+      "judgment",
+      "clarity"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "align architectural decisions with Ankorstore's tech vision",
+      "support the long-term modular platform strategy",
+      "raise technical quality across the engineering organisation",
+      "improve performance, scalability, and reliability across squads",
+      "support the brand-first OS strategy and services expansion"
+    ],
+    "implied_pain_points": [
+      "translate long-term architecture strategy into practical squad-executable designs",
+      "reduce complexity across services, infrastructure, and data flows",
+      "drive adoption of modular, API-first, event-driven, and data-centric patterns",
+      "raise the bar on code quality, testing, observability, and documentation",
+      "explore AI integration without losing architectural coherence"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695d6f106dd552ab7ec2d127",
+    "title_normalized": "Principal Software Engineer, AI Developer Tools",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "Over 20 million monthly users and 20 billion image pulls; platform for teams across Docker to prototype, deploy, and scale AI developer tools",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "LLM integration",
+      "AI agents",
+      "AI developer workflows",
+      "production AI systems at scale",
+      "platform engineering",
+      "technical architecture",
+      "AI-powered developer tools",
+      "observability",
+      "technical strategy"
+    ],
+    "hard_skills_nice_to_have": [
+      "Claude Code",
+      "Cursor",
+      "Warp"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "influence",
+      "mentorship",
+      "collaboration",
+      "judgment",
+      "pragmatism"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "accelerate developer productivity",
+      "enable teams across Docker to prototype, build, deploy, and scale AI developer tools",
+      "make it easier for teams to adopt an AI-native mindset",
+      "graduate successful prototypes into production-ready services",
+      "transform proven internal tools into new commercial offerings"
+    ],
+    "implied_pain_points": [
+      "build a self-service platform for internal AI developer tools",
+      "help teams unblock themselves on code review, refactoring, test generation, environment setup, deployment diagnostics, and incident handling",
+      "create technical standards and patterns for AI tooling across Docker",
+      "bridge the gap between internal prototypes and commercial products"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695ef8b26dd552ab7ec2d34a",
+    "title_normalized": "Staff Software Engineer",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "doubling revenue year over year; scaling rapidly; large-scale; high-performance",
+      "latency_reliability": "improve system reliability, observability, and performance in production environments"
+    },
+    "hard_skills_must_have": [
+      "one or more backend programming languages",
+      "distributed systems",
+      "relational databases",
+      "non-relational databases",
+      "database schemas",
+      "data models",
+      "LLM best practices",
+      "prompt design",
+      "context management",
+      "structured outputs/chaining",
+      "guardrails",
+      "deployment",
+      "monitoring",
+      "cloud infrastructure"
+    ],
+    "hard_skills_nice_to_have": [
+      "functional programming",
+      "fast-growing startup environment",
+      "open source contributions",
+      "LLM-powered applications in production"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "deployment",
+      "monitoring",
+      "cloud infrastructure"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "explicit",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "PostgreSQL",
+      "Redis"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "communication",
+      "mentoring",
+      "leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "scaleup",
+    "collaboration_model": "hybrid",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "move the business forward",
+      "improve system reliability",
+      "improve observability",
+      "improve performance",
+      "build large-scale, high-performance backend systems"
+    ],
+    "implied_pain_points": [
+      "need scalable backend systems for an AI platform",
+      "need reliable conversational AI behavior",
+      "need better observability and production performance",
+      "need backend systems that support evolving user and business needs"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695f85aa6dd552ab7ec2d3b3",
+    "title_normalized": "Principal Software Engineer",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "ensure performance, reliability, and security of AI-enabled features"
+    },
+    "hard_skills_must_have": [
+      "8+ years of experience in software engineering on the Microsoft stack",
+      ".NET Core",
+      "C#",
+      "Angular",
+      "JavaScript",
+      "TypeScript",
+      "CSS",
+      "HTML",
+      "Generative AI features",
+      "prompt engineering",
+      "optimizing LLM behavior",
+      "SQL Server",
+      "Cosmos DB",
+      "RESTful API development",
+      "cloud-based AI infrastructure",
+      "Agile methodology",
+      "continuous delivery practices"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "C#",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "Azure",
+        "AWS",
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "continuous delivery"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "explicit",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "SQL Server",
+      "Cosmos DB"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "mentoring",
+      "cross-functional collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "performance, reliability, and security of AI-enabled features",
+      "improve prompt performance",
+      "improve AI-driven workflows",
+      "deliver accessible, user-friendly experiences",
+      "maintain high quality development standards and practices"
+    ],
+    "implied_pain_points": [
+      "need generative AI capabilities integrated into the product platform",
+      "need prompt and workflow quality improvements",
+      "need secure and reliable AI-enabled features",
+      "need strong LLM deployment, operation, and monitoring expertise"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695f93aa6dd552ab7ec2d3dc",
+    "title_normalized": "Staff Software Engineer",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "enterprise readiness, including reliability, testability, and operational robustness"
+    },
+    "hard_skills_must_have": [
+      "TypeScript",
+      "Python",
+      "at least one high-performance or systems-oriented language such as Rust, C++, C#, or Go",
+      "distributed systems",
+      "backend architecture",
+      "data pipelines",
+      "long-running services",
+      "orchestration systems",
+      "shared frameworks",
+      "core systems",
+      "CI/CD workflows",
+      "containerized deployments",
+      "operational tooling",
+      "documentation"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "TypeScript",
+        "Python"
+      ],
+      "preferred": [
+        "Rust",
+        "C++",
+        "C#",
+        "Go"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "CI/CD workflows",
+      "containerized deployments",
+      "operational tooling"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "ownership",
+      "documentation"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "startup_a",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "design, evolution, and reliability of Physical AI systems and agent framework",
+      "repeatable, production-ready solutions for enterprise customers",
+      "reliability, testability, and operational robustness",
+      "adoption, extension, and long-term maintainability of the framework"
+    ],
+    "implied_pain_points": [
+      "need a reusable Physical AI agent framework for enterprise solutions",
+      "need durable backend systems and core abstractions",
+      "need systems that can be tested, operated, and extended reliably",
+      "need to translate customer-specific requirements into reusable framework features"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "695f93ce6dd552ab7ec2d3e0",
+    "title_normalized": "Staff Engineer (Applied AI / ML)",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "explicit",
+      "performance_management": "explicit",
+      "org_building": "explicit",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "LLM",
+      "MLOps",
+      "RAG",
+      "OpenAI",
+      "ChatGPT",
+      "Claude",
+      "Amazon Bedrock",
+      "LLaMA",
+      "copilots",
+      "vector databases",
+      "embeddings",
+      "graph databases",
+      "CI/CD pipelines"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": [
+        "Amazon Bedrock"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "derived",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Vector Database",
+      "Graph Databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "self-starter",
+      "collaboration",
+      "communication",
+      "mentoring",
+      "leadership",
+      "problem-solving"
+    ],
+    "domain_industry": "consulting",
+    "company_stage": "consultancy",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "help grow the careers of other team members",
+      "participate in the hiring process",
+      "participate in the annual review cycle",
+      "shape and contribute to the engineering culture",
+      "impact projects, teams, and the organization",
+      "create, shape, propose, and present engineering practices, architectures, and tech stacks",
+      "extract reusable components, patterns, concepts, and lessons learned",
+      "deliver quality documentation, architecture, code, and tests"
+    ],
+    "implied_pain_points": [
+      "need stronger applied AI / ML practices and best practices",
+      "need reusable patterns and reference implementations across projects",
+      "need technical leadership that can influence internal and client solutions",
+      "need help translating business requirements into deployable systems",
+      "need support for enterprise AI experimentation with emerging tools and models"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696012146dd552ab7ec2d513",
+    "title_normalized": "Principal Software Engineer (AI, PHP, Python, React)",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "not_specified",
+      "latency_reliability": "performance, reliability, security"
+    },
+    "hard_skills_must_have": [
+      "RESTful APIs",
+      "relational databases",
+      "CI/CD",
+      "background jobs",
+      "event-driven systems",
+      "software architecture patterns",
+      "system design",
+      "AWS",
+      "S3",
+      "SQS",
+      "SNS",
+      "SES",
+      "Step Functions",
+      "RDS",
+      "EC2",
+      "Kinesis",
+      "Lambda",
+      "distributed systems",
+      "messaging queues",
+      "asynchronous processing",
+      "testing strategies",
+      "linters",
+      "package management",
+      "CI pipelines",
+      "machine learning concepts"
+    ],
+    "hard_skills_nice_to_have": [
+      "LLMs",
+      "messaging",
+      "customer engagement platforms",
+      "high-volume data pipelines",
+      "real-time systems",
+      "AI-powered features",
+      "data-driven systems"
+    ],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "S3",
+        "SQS",
+        "SNS",
+        "SES",
+        "Step Functions",
+        "RDS",
+        "EC2",
+        "Kinesis",
+        "Lambda"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "serverless"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "relational databases",
+      "RDS"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "judgment",
+      "communication",
+      "collaboration",
+      "critical thinking",
+      "problem-solving",
+      "bias toward action"
+    ],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "shape product strategy, scope, and technical execution",
+      "design and build API-first, cloud-native services",
+      "own projects end-to-end",
+      "ship high-quality production code",
+      "maintain scalable, distributed systems with performance, reliability, and security",
+      "contribute to the conversational AI platform",
+      "improve development workflows, CI/CD pipelines, and operational excellence",
+      "identify and resolve performance bottlenecks across application, database, and infrastructure layers"
+    ],
+    "implied_pain_points": [
+      "need scalable API-first systems for client-facing products and internal platforms",
+      "need to evolve a conversational AI platform with messaging pipelines, integrations, and data flows",
+      "need to improve reliability, security, and maintainability while shipping quickly",
+      "need to reduce performance bottlenecks across the stack",
+      "need stronger operational excellence and CI/CD maturity"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696163886dd552ab7ec2d6c9",
+    "title_normalized": "Senior Staff AI Data Engineer (Tech Lead)",
+    "title_family": "tech_lead",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "large-scale datasets",
+      "latency_reliability": "performance, scalability, reliability"
+    },
+    "hard_skills_must_have": [
+      "Spark",
+      "Snowflake",
+      "Python",
+      "SQL",
+      "PL/SQL",
+      "ETL pipelines",
+      "ELT pipelines",
+      "DevOps pipelines",
+      "DataOps pipelines",
+      "AWS services",
+      "Scrum",
+      "Kanban",
+      "data modeling",
+      "data governance",
+      "security",
+      "MWAA",
+      "Autosys",
+      "Control-M",
+      "CI/CD pipelines",
+      "data observability",
+      "RAG"
+    ],
+    "hard_skills_nice_to_have": [
+      "data warehousing",
+      "streaming technologies",
+      "Lakehouse",
+      "Data Mesh"
+    ],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "SQL",
+        "PL/SQL"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS services",
+        "MWAA"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "DevOps",
+      "DataOps"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Snowflake",
+      "Enterprise Data Lake"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "mentoring",
+      "problem-solving",
+      "communication",
+      "collaboration",
+      "proactive mindset",
+      "critical thinking"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "enterprise",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "design, develop, and optimize ETL/ELT pipelines",
+      "curate and publish Data Products",
+      "maintain data integrity, accessibility, and compliance",
+      "ingest and process large-scale datasets into the Enterprise Data Lake and downstream systems",
+      "monitor and fine-tune data pipelines for performance, scalability, and reliability",
+      "automate auditing, balance, reconciliation, and data quality checks",
+      "develop self-healing pipelines with robust restartability",
+      "lead proof of concepts and technology evaluations",
+      "implement efficient Retrieval-Augmented Generation (RAG) architectures",
+      "implement data observability practices across pipelines"
+    ],
+    "implied_pain_points": [
+      "need to integrate data from multiple systems into curated data products",
+      "need to modernize the cloud data environment",
+      "need stronger pipeline resilience, restartability, and quality controls",
+      "need better data observability, lineage, and trust",
+      "need to support analytics, machine learning, and AI use cases from enterprise data"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "2+ years in insurance or a related industry",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696236866dd552ab7ec2d756",
+    "title_normalized": "Staff Platform Engineer, Materia AI",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "team of 150+ product managers, researchers, and engineers",
+      "latency_reliability": "highly scalable, reliable, secure, and cost-effective"
+    },
+    "hard_skills_must_have": [
+      "backend development",
+      "platform engineering",
+      "production engineering",
+      "site reliability engineering (SRE)",
+      "cloud-native platforms",
+      "generative AI agents",
+      "orchestration systems",
+      "GitHub Actions",
+      "Playwright",
+      "Snyk",
+      "Go",
+      "Kubernetes",
+      "AWS",
+      "GCP",
+      "multi-cloud strategies",
+      "open-source CNCF solutions",
+      "cloud-native security tools",
+      "DataDog"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Go"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "GCP",
+        "Vercel"
+      ]
+    },
+    "infrastructure": [
+      "Kubernetes",
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": [
+        "DataDog"
+      ]
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "technical leadership",
+      "mentoring",
+      "collaboration",
+      "best practices",
+      "experimentation",
+      "continuous improvement"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "deployment frequency",
+      "change failure rate",
+      "secure, performant, reliable, and adaptable AI-driven solutions"
+    ],
+    "implied_pain_points": [
+      "build cloud-native platforms for agentic workloads",
+      "standardize and improve build, test, and deploy workflows",
+      "deliver secure and reliable production infrastructure across multiple clouds",
+      "improve DORA metrics and delivery quality",
+      "provide observability for AI-driven systems",
+      "support a large cross-functional organization with documentation and processes"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "8+ years in backend development, platform engineering, production engineering, or site reliability engineering (SRE)",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6962a6e16dd552ab7ec2d7d7",
+    "title_normalized": "Staff Software Engineer, Gen AI",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "not_specified",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "C#",
+      "JavaScript",
+      "CSS",
+      "HTML",
+      "RESTful services",
+      "APIs",
+      "asynchronous messaging technologies",
+      "Git",
+      "continuous integration systems",
+      "software engineering best practices",
+      "agile development methodology",
+      "object-oriented development",
+      "responsive web design",
+      "Web standards",
+      "accessibility requirements"
+    ],
+    "hard_skills_nice_to_have": [
+      "Azure",
+      "AWS",
+      "GCP"
+    ],
+    "programming_languages": {
+      "required": [
+        "C#",
+        "JavaScript",
+        "CSS",
+        "HTML"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": [
+        "Azure Service Bus",
+        "Event Hubs",
+        "Apache Kafka",
+        "Azure",
+        "AWS",
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "paired programming",
+      "cross-team collaboration",
+      "efficient communication",
+      "team coordination"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "robust high quality code standards",
+      "compliance with Web standards and accessibility requirements",
+      "progress updates at daily standup meetings",
+      "participation in Scrum team ceremonies"
+    ],
+    "implied_pain_points": [
+      "modernize the flagship fundraising platform",
+      "implement UI/UX design concepts in a responsive web application",
+      "maintain high code quality and accessibility compliance",
+      "coordinate delivery across product management, scrum, and architects",
+      "work effectively in a remote team using agile practices"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "2+ years of experience with C# .NET or other object-oriented language",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6964e7eb28faeca4ab874fee",
+    "title_normalized": "Staff Engineer, Data & AI Focus",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "player_coach",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "derived",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "optimization",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "modern software engineering",
+      "distributed systems",
+      "architectural thinking",
+      "event-driven systems",
+      "microservices",
+      "AWS-based architectures",
+      "data warehouse concepts",
+      "data modeling",
+      "data governance",
+      "data pipelines",
+      "data quality frameworks",
+      "LLMs",
+      "embeddings",
+      "vector search",
+      "agents",
+      "automation patterns",
+      "integrating AI capabilities into existing systems or workflows"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "AWS"
+      ]
+    },
+    "infrastructure": [
+      "microservices",
+      "event-driven systems"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "derived",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "derived",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "mentoring",
+      "cross-team alignment",
+      "stakeholder alignment",
+      "communication",
+      "collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "distributed",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "measurable impact",
+      "long-term technical improvements",
+      "engineering-wide consistency",
+      "reduced complexity",
+      "responsible AI adoption"
+    ],
+    "implied_pain_points": [
+      "shape architectural direction across teams",
+      "strengthen engineering foundations",
+      "integrate AI responsibly into systems and workflows",
+      "improve distributed systems and data pipelines",
+      "reduce complexity and improve engineering consistency",
+      "align product, engineering, data, and staff engineers on technical direction"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6965742828faeca4ab8750df",
+    "title_normalized": "Principal Software Engineer - Applied AI",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "millions of Americans; enterprise-scale",
+      "latency_reliability": "SLOs for latency, resiliency, safety, and cost"
+    },
+    "hard_skills_must_have": [
+      "Generative AI solutions",
+      "AWS Bedrock",
+      "Google Cloud Vertex AI",
+      "Retrieval-Augmented Generation (RAG)",
+      "Bedrock Knowledge Bases",
+      "Vertex AI Search & Grounding",
+      "Vector Search",
+      "function/tool calling",
+      "multimodal input processing",
+      "secure, well-governed service interfaces",
+      "reference architectures",
+      "golden paths",
+      "guardrails",
+      "Architecture Decision Records (ADRs)",
+      "Responsible AI",
+      "safety filters",
+      "policy-enforced guardrails",
+      "data minimization",
+      "red-teaming playbooks",
+      "HIPAA/PHI",
+      "encryption",
+      "access control",
+      "continuous auditability",
+      "evaluation and observability frameworks",
+      "groundedness",
+      "hallucination rates",
+      "relevance",
+      "toxicity",
+      "drift",
+      "cost attribution",
+      "A/B testing",
+      "FinOps",
+      "prompt optimization",
+      "caching",
+      "batching",
+      "model selection",
+      "microservices architectures",
+      "cost-effective APIs",
+      "stakeholder requirements",
+      "performance",
+      "resiliency",
+      "security"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS Bedrock",
+        "Bedrock Foundation Models",
+        "Bedrock Knowledge Bases",
+        "Bedrock Agents",
+        "Bedrock Guardrails",
+        "Google Cloud Vertex AI",
+        "Gemini via Vertex AI API",
+        "Agent Builder",
+        "Vertex AI Search & Grounding",
+        "Vector Search",
+        "Amazon S3",
+        "Google Cloud Storage",
+        "BigQuery"
+      ]
+    },
+    "infrastructure": [
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "Amazon S3",
+      "Google Cloud Storage",
+      "BigQuery"
+    ],
+    "governance_compliance": [
+      "HIPAA",
+      "PHI"
+    ],
+    "soft_skills": [
+      "influencing",
+      "mentoring",
+      "collaboration",
+      "stakeholder_management"
+    ],
+    "domain_industry": "healthcare",
+    "company_stage": "enterprise",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "business objectives",
+      "regulatory requirements",
+      "performance goals",
+      "latency",
+      "resiliency",
+      "safety",
+      "cost",
+      "groundedness",
+      "hallucination rates",
+      "relevance",
+      "toxicity",
+      "drift",
+      "cost attribution",
+      "A/B testing"
+    ],
+    "implied_pain_points": [
+      "Deliver secure, scalable, cost-effective enterprise GenAI platforms across AWS and Google Cloud",
+      "Improve relevance and accuracy of AI outputs",
+      "Establish architectural standards, reference architectures, and guardrails for multi-cloud AI",
+      "Ensure Responsible AI and compliance with healthcare regulations",
+      "Create evaluation, observability, and FinOps practices for production AI systems",
+      "Drive cross-team adoption and alignment on AI platform strategy"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6965f2b728faeca4ab8751d8",
+    "title_normalized": "Principal Software Engineer",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "not_specified",
+      "scale_signals": "large-scale applications",
+      "latency_reliability": "performance, reliability, and security"
+    },
+    "hard_skills_must_have": [
+      "API-first, cloud-native services",
+      "RESTful APIs",
+      "relational databases",
+      "CI/CD",
+      "background jobs",
+      "event-driven systems",
+      "at least one modern programming language",
+      "object-oriented and/or functional design principles",
+      "software architecture patterns",
+      "system design",
+      "AWS",
+      "S3",
+      "SQS",
+      "SNS",
+      "SES",
+      "Step Functions",
+      "RDS",
+      "EC2",
+      "Kinesis",
+      "Lambda",
+      "distributed systems",
+      "messaging queues",
+      "asynchronous processing",
+      "testing strategies",
+      "linters",
+      "package management",
+      "CI pipelines",
+      "machine learning concepts"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "at least one modern programming language"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "AWS",
+      "services_mentioned": [
+        "S3",
+        "SQS",
+        "SNS",
+        "SES",
+        "Step Functions",
+        "RDS",
+        "EC2",
+        "Kinesis",
+        "Lambda"
+      ]
+    },
+    "infrastructure": [
+      "CI/CD",
+      "serverless",
+      "background jobs",
+      "event-driven systems"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [
+      "relational databases"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [
+      "collaboration",
+      "technical leadership"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "scaleup",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "premium customer experience",
+      "performance",
+      "reliability",
+      "security",
+      "operational excellence",
+      "technical direction"
+    ],
+    "implied_pain_points": [
+      "Shape and enhance client-facing products and internal systems",
+      "Build scalable, distributed systems with strong performance, reliability, and security",
+      "Improve messaging pipelines, integrations, and data flows for the conversational AI platform",
+      "Raise engineering standards through reviews and technical leadership",
+      "Continuously improve development workflows, CI/CD, and operational excellence",
+      "Identify and resolve performance bottlenecks across application, database, and infrastructure layers"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6965f2b728faeca4ab8751da",
+    "title_normalized": "Staff Engineer",
+    "title_family": "staff_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "not_specified",
+      "latency_reliability": "not_specified"
+    },
+    "hard_skills_must_have": [
+      "full-stack software engineering",
+      "APIs",
+      "webhooks",
+      "LLMs",
+      "embeddings",
+      "AI/ML technologies",
+      "GitHub integrations",
+      "Slack integrations",
+      "project management tool integrations"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "ownership",
+      "product sense",
+      "bias toward action",
+      "iterative delivery",
+      "collaboration"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "automate technical documentation",
+      "eliminate manual status updates",
+      "build near-autonomous, self-updating knowledge bases",
+      "build the MVP from scratch"
+    ],
+    "implied_pain_points": [
+      "Eliminate documentation debt",
+      "Automate manual status updates",
+      "Build near-autonomous knowledge bases that stay current",
+      "Create the technical foundation and culture as the first engineering hire",
+      "Integrate project scope, code, and communications into a single workflow",
+      "Ship the MVP and foundational architecture from scratch"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "696e40de3da7d438ae4f5e61",
+    "title_normalized": "Principal AI Engineer (LLM Agents & Orchestration)",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "5+ million active creators every month; 20+ AI-powered apps",
+      "latency_reliability": "optimize inference pipelines for speed (streaming, token optimization) and reliability (handling hallucinations, structured output validation)"
+    },
+    "hard_skills_must_have": [
+      "Python",
+      "TypeScript",
+      "stateful agentic workflows",
+      "LangGraph",
+      "custom Python/TypeScript solutions",
+      "internal APIs integration",
+      "databases integration",
+      "third-party tools integration",
+      "RAG",
+      "vector databases",
+      "embedding strategies",
+      "event-driven architectures",
+      "function calling",
+      "tool use",
+      "structured output validation",
+      "testing framework for non-deterministic model outputs"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "TypeScript"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "event-driven architectures",
+      "streaming",
+      "token optimization"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "explicit",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangGraph",
+        "LangChain",
+        "LlamaIndex",
+        "DSPy"
+      ],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "communication",
+      "collaboration",
+      "innovation",
+      "data-driven decisions"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "not_specified",
+    "success_metrics": [
+      "plan, execute, and self-correct",
+      "behaves as expected in production",
+      "speed",
+      "reliability",
+      "persistent memory and context awareness across sessions"
+    ],
+    "implied_pain_points": [
+      "move beyond simple chat interfaces to autonomous agents",
+      "make agent workflows capable of complex reasoning and tool usage",
+      "integrate the agent reliably with internal and external systems",
+      "reduce hallucinations and improve structured output reliability",
+      "give the agent persistent memory and context across sessions",
+      "validate non-deterministic model outputs in production"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "698b77867d41dc1e8a5647c4",
+    "title_normalized": "Principal Software Engineer, AI Tools and Security",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "over 20 million monthly users; 20 billion image pulls",
+      "latency_reliability": "secure, resilient, and high-throughput backend services with reliability engineering principles (SLOs, observability, incident response)"
+    },
+    "hard_skills_must_have": [
+      "backend engineering",
+      "distributed systems at scale",
+      "cloud-native systems",
+      "distributed computing",
+      "service-oriented architecture",
+      "performance optimization",
+      "secure backend services",
+      "resilient backend services",
+      "high-throughput backend services",
+      "reliability engineering",
+      "SLOs",
+      "observability",
+      "incident response",
+      "CI/CD",
+      "testing strategy",
+      "source control",
+      "deployment automation",
+      "infrastructure-as-code",
+      "AWS",
+      "Azure",
+      "GCP"
+    ],
+    "hard_skills_nice_to_have": [
+      "Go",
+      "Rust",
+      "Java",
+      "C++",
+      "Kubernetes",
+      "Docker",
+      "microservices architecture",
+      "OpenAI APIs",
+      "Anthropic APIs",
+      "MCP specification"
+    ],
+    "programming_languages": {
+      "required": [
+        "Go"
+      ],
+      "preferred": [
+        "Rust",
+        "Java",
+        "C++"
+      ]
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ]
+    },
+    "infrastructure": [
+      "CI_CD",
+      "infrastructure-as-code",
+      "Kubernetes",
+      "Docker",
+      "microservices"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "not_specified",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "not_specified",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "not_specified",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [],
+    "soft_skills": [
+      "technical leadership",
+      "mentoring",
+      "communication",
+      "collaboration",
+      "ownership mentality",
+      "bias for action"
+    ],
+    "domain_industry": "not_specified",
+    "company_stage": "not_specified",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "cross_functional",
+    "success_metrics": [
+      "define the technical solution for a new product",
+      "deliver elegant frameworks and APIs that developers love to use",
+      "ship fast",
+      "iterate constantly",
+      "help shape the product with Product and Design"
+    ],
+    "implied_pain_points": [
+      "build the foundation for secure AI infrastructure",
+      "define and evolve the MCP Gateway and related services",
+      "connect, observe, and secure AI agents and tools across the lifecycle",
+      "deliver reliable developer-facing APIs and frameworks in a high-velocity environment",
+      "balance rapid iteration with long-term architectural health"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "10+ years backend engineering",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "698df04c7d41dc1e8a625b32",
+    "title_normalized": "Founding Senior Principal Engineer - AI, Agents & Infrastructure",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "greenfield",
+      "scale_signals": "enterprise AI agents at scale",
+      "latency_reliability": "hardened technical core that stands up to audits, breaches, vendor changes, legal discovery, and regulatory scrutiny; secure, high-performance execution environments"
+    },
+    "hard_skills_must_have": [
+      "AI agent workflows",
+      "protocols for AI agent infrastructure",
+      "security",
+      "governance",
+      "compliance",
+      "governed execution",
+      "validator services",
+      "canonicalization",
+      "signing",
+      "verification",
+      "receipt generation",
+      "constrained delegation",
+      "capability-scoped authorization",
+      "policy-checked orchestration",
+      "spend authorization",
+      "step-up approvals",
+      "hard stops",
+      "audit trails",
+      "policy authoring",
+      "policy versioning",
+      "approvals",
+      "rollout controls",
+      "policy evaluation",
+      "key management",
+      "HSM",
+      "KMS",
+      "key rotation",
+      "immutable retention",
+      "storage tiering",
+      "observability",
+      "audit exports",
+      "multi-tenant deployment strategy",
+      "single-tenant deployment strategy",
+      "developer-friendly SDKs",
+      "templates",
+      "adapters",
+      "policy-driven routing",
+      "cost controls",
+      "integration guidance"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "not_specified",
+      "services_mentioned": [
+        "KMS",
+        "HSM"
+      ]
+    },
+    "infrastructure": [
+      "edge architecture",
+      "validator services",
+      "pipelines",
+      "immutable retention",
+      "audit exports",
+      "multi-tenant deployment",
+      "single-tenant deployment"
+    ],
+    "ai_ml_stack": {
+      "rag": "not_specified",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "not_specified",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "not_specified",
+      "model_serving_routing": "explicit",
+      "frameworks": [],
+      "observability": []
+    },
+    "data_stack": [],
+    "governance_compliance": [
+      "compliance",
+      "regulatory scrutiny"
+    ],
+    "soft_skills": [
+      "hands-on",
+      "technical decision-making",
+      "collaboration",
+      "partnering closely",
+      "engineering standards"
+    ],
+    "domain_industry": "fintech",
+    "company_stage": "startup_seed",
+    "collaboration_model": "remote_first",
+    "stakeholder_level": "executive",
+    "success_metrics": [
+      "implementation-ready platform",
+      "enterprise-deployable governance and transaction control platform",
+      "reference implementations",
+      "verifiers",
+      "integration guidance",
+      "survive audits, breaches, vendor changes, legal discovery, and regulatory scrutiny"
+    ],
+    "implied_pain_points": [
+      "build the hardened technical core for regulated AI agent workflows",
+      "enable governed money movement across payment rails and providers",
+      "create policy control and rollout mechanisms for regulated buyers",
+      "design secure key management and deployment patterns",
+      "deliver buyer-ready technical artifacts for enterprise adoption"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "not_specified",
+      "research_heavy": false
+    }
+  },
+  {
+    "job_id": "6995066187737d491c0c74b2",
+    "title_normalized": "Principal Engineer, GenAI Solutions",
+    "title_family": "principal_engineer",
+    "seniority": "senior_ic",
+    "role_scope": "ic",
+    "management": {
+      "direct_reports": "not_specified",
+      "hiring": "not_specified",
+      "performance_management": "not_specified",
+      "org_building": "not_specified",
+      "budget_pnl": "not_specified"
+    },
+    "architecture": {
+      "platform_design": "explicit",
+      "greenfield_vs_optimization": "both",
+      "scale_signals": "thousands of customers; $100M annual recurring revenue; unicorn status; rapidly expanding",
+      "latency_reliability": "real-time streaming interfaces; real-time AI applications; WebSocket integrations"
+    },
+    "hard_skills_must_have": [
+      "10+ years of software development experience",
+      "production GenAI solutions",
+      "backend engineering",
+      "Python",
+      "Java",
+      "Go",
+      "Node.js",
+      "microservices architectures",
+      "cloud platforms",
+      "full-stack applications",
+      "real-time data streaming",
+      "WebSocket integrations",
+      "LangChain",
+      "LlamaIndex",
+      "OpenAI APIs",
+      "Anthropic APIs",
+      "open-source models",
+      "agentic AI architectures",
+      "tool calling",
+      "memory systems",
+      "multi-step reasoning",
+      "RAG",
+      "vector databases",
+      "semantic search",
+      "data engineering",
+      "data pipelines",
+      "model deployment",
+      "fine-tuning",
+      "optimization",
+      "guardrails",
+      "performance monitoring"
+    ],
+    "hard_skills_nice_to_have": [],
+    "programming_languages": {
+      "required": [
+        "Python",
+        "Java",
+        "Go",
+        "Node.js"
+      ],
+      "preferred": []
+    },
+    "cloud_platform": {
+      "primary": "multi_cloud",
+      "services_mentioned": []
+    },
+    "infrastructure": [
+      "microservices",
+      "cloud-native solutions",
+      "data pipelines",
+      "real-time streaming",
+      "WebSocket integrations"
+    ],
+    "ai_ml_stack": {
+      "rag": "explicit",
+      "agents_orchestration": "explicit",
+      "fine_tuning": "explicit",
+      "evaluation_quality": "not_specified",
+      "guardrails_governance": "explicit",
+      "prompt_engineering": "not_specified",
+      "vector_search": "explicit",
+      "model_serving_routing": "not_specified",
+      "frameworks": [
+        "LangChain",
+        "LlamaIndex"
+      ],
+      "observability": []
+    },
+    "data_stack": [
+      "Pinecone",
+      "Weaviate",
+      "ChromaDB"
+    ],
+    "governance_compliance": [],
+    "soft_skills": [],
+    "domain_industry": "enterprise_saas",
+    "company_stage": "scaleup",
+    "collaboration_model": "not_specified",
+    "stakeholder_level": "not_specified",
+    "success_metrics": [
+      "scalability and performance",
+      "measurable business impact"
+    ],
+    "implied_pain_points": [
+      "Turn GenAI prototypes into production-ready solutions",
+      "Define the technical vision and architecture for AI-powered location intelligence",
+      "Build scalable real-time AI applications and conversational AI systems",
+      "Support AI/ML workloads with robust data pipelines and infrastructure",
+      "Deploy and optimize LLM-powered systems in production",
+      "Implement responsible AI practices"
+    ],
+    "disqualifiers": {
+      "requires_phd": false,
+      "requires_publications": false,
+      "requires_native_language": "not_specified",
+      "requires_security_clearance": false,
+      "requires_specific_domain_years": "1+ years building production GenAI solutions in B2B SaaS environments",
+      "research_heavy": false
+    }
+  }
+]
