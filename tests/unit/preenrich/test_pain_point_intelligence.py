@@ -212,6 +212,60 @@ def test_normalize_pain_point_intelligence_payload_keeps_jd_grounded_product_pro
     assert normalized["evidence"][0]["claim"].startswith("The role builds Copilot")
 
 
+def test_normalize_pain_point_intelligence_payload_truncates_overlong_proof_map_fields():
+    overlong_shape = "Named platform and product ownership across telematics data models, distributed systems reliability, downstream contracts, and multi-surface delivery impact with measurable operational follow-through."
+    overlong_rationale = (
+        "This reassurance signal should stay architecture-first because the role combines platform gap discovery, "
+        "cross-team contract design, distributed systems ownership, customer-facing shipment, and technical leadership "
+        "in a way that invites overly verbose proof-shape narration if left unconstrained by ingress normalization."
+    )
+    normalized = normalize_pain_point_intelligence_payload(
+        {
+            "status": "completed",
+            "source_scope": "jd_plus_research",
+            "pain_points": [
+                {
+                    "pain_id": "p_platform_scale",
+                    "category": "technical",
+                    "statement": "Platform scale needs stronger ownership.",
+                    "evidence_refs": ["artifact:jd_excerpt"],
+                    "likely_proof_targets": ["architecture"],
+                }
+            ],
+            "strategic_needs": [{"category": "technical", "statement": "Strengthen platform ownership.", "evidence_refs": ["artifact:jd_excerpt"]}],
+            "risks_if_unfilled": [{"category": "delivery", "statement": "Delivery risk rises.", "evidence_refs": ["artifact:jd_excerpt"]}],
+            "success_metrics": [{"statement": "Platform work ships cleanly.", "metric_kind": "outcome", "evidence_refs": ["artifact:jd_excerpt"]}],
+            "proof_map": [
+                {
+                    "pain_id": "p_platform_scale",
+                    "preferred_proof_type": "architecture",
+                    "preferred_evidence_shape": overlong_shape,
+                    "affected_document_sections": ["summary", "experience"],
+                    "rationale": overlong_rationale,
+                }
+            ],
+        }
+    )
+    proof_entry = normalized["proof_map"][0]
+    assert len(proof_entry["preferred_evidence_shape"]) <= 160
+    assert not proof_entry["preferred_evidence_shape"].endswith(" wit")
+    assert not proof_entry["preferred_evidence_shape"].endswith(" i")
+    assert "rationale" in proof_entry
+    assert len(proof_entry["rationale"]) <= 300
+    assert "proof_map.preferred_evidence_shape truncated to 160 chars" in normalized["debug_context"]["normalization_events"]
+    assert "proof_map.rationale truncated to 300 chars" in normalized["debug_context"]["normalization_events"]
+    payload = dict(normalized)
+    payload.update(
+        {
+            "job_id": "job-1",
+            "level2_job_id": "level2-1",
+            "pain_input_hash": "sha256:test",
+            "prompt_version": "pain_point_intelligence@v4.2.3",
+        }
+    )
+    PainPointIntelligenceDoc.model_validate(payload)
+
+
 def test_pain_point_doc_rejects_orphaned_proof_map():
     with pytest.raises(ValueError, match="proof_map pain_id does not resolve"):
         PainPointIntelligenceDoc.model_validate(

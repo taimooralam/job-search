@@ -1178,6 +1178,7 @@ def build_p_pain_point_intelligence(
             "Keep pain, strategic need, risk if unfilled, and success metric distinct. Do not collapse them into one list.",
             "Every pain_points entry MUST have a stable pain_id, >=1 evidence_refs entry, and at least one likely_proof_targets enum.",
             "Every proof_map entry MUST reference an existing pain_id and use only canonical proof_type and document_section_id enums.",
+            "Keep proof_map.preferred_evidence_shape <= 160 chars and proof_map.rationale <= 300 chars.",
             "search_terms must be concrete and retrieval-usable.",
             "artifact:jd_excerpt is an allowed evidence_ref when the signal comes directly from the JD excerpt provided here.",
             "Do not emit urgency=\"high\" when the evidence is jd_only or only one surface is present; downgrade it to medium instead.",

@@ -6679,7 +6679,7 @@ def _normalize_success_metric_payload(item: Any) -> dict[str, Any] | None:
     }
 
 
-def _normalize_proof_map_payload(item: Any) -> dict[str, Any] | None:
+def _normalize_proof_map_payload(item: Any, *, debug_context: dict[str, Any] | None = None) -> dict[str, Any] | None:
     if isinstance(item, ProofMapEntry):
         return item.model_dump()
     if not isinstance(item, dict):
@@ -6688,13 +6688,48 @@ def _normalize_proof_map_payload(item: Any) -> dict[str, Any] | None:
     pain_id = _coerce_text(payload.get("pain_id") or payload.get("pain_ref"))
     if not pain_id:
         return None
+    def _clip_text(value: Any, *, limit: int) -> str | None:
+        text = _coerce_text(value)
+        if not text:
+            return None
+        canonical = re.sub(r"\s+", " ", text).strip()
+        if len(canonical) <= limit:
+            return canonical
+        clipped = canonical[:limit].rstrip()
+        if " " in clipped:
+            clipped = clipped.rsplit(" ", 1)[0].rstrip()
+        return clipped or canonical[:limit].rstrip()
+
+    preferred_evidence_shape_raw = _coerce_text(
+        payload.get("preferred_evidence_shape") or payload.get("evidence_shape") or payload.get("shape")
+    )
+    preferred_evidence_shape = _clip_text(preferred_evidence_shape_raw, limit=160)
+    if (
+        preferred_evidence_shape_raw
+        and preferred_evidence_shape
+        and preferred_evidence_shape != re.sub(r"\s+", " ", preferred_evidence_shape_raw).strip()
+        and debug_context is not None
+    ):
+        _debug_append_event(
+            debug_context,
+            "normalization_events",
+            "proof_map.preferred_evidence_shape truncated to 160 chars",
+        )
+    rationale_raw = _coerce_text(payload.get("rationale"))
+    rationale = _clip_text(rationale_raw, limit=300)
+    if rationale_raw and rationale and rationale != re.sub(r"\s+", " ", rationale_raw).strip() and debug_context is not None:
+        _debug_append_event(
+            debug_context,
+            "normalization_events",
+            "proof_map.rationale truncated to 300 chars",
+        )
     return {
         "pain_id": pain_id,
         "preferred_proof_type": _coerce_text(payload.get("preferred_proof_type") or payload.get("proof_type")),
-        "preferred_evidence_shape": _coerce_text(payload.get("preferred_evidence_shape") or payload.get("evidence_shape") or payload.get("shape")),
+        "preferred_evidence_shape": preferred_evidence_shape,
         "bad_proof_patterns": _normalize_string_list(payload.get("bad_proof_patterns") or payload.get("anti_patterns")),
         "affected_document_sections": _normalize_presentation_section_ids(payload.get("affected_document_sections") or payload.get("sections")),
-        "rationale": _coerce_text(payload.get("rationale")),
+        "rationale": rationale,
         "confidence": _coerce_confidence_payload(payload.get("confidence"), fallback_basis="proof_map_normalized"),
     }
 
@@ -6754,7 +6789,7 @@ def normalize_pain_point_intelligence_payload(
     ]
     normalized["proof_map"] = [
         payload
-        for payload in (_normalize_proof_map_payload(item) for item in _coerce_list(raw.get("proof_map")))
+        for payload in (_normalize_proof_map_payload(item, debug_context=debug_context) for item in _coerce_list(raw.get("proof_map")))
         if payload
     ]
     normalized["search_terms"] = [
