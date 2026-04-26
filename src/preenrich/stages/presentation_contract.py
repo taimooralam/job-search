@@ -25,7 +25,9 @@ from src.preenrich.blueprint_models import (
     IdealCandidatePresentationModelDoc,
     PresentationContractDoc,
     PromptMetadata,
+    SectionEmphasisDoc,
     TruthConstrainedEmphasisRulesDoc,
+    _PROOF_CATEGORIES,
     build_truth_constrained_emphasis_rules_compact,
     normalize_cv_shape_expectations_payload,
     normalize_document_expectations_payload,
@@ -1246,6 +1248,25 @@ def _default_cv_shape_expectations(
 ) -> dict[str, Any]:
     stakeholder_status = str(stakeholder_surface.get("status") or "unresolved")
     status = "completed" if stakeholder_status == "completed" else "partial"
+    leadership_cap = _leadership_dimension_cap(
+        seniority_band=str(priors.get("seniority_band") or "senior"),
+        leadership_evidence_band=str(priors.get("leadership_evidence_band") or "none"),
+        direct_reports=int(priors.get("direct_reports") or 0),
+    )
+
+    def _section_focus_categories(limit: int, fallback: list[str]) -> list[str]:
+        seeded = list(document_expectations.get("proof_order") or [])[:limit] or list(fallback)
+        filtered: list[str] = []
+        for category in [*seeded, *fallback]:
+            if leadership_cap <= 5 and category == "leadership":
+                continue
+            if category in filtered:
+                continue
+            filtered.append(category)
+            if len(filtered) >= min(limit, len(fallback)):
+                break
+        return filtered or [item for item in fallback if item != "leadership"][:limit]
+
     confidence = _caps_for_sparse_upstream(
         stakeholder_surface,
         {"score": 0.76 if status == "completed" else 0.56, "band": "high" if status == "completed" else "medium", "basis": "Role-family priors plus thesis alignment."},
@@ -1255,7 +1276,7 @@ def _default_cv_shape_expectations(
         {
             "section_id": "summary",
             "emphasis": "highlight",
-            "focus_categories": document_expectations.get("proof_order", [])[:2] or ["metric", "architecture"],
+            "focus_categories": _section_focus_categories(2, ["metric", "architecture"]),
             "length_bias": "short",
             "ordering_bias": "outcome_first",
             "rationale": "Summary should establish role-fit and proof posture quickly.",
@@ -1263,7 +1284,7 @@ def _default_cv_shape_expectations(
         {
             "section_id": "key_achievements",
             "emphasis": "highlight",
-            "focus_categories": document_expectations.get("proof_order", [])[:3] or ["metric", "architecture", "leadership"],
+            "focus_categories": _section_focus_categories(3, ["metric", "architecture", "leadership"]),
             "length_bias": "medium",
             "ordering_bias": "outcome_first",
             "rationale": "Key achievements carry the condensed proof ladder.",
@@ -1271,7 +1292,7 @@ def _default_cv_shape_expectations(
         {
             "section_id": "experience",
             "emphasis": "highlight",
-            "focus_categories": document_expectations.get("proof_order", [])[:4] or ["metric", "architecture", "leadership", "stakeholder"],
+            "focus_categories": _section_focus_categories(4, ["metric", "architecture", "leadership", "stakeholder"]),
             "length_bias": "long",
             "ordering_bias": "outcome_first",
             "rationale": "Experience is the main proof surface for this role class.",
@@ -2464,6 +2485,62 @@ def _validate_cv_shape_expectations(
     )
 
 
+def _align_cv_shape_expectations_claim_envelope(
+    doc: CvShapeExpectationsDoc,
+    *,
+    priors: dict[str, Any],
+    document_expectations: dict[str, Any],
+) -> CvShapeExpectationsDoc:
+    leadership_cap = _leadership_dimension_cap(
+        seniority_band=str(priors.get("seniority_band") or "senior"),
+        leadership_evidence_band=str(priors.get("leadership_evidence_band") or "none"),
+        direct_reports=int(priors.get("direct_reports") or 0),
+    )
+    if leadership_cap > 5:
+        return doc
+
+    fallback_categories = [
+        category
+        for category in list(document_expectations.get("proof_order") or [])
+        if category in _PROOF_CATEGORIES and category != "leadership"
+    ]
+    if not fallback_categories:
+        fallback_categories = ["metric", "architecture", "stakeholder"]
+
+    updated_entries: list[SectionEmphasisDoc] = []
+    normalization_events = list(doc.debug_context.normalization_events or [])
+    changed = False
+    for entry in doc.section_emphasis:
+        original_categories = list(entry.focus_categories or [])
+        if "leadership" not in original_categories:
+            updated_entries.append(entry)
+            continue
+        filtered_categories = [category for category in original_categories if category != "leadership"]
+        if not filtered_categories:
+            filtered_categories = []
+            for category in fallback_categories:
+                if category not in filtered_categories:
+                    filtered_categories.append(category)
+                if len(filtered_categories) >= 1:
+                    break
+        updated_entries.append(entry.model_copy(update={"focus_categories": filtered_categories}))
+        normalization_events.append(
+            f"envelope_prune:section_emphasis.{entry.section_id}.focus_categories leadership removed due to leadership_cap_{leadership_cap}"
+        )
+        changed = True
+
+    if not changed:
+        return doc
+    return doc.model_copy(
+        update={
+            "section_emphasis": updated_entries,
+            "debug_context": doc.debug_context.model_copy(
+                update={"normalization_events": list(dict.fromkeys(normalization_events))}
+            ),
+        }
+    )
+
+
 def _validate_ideal_candidate(
     payload: dict[str, Any],
     *,
@@ -3207,6 +3284,11 @@ class PresentationContractStage:
                 default_id="role_family_cv_shape_default",
                 unresolved_marker="schema_defaulted_cv_shape_expectations",
             )
+        cv_shape_expectations = _align_cv_shape_expectations_claim_envelope(
+            cv_shape_expectations,
+            priors=priors,
+            document_expectations=document_expectations.model_dump(),
+        )
 
         ideal_candidate_priors = _ideal_candidate_priors(
             priors=priors,

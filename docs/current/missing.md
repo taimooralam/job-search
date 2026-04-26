@@ -185,7 +185,7 @@
 
 ### Today's Session (2026-04-25): Iteration 4.2.6 Truth-Constrained Emphasis Rules
 
-**STATUS: IMPLEMENTED LOCALLY, GUARDED FOR ROLLOUT**
+**STATUS: IMPLEMENTED AND LIVE-VALIDATED**
 
 **Scope**: Ship `truth_constrained_emphasis_rules` as a real `presentation_contract` subdocument with canonical enum ownership, deterministic normalization, split / merged prompt compatibility, cross-subdocument invariants, metadata-first tracing, compact snapshot projection, and parent-stage VPS tooling.
 
@@ -250,7 +250,18 @@
   - `mongo_writes.md`
   - `acceptance.md`
   - `run.log`
-- live Mongo / VPS validation still depends on available credentials and reachable infrastructure at execution time
+- live Mongo / VPS validation completed through the parent `presentation_contract` stage on:
+  - one thin/fail-open job
+  - one rich-research AWS job that also satisfied the low/adjacent-AI acceptance path
+  - one leadership-language Samsara job with `direct_reports = 0` and a non-management envelope
+- the completed leadership live run now records:
+  - `mandatory topic coverage count: 8`
+  - `forbidden_claim_patterns count: 4`
+  - `credibility_ladder_rules count: 1`
+  - `title_strategy_conflict_count: 0`
+  - `ai_section_policy_conflict_count: 0`
+  - `dimension_weight_conflict_count: 0`
+  - `must_signal_contradiction_count: 0`
 
 ---
 

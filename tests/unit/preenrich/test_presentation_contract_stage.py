@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 from bson import ObjectId
 
-from src.preenrich.stages.presentation_contract import PresentationContractStage
+from src.preenrich.stages.presentation_contract import (
+    PresentationContractStage,
+    _default_cv_shape_expectations,
+)
 from src.preenrich.types import StageContext, StepConfig
 from tests.unit.preenrich._emphasis_rules_test_data import (
     dimension_weights_payload,
@@ -333,6 +336,151 @@ def test_presentation_contract_fail_open_on_inferred_only_stakeholders(monkeypat
     assert set(result.stage_output["document_expectations"]["audience_variants"].keys()) <= {"recruiter", "hiring_manager", "peer_technical"}
     assert result.stage_output["document_expectations"]["confidence"]["band"] != "high"
     assert result.stage_output["ideal_candidate_presentation_model"]["confidence"]["band"] != "high"
+
+
+def test_default_cv_shape_expectations_omits_leadership_focus_when_leadership_cap_is_low():
+    payload = _default_cv_shape_expectations(
+        priors={
+            "seniority_band": "senior",
+            "leadership_evidence_band": "none",
+            "direct_reports": 0,
+            "section_order": ["summary", "key_achievements", "experience", "core_competencies"],
+            "header_density": "balanced",
+            "ai_section_policy": "embedded_only",
+            "ats_pressure": "high",
+            "format_rules": ["plain_text"],
+            "keyword_placement_bias": "balanced",
+            "goal": "architecture_first",
+        },
+        preflight_summary={},
+        document_expectations={"proof_order": ["architecture", "leadership", "metric", "stakeholder"]},
+        stakeholder_surface={"status": "inferred_only"},
+        ai_intensity="adjacent",
+    )
+
+    focus_categories = [
+        category
+        for entry in payload["section_emphasis"]
+        for category in entry.get("focus_categories") or []
+    ]
+    assert "leadership" not in focus_categories
+
+
+def test_presentation_contract_prunes_leadership_focus_from_validated_shape_when_envelope_is_low(
+    monkeypatch,
+):
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_IDEAL_CANDIDATE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED", "true")
+    _mock_llm(
+        monkeypatch,
+        document_payload={
+            "document_expectations": {
+                "status": "completed",
+                "primary_document_goal": "architecture_first",
+                "secondary_document_goals": [],
+                "audience_variants": {
+                    "recruiter": {
+                        "tilt": ["clarity_first"],
+                        "must_see": ["role_fit"],
+                        "risky_signals": ["tool_list_cv"],
+                        "rationale": "Recruiter lens.",
+                    }
+                },
+                "proof_order": ["metric", "architecture", "leadership", "stakeholder"],
+                "anti_patterns": ["tool_list_cv"],
+                "tone_posture": {
+                    "primary_tone": "architect_first",
+                    "hype_tolerance": "low",
+                    "narrative_tolerance": "medium",
+                    "formality": "neutral",
+                },
+                "density_posture": {
+                    "overall_density": "medium",
+                    "header_density": "proof_dense",
+                    "section_density_bias": [],
+                },
+                "keyword_balance": {
+                    "target_keyword_pressure": "medium",
+                    "ats_mirroring_bias": "balanced",
+                    "semantic_expansion_bias": "balanced",
+                },
+                "unresolved_markers": [],
+                "rationale": "Architecture thesis.",
+                "confidence": {"score": 0.8, "band": "high", "basis": "strong"},
+                "evidence": [],
+            }
+        },
+        shape_payload={
+            "cv_shape_expectations": {
+                "status": "completed",
+                "title_strategy": "closest_truthful",
+                "header_shape": {
+                    "density": "proof_dense",
+                    "include_elements": ["name", "links"],
+                    "proof_line_policy": "required",
+                    "differentiator_line_policy": "optional",
+                },
+                "section_order": ["header", "summary", "experience"],
+                "section_emphasis": [
+                    {
+                        "section_id": "summary",
+                        "emphasis": "highlight",
+                        "focus_categories": ["leadership"],
+                        "length_bias": "short",
+                        "ordering_bias": "outcome_first",
+                        "rationale": "lead with leadership",
+                    },
+                    {
+                        "section_id": "experience",
+                        "emphasis": "highlight",
+                        "focus_categories": ["architecture", "leadership"],
+                        "length_bias": "long",
+                        "ordering_bias": "outcome_first",
+                        "rationale": "main proof",
+                    },
+                ],
+                "ai_section_policy": "required",
+                "counts": {
+                    "key_achievements_min": 2,
+                    "key_achievements_max": 4,
+                    "core_competencies_min": 4,
+                    "core_competencies_max": 8,
+                    "summary_sentences_min": 2,
+                    "summary_sentences_max": 3,
+                },
+                "ats_envelope": {
+                    "pressure": "standard",
+                    "format_rules": ["single_column"],
+                    "keyword_placement_bias": "balanced",
+                },
+                "evidence_density": "high",
+                "seniority_signal_strength": "high",
+                "compression_rules": ["compress_core_competencies_first"],
+                "omission_rules": ["omit_publications_if_unused_in_role_family"],
+                "unresolved_markers": [],
+                "rationale": "proof dense shape",
+                "confidence": {"score": 0.8, "band": "high", "basis": "strong"},
+                "evidence": [],
+            }
+        },
+    )
+
+    result = PresentationContractStage().run(_ctx())
+    focus_categories = [
+        category
+        for entry in result.stage_output["cv_shape_expectations"]["section_emphasis"]
+        for category in entry.get("focus_categories") or []
+    ]
+    assert "leadership" not in focus_categories
+    assert any(
+        "envelope_prune:section_emphasis.summary.focus_categories leadership removed due to leadership_cap_5" == event
+        for event in result.stage_output["cv_shape_expectations"]["debug_context"]["normalization_events"]
+    )
+    assert not any(
+        entry.get("conflict_source") == "dimension_weights"
+        for entry in result.stage_output["truth_constrained_emphasis_rules"]["debug_context"]["conflict_resolution_log"]
+    )
 
 
 def test_presentation_contract_fail_open_when_pain_map_missing(monkeypatch):
