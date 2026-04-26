@@ -11,25 +11,24 @@ Covers BDD scenarios:
 Uses mongomock for Mongo isolation.
 """
 
-import pytest
 from datetime import datetime, timezone
-from bson import ObjectId
 from unittest.mock import MagicMock, patch
 
 import mongomock
+import pytest
+from bson import ObjectId
 
+from src.preenrich.dispatcher import (
+    PrerequisiteNotMet,
+    run_sequence,
+    single_stage,
+)
 from src.preenrich.types import (
     StageContext,
     StageResult,
     StageStatus,
     StepConfig,
 )
-from src.preenrich.dispatcher import (
-    single_stage,
-    run_sequence,
-    PrerequisiteNotMet,
-)
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -257,7 +256,7 @@ def test_single_stage_idempotent_on_same_attempt_token(mock_db):
     from src.preenrich.types import attempt_token
 
     job = _make_job(mock_db)
-    ctx = _make_ctx(job)
+    _make_ctx(job)
     stage = _make_stage("jd_structure")
 
     # Compute the token that single_stage will generate

@@ -7,11 +7,9 @@ Covers:
   with score tiebreak when regions are equal.
 """
 
-import pytest
-from typing import Dict, List
+from typing import Dict
 
-from src.common.dedupe import detect_region, consolidate_by_location
-
+from src.common.dedupe import consolidate_by_location, detect_region
 
 # ---------------------------------------------------------------------------
 # TestDetectRegion

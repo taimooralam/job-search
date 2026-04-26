@@ -5,13 +5,14 @@ Tests the annotation_priors repository that enables
 future dual-write (Atlas + VPS) support for the priors collection.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from src.common.repositories import (
+    WriteResult,
     get_priors_repository,
     reset_priors_repository,
-    WriteResult,
 )
 from src.common.repositories.priors_repository import (
     AtlasPriorsRepository,
@@ -197,7 +198,7 @@ class TestResetPriorsRepository:
         """Should clear singleton so next call creates new instance."""
         with patch.dict("os.environ", {"MONGODB_URI": "mongodb://test"}, clear=True):
             with patch("src.common.repositories.priors_repository.MongoClient"):
-                repo1 = get_priors_repository()
+                get_priors_repository()
                 reset_priors_repository()
                 repo2 = get_priors_repository()
 
@@ -260,7 +261,7 @@ class TestAnnotationPriorsIntegration:
                 mock_db.__getitem__.return_value = mock_collection
                 mock_client.return_value.__getitem__.return_value = mock_db
 
-                from src.services.annotation_priors import save_priors, _empty_priors
+                from src.services.annotation_priors import _empty_priors, save_priors
 
                 priors = _empty_priors()
                 result = save_priors(priors)
@@ -288,7 +289,7 @@ class TestAnnotationPriorsIntegration:
         with patch.dict("os.environ", {}, clear=True):
             reset_priors_repository()
 
-            from src.services.annotation_priors import save_priors, _empty_priors
+            from src.services.annotation_priors import _empty_priors, save_priors
 
             priors = _empty_priors()
             result = save_priors(priors)

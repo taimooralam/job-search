@@ -12,14 +12,13 @@ Verifies:
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.preenrich.stages.persona import PersonaStage, DEFAULT_TIER
+from src.preenrich.stages.persona import DEFAULT_TIER, PersonaStage
 from src.preenrich.types import StageContext, StageResult, StepConfig
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

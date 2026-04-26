@@ -7,13 +7,10 @@ Tests the following fixes:
 3. openAnnotationPanel() jobId parameter handling (Issue 4)
 """
 
-import pytest
 from datetime import datetime
+from unittest.mock import patch
+
 from bson import ObjectId
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-import tempfile
-import os
 
 
 class TestSerializeJobDescriptionNormalization:

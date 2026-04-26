@@ -142,18 +142,19 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
         db = _get_db()
 
     # Import stage modules (lazy to avoid import cost when disabled)
-    from src.preenrich.lease import claim_one, release
-    from src.preenrich.checksums import jd_checksum, company_checksum
-    from src.preenrich.types import StageContext, StepConfig
+    from src.pipeline.tracing import PreenrichTracingSession
+    from src.preenrich.checksums import company_checksum, jd_checksum
     from src.preenrich.dispatcher import run_sequence as run_stages
-    from src.preenrich.stages.jd_structure import JDStructureStage
-    from src.preenrich.stages.jd_extraction import JDExtractionStage
+    from src.preenrich.lease import claim_one, release
     from src.preenrich.stages.ai_classification import AIClassificationStage
-    from src.preenrich.stages.pain_points import PainPointsStage
     from src.preenrich.stages.annotations import AnnotationsStage
-    from src.preenrich.stages.persona import PersonaStage
     from src.preenrich.stages.company_research import CompanyResearchStage
+    from src.preenrich.stages.jd_extraction import JDExtractionStage
+    from src.preenrich.stages.jd_structure import JDStructureStage
+    from src.preenrich.stages.pain_points import PainPointsStage
+    from src.preenrich.stages.persona import PersonaStage
     from src.preenrich.stages.role_research import RoleResearchStage
+    from src.preenrich.types import StageContext, StepConfig
 
     # Phase 2: all 8 stages in DAG order
     # fit_signal deferred to Phase 5 (no live consumer in BatchPipelineService yet)
@@ -228,6 +229,52 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
             attempt_number = pre.get("attempt_number", 0) + 1
 
             shadow_mode = os.getenv("PREENRICH_SHADOW_MODE", "false").lower() == "true"
+            session_id = f"job:{job_id}"
+            tracer = PreenrichTracingSession(
+                run_id=f"preenrich:legacy:{job_id}:{attempt_number}",
+                session_id=session_id,
+                metadata={
+                    "job_id": str(job_doc.get("job_id") or job_id),
+                    "level2_job_id": str(job_id),
+                    "correlation_id": session_id,
+                    "langfuse_session_id": session_id,
+                    "run_id": f"preenrich:legacy:{job_id}:{attempt_number}",
+                    "worker_id": worker_id,
+                    "task_type": "preenrich.legacy.run",
+                    "stage_name": "legacy",
+                    "attempt_count": attempt_number,
+                    "attempt_token": None,
+                    "input_snapshot_id": snapshot_id,
+                    "jd_checksum": jd_cs,
+                    "lifecycle_before": str(job_doc.get("lifecycle") or "selected"),
+                    "lifecycle_after": "preenriching",
+                    "work_item_id": None,
+                    "legacy_orchestration": True,
+                    "shadow_mode": shadow_mode,
+                },
+            )
+            tracer.record_event(
+                "scout.preenrich.claim",
+                {
+                    "job_id": str(job_doc.get("job_id") or job_id),
+                    "level2_job_id": str(job_id),
+                    "correlation_id": session_id,
+                    "langfuse_session_id": session_id,
+                    "run_id": f"preenrich:legacy:{job_id}:{attempt_number}",
+                    "worker_id": worker_id,
+                    "task_type": "preenrich.legacy.run",
+                    "stage_name": "legacy",
+                    "attempt_count": attempt_number,
+                    "attempt_token": None,
+                    "input_snapshot_id": snapshot_id,
+                    "jd_checksum": jd_cs,
+                    "lifecycle_before": str(job_doc.get("lifecycle") or "selected"),
+                    "lifecycle_after": "preenriching",
+                    "work_item_id": None,
+                    "legacy_orchestration": True,
+                    "shadow_mode": shadow_mode,
+                },
+            )
             ctx = StageContext(
                 job_doc=job_doc,
                 jd_checksum=jd_cs,
@@ -236,6 +283,8 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
                 attempt_number=attempt_number,
                 config=StepConfig(),
                 shadow_mode=shadow_mode,
+                tracer=tracer,
+                stage_name="legacy",
             )
 
             # Initialise pre_enrichment root if absent
@@ -253,25 +302,43 @@ def run_worker_loop(db: Optional[Any] = None) -> None:
                 },
             )
 
-            summary = run_stages(db, ctx, stages, worker_id)
-            tick_stats["completed"] += len(summary.get("completed", []))
-            tick_stats["failed"] += len(summary.get("failed", []))
-            tick_stats["skipped"] += len(summary.get("skipped", []))
+            try:
+                summary = run_stages(db, ctx, stages, worker_id)
+                tick_stats["completed"] += len(summary.get("completed", []))
+                tick_stats["failed"] += len(summary.get("failed", []))
+                tick_stats["skipped"] += len(summary.get("skipped", []))
 
-            # Phase 2b: accumulate per-stage fallback metrics across jobs in the tick
-            for stage_name, counts in summary.get("fallback_counts", {}).items():
-                agg = tick_stats["fallback_counts"].setdefault(
-                    stage_name,
-                    {"total": 0, "success": 0, "fallback": 0, "last_fallback_reason": None},
+                # Phase 2b: accumulate per-stage fallback metrics across jobs in the tick
+                for stage_name, counts in summary.get("fallback_counts", {}).items():
+                    agg = tick_stats["fallback_counts"].setdefault(
+                        stage_name,
+                        {"total": 0, "success": 0, "fallback": 0, "last_fallback_reason": None},
+                    )
+                    agg["total"] += 1
+                    agg["success"] += counts.get("success", 0)
+                    agg["fallback"] += counts.get("fallback", 0)
+                    if counts.get("fallback_reason"):
+                        agg["last_fallback_reason"] = counts["fallback_reason"]
+
+                new_lifecycle = "ready" if not summary.get("failed") else "failed"
+                release(db, job_id, worker_id, new_lifecycle)
+                tracer.complete(
+                    output={
+                        "status": new_lifecycle,
+                        "completed_stages": summary.get("completed", []),
+                        "failed_stages": summary.get("failed", []),
+                        "skipped_stages": summary.get("skipped", []),
+                    }
                 )
-                agg["total"] += 1
-                agg["success"] += counts.get("success", 0)
-                agg["fallback"] += counts.get("fallback", 0)
-                if counts.get("fallback_reason"):
-                    agg["last_fallback_reason"] = counts["fallback_reason"]
-
-            new_lifecycle = "ready" if not summary.get("failed") else "failed"
-            release(db, job_id, worker_id, new_lifecycle)
+            except Exception as exc:
+                tracer.complete(
+                    output={
+                        "status": "failed",
+                        "error_class": "unexpected_error",
+                        "error_message_preview": str(exc)[:240],
+                    }
+                )
+                raise
 
         except Exception as exc:
             logger.exception("Unexpected error in worker tick: %s", exc)

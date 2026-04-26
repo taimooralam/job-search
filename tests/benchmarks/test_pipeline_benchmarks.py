@@ -9,10 +9,11 @@ Target Latencies (documented in __init__.py):
 - Failures indicate potential regressions
 """
 
-import pytest
 import time
+from typing import Any, Dict
 from unittest.mock import MagicMock, patch
-from typing import Dict, Any
+
+import pytest
 
 # ===== TARGET LATENCIES (in seconds) =====
 TARGETS = {
@@ -298,8 +299,9 @@ class TestDatabaseBenchmarks:
     @pytest.mark.skip(reason="Requires live MongoDB connection")
     def test_mongodb_query_latency(self):
         """MongoDB queries should complete within 100ms."""
-        from pymongo import MongoClient
         import os
+
+        from pymongo import MongoClient
 
         mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
         client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)

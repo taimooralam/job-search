@@ -21,15 +21,15 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..auth import verify_token
 from .operation_streaming import (
-    create_operation_run,
     create_log_callback,
-    update_operation_status,
+    create_operation_run,
     get_operation_state,
+    update_operation_status,
 )
 
 logger = logging.getLogger(__name__)

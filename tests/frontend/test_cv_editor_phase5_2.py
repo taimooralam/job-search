@@ -9,13 +9,8 @@ Tests validate:
 - Keyboard shortcuts reference panel
 """
 
-import pytest
-import re
-from flask import Flask
-from flask.testing import FlaskClient
-from unittest.mock import Mock, patch, MagicMock
-from bson import ObjectId
 
+import pytest
 
 # ==============================================================================
 # Test Class: Keyboard Shortcuts HTML/JavaScript Integration
@@ -26,14 +21,14 @@ class TestKeyboardShortcutsIntegration:
 
     def test_keyboard_shortcuts_setup_function_exists(self):
         """setupKeyboardShortcuts function should exist in cv-editor.js."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'function setupKeyboardShortcuts' in content
             assert 'document.addEventListener(\'keydown\'' in content
 
     def test_keyboard_shortcuts_prevent_browser_defaults(self):
         """Keyboard shortcuts should prevent default browser behavior."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check that Ctrl+S prevents browser save dialog
             assert 'e.preventDefault()' in content
@@ -42,27 +37,27 @@ class TestKeyboardShortcutsIntegration:
 
     def test_keyboard_shortcuts_check_editor_open(self):
         """Shortcuts should only work when editor panel is open."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'translate-x-full' in content  # Check for panel closed state
 
     def test_escape_closes_editor(self):
         """Escape key handler should close the editor panel."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert "key === 'Escape'" in content or "e.key === 'Escape'" in content
             assert 'closeCVEditorPanel' in content
 
     def test_ctrl_slash_opens_shortcuts_panel(self):
         """Ctrl+/ should open keyboard shortcuts reference panel."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'toggleKeyboardShortcutsPanel' in content
             assert "key === '/'" in content or 'Slash' in content
 
     def test_text_alignment_shortcuts_exist(self):
         """Text alignment shortcuts (Ctrl+Shift+L/E/R/J) should be implemented."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check for alignment shortcuts
             assert "'l'" in content or "'L'" in content  # Left
@@ -73,7 +68,7 @@ class TestKeyboardShortcutsIntegration:
 
     def test_list_shortcuts_exist(self):
         """List shortcuts (Ctrl+Shift+7/8) should be implemented."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert "'7'" in content or "'&'" in content  # Numbered list
             assert "'8'" in content or "'*'" in content  # Bullet list
@@ -89,13 +84,13 @@ class TestKeyboardShortcutsPanel:
 
     def test_create_shortcuts_panel_function_exists(self):
         """createKeyboardShortcutsPanel function should exist."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'function createKeyboardShortcutsPanel' in content
 
     def test_shortcuts_panel_has_modal_structure(self):
         """Shortcuts panel should have proper modal ARIA structure."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check for setAttribute calls for ARIA attributes
             assert 'setAttribute' in content and 'role' in content and 'dialog' in content
@@ -104,14 +99,14 @@ class TestKeyboardShortcutsPanel:
 
     def test_shortcuts_panel_displays_platform_specific_keys(self):
         """Panel should display Cmd on Mac, Ctrl on Windows/Linux."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'navigator.platform' in content or '/Mac/' in content
             assert '⌘' in content  # Cmd symbol for Mac
 
     def test_shortcuts_panel_has_categories(self):
         """Panel should organize shortcuts into categories."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check for category headers
             assert 'Text Formatting' in content
@@ -122,14 +117,14 @@ class TestKeyboardShortcutsPanel:
 
     def test_shortcuts_panel_closes_on_escape(self):
         """Escape key should close shortcuts panel."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Panel should handle Escape specially when open
             assert 'keyboard-shortcuts-panel' in content
 
     def test_shortcuts_panel_closes_on_background_click(self):
         """Clicking background should close shortcuts panel."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check for click handler on panel background
             assert 'addEventListener' in content
@@ -146,21 +141,21 @@ class TestUndoRedoUIButtons:
 
     def test_undo_button_exists_in_template(self):
         """Undo button should exist in CV editor component."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             # Uses Jinja template variable for id_prefix
             assert 'cv-undo-btn' in content
 
     def test_redo_button_exists_in_template(self):
         """Redo button should exist in CV editor component."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             # Uses Jinja template variable for id_prefix
             assert 'cv-redo-btn' in content
 
     def test_undo_button_has_aria_label(self):
         """Undo button should have aria-label for accessibility."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             # Find undo button section and check for aria-label (need larger section due to multi-line template)
             undo_section = content[content.find('cv-undo-btn'):content.find('cv-undo-btn') + 800]
@@ -169,7 +164,7 @@ class TestUndoRedoUIButtons:
 
     def test_redo_button_has_aria_label(self):
         """Redo button should have aria-label for accessibility."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             redo_section = content[content.find('cv-redo-btn'):content.find('cv-redo-btn') + 800]
             assert 'aria-label' in redo_section
@@ -177,21 +172,21 @@ class TestUndoRedoUIButtons:
 
     def test_undo_button_starts_disabled(self):
         """Undo button should have disabled attribute by default."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             undo_section = content[content.find('cv-undo-btn'):content.find('cv-undo-btn') + 800]
             assert 'disabled' in undo_section
 
     def test_redo_button_starts_disabled(self):
         """Redo button should have disabled attribute by default."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             redo_section = content[content.find('cv-redo-btn'):content.find('cv-redo-btn') + 800]
             assert 'disabled' in redo_section
 
     def test_undo_button_has_onclick_handler(self):
         """Undo button should have onclick handler."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             undo_section = content[content.find('cv-undo-btn'):content.find('cv-undo-btn') + 500]
             assert 'onclick' in undo_section
@@ -199,7 +194,7 @@ class TestUndoRedoUIButtons:
 
     def test_redo_button_has_onclick_handler(self):
         """Redo button should have onclick handler."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             redo_section = content[content.find('cv-redo-btn'):content.find('cv-redo-btn') + 500]
             assert 'onclick' in redo_section
@@ -207,20 +202,20 @@ class TestUndoRedoUIButtons:
 
     def test_update_undo_redo_buttons_function_exists(self):
         """updateUndoRedoButtons function should exist in cv-editor.js."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'updateUndoRedoButtons' in content
 
     def test_undo_redo_buttons_check_editor_can_undo_redo(self):
         """updateUndoRedoButtons should check editor.can().undo() and redo()."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'can().undo()' in content or 'can().undo' in content
             assert 'can().redo()' in content or 'can().redo' in content
 
     def test_undo_redo_buttons_toggle_disabled_state(self):
         """Buttons should enable/disable based on history state."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check that disabled property is being set
             assert 'disabled = ' in content or '.disabled' in content
@@ -240,7 +235,7 @@ class TestMobileResponsiveCSS:
 
     def test_mobile_breakpoints_defined(self):
         """CSS should have mobile breakpoints (768px, 1023px)."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert '@media' in content
             assert '768px' in content
@@ -248,39 +243,39 @@ class TestMobileResponsiveCSS:
 
     def test_touch_target_sizes_defined(self):
         """Touch targets should be at least 44x44px for WCAG compliance."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert '44px' in content  # WCAG touch target size
 
     def test_mobile_toolbar_stacking(self):
         """Toolbar should stack vertically on mobile."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'flex-direction: column' in content or 'flex-wrap' in content
 
     def test_focus_indicators_wcag_compliant(self):
         """Focus indicators should meet WCAG 3:1 contrast ratio."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'focus-visible' in content or ':focus' in content
             assert 'outline' in content
 
     def test_reduced_motion_support(self):
         """CSS should respect prefers-reduced-motion."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'prefers-reduced-motion' in content
             assert 'animation: none' in content or 'transition: none' in content
 
     def test_high_contrast_mode_support(self):
         """CSS should support high contrast mode."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'prefers-contrast' in content
 
     def test_print_styles_hide_editor_ui(self):
         """Print styles should hide editor UI elements."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert '@media print' in content
             assert 'display: none' in content
@@ -297,39 +292,39 @@ class TestAccessibilityEnhancements:
 
     def test_keyboard_shortcuts_button_exists_in_header(self):
         """Keyboard shortcuts help button should exist in header."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'toggleKeyboardShortcutsPanel' in content
 
     def test_editor_has_role_textbox(self):
         """Editor should have role="textbox" for screen readers."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'role: \'textbox\'' in content or 'role="textbox"' in content
 
     def test_editor_has_aria_label(self):
         """Editor should have aria-label describing purpose."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'aria-label' in content
             assert 'CV content editor' in content or 'editor' in content.lower()
 
     def test_editor_has_aria_multiline(self):
         """Editor should have aria-multiline="true"."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'aria-multiline' in content
 
     def test_screen_reader_announcements_exist(self):
         """Screen reader announcements should be made for actions."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'announceToScreenReader' in content
             assert 'aria-live' in content
 
     def test_toolbar_has_role_toolbar(self):
         """Toolbar should have role="toolbar" for accessibility."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check for toolbar role
             toolbar_section = content[content.find('cv-toolbar'):content.find('cv-toolbar') + 200]
@@ -337,13 +332,13 @@ class TestAccessibilityEnhancements:
 
     def test_buttons_have_aria_pressed_for_toggles(self):
         """Toggle buttons should have aria-pressed attribute."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'aria-pressed' in content
 
     def test_sr_only_utility_class_exists(self):
         """Screen reader only utility class should exist in CSS."""
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
             assert '.sr-only' in content
             assert 'position: absolute' in content
@@ -358,7 +353,7 @@ class TestCSSIntegration:
 
     def test_cv_editor_css_linked_in_job_detail(self):
         """cv-editor.css should be linked in job_detail.html."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'cv-editor.css' in content
             assert '<link' in content
@@ -366,7 +361,7 @@ class TestCSSIntegration:
 
     def test_css_link_in_extra_head_block(self):
         """CSS should be linked in extra_head block."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
             # Check that cv-editor.css comes after {% block extra_head %}
             extra_head_index = content.find('{% block extra_head %}')
@@ -383,7 +378,7 @@ class TestPhase52Integration:
 
     def test_existing_keyboard_shortcuts_still_work(self):
         """Ctrl+B/I/U shortcuts (Phase 1) should still work."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             # TipTap handles these natively via extensions
             # Just verify bold functionality exists
@@ -392,25 +387,25 @@ class TestPhase52Integration:
 
     def test_autosave_still_works(self):
         """Auto-save functionality (Phase 1) should still work."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'scheduleAutoSave' in content
             assert 'AUTOSAVE_DELAY' in content
 
     def test_save_indicator_still_works(self):
         """Save indicator (Phase 1) should still update."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             js_content = f.read()
             assert 'updateSaveIndicator' in js_content
 
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             html_content = f.read()
             assert 'cv-save-indicator' in html_content
 
     def test_toolbar_formatting_buttons_still_exist(self):
         """Toolbar formatting buttons (Phase 1-2) should still exist."""
         # Note: CV editor HTML is now in components/cv_editor.html (unified component)
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'data-format="bold"' in content
             assert 'data-format="italic"' in content
@@ -418,20 +413,20 @@ class TestPhase52Integration:
 
     def test_document_styles_still_exist(self):
         """Document style controls (Phase 3) should still exist."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'cv-line-height' in content or 'lineHeight' in content
             assert 'cv-margin' in content or 'margin' in content
 
     def test_pdf_export_still_works(self):
         """PDF export (Phase 4) should still work."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'exportCVToPDF' in content
 
     def test_page_breaks_still_work(self):
         """Page break visualization (Phase 5.1) should still work."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
             assert 'updatePageBreaks' in content or 'PageBreakCalculator' in content
 

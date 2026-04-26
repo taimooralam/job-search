@@ -12,30 +12,25 @@ These tests follow TDD approach and should FAIL initially until
 prompt improvements are implemented.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
-
 # Import test utilities
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from fixtures.sample_jobs import SAMPLE_STARS, create_mock_state_for_job
 from helpers.validation_helpers import (
-    validate_rationale_v2,
-    count_pain_point_references,
-    extract_star_companies,
     count_generic_phrases,
-    extract_metrics
-)
-from fixtures.sample_jobs import (
-    create_mock_state_for_job,
-    SAMPLE_STARS,
-    get_sample_job
+    count_pain_point_references,
+    extract_metrics,
+    extract_star_companies,
+    validate_rationale_v2,
 )
 
 # Import module under test
-from src.layer4.opportunity_mapper import OpportunityMapper
 
 # ===== FIXTURES =====
 
@@ -76,7 +71,6 @@ def mock_llm_providers(mocker):
     mock_instance.with_structured_output.return_value = mock_structured
 
     # Mock invoke response
-    from langchain_core.messages import AIMessage
     mock_structured.invoke.return_value = {
         "fit_score": 85,
         "fit_rationale": "At Seven.One Entertainment Group, candidate reduced infrastructure costs by 75% ($3M annually), directly addressing the cost optimization pain point. Built microservices architecture handling 10M requests daily with 99.9% uptime, matching the scalability requirements. However, lacks specific Kubernetes expertise at scale.",

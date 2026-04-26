@@ -11,10 +11,10 @@ This service enables learning from past applications to improve future personali
 
 import hashlib
 import logging
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

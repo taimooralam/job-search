@@ -6,27 +6,26 @@ All LLM calls are mocked for deterministic testing.
 """
 
 import sys
-import pytest
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
-from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
+
+from src.layer6_v2.cv_loader import CandidateData, RoleData
 from src.layer6_v2.orchestrator import CVGeneratorV2, cv_generator_v2_node
 from src.layer6_v2.types import (
-    RoleBullets,
+    DimensionScore,
     GeneratedBullet,
+    GradeResult,
+    HeaderOutput,
+    ImprovementResult,
+    ProfileOutput,
+    RoleBullets,
+    SkillEvidence,
+    SkillsSection,
     StitchedCV,
     StitchedRole,
-    HeaderOutput,
-    ProfileOutput,
-    SkillsSection,
-    SkillEvidence,
     ValidationResult,
-    GradeResult,
-    DimensionScore,
-    ImprovementResult,
 )
-from src.layer6_v2.cv_loader import RoleData, CandidateData
-
 
 # ===== MODULE-LEVEL MOCK =====
 # This autouse fixture prevents MongoDB connection attempts when CVGeneratorV2 is instantiated.

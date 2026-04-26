@@ -6,13 +6,12 @@ Tests the module-level date parsing function used by:
 - get_locations() for location filtering by date
 """
 
-import pytest
-from datetime import datetime
-
+import os
 
 # Import the function from frontend app
 import sys
-import os
+from datetime import datetime
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from frontend.app import parse_datetime_filter
 

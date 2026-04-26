@@ -9,11 +9,11 @@ Defines the core data structures used across the pre-enrichment worker:
 """
 
 import os
+import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-import tempfile
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from src.preenrich.schema import attempt_token as _schema_attempt_token
 
@@ -130,6 +130,23 @@ _STAGE_DEFAULTS: Dict[str, Dict[str, str]] = {
         "primary_model": "gpt-5.2",
         "fallback_provider": "none",
         "transport": "codex_web_search",
+        "fallback_transport": "none",
+        "allow_repo_context": "false",
+    },
+    "pain_point_intelligence": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "none",
+        "fallback_model": "gpt-5.2",
+        "transport": "none",
+        "fallback_transport": "none",
+        "allow_repo_context": "false",
+    },
+    "presentation_contract": {
+        "provider": "codex",
+        "primary_model": "gpt-5.4",
+        "fallback_provider": "none",
+        "transport": "none",
         "fallback_transport": "none",
         "allow_repo_context": "false",
     },
@@ -253,6 +270,18 @@ def get_stage_step_config(stage_name: str) -> "StepConfig":
         max_web_queries = 0
         max_fetches = 0
 
+    if stage_name == "pain_point_intelligence":
+        from src.preenrich.blueprint_config import pain_point_supplemental_web_enabled
+
+        if pain_point_supplemental_web_enabled():
+            from src.preenrich.blueprint_config import research_max_fetches, research_max_web_queries
+
+            max_web_queries = min(research_max_web_queries(), 2)
+            max_fetches = min(research_max_fetches(), 2)
+        else:
+            max_web_queries = 0
+            max_fetches = 0
+
     return StepConfig(
         provider=provider,
         primary_model=primary_model,
@@ -303,6 +332,53 @@ class StepConfig:
     reasoning_effort: Optional[str] = None
 
 
+@runtime_checkable
+class PreenrichTracerHandle(Protocol):
+    """Stage-facing tracing contract for preenrich spans and events."""
+
+    trace: Any
+    trace_id: Optional[str]
+    trace_url: Optional[str]
+    enabled: bool
+
+    def start_substage_span(
+        self,
+        stage_name: str,
+        substage: str,
+        metadata: Dict[str, Any],
+    ) -> Any:
+        """Start a child span under the active stage span."""
+
+    def end_span(self, span: Any, *, output: Optional[Dict[str, Any]] = None) -> None:
+        """Finish a span that was started by this tracing handle."""
+
+    def record_event(self, name: str, metadata: Dict[str, Any]) -> None:
+        """Emit an event correlated to the active preenrich trace."""
+
+
+class NullPreenrichTracingHandle:
+    """No-op tracing handle so stage code never branches on `None`."""
+
+    trace: Any = None
+    trace_id: Optional[str] = None
+    trace_url: Optional[str] = None
+    enabled: bool = False
+
+    def start_substage_span(
+        self,
+        stage_name: str,
+        substage: str,
+        metadata: Dict[str, Any],
+    ) -> Any:
+        return None
+
+    def end_span(self, span: Any, *, output: Optional[Dict[str, Any]] = None) -> None:
+        return None
+
+    def record_event(self, name: str, metadata: Dict[str, Any]) -> None:
+        return None
+
+
 @dataclass
 class StageContext:
     """
@@ -326,6 +402,10 @@ class StageContext:
     attempt_number: int
     config: StepConfig = field(default_factory=StepConfig)
     shadow_mode: bool = False
+    # Stage-scoped tracing handle so stage bodies can emit child spans without
+    # needing to branch on Langfuse configuration or call the client directly.
+    tracer: PreenrichTracerHandle = field(default_factory=NullPreenrichTracingHandle)
+    stage_name: Optional[str] = None
 
 
 def attempt_token(

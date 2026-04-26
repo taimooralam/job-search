@@ -8,15 +8,14 @@ Validates:
 """
 
 import os
-import pytest
 from datetime import datetime, timezone
-from bson import ObjectId
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import mongomock
+import pytest
+from bson import ObjectId
 
 from src.preenrich.worker import _count_in_flight
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

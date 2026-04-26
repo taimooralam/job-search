@@ -1,6 +1,5 @@
 """Tests for src.common.ai_classifier module."""
 
-import pytest
 
 from src.common.ai_classifier import (
     AIClassification,

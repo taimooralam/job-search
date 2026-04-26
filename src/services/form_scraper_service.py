@@ -39,14 +39,14 @@ from pydantic import BaseModel, Field, ValidationError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.unified_llm import invoke_unified_sync
 from src.common.repositories import (
-    get_job_repository,
+    FormCacheRepositoryInterface,
     JobRepositoryInterface,
     get_form_cache_repository,
-    FormCacheRepositoryInterface,
+    get_job_repository,
 )
 from src.common.types import FormField
+from src.common.unified_llm import invoke_unified_sync
 
 logger = logging.getLogger(__name__)
 

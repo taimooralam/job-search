@@ -16,13 +16,12 @@ Verifies:
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.preenrich.stages.company_research import CompanyResearchStage, COMPANY_CACHE_TTL_DAYS
-from src.preenrich.types import StageContext, StageResult, StepConfig
-
+from src.preenrich.stages.company_research import CompanyResearchStage
+from src.preenrich.types import StageContext, StepConfig
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

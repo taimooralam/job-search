@@ -8,12 +8,11 @@ Tests the Phase 5 ATS validation functionality:
 - Keyword stuffing detection
 """
 
-import pytest
 from src.layer6_v2.ats_checker import (
     ATSKeywordChecker,
-    check_cv_ats_compliance,
-    KeywordDensityResult,
     ATSValidationResult,
+    KeywordDensityResult,
+    check_cv_ats_compliance,
 )
 from src.layer6_v2.types import ATSRequirement
 

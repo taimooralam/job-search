@@ -68,6 +68,10 @@ Project-local Codex skills are stored under `.codex/skills/`.
 
 Source of truth: **`docs/current/operational-development-manual.md`**
 
+Windows bootstrap and interrupted VPS recovery notes:
+- see `docs/current/operational-development-manual.md`
+- especially the `2026-04-22 Windows Bootstrap And VPS Recovery Notes` section before any fresh-machine live validation or stage-resume session
+
 For long local development or live-debug runs:
 - do not run blind
 - prefer outside-sandbox execution when real MongoDB, Codex, or live web research is required
@@ -117,3 +121,53 @@ Source of truth: **`docs/current/cv-generation-guide.md`**
 
 - Pipeline architecture → Part 2, Data structures → Part 3, Scoring → Part 4
 - Quality gates → Part 5, Role guidance → Part 6, ATS rules → Part 7
+
+## Source-File Format Policy (4.3 soft JSON->YAML migration)
+
+YAML is preferred for human-authored Codex / preenrich / manual-review source
+files in the migrated 4.3 subset. JSON is preserved for the legacy
+`layer6_v2` runner, machine artifacts, validator reports, deterministic
+hashing, and external workflow payloads. There is no universal conversion.
+
+- **YAML-first (canonical for new authoring path)**: `data/master-cv/candidate_facts.yml`,
+  future `data/master-cv/{roles,projects}/<id>.meta.yml`, future
+  `data/master-cv/taxonomies/*.yml`, future `data/eval/cv_assembly/*.yml`.
+- **Dual-format (JSON kept for legacy runner, YAML mirror added for the new
+  reader path)**: `data/master-cv/role_metadata.{json,yml}`,
+  `data/master-cv/role_skills_taxonomy.{json,yml}`,
+  `data/master-cv/projects/{commander4,lantern}_skills.{json,yml}`.
+- **JSON only (do not convert)**: `data/eval/baselines/*.json`,
+  `data/eval/scorecards/**/*.json`, all 4.2 stage outputs and validator
+  reports, all 4.3.2+ `expected/*.json`, draft/grade/winner/synthesis
+  outputs, MongoDB state dumps, `n8n/workflows/cv-upload.json`, and any
+  artifact whose canonical hash is defined in JSON terms.
+
+New Codex/eval/manual readers should use `src/common/structured_data.py`:
+`resolve_preferred_path` / `load_preferred` for single files,
+`discover_preferred_files` for `*_skills`-style asset families, and
+`dump_yaml_file` for stable block-style writes. `canonical_json` and the
+4.3.9 determinism harness are unaffected.
+
+## File-Encoding Policy
+
+All text-mode `open()`, `Path.read_text()`, and `Path.write_text()` calls
+**must** pass `encoding="utf-8"` explicitly. Default platform encoding
+(cp1252 on Windows) has silently produced `UnicodeDecodeError` and mojibake
+when reading role markdown, master-CV JSON, and CV outputs. The project's
+canonical encoding is utf-8 everywhere.
+
+Enforced by ruff rule `PLW1514` (configured in `ruff.toml`). To check:
+
+```
+python -m ruff check --preview src/ scripts/ tests/
+```
+
+Auto-fix new violations:
+
+```
+python -m ruff check --preview --fix --unsafe-fixes src/ scripts/ tests/
+```
+
+The `--unsafe-fixes` label is conservative — for this project the
+auto-applied `encoding="utf-8"` is correct in 100% of cases since all
+source/data files are utf-8.

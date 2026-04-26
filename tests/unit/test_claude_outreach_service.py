@@ -5,21 +5,19 @@ Tests the ClaudeOutreachService for generating per-contact outreach messages
 using UnifiedLLM with Claude CLI primary and LangChain fallback.
 """
 
-import pytest
-from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from src.common.mena_detector import MenaContext
+from src.common.unified_llm import LLMResult
 from src.services.claude_outreach_service import (
+    CANDIDATE_CALENDLY,
+    CANDIDATE_NAME,
     ClaudeOutreachService,
     OutreachPackage,
     generate_outreach_with_claude,
-    CANDIDATE_NAME,
-    CANDIDATE_CALENDLY,
-    CANDIDATE_SIGNATURE,
 )
-from src.common.unified_llm import LLMResult
-from src.common.mena_detector import MenaContext
-
 
 # =============================================================================
 # Sample Data Fixtures

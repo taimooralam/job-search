@@ -27,6 +27,8 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from src.pipeline.tracing import emit_standalone_event
+
 logger = logging.getLogger(__name__)
 
 if os.getenv("PREENRICH_DISABLE_REDIS_OUTBOX", "false").lower() == "true":
@@ -56,6 +58,45 @@ def _now_utc() -> datetime:
 def _dedupe_key(queue_key: str) -> str:
     """Build the Redis SET NX key for producer-side deduplication."""
     return f"preenrich:outbox_seen:{queue_key}"
+
+
+def _emit_outbox_event(
+    *,
+    name: str,
+    job_id: str,
+    queue_key: str,
+    jd_checksum: str | None,
+    delivery_count: int | None,
+    lifecycle_before: str,
+    lifecycle_after: str,
+    extra: Optional[Dict[str, Any]] = None,
+) -> None:
+    session_id = f"job:{job_id}"
+    metadata: Dict[str, Any] = {
+        "job_id": job_id,
+        "level2_job_id": job_id,
+        "correlation_id": session_id,
+        "langfuse_session_id": session_id,
+        "run_id": f"preenrich:outbox:{name}:{job_id}:{delivery_count or 0}",
+        "worker_id": "preenrich-outbox",
+        "task_type": name,
+        "stage_name": "outbox",
+        "attempt_count": delivery_count,
+        "attempt_token": None,
+        "input_snapshot_id": None,
+        "jd_checksum": jd_checksum,
+        "lifecycle_before": lifecycle_before,
+        "lifecycle_after": lifecycle_after,
+        "work_item_id": queue_key,
+        "source": "legacy_outbox",
+        "queue_key": queue_key,
+    }
+    if extra:
+        metadata.update(extra)
+    try:
+        emit_standalone_event(name=name, session_id=session_id, metadata=metadata)
+    except Exception as exc:  # pragma: no cover - best effort
+        logger.warning("Outbox tracing failed for %s %s: %s", name, job_id, exc)
 
 
 def enqueue_ready(
@@ -137,6 +178,15 @@ def enqueue_ready(
         if result.matched_count > 0:
             enqueued += 1
             logger.info("Enqueued job %s (queue_key=%s)", job_id, queue_key)
+            _emit_outbox_event(
+                name="scout.preenrich.outbox.enqueue",
+                job_id=job_id,
+                queue_key=queue_key,
+                jd_checksum=jd_cs,
+                delivery_count=1,
+                lifecycle_before="ready",
+                lifecycle_after="queued",
+            )
         else:
             logger.warning(
                 "Job %s lifecycle changed before queued update; XADD message orphaned",
@@ -249,6 +299,19 @@ def outbox_consumer_tick(
                         response.status_code,
                         _is_duplicate_response(response),
                     )
+                    _emit_outbox_event(
+                        name="scout.preenrich.outbox.ack",
+                        job_id=job_id,
+                        queue_key=queue_key,
+                        jd_checksum=decoded.get("jd_checksum"),
+                        delivery_count=delivery_count,
+                        lifecycle_before="queued",
+                        lifecycle_after="queued",
+                        extra={
+                            "http_status": response.status_code,
+                            "duplicate": _is_duplicate_response(response),
+                        },
+                    )
                 else:
                     raise RuntimeError(
                         f"HTTP {response.status_code} from runner for {queue_key}"
@@ -280,6 +343,16 @@ def outbox_consumer_tick(
                         job_id,
                         delivery_count,
                     )
+                    _emit_outbox_event(
+                        name="scout.preenrich.outbox.deadletter",
+                        job_id=job_id,
+                        queue_key=queue_key,
+                        jd_checksum=decoded.get("jd_checksum"),
+                        delivery_count=delivery_count,
+                        lifecycle_before="queued",
+                        lifecycle_after="deadletter",
+                        extra={"error_message_preview": str(exc)[:240]},
+                    )
                 else:
                     # Increment delivery_count and re-add for retry
                     # (original stays pending until acked or deadlettered)
@@ -288,5 +361,15 @@ def outbox_consumer_tick(
                         {**decoded, "delivery_count": str(delivery_count)},
                     )
                     stats["retried"] += 1
+                    _emit_outbox_event(
+                        name="scout.preenrich.outbox.retry",
+                        job_id=job_id,
+                        queue_key=queue_key,
+                        jd_checksum=decoded.get("jd_checksum"),
+                        delivery_count=delivery_count,
+                        lifecycle_before="queued",
+                        lifecycle_after="queued",
+                        extra={"error_message_preview": str(exc)[:240]},
+                    )
 
     return stats

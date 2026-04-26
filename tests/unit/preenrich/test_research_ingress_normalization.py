@@ -131,6 +131,25 @@ def test_company_profile_normalization_flattens_rich_identity_confidence():
     assert profile.identity_confidence.evidence_summary == "Official site and LinkedIn company page align on company identity."
 
 
+def test_company_profile_normalization_maps_legacy_company_aliases_and_drops_unknown_keys():
+    payload = normalize_company_profile_payload(
+        {
+            "summary": "Signature IT World Inc appears to be a staffing firm.",
+            "company_name": "Signature IT World Inc",
+            "company_domain": "signatureitworld.com",
+            "company_url": "https://signatureitworld.com",
+            "company_name_variations": ["Signature IT World"],
+            "unknown_extra": {"should": "drop"},
+        }
+    )
+    profile = CompanyProfile.model_validate(payload)
+    assert profile.canonical_name == "Signature IT World Inc"
+    assert profile.canonical_domain == "signatureitworld.com"
+    assert profile.canonical_url == "https://signatureitworld.com"
+    assert "company_name_variations" not in payload
+    assert "unknown_extra" not in payload
+
+
 def test_role_profile_normalization_accepts_detail_wrappers():
     payload = normalize_role_profile_payload(
         {

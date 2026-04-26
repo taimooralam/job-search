@@ -12,7 +12,6 @@ PREENRICH_FALLBACK_MODEL_JD_EXTRACTION.
 Validates the extraction output with Pydantic before emitting the patch.
 """
 
-import json
 import logging
 import time
 from typing import Any, Dict, List, Optional
@@ -100,8 +99,8 @@ def _claude_invoker_for_jd(
     The prompt arg is ignored — JDExtractor builds its own prompt from title/company/description.
     model arg is ignored — JDExtractor uses its configured model/tier.
     """
-    from src.layer1_4.claude_jd_extractor import JDExtractor
     from src.common.state import ExtractedJD
+    from src.layer1_4.claude_jd_extractor import JDExtractor
 
     extractor = JDExtractor()
     result = extractor.extract(
@@ -211,6 +210,8 @@ class JDExtractionStage:
             job_id=job_id,
             schema=None,  # JDExtractor already validates; Codex output validated below
             claude_invoker=_invoker,
+            tracer=ctx.tracer,
+            stage_name=ctx.stage_name or self.name,
         )
         duration_ms = int((time.monotonic() - t0) * 1000)
 

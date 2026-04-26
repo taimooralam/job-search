@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from src.common.repositories import get_job_repository
@@ -46,7 +47,7 @@ def run_cleanup(dry_run: bool = True, sample_count: int = 0):
     count = repo.count_documents(query)
 
     print(f"\n{'='*60}")
-    print(f"Discarded Jobs Cleanup")
+    print("Discarded Jobs Cleanup")
     print(f"{'='*60}")
     print(f"Mode: {'DRY RUN (preview only)' if dry_run else 'LIVE (will delete)'}")
     print(f"Discarded jobs found: {count:,}")
@@ -76,7 +77,7 @@ def run_cleanup(dry_run: bool = True, sample_count: int = 0):
         result = repo.delete_many(query)
 
         print(f"\n{'='*60}")
-        print(f"DELETION COMPLETE")
+        print("DELETION COMPLETE")
         print(f"{'='*60}")
         # WriteResult uses modified_count for delete operations
         print(f"Jobs deleted: {result.modified_count:,}")

@@ -10,7 +10,6 @@ Outputs:
 
 import json
 import os
-import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -220,18 +219,18 @@ def main():
 
     # Tier breakdown
     tier_counts = Counter(doc["_signal_tier"] for doc in final_eligible)
-    print(f"\nTier breakdown:")
+    print("\nTier breakdown:")
     for t in ["A", "B", "C", "D"]:
         print(f"  Tier {t}: {tier_counts.get(t, 0)}")
 
     # Serialize and save
     serialized = [serialize_doc(doc) for doc in final_eligible]
 
-    with open(RAW_DIR / "all_eligible_jobs.json", "w") as f:
+    with open(RAW_DIR / "all_eligible_jobs.json", "w", encoding="utf-8") as f:
         json.dump(serialized, f, indent=2, default=str)
     print(f"\nSaved {len(serialized)} eligible jobs to data/eval/raw/all_eligible_jobs.json")
 
-    with open(EVAL_DIR / "exclusions.json", "w") as f:
+    with open(EVAL_DIR / "exclusions.json", "w", encoding="utf-8") as f:
         json.dump(exclusions, f, indent=2, default=str)
     print(f"Saved {len(exclusions)} exclusions to data/eval/exclusions.json")
 
@@ -252,12 +251,12 @@ def main():
         "final_eligible": len(final_eligible),
         "tier_counts": dict(tier_counts),
     }
-    with open(EVAL_DIR / "queries.json", "w") as f:
+    with open(EVAL_DIR / "queries.json", "w", encoding="utf-8") as f:
         json.dump(queries, f, indent=2)
 
     # Summary stats
     print(f"\n{'='*50}")
-    print(f"STEP 1 COMPLETE")
+    print("STEP 1 COMPLETE")
     print(f"{'='*50}")
     print(f"Total fetched:     {len(all_docs)}")
     print(f"Excluded:          {len(exclusions)}")

@@ -19,7 +19,7 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -218,6 +218,7 @@ def _scrape_firecrawl(job_key: str, url: str) -> IndeedJobData:
     """Scrape using FireCrawl with stealth proxy."""
     try:
         from firecrawl import FirecrawlApp
+
         from src.common.config import Config
     except ImportError as e:
         raise IndeedScraperError(f"FireCrawl not available: {e}")

@@ -41,6 +41,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Load environment variables
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from pymongo import MongoClient
@@ -282,7 +283,7 @@ def run_cleanup(dry_run: bool = True, verbose: bool = False):
     ))
 
     print(f"\n{'='*70}")
-    print(f"Duplicate Annotation Cleanup")
+    print("Duplicate Annotation Cleanup")
     print(f"{'='*70}")
     print(f"Mode: {'DRY RUN (preview only)' if dry_run else 'LIVE (will modify database)'}")
     print(f"Jobs with annotations found: {len(jobs)}")
@@ -314,7 +315,7 @@ def run_cleanup(dry_run: bool = True, verbose: bool = False):
 
     # Summary
     print(f"\n{'='*70}")
-    print(f"SUMMARY")
+    print("SUMMARY")
     print(f"{'='*70}")
     print(f"Jobs scanned: {len(jobs)}")
     print(f"Jobs with duplicates: {len(jobs_with_duplicates)}")

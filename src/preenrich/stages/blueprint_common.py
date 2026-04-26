@@ -379,7 +379,7 @@ def apply_disambiguation_rules(
 def detect_ai_taxonomy(inputs: dict[str, Any], taxonomy: dict[str, Any] | None = None) -> AITaxonomyDoc:
     payload = taxonomy or load_job_taxonomy()
     ai_taxonomy = payload.get("ai_taxonomy") or {}
-    text = "\n".join(
+    "\n".join(
         [
             _normalized_text(inputs.get("title")),
             _normalized_text(inputs.get("responsibilities")),

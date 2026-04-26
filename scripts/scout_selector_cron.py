@@ -39,11 +39,11 @@ except ImportError:
 import requests
 from pymongo import MongoClient
 
-from src.common.scout_queue import read_and_clear_scored, append_to_pool, purge_pool
-from src.common.dedupe import generate_dedupe_key, consolidate_by_location
-from src.common.telegram import send_telegram
 from src.common.blacklist import filter_blacklisted
+from src.common.dedupe import consolidate_by_location, generate_dedupe_key
 from src.common.rule_scorer import is_non_english_jd
+from src.common.scout_queue import append_to_pool, purge_pool, read_and_clear_scored
+from src.common.telegram import send_telegram
 from src.pipeline.selector_scheduler import SelectorFeatureFlags, SelectorScheduler
 
 logging.basicConfig(
@@ -63,7 +63,7 @@ DISCARDED_MAX_AGE_SECONDS = 3 * 86400  # 3 days
 def _append_discarded(jobs: List[Dict]) -> None:
     """Append discarded jobs to discarded.jsonl with a timestamp."""
     now = datetime.now(timezone.utc).isoformat()
-    with open(DISCARDED_PATH, "a") as f:
+    with open(DISCARDED_PATH, "a", encoding="utf-8") as f:
         for job in jobs:
             job["discarded_at"] = now
             f.write(json.dumps(job) + "\n")

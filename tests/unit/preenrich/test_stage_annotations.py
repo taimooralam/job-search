@@ -11,13 +11,12 @@ Verifies:
 """
 
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.preenrich.stages.annotations import AnnotationsStage
 from src.preenrich.types import StageContext, StageResult, StepConfig
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

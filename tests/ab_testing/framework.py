@@ -13,18 +13,17 @@ Usage:
 """
 
 import json
-import os
-from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 from .scorers import (
-    score_specificity,
+    ScoreResult,
+    calculate_combined_score,
     score_grounding,
     score_hallucinations,
-    calculate_combined_score,
-    ScoreResult,
+    score_specificity,
 )
 
 
@@ -394,7 +393,7 @@ class ABTestRunner:
         filename = f"{result_type}-{version}.json"
         filepath = self.reports_dir / filename
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results.to_dict(), f, indent=2)
 
         return filepath
@@ -404,7 +403,7 @@ class ABTestRunner:
         filename = f"comparison-{comparison.baseline_version}-vs-{comparison.enhanced_version}.json"
         filepath = self.reports_dir / filename
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(comparison.to_dict(), f, indent=2)
 
         return filepath
@@ -446,7 +445,7 @@ class ABTestRunner:
 
         # Save report
         report_path = self.reports_dir / "analysis.md"
-        with open(report_path, "w") as f:
+        with open(report_path, "w", encoding="utf-8") as f:
             f.write(report)
 
         return report

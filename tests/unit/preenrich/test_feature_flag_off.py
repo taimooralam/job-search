@@ -10,13 +10,11 @@ Validates:
 """
 
 import os
-import pytest
-from unittest.mock import patch, MagicMock, call
-from bson import ObjectId
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
 import mongomock
-
+from bson import ObjectId
 
 # ---------------------------------------------------------------------------
 # Tests for SELECTOR_ENQUEUE_VIA_WORKER flag behavior

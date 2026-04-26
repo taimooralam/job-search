@@ -11,21 +11,21 @@ Publishes outputs to:
 import logging
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, Optional
+
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from tenacity import retry, stop_after_attempt, wait_exponential
-from pymongo import MongoClient
 
 from src.common.config import Config
-from src.common.repositories import get_job_repository, JobRepositoryInterface
-from src.common.state import JobState
-from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.repositories import JobRepositoryInterface, get_job_repository
+from src.common.state import JobState
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.utils import sanitize_path_component
 from src.layer7.dossier_generator import DossierGenerator
 
 
@@ -456,7 +456,7 @@ class OutputPublisher:
             lines.append("")
 
             lines.append("-" * 80)
-            lines.append(f"EMAIL")
+            lines.append("EMAIL")
             lines.append("-" * 80)
             lines.append(f"Subject: {person['email_subject']}")
             lines.append("")
@@ -649,7 +649,7 @@ class OutputPublisher:
                         tempfile.gettempdir(),
                         f"cover_letter_{company_safe_temp}.txt"
                     )
-                    with open(cover_letter_path, 'w') as f:
+                    with open(cover_letter_path, 'w', encoding='utf-8') as f:
                         f.write(state["cover_letter"])
 
                     self._upload_file_to_drive(
@@ -706,7 +706,7 @@ class OutputPublisher:
                         tempfile.gettempdir(),
                         f"contacts_{company_safe_contacts}.txt"
                     )
-                    with open(contacts_path, 'w') as f:
+                    with open(contacts_path, 'w', encoding='utf-8') as f:
                         f.write(contacts_content)
 
                     self._upload_file_to_drive(

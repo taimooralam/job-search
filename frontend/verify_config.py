@@ -8,6 +8,7 @@ Run this before deploying to Vercel or after configuration changes.
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -101,10 +102,10 @@ def check_required_env_vars():
         except requests.ConnectionError:
             errors.append(f"❌ Cannot connect to runner service at {runner_url}")
             print(f"❌ Cannot connect to runner service at {runner_url}")
-            print(f"   → Check VPS is running and port 8000 is accessible")
+            print("   → Check VPS is running and port 8000 is accessible")
         except requests.Timeout:
-            warnings.append(f"⚠️  Runner service timed out")
-            print(f"⚠️  Runner service health check timed out (>5s)")
+            warnings.append("⚠️  Runner service timed out")
+            print("⚠️  Runner service health check timed out (>5s)")
         except Exception as e:
             errors.append(f"❌ Runner health check failed: {str(e)}")
             print(f"❌ Health check failed: {str(e)}")

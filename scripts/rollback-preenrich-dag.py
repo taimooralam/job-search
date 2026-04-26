@@ -3,6 +3,5 @@
 
 from scripts.rollback_preenrich_dag import main
 
-
 if __name__ == "__main__":
     main()

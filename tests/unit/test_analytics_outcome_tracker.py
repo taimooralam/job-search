@@ -5,19 +5,17 @@ Tests outcome tracking, metrics calculation, and effectiveness reporting
 with mocked repository operations.
 """
 
-from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
 
 from src.analytics.outcome_tracker import (
-    OutcomeTracker,
-    VALID_STATUSES,
     STATUS_TIMESTAMP_MAP,
+    VALID_STATUSES,
+    OutcomeTracker,
 )
 from src.common.repositories.base import WriteResult
-
 
 # ===== FIXTURES =====
 

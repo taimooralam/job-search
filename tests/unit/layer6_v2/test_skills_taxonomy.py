@@ -5,8 +5,8 @@ Tests the _coerce_to_list helper and its usage in get_skill_aliases
 and skill_matches methods.
 """
 
+
 import pytest
-from unittest.mock import MagicMock
 
 from src.layer6_v2.skills_taxonomy import SkillsTaxonomy
 

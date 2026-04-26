@@ -22,18 +22,58 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from src.preenrich.dag import STAGE_ORDER, _DEPENDENCIES
+from src.preenrich.dag import _DEPENDENCIES
+from src.preenrich.lease import heartbeat
 from src.preenrich.types import (
     StageContext,
     StageResult,
     StageStatus,
+)
+from src.preenrich.types import (
     attempt_token as make_attempt_token,
 )
-from src.preenrich.lease import heartbeat
 
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
+
+
+def _legacy_trace_metadata(
+    ctx: StageContext,
+    *,
+    stage_name: str,
+    worker_id: str,
+    lifecycle_before: str,
+    lifecycle_after: str,
+    attempt_token: Optional[str] = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Build the canonical preenrich metadata for legacy worker tracing."""
+    root_tracer = getattr(ctx, "tracer", None)
+    run_id = getattr(root_tracer, "run_id", f"preenrich:legacy:{ctx.job_doc.get('_id')}")
+    session_id = getattr(root_tracer, "session_id", f"job:{ctx.job_doc.get('_id')}")
+    metadata: Dict[str, Any] = {
+        "job_id": str(ctx.job_doc.get("job_id") or ctx.job_doc["_id"]),
+        "level2_job_id": str(ctx.job_doc["_id"]),
+        "correlation_id": session_id,
+        "langfuse_session_id": session_id,
+        "run_id": run_id,
+        "worker_id": worker_id,
+        "task_type": f"preenrich.legacy.{stage_name}",
+        "stage_name": stage_name,
+        "attempt_count": ctx.attempt_number,
+        "attempt_token": attempt_token,
+        "input_snapshot_id": ctx.input_snapshot_id,
+        "jd_checksum": ctx.jd_checksum,
+        "lifecycle_before": lifecycle_before,
+        "lifecycle_after": lifecycle_after,
+        "work_item_id": None,
+        "legacy_orchestration": True,
+        "shadow_mode": ctx.shadow_mode,
+    }
+    if extra:
+        metadata.update(extra)
+    return metadata
 
 
 class PrerequisiteNotMet(Exception):
@@ -325,14 +365,39 @@ def single_stage(
 
     result: Optional[StageResult] = None
     error_msg: Optional[str] = None
+    root_tracer = getattr(ctx, "tracer", None)
+    previous_stage_name = ctx.stage_name
+    previous_tracer = ctx.tracer
+    stage_tracer = (
+        root_tracer.start_stage_span(
+            stage_name,
+            _legacy_trace_metadata(
+                ctx,
+                stage_name=stage_name,
+                worker_id=worker_id,
+                lifecycle_before=str(ctx.job_doc.get("lifecycle") or "preenriching"),
+                lifecycle_after=str(ctx.job_doc.get("lifecycle") or "preenriching"),
+                attempt_token=token,
+            ),
+        )
+        if hasattr(root_tracer, "start_stage_span")
+        else root_tracer
+    )
+    ctx.stage_name = stage_name
+    ctx.tracer = stage_tracer
 
     try:
         result = stage.run(ctx)
     except Exception as exc:
         error_msg = str(exc)
+        if hasattr(stage_tracer, "complete"):
+            stage_tracer.complete(output={"status": "failed", "error_class": "stage_failure", "error_message_preview": error_msg[:240]})
         logger.error(
             "Stage %s failed for job %s: %s", stage_name, job_id, error_msg
         )
+    finally:
+        ctx.stage_name = previous_stage_name
+        ctx.tracer = previous_tracer
 
     now = _now_utc()
     duration_ms = int((now - started_at).total_seconds() * 1000)
@@ -367,6 +432,16 @@ def single_stage(
                 "(lease lost or idempotent replay)"
             )
 
+        if hasattr(stage_tracer, "complete"):
+            stage_tracer.complete(
+                output={
+                    "status": "completed",
+                    "provider": result.provider_used,
+                    "model": result.model_used,
+                    "duration_ms": result.duration_ms or duration_ms,
+                    "shadow_mode": ctx.shadow_mode,
+                }
+            )
         logger.info("Stage %s completed for job %s", stage_name, job_id)
         heartbeat(db, job_id, worker_id)
         return result

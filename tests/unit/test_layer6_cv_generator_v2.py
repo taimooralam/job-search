@@ -14,26 +14,21 @@ These tests follow TDD approach and should FAIL initially until
 prompt improvements are implemented.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, List
-import re
 
 # Import test utilities
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from fixtures.sample_jobs import SAMPLE_MASTER_CV, SAMPLE_STARS, create_mock_state_for_job
 from helpers.validation_helpers import extract_metrics
-from fixtures.sample_jobs import (
-    create_mock_state_for_job,
-    SAMPLE_MASTER_CV,
-    SAMPLE_STARS,
-    get_sample_job
-)
 
 # Import module under test
-from src.layer6.cv_generator import CVGenerator, CompetencyMixOutput, HallucinationQAOutput
+from src.layer6.cv_generator import CompetencyMixOutput
 
 # ===== FIXTURES =====
 

@@ -84,7 +84,7 @@ def log_stage(message: str, verbose: bool = False, always: bool = False) -> None
 
 def write_json_file(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
 
 
@@ -558,7 +558,7 @@ def cross_check_gates(scorecard: Dict[str, Any], category_id: str) -> List[str]:
     """Semantic cross-checks. Emit issues only — caller decides how to cap."""
     issues: List[str] = []
     gates = scorecard.get("gate_outcomes") or {}
-    dims = scorecard.get("dimension_scores") or {}
+    scorecard.get("dimension_scores") or {}
 
     missing = scorecard.get("missing_must_haves") or []
     if missing and gates.get("must_have_coverage_gate") is True:
@@ -574,7 +574,7 @@ def cross_check_gates(scorecard: Dict[str, Any], category_id: str) -> List[str]:
 
     # IC category title-inflation sniff (lightweight advisory; gate must also catch)
     if category_id.startswith(IC_CATEGORY_PREFIXES):
-        cv_text = (scorecard.get("meta") or {}).get("_cv_text_sample", "")
+        (scorecard.get("meta") or {}).get("_cv_text_sample", "")
         # No-op if we don't embed sample; the scorer itself should catch via unsupported_claims.
     return issues
 
@@ -684,7 +684,7 @@ def call_scorer_codex(
         log_stage(f"    codex launch: job={job_id}, model={model}, timeout={timeout_seconds}s", verbose)
         start = time.monotonic()
         next_hb = heartbeat_seconds
-        with open(stdout_path, "w") as so, open(stderr_path, "w") as se:
+        with open(stdout_path, "w", encoding="utf-8") as so, open(stderr_path, "w", encoding="utf-8") as se:
             p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=so, stderr=se, text=True, cwd=ROOT_DIR)
             assert p.stdin is not None
             p.stdin.write(prompt)
@@ -758,8 +758,8 @@ def score_pair(
                 f"manifest job_id {expected_job_id} != jobs_all[{parse_jd_ordinal(jd_path)}]._id {resolved_id}"
             )
 
-    jd_text = jd_path.read_text()
-    cv_text = cv_path.read_text()
+    jd_text = jd_path.read_text(encoding="utf-8")
+    cv_text = cv_path.read_text(encoding="utf-8")
 
     if not pair.get("skip_jd_resolution"):
         header_issues = cross_check_job(jd_text, raw_job)
@@ -1057,7 +1057,7 @@ def render_only() -> None:
 
 
 def load_batch(path: Path) -> List[Dict[str, Any]]:
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     pairs = data.get("pairs") or []
     if not isinstance(pairs, list) or not pairs:
         raise ValueError(f"batch file has no 'pairs' list: {path}")

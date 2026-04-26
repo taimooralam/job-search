@@ -13,39 +13,37 @@ import json
 import re
 import uuid
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+
 from pydantic import BaseModel, Field, ValidationError, field_validator
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.unified_llm import UnifiedLLM
-from src.common.state import ExtractedJD
 from src.common.logger import get_logger
+from src.common.state import ExtractedJD
+from src.common.unified_llm import UnifiedLLM
 from src.common.utils import coerce_to_list
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 from src.layer6_v2.cv_loader import RoleData
-from src.layer6_v2.types import (
-    GeneratedBullet,
-    RoleBullets,
-    CareerContext,
-)
 from src.layer6_v2.prompts.role_generation import (
     ROLE_GENERATION_SYSTEM_PROMPT,
+    STAR_CORRECTION_SYSTEM_PROMPT,
     build_role_generation_user_prompt,
     build_role_system_prompt_with_persona,
-    STAR_CORRECTION_SYSTEM_PROMPT,
     build_star_correction_user_prompt,
 )
+from src.layer6_v2.types import (
+    CareerContext,
+    GeneratedBullet,
+    RoleBullets,
+)
+
 # Variant-based generation support
 from src.layer6_v2.variant_selector import (
     VariantSelector,
-    SelectionResult,
-    select_variants_for_role,
 )
-
 
 # ===== SCHEMA VALIDATION =====
 
@@ -363,7 +361,7 @@ class RoleGenerator:
             error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                         for err in e.errors()]
             raise ValueError(
-                f"Schema validation failed:\n" +
+                "Schema validation failed:\n" +
                 "\n".join(f"  - {msg}" for msg in error_msgs)
             )
 
@@ -1020,7 +1018,6 @@ async def generate_all_roles_with_star_enforcement(
     logger.info(f"{'='*50}")
 
     star_pass_count = 0
-    star_retry_count = 0
 
     for i, role in enumerate(roles):
         logger.info(f"\n[Role {i+1}/{total_roles}] {role.company} - {role.title}")
@@ -1200,7 +1197,7 @@ async def generate_all_roles_from_variants(
             else:
                 # Skip role if no variants and no fallback
                 skip_count += 1
-                logger.warning(f"  Skipped - no variants and LLM fallback disabled")
+                logger.warning("  Skipped - no variants and LLM fallback disabled")
                 results.append(RoleBullets(
                     role_id=role.id,
                     company=role.company,

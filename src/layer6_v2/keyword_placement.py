@@ -10,9 +10,9 @@ Validates that annotated keywords appear in optimal positions in the CV:
 The top 1/3 of a CV is critical for both ATS scanning and 6-7 second human review.
 """
 
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass, field
 import re
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
 
 from src.common.logger import get_logger
 

@@ -12,10 +12,9 @@ per-contact message generation with tier selection.
 """
 
 import logging
-import os
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import List, Literal, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -25,17 +24,16 @@ from src.common.model_tiers import (
     ModelTier,
     get_model_for_operation,
     get_tier_from_string,
-    TIER_CONFIGS,
 )
 from src.common.repositories import get_job_repository
 
 from ..auth import verify_token
 from .operation_streaming import (
-    create_operation_run,
     append_operation_log,
-    update_operation_status,
-    create_log_callback,
     create_layer_callback,
+    create_log_callback,
+    create_operation_run,
+    update_operation_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -614,8 +612,8 @@ async def generate_outreach(
                 "OutreachGenerationService not available, using simplified generation"
             )
 
-            from src.layer6.outreach_generator import OutreachGenerator
             from src.common.state import JobState
+            from src.layer6.outreach_generator import OutreachGenerator
 
             # Build minimal state for outreach generation
             state: JobState = {
@@ -869,8 +867,8 @@ async def generate_outreach_stream(
                 # Use the simplified approach with OutreachGenerator
                 log_cb("Using simplified generation (OutreachGenerationService not available)")
 
-                from src.layer6.outreach_generator import OutreachGenerator
                 from src.common.state import JobState
+                from src.layer6.outreach_generator import OutreachGenerator
 
                 # Build minimal state for outreach generation
                 state: JobState = {

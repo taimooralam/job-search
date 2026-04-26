@@ -5,20 +5,16 @@ Tests the Phase 4 annotation boost calculation logic used in the pipeline.
 """
 
 import pytest
+
 from src.common.annotation_boost import (
     AnnotationBoostCalculator,
-    BoostResult,
+    apply_annotation_boost_to_score,
     get_annotation_boost,
     get_annotation_keywords,
-    apply_annotation_boost_to_score,
 )
 from src.common.annotation_types import (
-    RELEVANCE_MULTIPLIERS,
-    REQUIREMENT_MULTIPLIERS,
-    PRIORITY_MULTIPLIERS,
     SOURCE_MULTIPLIERS,
 )
-
 
 # =============================================================================
 # FIXTURES
@@ -292,7 +288,7 @@ class TestReframeGuidance:
         calculator = AnnotationBoostCalculator(sample_jd_annotations)
 
         text = "Kubernetes container orchestration"
-        result = calculator.get_boost_for_text(text)
+        calculator.get_boost_for_text(text)
 
         # Kubernetes annotation has no reframe
         # (might include terraform reframe if text matches both)

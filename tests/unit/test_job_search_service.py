@@ -4,13 +4,13 @@ Unit tests for JobSearchService.
 Tests the core job search service with mocked MongoDB and job sources.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
-from src.services.job_search_service import JobSearchService, SearchResult
-from src.common.job_search_config import JobSearchConfig
+from src.services.job_search_service import JobSearchService
 from src.services.job_sources import JobData
 
 
@@ -346,7 +346,7 @@ class TestJobSearchServiceQuery:
         mock_search_repository.index_count.return_value = 0
         mock_search_repository.index_aggregate.return_value = []
 
-        result = service.query_index(
+        service.query_index(
             sources=["indeed"],
             regions=["gulf"],
             remote_only=True,
@@ -385,7 +385,7 @@ class TestJobSearchServiceQuery:
         mock_search_repository.index_count.return_value = 0
         mock_search_repository.index_aggregate.return_value = []
 
-        result = service.query_index(limit=200)  # Try to request 200
+        service.query_index(limit=200)  # Try to request 200
 
         # Check that index_find was called with capped limit
         call_args = mock_search_repository.index_find.call_args

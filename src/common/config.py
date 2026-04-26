@@ -8,6 +8,7 @@ Validates required settings and provides type-safe access.
 import os
 from pathlib import Path
 from typing import Optional
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file

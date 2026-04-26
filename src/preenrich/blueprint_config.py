@@ -16,7 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 JOB_ARCHETYPES_PATH = PROJECT_ROOT / "data" / "job_archetypes.yaml"
 
 BLUEPRINT_DAG_VERSION = "iteration4.1.v1"
+BLUEPRINT_DAG_VERSION_PAIN_INTELLIGENCE = "iteration4.1.v2"
 BLUEPRINT_REQUIRED_SET_VERSION = "iteration4.1.required.v1"
+BLUEPRINT_REQUIRED_SET_VERSION_PAIN_INTELLIGENCE = "iteration4.1.required.v2"
 BLUEPRINT_SNAPSHOT_VERSION = "job_blueprint.v1"
 
 
@@ -210,6 +212,46 @@ def stakeholder_surface_max_fetches() -> int:
     return _int("PREENRICH_STAKEHOLDER_SURFACE_MAX_FETCHES", 8)
 
 
+def presentation_contract_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_ENABLED", False)
+
+
+def presentation_contract_document_expectations_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_DOCUMENT_EXPECTATIONS_ENABLED", True)
+
+
+def presentation_contract_cv_shape_expectations_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_CV_SHAPE_EXPECTATIONS_ENABLED", True)
+
+
+def presentation_contract_merged_prompt_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_MERGED_PROMPT_ENABLED", False)
+
+
+def presentation_contract_ideal_candidate_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_IDEAL_CANDIDATE_ENABLED", False)
+
+
+def presentation_contract_dimension_weights_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED", False)
+
+
+def presentation_contract_emphasis_rules_enabled() -> bool:
+    return _flag("PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED", False)
+
+
+def pain_point_intelligence_enabled() -> bool:
+    return _flag("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", False)
+
+
+def pain_point_supplemental_web_enabled() -> bool:
+    return _flag("PREENRICH_PAIN_POINT_SUPPLEMENTAL_WEB_ENABLED", False)
+
+
+def pain_point_intelligence_compat_projection_enabled() -> bool:
+    return _flag("PREENRICH_PAIN_POINT_INTELLIGENCE_COMPAT_PROJECTION_ENABLED", True)
+
+
 @lru_cache(maxsize=1)
 def current_git_sha() -> str:
     env_sha = _string("PREENRICH_GIT_SHA", "")
@@ -261,11 +303,19 @@ def taxonomy_version() -> str:
 
 
 def current_dag_version() -> str:
-    return BLUEPRINT_DAG_VERSION if blueprint_enabled() else "iteration4.v1"
+    if not blueprint_enabled():
+        return "iteration4.v1"
+    if pain_point_intelligence_enabled():
+        return BLUEPRINT_DAG_VERSION_PAIN_INTELLIGENCE
+    return BLUEPRINT_DAG_VERSION
 
 
 def current_required_set_version() -> str | None:
-    return BLUEPRINT_REQUIRED_SET_VERSION if blueprint_enabled() else None
+    if not blueprint_enabled():
+        return None
+    if pain_point_intelligence_enabled():
+        return BLUEPRINT_REQUIRED_SET_VERSION_PAIN_INTELLIGENCE
+    return BLUEPRINT_REQUIRED_SET_VERSION
 
 
 def current_input_snapshot_id(
@@ -338,4 +388,59 @@ def validate_blueprint_feature_flags() -> None:
         raise RuntimeError(
             "Invalid preenrich config: PREENRICH_STAKEHOLDER_SURFACE_ENABLED=true "
             "requires PREENRICH_BLUEPRINT_ENABLED=true"
+        )
+    if presentation_contract_enabled() and not blueprint_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_ENABLED=true "
+            "requires PREENRICH_BLUEPRINT_ENABLED=true"
+        )
+    if presentation_contract_enabled() and not stakeholder_surface_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_ENABLED=true "
+            "requires PREENRICH_STAKEHOLDER_SURFACE_ENABLED=true"
+        )
+    if presentation_contract_merged_prompt_enabled() and not presentation_contract_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_MERGED_PROMPT_ENABLED=true "
+            "requires PREENRICH_PRESENTATION_CONTRACT_ENABLED=true"
+        )
+    if presentation_contract_ideal_candidate_enabled() and not presentation_contract_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_IDEAL_CANDIDATE_ENABLED=true "
+            "requires PREENRICH_PRESENTATION_CONTRACT_ENABLED=true"
+        )
+    if presentation_contract_dimension_weights_enabled() and not presentation_contract_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED=true "
+            "requires PREENRICH_PRESENTATION_CONTRACT_ENABLED=true"
+        )
+    if presentation_contract_emphasis_rules_enabled() and not presentation_contract_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED=true "
+            "requires PREENRICH_PRESENTATION_CONTRACT_ENABLED=true"
+        )
+    if presentation_contract_emphasis_rules_enabled() and not presentation_contract_dimension_weights_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED=true "
+            "requires PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED=true"
+        )
+    if pain_point_intelligence_enabled() and not blueprint_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=true "
+            "requires PREENRICH_BLUEPRINT_ENABLED=true"
+        )
+    if pain_point_supplemental_web_enabled() and not pain_point_intelligence_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PAIN_POINT_SUPPLEMENTAL_WEB_ENABLED=true "
+            "requires PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=true"
+        )
+    if pain_point_supplemental_web_enabled() and not web_research_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PAIN_POINT_SUPPLEMENTAL_WEB_ENABLED=true "
+            "requires WEB_RESEARCH_ENABLED=true"
+        )
+    if presentation_contract_enabled() and not pain_point_intelligence_enabled():
+        raise RuntimeError(
+            "Invalid preenrich config: PREENRICH_PRESENTATION_CONTRACT_ENABLED=true "
+            "requires PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=true"
         )

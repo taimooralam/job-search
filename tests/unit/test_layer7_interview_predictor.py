@@ -8,19 +8,11 @@ with mocked LLM responses.
 import json
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Dict, Optional
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
 
-from src.common.annotation_types import (
-    ConcernAnnotation,
-    InterviewPrep,
-    InterviewQuestion,
-    JDAnnotation,
-)
-from src.common.state import JobState
 from src.layer7.interview_predictor import (
     DIFFICULTY_LEVELS,
     QUESTION_TYPES,
@@ -29,7 +21,6 @@ from src.layer7.interview_predictor import (
     QuestionGenerationOutput,
     predict_interview_questions,
 )
-
 
 # ===== MOCK LLM RESULT HELPER =====
 

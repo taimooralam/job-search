@@ -15,15 +15,19 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
+from io import BytesIO
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, WebSocket
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
-from io import BytesIO
 
+from .auth import verify_token
+from .config import settings, validate_config_on_startup
+from .executor import execute_pipeline
 from .models import (
+    PIPELINE_LAYERS,
     AlertEntry,
     CapacityMetrics,
     CircuitBreakerSummary,
@@ -39,7 +43,6 @@ from .models import (
     LinkedInImportResponse,
     OpenRouterCreditsResponse,
     PipelineProgressResponse,
-    PIPELINE_LAYERS,
     RateLimitSummary,
     RunBulkRequest,
     RunJobRequest,
@@ -47,11 +50,16 @@ from .models import (
     StatusResponse,
     SystemHealthStatus,
 )
-from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
-from .auth import verify_token
-from .config import settings, validate_config_on_startup
-from .routes import operations_router, contacts_router, master_cv_router, log_polling_router, job_ingest_router, job_search_router, annotations_router
+from .routes import (
+    annotations_router,
+    contacts_router,
+    job_ingest_router,
+    job_search_router,
+    log_polling_router,
+    master_cv_router,
+    operations_router,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -160,8 +168,10 @@ def _append_log(run_id: str, message: str) -> None:
     """
     # Avoid circular import — operation_streaming imports from app
     from runner_service.routes.operation_streaming import (
-        append_operation_log as _os_append_log,
         _operation_runs,
+    )
+    from runner_service.routes.operation_streaming import (
+        append_operation_log as _os_append_log,
     )
     if run_id in _operation_runs:
         _os_append_log(run_id, message)
@@ -397,6 +407,7 @@ async def _get_job_details(job_id: str) -> tuple:
     """
     try:
         from bson import ObjectId
+
         from src.common.repositories import get_job_repository
 
         # Validate job_id format (must be 24 character hex string)
@@ -489,11 +500,11 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
     try:
         # Import the scraper
         from src.services.linkedin_scraper import (
-            scrape_linkedin_job,
-            linkedin_job_to_mongodb_doc,
-            LinkedInScraperError,
             JobNotFoundError,
+            LinkedInScraperError,
             RateLimitError,
+            linkedin_job_to_mongodb_doc,
+            scrape_linkedin_job,
         )
 
         # Scrape the job
@@ -551,7 +562,7 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
         score_rationale = None
         tier = None
         try:
-            from src.services.quick_scorer import quick_score_job, derive_tier_from_score
+            from src.services.quick_scorer import derive_tier_from_score, quick_score_job
 
             score, score_rationale = quick_score_job(
                 title=linkedin_data.title,
@@ -629,11 +640,11 @@ async def import_indeed_job(request: IndeedImportRequest) -> IndeedImportRespons
     try:
         # Import the scraper
         from src.services.indeed_scraper import (
-            scrape_indeed_job,
-            indeed_job_to_mongodb_doc,
+            BlockedError,
             IndeedScraperError,
             JobNotFoundError,
-            BlockedError,
+            indeed_job_to_mongodb_doc,
+            scrape_indeed_job,
         )
 
         # Scrape the job
@@ -691,7 +702,7 @@ async def import_indeed_job(request: IndeedImportRequest) -> IndeedImportRespons
         score_rationale = None
         tier = None
         try:
-            from src.services.quick_scorer import quick_score_job, derive_tier_from_score
+            from src.services.quick_scorer import derive_tier_from_score, quick_score_job
 
             score, score_rationale = quick_score_job(
                 title=indeed_data.title,
@@ -770,8 +781,9 @@ async def extract_jd(job_id: str) -> Dict[str, Any]:
     Returns:
         JSON with extraction result and metadata
     """
+
     from bson import ObjectId
-    from dataclasses import asdict
+
     from src.common.repositories import get_job_repository
 
     # Validate job_id format
@@ -836,7 +848,7 @@ async def extract_jd(job_id: str) -> Dict[str, Any]:
             )
 
         # Save to MongoDB
-        update_result = collection.update_one(
+        collection.update_one(
             {"_id": object_id},
             {
                 "$set": {
@@ -1556,9 +1568,9 @@ async def startup_heartbeat_loop():
 
     async def heartbeat_loop():
         from runner_service.routes.operation_streaming import (
-            send_heartbeat,
-            get_runner_id,
             HEARTBEAT_INTERVAL_SECONDS,
+            get_runner_id,
+            send_heartbeat,
         )
         runner_id = get_runner_id()
         logger.info(f"Starting heartbeat loop for runner {runner_id}")
@@ -1596,18 +1608,18 @@ async def startup_queue_polling_loop():
     await asyncio.sleep(2)
 
     async def _queue_polling_loop():
-        from runner_service.routes.operations import (
-            submit_service_task,
-            _execute_queued_operation,
-        )
         from runner_service.routes.operation_streaming import (
+            append_operation_log,
             create_operation_run,
             create_operation_run_with_id,
-            append_operation_log,
             get_operation_state,
             get_runner_id,
         )
-        from src.common.model_tiers import get_tier_from_string, ModelTier
+        from runner_service.routes.operations import (
+            _execute_queued_operation,
+            submit_service_task,
+        )
+        from src.common.model_tiers import ModelTier, get_tier_from_string
 
         runner_id = get_runner_id()
         logger.info(f"[poll] Queue polling loop active for runner {runner_id}")
@@ -1938,6 +1950,7 @@ async def get_firecrawl_credits() -> FireCrawlCreditsResponse:
     Calls actual FireCrawl API to get token usage, falls back to local rate limiter.
     """
     import httpx
+
     from src.common.rate_limiter import get_rate_limiter
 
     # Try actual FireCrawl API first
@@ -2084,6 +2097,7 @@ async def get_artifact(run_id: str, filename: str):
     - Prevents path traversal attacks
     """
     from pathlib import Path
+
     from fastapi.responses import FileResponse
 
     # Verify run exists
@@ -2092,7 +2106,6 @@ async def get_artifact(run_id: str, filename: str):
         raise HTTPException(status_code=404, detail="Run not found")
 
     # Get job ID from state
-    job_id = state.job_id
 
     # Construct safe path within applications directory
     applications_dir = Path("applications").resolve()
@@ -2369,6 +2382,7 @@ async def generate_cv_pdf(job_id: str):
     """
     import httpx
     from bson import ObjectId
+
     from src.common.repositories import get_job_repository
 
     # Get PDF service URL from environment

@@ -21,10 +21,8 @@ Cron (VPS):
 """
 
 import argparse
-import json
 import logging
 import os
-import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,10 +41,10 @@ import requests
 import yaml
 from pymongo import MongoClient
 
-from src.common.scout_queue import read_pool, purge_pool
 from src.common.blacklist import filter_blacklisted
-from src.common.rule_scorer import is_non_english_jd
 from src.common.dedupe import generate_dedupe_key, normalize_for_dedupe
+from src.common.rule_scorer import is_non_english_jd
+from src.common.scout_queue import read_pool
 from src.common.telegram import send_telegram
 from src.pipeline.selector_scheduler import SelectorFeatureFlags, SelectorScheduler
 
@@ -68,7 +66,7 @@ RUNNER_API_SECRET = os.getenv("RUNNER_API_SECRET", "")
 
 def load_profile(name: str) -> Dict[str, Any]:
     """Load a named profile from selector_profiles.yaml."""
-    with open(PROFILES_PATH, "r") as f:
+    with open(PROFILES_PATH, "r", encoding="utf-8") as f:
         profiles = yaml.safe_load(f)
     if name not in profiles:
         available = ", ".join(profiles.keys())

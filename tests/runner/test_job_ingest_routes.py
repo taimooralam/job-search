@@ -13,11 +13,11 @@ run_id and status="queued". The actual ingestion runs in a background task.
 Error handling for the ingestion process is tested via the result endpoint.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, AsyncMock, patch
-from bson import ObjectId
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+from bson import ObjectId
 
 # =============================================================================
 # FIXTURES

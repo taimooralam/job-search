@@ -16,6 +16,5 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 from src.pipeline.selector_worker import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

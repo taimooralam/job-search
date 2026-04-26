@@ -844,6 +844,54 @@ Full `real_stakeholders[]`, `inferred_stakeholder_personas[]`,
 - inferred persona cache: recompute cheaply per job; do not cache
   aggressively because role-class context shifts persona shape.
 
+## 15.5 Langfuse tracing
+
+Inherits the 4.2 umbrella tracing contract (see
+`plans/iteration-4.2-cv-skeleton-input-contract-and-presentation-bridge.md`
+§8.8) verbatim. Stage-specific rules follow.
+
+**Canonical spans for `stakeholder_surface`.**
+
+- `scout.preenrich.stakeholder_surface` — the stage body span. Output
+  metadata must include `real_discovery_enabled`, `real_candidates_found`,
+  `real_profiles_completed`, `inferred_personas_emitted`, `coverage_gaps`,
+  `overall_status`, `confidence_band`, `upstream_no_research`.
+- `scout.preenrich.stakeholder_surface.research.discovery` — the live
+  identity-ladder Codex call. Provider/model/transport/duration/outcome and
+  `schema_valid` are required. Candidate counts go in metadata;
+  per-candidate span names are forbidden.
+- `scout.preenrich.stakeholder_surface.research.profile` — per-candidate
+  profile enrichment calls. `candidate_rank` is a metadata field, never part
+  of the span name. Operators distinguish candidates via metadata filtering.
+- `scout.preenrich.stakeholder_surface.research.personas` — the inferred
+  persona emission call when real coverage is incomplete.
+
+**Metadata contract extensions (stage-local).**
+
+- `real_discovery_enabled`, `coverage_target`, `filled_roles`,
+  `missing_roles`, `upstream_no_research`, `identity_ladder_version`,
+  `require_source_attribution`.
+- For discovery: `candidate_count`, `search_journal_entries_count`,
+  `identity_confidence_band_distribution`.
+- For profile calls: `candidate_rank`, `identity_confidence_band`,
+  `public_posts_fetched_count`, `fail_open_to_identity_only`.
+
+**Cache boundaries.** Company-scoped and role-scoped cache reads/writes
+(`stakeholder_identity_cache`, `stakeholder_profile_cache`) are traced as
+events, not spans: `scout.preenrich.stakeholder_surface.cache.hit` and
+`scout.preenrich.stakeholder_surface.cache.miss` with `cache_key`,
+`cache_layer`, and `transport_version` in metadata.
+
+**Fail-open transitions.** The stage-span output must record when the stage
+fails open to inferred personas (`fail_open_reason`: one of
+`discovery_disabled`, `identity_below_threshold`, `discovery_failed`,
+`upstream_no_research`). This is the single most useful piece of telemetry
+for operators debugging weak stakeholder output.
+
+**Parallelism.** If discovery and profile calls are parallelized, spans are
+ended in-thread before the orchestrator ends the stage span. Shared
+`ctx.tracer` usage across threads is expected.
+
 ## 16. Tests and Evals
 
 ### 16.1 Unit tests (`tests/unit/preenrich/`)

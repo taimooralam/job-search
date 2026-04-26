@@ -5,7 +5,7 @@ This defines the data contract for the 7-layer LangGraph pipeline.
 Each layer reads from and writes to this shared state.
 """
 
-from typing import TypedDict, List, Optional, Dict, Any, Literal, Callable
+from typing import Any, Callable, Dict, List, Literal, Optional, TypedDict
 
 # Progress callback type for granular LLM event streaming
 # Signature: (event: str, message: str, data: Dict[str, Any]) -> None
@@ -23,7 +23,7 @@ ContactType = Literal[
 
 # Import canonical STARRecord and FormField from types.py (Phase 2.1)
 # This is the 22-field schema with List-typed fields for tasks, actions, results, metrics, etc.
-from src.common.types import STARRecord, FormField
+from src.common.types import FormField, STARRecord
 
 
 class CompetencyWeights(TypedDict):

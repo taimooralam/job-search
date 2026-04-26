@@ -5,19 +5,14 @@ Tests JSON parsing, schema validation, and error handling with mocked LLM respon
 """
 
 import json
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from pydantic import ValidationError
 
-from src.layer2.pain_point_miner import (
-    PainPointMiner,
-    PainPointAnalysis,
-    pain_point_miner_node
-)
-from src.common.state import JobState
-from src.common.unified_llm import LLMResult
 from src.common.logger import get_logger
-
+from src.common.unified_llm import LLMResult
+from src.layer2.pain_point_miner import PainPointAnalysis, PainPointMiner, pain_point_miner_node
 
 # ===== FIXTURES =====
 
@@ -166,7 +161,7 @@ class TestPainPointAnalysisSchema:
             "risks_if_unfilled": ["Risk 1", "Risk 2"],
             "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
         }
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValidationError):
             PainPointAnalysis(**invalid)
 
     def test_wrong_type_for_field(self):
@@ -188,11 +183,7 @@ class TestSoftValidation:
 
     def test_soft_validate_list_lengths_no_warnings_within_nominal(self):
         """No warnings when all fields are within nominal limit (6)."""
-        from src.layer2.pain_point_miner import (
-            soft_validate_list_lengths,
-            NOMINAL_LIST_LIMIT,
-            TOLERANCE
-        )
+        from src.layer2.pain_point_miner import soft_validate_list_lengths
         data = {
             "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(6)],
             "strategic_needs": [{"text": f"Need {i}", "evidence": "ev", "confidence": "medium"} for i in range(4)],
@@ -204,12 +195,7 @@ class TestSoftValidation:
 
     def test_soft_validate_list_lengths_warns_on_soft_violation(self):
         """Warnings are emitted when a field exceeds nominal but within hard max."""
-        from src.layer2.pain_point_miner import (
-            soft_validate_list_lengths,
-            NOMINAL_LIST_LIMIT,
-            TOLERANCE,
-            SOFT_MAX
-        )
+        from src.layer2.pain_point_miner import soft_validate_list_lengths
         # 7 items exceeds nominal (6) but is within SOFT_MAX (9)
         data = {
             "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(7)],
@@ -224,11 +210,7 @@ class TestSoftValidation:
 
     def test_soft_validate_list_lengths_multiple_soft_violations(self):
         """Multiple fields exceeding nominal limit produces multiple warnings."""
-        from src.layer2.pain_point_miner import (
-            soft_validate_list_lengths,
-            NOMINAL_LIST_LIMIT,
-            TOLERANCE
-        )
+        from src.layer2.pain_point_miner import soft_validate_list_lengths
         # 8 items for pain_points, 7 for strategic_needs
         data = {
             "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(8)],
@@ -287,7 +269,7 @@ class TestSoftValidation:
 
     def test_soft_validation_rejects_10_items_pydantic_fails(self):
         """10 items exceeds SOFT_MAX=9 and fails Pydantic validation."""
-        from src.layer2.pain_point_miner import EnhancedPainPointAnalysis, SOFT_MAX
+        from src.layer2.pain_point_miner import SOFT_MAX, EnhancedPainPointAnalysis
         # 10 items exceeds SOFT_MAX (9) - should fail Pydantic
         data = {
             "pain_points": [{"text": f"Pain point {i} that is long enough", "evidence": "evidence text", "confidence": "high"} for i in range(10)],
@@ -884,7 +866,7 @@ class TestAnnotationAwareExtraction:
         # Check that the call included annotation context (inspect the prompt)
         call_args = mock_llm_instance.invoke.call_args
         # UnifiedLLM.invoke takes prompt and system as keyword args
-        prompt_text = str(call_args)
+        str(call_args)
 
         # The prompt should contain reference to annotation priorities
         # Note: This checks the prompt structure, actual implementation may vary
@@ -927,7 +909,7 @@ class TestParseResponseLogging:
         llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify logging of raw response
         assert "[PARSE] Raw LLM response length:" in caplog.text
@@ -942,7 +924,7 @@ class TestParseResponseLogging:
         llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify logging of final tag detection
         assert "[PARSE] Response contains <final> tags: True" in caplog.text
@@ -957,7 +939,7 @@ class TestParseResponseLogging:
         llm_response = json.dumps(enhanced_json_response)
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify logging of missing final tags
         assert "[PARSE] Response contains <final> tags: False" in caplog.text
@@ -971,7 +953,7 @@ class TestParseResponseLogging:
         llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify logging of JSON parsing success
         assert "[PARSE] JSON parsed successfully" in caplog.text
@@ -1005,7 +987,7 @@ class TestParseResponseLogging:
         llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify validation success logging
         assert "[PARSE] Pydantic validation passed" in caplog.text
@@ -1047,7 +1029,7 @@ class TestParseResponseLogging:
         llm_response = f"<final>{json.dumps(legacy_json)}</final>"
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify legacy conversion logging
         assert "[PARSE] Converting legacy format (string arrays) to enhanced format" in caplog.text
@@ -1061,7 +1043,7 @@ class TestParseResponseLogging:
         llm_response = f"<final>```json\n{json.dumps(enhanced_json_response)}\n```</final>"
 
         with caplog.at_level(logging.INFO):
-            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+            miner._parse_response(llm_response, logger=get_logger(__name__))
 
         # Verify cleanup logging
         assert "[PARSE] Stripped ```json prefix" in caplog.text or "[PARSE] Stripped ``` suffix" in caplog.text
@@ -1107,7 +1089,7 @@ class TestExtractPainPointsLogging:
         miner = PainPointMiner()
 
         with caplog.at_level(logging.INFO):
-            result = miner.extract_pain_points(sample_job_state)
+            miner.extract_pain_points(sample_job_state)
 
         # Verify logging of job context before LLM call
         assert "[LLM] Calling LLM for job:" in caplog.text
@@ -1131,7 +1113,7 @@ class TestExtractPainPointsLogging:
         miner = PainPointMiner()
 
         with caplog.at_level(logging.INFO):
-            result = miner.extract_pain_points(sample_job_state)
+            miner.extract_pain_points(sample_job_state)
 
         # Verify logging of LLM response details
         assert "[LLM] Response received - success: True" in caplog.text
@@ -1177,7 +1159,7 @@ class TestExtractPainPointsLogging:
         miner = PainPointMiner()
 
         with caplog.at_level(logging.ERROR):
-            result = miner.extract_pain_points(sample_job_state)
+            miner.extract_pain_points(sample_job_state)
 
         # Verify exception logging
         assert "[EXCEPTION] Full traceback:" in caplog.text
@@ -1200,7 +1182,7 @@ class TestExtractPainPointsLogging:
         miner = PainPointMiner()
 
         with caplog.at_level(logging.ERROR):
-            result = miner.extract_pain_points(sample_job_state)
+            miner.extract_pain_points(sample_job_state)
 
         # Verify job context in error logs
         log_text = caplog.text
@@ -1491,7 +1473,7 @@ class TestExtractPainPointsEmitCallback:
         mock_unified_llm_class.return_value = mock_llm_instance
 
         miner = PainPointMiner(log_callback=capture_emit)
-        result = miner.extract_pain_points(sample_job_state)
+        miner.extract_pain_points(sample_job_state)
 
         # Parse JSON strings back to dicts
         parsed_events = self._parse_emitted_events(emitted_events)

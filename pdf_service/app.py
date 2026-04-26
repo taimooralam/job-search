@@ -10,12 +10,12 @@ import logging
 import os
 import random
 from datetime import datetime
+from io import BytesIO
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from io import BytesIO
 
 # Configure logging
 logging.basicConfig(
@@ -322,12 +322,9 @@ async def cv_to_pdf(request: CVToPDFRequest):
             logger.info(f"Starting CV PDF generation (company={request.company}, role={request.role})")
 
             # Import helpers
-            from .pdf_helpers import (
-                tiptap_json_to_html,
-                build_pdf_html_template,
-                sanitize_for_path
-            )
             from playwright.async_api import async_playwright
+
+            from .pdf_helpers import build_pdf_html_template, sanitize_for_path, tiptap_json_to_html
 
             # Convert TipTap JSON to HTML
             try:

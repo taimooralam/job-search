@@ -16,9 +16,7 @@ is implemented in frontend/static/js/page-break-calculator.js and tested here
 via Python unit tests that validate the algorithm logic.
 """
 
-import pytest
-from typing import List, Dict, Any
-
+from typing import Any, Dict, List
 
 # ==============================================================================
 # Page Break Calculator Algorithm (Python reference implementation)

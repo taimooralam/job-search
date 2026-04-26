@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-import logging
 from typing import Any, Callable, List, TypeVar
 
 from pydantic import BaseModel
@@ -25,15 +25,6 @@ from src.preenrich.blueprint_config import (
     research_ui_snapshot_expanded_enabled,
     web_research_enabled,
 )
-from src.preenrich.blueprint_prompts import (
-    build_p_research_application_merge,
-    build_p_research_company,
-    build_p_research_role,
-    build_p_stakeholder_discovery,
-    build_p_stakeholder_outreach_guidance,
-    build_p_stakeholder_profile,
-    build_p_transport_preamble,
-)
 from src.preenrich.blueprint_models import (
     ApplicationProfile,
     ApplicationSurfaceDoc,
@@ -53,6 +44,15 @@ from src.preenrich.blueprint_models import (
     normalize_company_profile_payload,
     normalize_role_profile_payload,
     normalize_stakeholder_record_payload,
+)
+from src.preenrich.blueprint_prompts import (
+    build_p_research_application_merge,
+    build_p_research_company,
+    build_p_research_role,
+    build_p_stakeholder_discovery,
+    build_p_stakeholder_outreach_guidance,
+    build_p_stakeholder_profile,
+    build_p_transport_preamble,
 )
 from src.preenrich.research_transport import CodexResearchTransport
 from src.preenrich.stages.blueprint_common import canonical_domain_from_url, company_slug, normalize_url
@@ -415,6 +415,9 @@ def _live_company_profile(
         prompt=prompt,
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-company"),
         validator=lambda payload: CompanyProfile.model_validate(normalize_company_profile_payload(payload)),
+        tracer=ctx.tracer,
+        stage_name=ctx.stage_name or "research_enrichment",
+        substage="company",
     )
     logger.info(
         "research_enrichment company transport result: success=%s error=%s payload_type=%s payload_keys=%s",
@@ -490,6 +493,9 @@ def _live_role_profile(
         prompt=prompt,
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-role"),
         validator=lambda payload: RoleProfile.model_validate(normalize_role_profile_payload(payload)),
+        tracer=ctx.tracer,
+        stage_name=ctx.stage_name or "research_enrichment",
+        substage="role",
     )
     logger.info(
         "research_enrichment role transport result: success=%s error=%s payload_type=%s payload_keys=%s",
@@ -562,6 +568,9 @@ def _merge_application_profile_live(
         prompt=prompt,
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-application-merge"),
         validator=lambda payload: ApplicationProfile.model_validate(normalize_application_surface_payload(payload)),
+        tracer=ctx.tracer,
+        stage_name=ctx.stage_name or "research_enrichment",
+        substage="application_merge",
     )
     logger.info(
         "research_enrichment application merge transport result: success=%s error=%s payload_type=%s payload_keys=%s",
@@ -655,6 +664,9 @@ def _live_stakeholder_records(
         prompt=prompt,
         job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-stakeholders"),
         validator=_validate_stakeholder_payload,
+        tracer=ctx.tracer,
+        stage_name=ctx.stage_name or "research_enrichment",
+        substage="stakeholder_discovery",
     )
     if not result.success:
         return [], [f"Live Codex stakeholder discovery failed: {result.error or 'unknown error'}"]
@@ -694,6 +706,10 @@ def _enrich_stakeholder_records(
         profile_result = transport.invoke_json(
             prompt=profile_prompt,
             job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-stakeholder-profile"),
+            tracer=ctx.tracer,
+            stage_name=ctx.stage_name or "research_enrichment",
+            substage="stakeholder_profile",
+            trace_metadata={"candidate_rank": record.candidate_rank},
         )
         if profile_result.success and isinstance(profile_result.payload, dict):
             payload = normalize_stakeholder_record_payload(profile_result.payload)
@@ -725,6 +741,10 @@ def _enrich_stakeholder_records(
             guidance_result = transport.invoke_json(
                 prompt=guidance_prompt,
                 job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "research-stakeholder-guidance"),
+                tracer=ctx.tracer,
+                stage_name=ctx.stage_name or "research_enrichment",
+                substage="stakeholder_guidance",
+                trace_metadata={"candidate_rank": record.candidate_rank},
             )
             if guidance_result.success and isinstance(guidance_result.payload, dict):
                 payload = normalize_stakeholder_record_payload(guidance_result.payload)
@@ -883,7 +903,7 @@ class ResearchEnrichmentStage:
 
     def run(self, ctx: StageContext) -> StageResult:
         v2_enabled = research_enrichment_v2_enabled()
-        outputs = ((ctx.job_doc.get("pre_enrichment") or {}).get("outputs") or {})
+        ((ctx.job_doc.get("pre_enrichment") or {}).get("outputs") or {})
         application_profile = _application_profile(ctx, CompanyProfile())
 
         if not v2_enabled:

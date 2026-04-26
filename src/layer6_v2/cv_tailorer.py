@@ -18,13 +18,12 @@ Anti-Hallucination Guarantees:
 """
 
 import re
-from typing import Dict, Any, List, Optional, Callable, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from src.common.logger import get_logger
 from src.common.unified_llm import UnifiedLLM
 from src.common.utils import coerce_to_list
 from src.layer6_v2.types import TailoringResult
-
 
 # ============================================================================
 # TAILORING PROMPTS

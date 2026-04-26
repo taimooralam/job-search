@@ -16,8 +16,8 @@ Structure:
     - test_layer*_ab.py: A/B tests for each layer
 """
 
-from .framework import ABTestRunner, ABTestResult, Comparison
-from .scorers import score_specificity, score_grounding, score_hallucinations
+from .framework import ABTestResult, ABTestRunner, Comparison
+from .scorers import score_grounding, score_hallucinations, score_specificity
 
 __all__ = [
     "ABTestRunner",

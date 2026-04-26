@@ -11,9 +11,9 @@ Key features tested:
 4. SSE event handling (log, layer_update, end, error)
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
-from datetime import datetime
 from bson import ObjectId
 
 
@@ -150,7 +150,7 @@ class TestStartOutreachLogStreaming:
             "../../frontend/static/js/job-detail.js"
         )
 
-        with open(js_file_path, 'r') as f:
+        with open(js_file_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert
@@ -929,7 +929,7 @@ class TestOutreachSSEEndToEnd:
             "../../frontend/static/js/job-detail.js"
         )
 
-        with open(js_file_path, 'r') as f:
+        with open(js_file_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - JavaScript uses correct path

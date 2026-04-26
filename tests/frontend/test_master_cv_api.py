@@ -8,10 +8,10 @@ NOTE: Master CV endpoints are proxied to the runner service, so these
 tests mock the requests library to simulate runner responses.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 
 # =============================================================================
 # FIXTURES

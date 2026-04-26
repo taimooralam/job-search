@@ -27,7 +27,6 @@ import logging
 import math
 import os
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -77,7 +76,7 @@ def _text_hash(text: str) -> str:
 def _load_embedding_cache() -> Dict[str, List[float]]:
     if EMBEDDING_CACHE_PATH.exists():
         try:
-            return json.loads(EMBEDDING_CACHE_PATH.read_text())
+            return json.loads(EMBEDDING_CACHE_PATH.read_text(encoding="utf-8"))
         except Exception:
             pass
     return {}
@@ -85,7 +84,7 @@ def _load_embedding_cache() -> Dict[str, List[float]]:
 
 def _save_embedding_cache(cache: Dict[str, List[float]]) -> None:
     EMBEDDING_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    EMBEDDING_CACHE_PATH.write_text(json.dumps(cache))
+    EMBEDDING_CACHE_PATH.write_text(json.dumps(cache), encoding="utf-8")
 
 
 def _cosine(a: List[float], b: List[float]) -> float:

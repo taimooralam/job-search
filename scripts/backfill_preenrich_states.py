@@ -15,7 +15,6 @@ from pymongo import MongoClient
 from src.preenrich.root_enqueuer import build_stage_states
 from src.preenrich.stage_registry import iter_stage_definitions
 
-
 REPORT_DIR = Path("reports")
 LEGACY_COMPLETE = "completed"
 LEGACY_FAILED = "failed"

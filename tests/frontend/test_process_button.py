@@ -9,11 +9,7 @@ Tests Bug Fix #1: Process button with showToast() and improved error handling
 - Tests authentication error handling
 """
 
-import pytest
-import json
-from datetime import datetime
 from bson import ObjectId
-from unittest.mock import MagicMock, patch
 
 
 class TestProcessButtonPresence:
@@ -141,7 +137,7 @@ class TestProcessJobDetailFunction:
     ):
         """processJobDetail() function should be defined."""
         # Arrange - Read the external JavaScript file
-        with open('frontend/static/js/job-detail.js', 'r') as f:
+        with open('frontend/static/js/job-detail.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Check for function definition
@@ -153,7 +149,7 @@ class TestProcessJobDetailFunction:
     ):
         """processJobDetail() should accept jobId and jobTitle parameters."""
         # Arrange - Read the external JavaScript file
-        with open('frontend/static/js/job-detail.js', 'r') as f:
+        with open('frontend/static/js/job-detail.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Function should have jobId and jobTitle parameters

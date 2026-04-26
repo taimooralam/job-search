@@ -12,14 +12,13 @@ Verifies:
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.preenrich.stages.pain_points import PainPointsStage
 from src.preenrich.types import StageContext, StageResult, StepConfig
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

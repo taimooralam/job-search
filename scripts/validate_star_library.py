@@ -13,13 +13,12 @@ Validates that all STAR records in knowledge-base.md:
 
 import sys
 from pathlib import Path
-from typing import List
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.common.star_parser import parse_star_records, validate_star_record
-from src.common.types import STARRecord, OUTCOME_TYPES
+from src.common.types import OUTCOME_TYPES
 
 
 def validate_all_stars() -> bool:
@@ -86,7 +85,7 @@ def validate_all_stars() -> bool:
                 print(f"       • {issue}")
             validation_summary.append((i, star['id'][:8], "FAILED", len(issues)))
         else:
-            print(f"    ✅ VALID")
+            print("    ✅ VALID")
             validation_summary.append((i, star['id'][:8], "PASSED", 0))
 
     # Summary report
@@ -129,12 +128,12 @@ def validate_all_stars() -> bool:
         for ot in star['outcome_types']:
             outcome_counts[ot] = outcome_counts.get(ot, 0) + 1
 
-    print(f"\nOutcome Type Distribution:")
+    print("\nOutcome Type Distribution:")
     for ot, count in sorted(outcome_counts.items(), key=lambda x: -x[1]):
         print(f"  • {ot}: {count} STARs")
 
     # Sample pain points
-    print(f"\nSample Pain Points (first 3):")
+    print("\nSample Pain Points (first 3):")
     sample_count = 0
     for star in stars:
         for pain in star['pain_points_addressed'][:1]:

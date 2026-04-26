@@ -5,7 +5,6 @@ Tests error handling, date/time edge cases, and boundary conditions
 not covered in the main test file.
 """
 
-from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,11 +12,8 @@ from bson import ObjectId
 
 from src.analytics.outcome_tracker import (
     OutcomeTracker,
-    VALID_STATUSES,
-    STATUS_TIMESTAMP_MAP,
 )
 from src.common.repositories.base import WriteResult
-
 
 # ===== FIXTURES =====
 

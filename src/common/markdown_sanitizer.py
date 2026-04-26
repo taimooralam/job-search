@@ -24,7 +24,6 @@ Usage:
 """
 
 import re
-from typing import Optional
 
 
 def sanitize_markdown(text: str) -> str:

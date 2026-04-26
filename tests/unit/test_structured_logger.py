@@ -3,17 +3,16 @@ Unit tests for structured logger module.
 """
 
 import json
-import pytest
-from io import StringIO
-from unittest.mock import patch
 import time
 
+import pytest
+
 from src.common.structured_logger import (
-    StructuredLogger,
-    LogEvent,
     EventType,
-    LayerStatus,
     LayerContext,
+    LayerStatus,
+    LogEvent,
+    StructuredLogger,
     get_structured_logger,
 )
 

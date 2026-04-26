@@ -18,25 +18,25 @@ Usage:
     extractor = JDExtractor(log_callback=redis_publisher)
 """
 
+import asyncio
 import json
 import logging
-import asyncio
 import os
-from typing import Optional, List, Dict, Any, Callable
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
+
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
-from src.common.state import ExtractedJD, ProgressCallback
 from src.common.json_utils import parse_llm_json
-from src.common.unified_llm import invoke_unified_sync, LLMResult
 from src.common.llm_config import TierType
+from src.common.state import ExtractedJD, ProgressCallback
+from src.common.unified_llm import LLMResult, invoke_unified_sync
 from src.layer1_4.prompts import (
     JD_EXTRACTION_SYSTEM_PROMPT,
     JD_EXTRACTION_USER_TEMPLATE,
 )
-
 
 # ===== SCHEMA VALIDATION =====
 
@@ -471,7 +471,7 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
             error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                         for err in e.errors()]
             raise ValueError(
-                f"Schema validation failed:\n" +
+                "Schema validation failed:\n" +
                 "\n".join(f"  - {msg}" for msg in error_msgs)
             )
 

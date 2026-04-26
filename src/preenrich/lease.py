@@ -16,6 +16,8 @@ from typing import Any, Dict, Optional
 
 from pymongo import ASCENDING, ReturnDocument
 
+from src.pipeline.tracing import emit_standalone_event
+
 logger = logging.getLogger(__name__)
 
 # Lease duration constants
@@ -26,6 +28,40 @@ HEARTBEAT_SECONDS: int = 60
 def _now_utc() -> datetime:
     """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
+
+
+def _emit_legacy_lease_event(
+    *,
+    name: str,
+    job_id: Any,
+    worker_id: str,
+    lifecycle_before: str,
+    lifecycle_after: str,
+) -> None:
+    level2_job_id = str(job_id)
+    session_id = f"job:{level2_job_id}"
+    metadata: Dict[str, Any] = {
+        "job_id": level2_job_id,
+        "level2_job_id": level2_job_id,
+        "correlation_id": session_id,
+        "langfuse_session_id": session_id,
+        "run_id": f"preenrich:legacy:{name}:{level2_job_id}",
+        "worker_id": worker_id,
+        "task_type": name,
+        "stage_name": "legacy",
+        "attempt_count": None,
+        "attempt_token": None,
+        "input_snapshot_id": None,
+        "jd_checksum": None,
+        "lifecycle_before": lifecycle_before,
+        "lifecycle_after": lifecycle_after,
+        "work_item_id": None,
+        "source": "legacy_lease",
+    }
+    try:
+        emit_standalone_event(name=name, session_id=session_id, metadata=metadata)
+    except Exception as exc:  # pragma: no cover - best effort
+        logger.warning("Lease tracing failed for %s %s: %s", name, level2_job_id, exc)
 
 
 def claim_one(
@@ -74,6 +110,14 @@ def claim_one(
         sort=[("selected_at", ASCENDING)],
         return_document=ReturnDocument.AFTER,
     )
+    if result is not None:
+        _emit_legacy_lease_event(
+            name="scout.preenrich.legacy_claim",
+            job_id=result["_id"],
+            worker_id=worker_id,
+            lifecycle_before="selected_or_stale",
+            lifecycle_after="preenriching",
+        )
     return result
 
 
@@ -120,6 +164,14 @@ def heartbeat(
             "Another worker may have claimed it.",
             job_id,
         )
+    else:
+        _emit_legacy_lease_event(
+            name="scout.preenrich.legacy_heartbeat",
+            job_id=job_id,
+            worker_id=worker_id,
+            lifecycle_before="preenriching",
+            lifecycle_after="preenriching",
+        )
     return renewed
 
 
@@ -161,5 +213,13 @@ def release(
             "Release failed for job %s: lease_owner mismatch. "
             "Lease may have expired and been claimed by another worker.",
             job_id,
+        )
+    else:
+        _emit_legacy_lease_event(
+            name="scout.preenrich.legacy_release",
+            job_id=job_id,
+            worker_id=worker_id,
+            lifecycle_before="preenriching",
+            lifecycle_after=new_lifecycle,
         )
     return released

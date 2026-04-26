@@ -9,24 +9,24 @@ Tests:
 - Convenience functions
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
-from src.layer6_v2.types import (
-    DimensionScore,
-    GradeResult,
-    ImprovementResult,
-    FinalCV,
-    StitchedRole,
-    StitchedCV,
-    HeaderOutput,
-    ProfileOutput,
-    SkillsSection,
-    SkillEvidence,
-)
+import pytest
+
 from src.layer6_v2.grader import CVGrader, grade_cv
 from src.layer6_v2.improver import CVImprover, improve_cv
-
+from src.layer6_v2.types import (
+    DimensionScore,
+    FinalCV,
+    GradeResult,
+    HeaderOutput,
+    ImprovementResult,
+    ProfileOutput,
+    SkillEvidence,
+    SkillsSection,
+    StitchedCV,
+    StitchedRole,
+)
 
 # ===== FIXTURES =====
 

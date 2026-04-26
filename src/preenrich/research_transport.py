@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from dataclasses import dataclass
 from datetime import datetime
-import os
 from typing import Any, Callable, TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -14,6 +14,8 @@ from pydantic import BaseModel, ValidationError
 from src.common.codex_cli import _extract_json_from_stdout, _run_monitored_codex_subprocess
 from src.common.json_utils import parse_llm_json
 from src.preenrich.types import StepConfig
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -69,10 +71,56 @@ class CodexResearchTransport:
         prompt: str,
         job_id: str,
         validator: Callable[[dict[str, Any]], T] | None = None,
+        tracer: Any = None,
+        stage_name: str | None = None,
+        substage: str | None = None,
+        trace_metadata: dict[str, Any] | None = None,
     ) -> ResearchTransportResult:
         started = time.monotonic()
+        span = None
+        span_metadata = {
+            "provider": self.provider,
+            "model": self.model,
+            "transport": self.transport,
+            "stage_name": stage_name,
+            "substage": substage,
+            "prompt_length": len(prompt or ""),
+            "prompt": prompt,
+            "reasoning_effort": self.reasoning_effort,
+            "timeout_seconds": self.timeout_seconds,
+            "job_id": job_id,
+        }
+        if trace_metadata:
+            span_metadata.update(trace_metadata)
+        if tracer is not None and stage_name and substage and getattr(tracer, "trace", None) is not None:
+            try:
+                span = tracer.start_substage_span(stage_name, f"research.{substage}", span_metadata)
+            except Exception:  # pragma: no cover - defensive, tracing must never break stages
+                span = None
+
+        def _end_span(outcome: str, *, result: "ResearchTransportResult", schema_valid: bool | None = None) -> None:
+            if span is None or tracer is None:
+                return
+            try:
+                tracer.end_span(
+                    span,
+                    output={
+                        "outcome": outcome,
+                        "success": result.success,
+                        "duration_ms": result.duration_ms,
+                        "error_class": outcome if not result.success else None,
+                        "error_message_preview": (result.error or "")[:240] if result.error else None,
+                        "schema_valid": schema_valid,
+                        "provider": result.provider_used,
+                        "model": result.model_used,
+                        "transport": result.transport_used,
+                    },
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning("research transport span finalization failed: %s", exc)
+
         if not self.is_live_configured():
-            return ResearchTransportResult(
+            result = ResearchTransportResult(
                 success=False,
                 error=f"unsupported codex research transport: provider={self.provider} transport={self.transport}",
                 attempts=[],
@@ -81,6 +129,8 @@ class CodexResearchTransport:
                 transport_used=self.transport,
                 duration_ms=0,
             )
+            _end_span("unsupported_transport", result=result, schema_valid=None)
+            return result
 
         command = [
             "codex",
@@ -106,7 +156,7 @@ class CodexResearchTransport:
             )
         except FileNotFoundError:
             duration_ms = int((time.monotonic() - started) * 1000)
-            return ResearchTransportResult(
+            result = ResearchTransportResult(
                 success=False,
                 error="codex binary not found",
                 attempts=[{
@@ -123,6 +173,8 @@ class CodexResearchTransport:
                 transport_used=self.transport,
                 duration_ms=duration_ms,
             )
+            _end_span("error_missing_binary", result=result, schema_valid=None)
+            return result
 
         duration_ms = int((time.monotonic() - started) * 1000)
         attempts = [{
@@ -135,7 +187,8 @@ class CodexResearchTransport:
             "invoked_at": invoked_at,
         }]
         if proc.returncode != 0:
-            return ResearchTransportResult(
+            outcome = "error_timeout" if proc.timed_out else "error_subprocess"
+            result = ResearchTransportResult(
                 success=False,
                 error=(
                     "codex research transport timed out"
@@ -148,12 +201,14 @@ class CodexResearchTransport:
                 transport_used=self.transport,
                 duration_ms=duration_ms,
             )
+            _end_span(outcome, result=result, schema_valid=None)
+            return result
 
         json_str = _extract_json_from_stdout(proc.stdout or "")
         if not json_str:
             attempts[0]["outcome"] = "error_json"
             attempts[0]["error"] = "No JSON found in codex research output"
-            return ResearchTransportResult(
+            result = ResearchTransportResult(
                 success=False,
                 error="No JSON found in codex research output",
                 attempts=attempts,
@@ -162,6 +217,8 @@ class CodexResearchTransport:
                 transport_used=self.transport,
                 duration_ms=duration_ms,
             )
+            _end_span("error_no_json", result=result, schema_valid=None)
+            return result
 
         payload = parse_llm_json(json_str)
         try:
@@ -172,7 +229,7 @@ class CodexResearchTransport:
         except ValidationError as exc:
             attempts[0]["outcome"] = "error_schema"
             attempts[0]["error"] = str(exc)
-            return ResearchTransportResult(
+            result = ResearchTransportResult(
                 success=False,
                 payload=payload,
                 error=f"schema validation failed: {exc}",
@@ -182,10 +239,12 @@ class CodexResearchTransport:
                 transport_used=self.transport,
                 duration_ms=duration_ms,
             )
+            _end_span("error_schema", result=result, schema_valid=False)
+            return result
         except Exception as exc:
             attempts[0]["outcome"] = "error_exception"
             attempts[0]["error"] = str(exc)
-            return ResearchTransportResult(
+            result = ResearchTransportResult(
                 success=False,
                 error=str(exc),
                 attempts=attempts,
@@ -194,11 +253,13 @@ class CodexResearchTransport:
                 transport_used=self.transport,
                 duration_ms=duration_ms,
             )
+            _end_span("error_exception", result=result, schema_valid=False)
+            return result
 
         if isinstance(payload, BaseModel):
             payload = payload.model_dump()
 
-        return ResearchTransportResult(
+        result = ResearchTransportResult(
             success=True,
             payload=payload,
             attempts=attempts,
@@ -207,3 +268,5 @@ class CodexResearchTransport:
             transport_used=self.transport,
             duration_ms=duration_ms,
         )
+        _end_span("success", result=result, schema_valid=True)
+        return result

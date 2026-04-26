@@ -11,12 +11,11 @@ Key Features:
 - Provides multiple variants for A/B testing
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, Set
 import re
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set
 
 from src.common.annotation_types import JDAnnotation
-
 
 # LinkedIn headline constraints
 HEADLINE_MAX_LENGTH = 120

@@ -11,23 +11,22 @@ Tests UnifiedLLM-based job description structure parsing:
 """
 
 import json
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
-from datetime import datetime
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from src.common.unified_llm import LLMResult
 from src.layer1_4.jd_processor import (
+    JDSection,
+    JDSectionType,
+    LLMMetadata,
+    ProcessedJD,
     _call_claude_cli,
     _parse_sections_from_json,
-    parse_jd_sections_with_llm,
     parse_jd_sections_rule_based,
+    parse_jd_sections_with_llm,
     process_jd,
-    JDSectionType,
-    JDSection,
-    ProcessedJD,
-    LLMMetadata,
 )
-from src.common.unified_llm import LLMResult
-
 
 # ===== FIXTURES =====
 

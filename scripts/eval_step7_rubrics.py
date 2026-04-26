@@ -24,7 +24,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import re
 import subprocess
@@ -119,7 +118,7 @@ def log_stage(message: str, verbose: bool = False, always: bool = False) -> None
 
 def write_json_file(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
 
 
@@ -153,7 +152,7 @@ def write_attempt_debug(
 
 def load_blueprint(category_id: str) -> Dict[str, Any]:
     path = BLUEPRINT_DIR / f"{category_id}_blueprint.json"
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -161,7 +160,7 @@ def load_baseline(category_id: str) -> Optional[Dict[str, Any]]:
     path = BASELINE_DIR / f"{category_id}_baseline.json"
     if not path.exists():
         return None
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -671,7 +670,7 @@ def call_rubric_codex(
         log_stage(f"    codex launch: category={category_id}, model={model}, timeout={timeout_seconds}s", verbose)
         start_time = time.monotonic()
         next_heartbeat = heartbeat_seconds
-        with open(stdout_path, "w") as so, open(stderr_path, "w") as se:
+        with open(stdout_path, "w", encoding="utf-8") as so, open(stderr_path, "w", encoding="utf-8") as se:
             process = subprocess.Popen(
                 command, stdin=subprocess.PIPE, stdout=so, stderr=se, text=True, cwd=ROOT_DIR,
             )
@@ -958,7 +957,7 @@ def write_stage_scorecard_template() -> None:
 def render_index() -> None:
     rows = []
     for path in sorted(RUBRIC_DIR.glob("*_rubric.json")):
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             rubric = json.load(f)
         meta = rubric.get("meta", {})
         identity = rubric.get("rubric_identity", {})
@@ -1040,7 +1039,7 @@ Rubric version: {RUBRIC_VERSION}
 
 def render_only() -> None:
     for path in sorted(RUBRIC_DIR.glob("*_rubric.json")):
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             rubric = json.load(f)
         category_id = rubric.get("meta", {}).get("category_id", path.stem.replace("_rubric", ""))
         (RUBRIC_DIR / f"{category_id}_rubric.md").write_text(render_rubric_markdown(rubric))

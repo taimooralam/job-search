@@ -5,28 +5,27 @@ Tests the LinkedIn scraper without making actual HTTP requests.
 Uses mocked responses to test HTML parsing and error handling.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.services.linkedin_scraper import (
-    extract_job_id,
-    normalize_linkedin_url,
-    scrape_linkedin_job,
-    linkedin_job_to_mongodb_doc,
-    _parse_job_html,
-    _extract_title,
-    _extract_company,
-    _extract_location,
-    _extract_description,
-    _extract_job_criteria,
-    _clean_description,
-    _generate_dedupe_key,
+    JobNotFoundError,
     LinkedInJobData,
     LinkedInScraperError,
-    JobNotFoundError,
-    RateLimitError,
     ParseError,
+    RateLimitError,
+    _clean_description,
+    _extract_company,
+    _extract_location,
+    _extract_title,
+    _generate_dedupe_key,
+    _parse_job_html,
+    extract_job_id,
+    linkedin_job_to_mongodb_doc,
+    normalize_linkedin_url,
+    scrape_linkedin_job,
 )
 
 

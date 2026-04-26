@@ -11,11 +11,12 @@ Based on prompt-optimization-plan.md Section A (Layer 7 Analysis).
 """
 
 import json
-import pytest
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 from src.common.annotation_types import InterviewQuestion
 from src.layer7.interview_predictor import (
@@ -24,7 +25,6 @@ from src.layer7.interview_predictor import (
     QuestionGenerationOutput,
     predict_interview_questions,
 )
-
 
 # ===== MOCK LLM RESULT HELPER =====
 

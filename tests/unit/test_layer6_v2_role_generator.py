@@ -9,30 +9,27 @@ Tests:
 """
 
 import json
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.layer6_v2.types import (
-    GeneratedBullet,
-    RoleBullets,
-    QAResult,
-    ATSResult,
-    CareerContext,
-)
+import pytest
+
+from src.common.state import ExtractedJD
 from src.layer6_v2.cv_loader import RoleData
-from src.layer6_v2.role_generator import (
-    RoleGenerator,
-    GeneratedBulletModel,
-    RoleBulletsResponseModel,
-    generate_all_roles_sequential,
-)
-from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
 from src.layer6_v2.prompts.role_generation import (
     ROLE_GENERATION_SYSTEM_PROMPT,
     build_role_generation_user_prompt,
 )
-from src.common.state import ExtractedJD
-
+from src.layer6_v2.role_generator import (
+    GeneratedBulletModel,
+    RoleGenerator,
+)
+from src.layer6_v2.role_qa import RoleQA
+from src.layer6_v2.types import (
+    CareerContext,
+    GeneratedBullet,
+    QAResult,
+    RoleBullets,
+)
 
 # ===== FIXTURES =====
 
@@ -621,6 +618,7 @@ class TestPhase3Integration:
         """RoleGenerator works with mocked LLM."""
         # Mock LLM response - need to mock the invoke method properly
         from unittest.mock import AsyncMock
+
         from src.common.unified_llm import LLMResult
 
         # Create mock LLM instance

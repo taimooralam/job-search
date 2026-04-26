@@ -15,11 +15,11 @@ Each issue has tests for:
 
 import pytest
 
-from tests.ab_testing.framework import ABTestRunner, ABTestResult, Comparison
+from tests.ab_testing.framework import ABTestRunner
 from tests.ab_testing.scorers import (
-    score_specificity,
     score_grounding,
     score_hallucinations,
+    score_specificity,
 )
 
 
@@ -40,7 +40,7 @@ class TestRegexParsing:
         """Verify baseline uses rigid section extraction."""
         def rigid_parser_baseline(job_state):
             # Simulates regex-based parsing that might miss sections
-            profile = job_state.get("candidate_profile", "")
+            job_state.get("candidate_profile", "")
 
             # Rigid pattern matching
             sections = {
@@ -70,7 +70,7 @@ Education: {sections['education']}
         """Run enhanced prompt with LLM-driven parsing (technique 3.1)."""
         def llm_parser_enhanced(job_state):
             # Simulates LLM understanding context
-            profile = job_state.get("candidate_profile", "")
+            job_state.get("candidate_profile", "")
             stars = job_state.get("selected_stars", [])
 
             # Extract meaningful content with context understanding

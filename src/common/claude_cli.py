@@ -24,18 +24,16 @@ Usage:
     results = await cli.invoke_batch(prompts_with_ids, max_concurrent=3)
 """
 
-import subprocess
-import json
-import logging
 import asyncio
-import os
+import logging
 import re
+import subprocess
 import sys
 import tempfile
 import uuid
-from typing import Optional, Dict, Any, Callable, List, Literal, TYPE_CHECKING
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional
 
 from src.common.json_utils import parse_llm_json
 
@@ -574,7 +572,7 @@ class ClaudeCLI:
                 # Return raw text result
                 self._emit_log(
                     job_id, "info",
-                    message=f"CLI invocation complete",
+                    message="CLI invocation complete",
                     duration_ms=duration_ms,
                     input_tokens=None,
                     output_tokens=None,
@@ -597,7 +595,7 @@ class ClaudeCLI:
 
             self._emit_log(
                 job_id, "info",
-                message=f"CLI invocation complete",
+                message="CLI invocation complete",
                 duration_ms=duration_ms,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,

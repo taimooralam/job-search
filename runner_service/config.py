@@ -7,7 +7,8 @@ All environment variables are validated at startup to catch misconfigurations ea
 
 from functools import lru_cache
 from typing import List, Optional
-from pydantic import Field, field_validator, AnyHttpUrl
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 

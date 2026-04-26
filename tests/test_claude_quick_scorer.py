@@ -4,15 +4,15 @@ Tests for ClaudeQuickScorer.
 Tests the Claude CLI-based job scoring functionality.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
+
+import pytest
 
 from src.services.claude_quick_scorer import (
-    ClaudeQuickScorer,
-    derive_tier_from_score,
     QUICK_SCORE_SYSTEM,
     QUICK_SCORE_USER,
+    ClaudeQuickScorer,
+    derive_tier_from_score,
 )
 
 

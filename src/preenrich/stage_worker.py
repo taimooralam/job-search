@@ -19,7 +19,11 @@ from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
 from src.pipeline.tracing import PreenrichTracingSession
-from src.preenrich.blueprint_config import current_dag_version, current_input_snapshot_id, validate_blueprint_feature_flags
+from src.preenrich.blueprint_config import (
+    current_dag_version,
+    current_input_snapshot_id,
+    validate_blueprint_feature_flags,
+)
 from src.preenrich.blueprint_store import artifact_ref, upsert_artifact
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import DAG_VERSION, SCHEMA_VERSION
@@ -52,13 +56,15 @@ def stage_factory_map() -> dict[str, Callable[[], Any]]:
     from src.preenrich.stages.classification import ClassificationStage
     from src.preenrich.stages.company_research import CompanyResearchStage
     from src.preenrich.stages.cv_guidelines import CVGuidelinesStage
-    from src.preenrich.stages.jd_facts import JDFactsStage
     from src.preenrich.stages.jd_extraction import JDExtractionStage
+    from src.preenrich.stages.jd_facts import JDFactsStage
     from src.preenrich.stages.jd_structure import JDStructureStage
     from src.preenrich.stages.job_hypotheses import JobHypothesesStage
     from src.preenrich.stages.job_inference import JobInferenceStage
+    from src.preenrich.stages.pain_point_intelligence import PainPointIntelligenceStage
     from src.preenrich.stages.pain_points import PainPointsStage
     from src.preenrich.stages.persona import PersonaStage
+    from src.preenrich.stages.presentation_contract import PresentationContractStage
     from src.preenrich.stages.research_enrichment import ResearchEnrichmentStage
     from src.preenrich.stages.role_research import RoleResearchStage
     from src.preenrich.stages.stakeholder_surface import StakeholderSurfaceStage
@@ -70,12 +76,14 @@ def stage_factory_map() -> dict[str, Callable[[], Any]]:
         "ai_classification": AIClassificationStage,
         "classification": ClassificationStage,
         "pain_points": PainPointsStage,
+        "pain_point_intelligence": PainPointIntelligenceStage,
         "annotations": AnnotationsStage,
         "persona": PersonaStage,
         "persona_compat": PersonaStage,
         "company_research": CompanyResearchStage,
         "research_enrichment": ResearchEnrichmentStage,
         "stakeholder_surface": StakeholderSurfaceStage,
+        "presentation_contract": PresentationContractStage,
         "application_surface": ApplicationSurfaceStage,
         "job_inference": JobInferenceStage,
         "job_hypotheses": JobHypothesesStage,
@@ -303,6 +311,7 @@ class StageWorker:
             return retry_result
 
         stage = self._make_stage()
+        shadow_mode = os.getenv("PREENRICH_SHADOW_MODE", "false").strip().lower() == "true"
         ctx = StageContext(
             job_doc=job_doc,
             jd_checksum=str((job_doc.get("pre_enrichment") or {}).get("jd_checksum") or jd_checksum(job_doc.get("description", ""))),
@@ -310,7 +319,8 @@ class StageWorker:
             input_snapshot_id=current_snapshot,
             attempt_number=attempt_number,
             config=get_stage_step_config(self.stage_name),
-            shadow_mode=False,
+            shadow_mode=shadow_mode,
+            stage_name=self.stage_name,
         )
         token = attempt_token(
             job_id=str(job_doc.get("job_id") or level2_id),
@@ -331,7 +341,7 @@ class StageWorker:
         result = None
         error: Optional[Exception] = None
         start_monotonic = time.monotonic()
-        stage_span = tracer.start_stage_span(
+        stage_tracer = tracer.start_stage_span(
             self.stage_name,
             self._trace_metadata(
                 job_doc=job_doc,
@@ -344,6 +354,7 @@ class StageWorker:
                 lifecycle_after=str(job_doc.get("lifecycle") or "preenriching"),
             ),
         )
+        ctx.tracer = stage_tracer
         with self._heartbeat_loop(work_item["_id"], level2_id):
             try:
                 result = stage.run(ctx)
@@ -353,7 +364,7 @@ class StageWorker:
         finished_at = utc_now()
         duration_ms = int((time.monotonic() - start_monotonic) * 1000)
         if error is not None:
-            tracer.end_span(stage_span, output={"status": "failed", "error_class": classify_error(error)})
+            stage_tracer.complete(output={"status": "failed", "error_class": classify_error(error), "shadow_mode": shadow_mode})
             error_class = classify_error(error)
             self._finish_stage_run(run_id, status="failed", duration_ms=duration_ms, error=error)
             failure_result = self._handle_stage_failure(
@@ -383,8 +394,7 @@ class StageWorker:
             return failure_result
 
         assert result is not None
-        tracer.end_span(
-            stage_span,
+        stage_tracer.complete(
             output={
                 "status": "completed",
                 "provider": result.provider_used,
@@ -392,9 +402,15 @@ class StageWorker:
                 "tokens_input": result.tokens_input,
                 "tokens_output": result.tokens_output,
                 "cost_usd": result.cost_usd,
+                "shadow_mode": shadow_mode,
             },
         )
-        artifact_refs = self._upsert_stage_artifacts(job_doc, result, now=finished_at)
+        artifact_refs = self._upsert_stage_artifacts(
+            job_doc,
+            result,
+            now=finished_at,
+            tracer=ctx.tracer,
+        )
         next_stage_entries = self._build_next_stage_entries(
             job_doc=job_doc,
             snapshot_id=current_snapshot,
@@ -1027,24 +1043,62 @@ class StageWorker:
             "lifecycle_before": lifecycle_before,
             "lifecycle_after": lifecycle_after,
             "work_item_id": str(work_item["_id"]),
+            "shadow_mode": os.getenv("PREENRICH_SHADOW_MODE", "false").strip().lower() == "true",
         }
         if extra:
             metadata.update(extra)
         return metadata
 
-    def _upsert_stage_artifacts(self, job_doc: dict[str, Any], result: Any, *, now: datetime) -> dict[str, Any]:
+    def _upsert_stage_artifacts(
+        self,
+        job_doc: dict[str, Any],
+        result: Any,
+        *,
+        now: datetime,
+        tracer: Any,
+    ) -> dict[str, Any]:
         """Persist any collection-backed artifacts and return ref metadata."""
         refs: dict[str, Any] = {}
         known_refs = self._known_artifact_refs(job_doc)
-        for artifact in getattr(result, "artifact_writes", []) or []:
-            stored = upsert_artifact(
-                self.db,
-                collection=artifact.collection,
-                unique_filter=self._resolve_placeholders(copy.deepcopy(artifact.unique_filter), refs=known_refs, now=now),
-                document=self._resolve_placeholders(copy.deepcopy(artifact.document), refs=known_refs, now=now),
-                now=now,
+        artifacts = list(getattr(result, "artifact_writes", []) or [])
+        span = tracer.start_substage_span(
+            self.stage_name,
+            "artifact_persist",
+            {
+                "stage_name": self.stage_name,
+                "artifact_count": len(artifacts),
+                "collections": [artifact.collection for artifact in artifacts],
+                "job_id": str(job_doc.get("job_id") or job_doc["_id"]),
+                "level2_job_id": str(job_doc["_id"]),
+            },
+        )
+        try:
+            for artifact in artifacts:
+                stored = upsert_artifact(
+                    self.db,
+                    collection=artifact.collection,
+                    unique_filter=self._resolve_placeholders(copy.deepcopy(artifact.unique_filter), refs=known_refs, now=now),
+                    document=self._resolve_placeholders(copy.deepcopy(artifact.document), refs=known_refs, now=now),
+                    now=now,
+                )
+                refs[artifact.ref_name] = artifact_ref(stored, collection=artifact.collection)
+        except Exception:
+            tracer.end_span(
+                span,
+                output={
+                    "status": "failed",
+                    "artifact_count": len(artifacts),
+                },
             )
-            refs[artifact.ref_name] = artifact_ref(stored, collection=artifact.collection)
+            raise
+        tracer.end_span(
+            span,
+            output={
+                "status": "completed",
+                "artifact_count": len(artifacts),
+                "artifact_ref_names": sorted(refs.keys()),
+            },
+        )
         return refs
 
     def _known_artifact_refs(self, job_doc: dict[str, Any]) -> dict[str, Any]:

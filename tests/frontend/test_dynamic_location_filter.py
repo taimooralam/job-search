@@ -9,7 +9,6 @@ when date filters change. This validates that:
 4. Custom date inputs trigger debounced location reload
 """
 
-import pytest
 import re
 
 

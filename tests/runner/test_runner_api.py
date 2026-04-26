@@ -2,7 +2,6 @@
 Unit tests for runner service API endpoints.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 

@@ -8,11 +8,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, Optional
 
 from bson import ObjectId
-from pymongo import ASCENDING
-from pymongo.errors import DuplicateKeyError
+from pymongo import ASCENDING, ReturnDocument
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo import ReturnDocument
+from pymongo.errors import DuplicateKeyError
 
 logger = logging.getLogger(__name__)
 

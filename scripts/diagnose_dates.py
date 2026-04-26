@@ -1,7 +1,8 @@
 """Diagnose date fields in level-2 collection."""
-from pymongo import MongoClient
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+from pymongo import MongoClient
 
 load_dotenv()
 client = MongoClient(os.getenv("MONGODB_URI"))
@@ -23,7 +24,7 @@ for r in coll.aggregate([{"$group": {"_id": {"$type": "$createdAt"}, "count": {"
 
 # Check all top-level fields on a doc
 sample_full = coll.find_one({})
-print(f"\n=== ALL fields on first doc ===")
+print("\n=== ALL fields on first doc ===")
 print(sorted(sample_full.keys()))
 
 # Count with/without createdAt
@@ -32,7 +33,6 @@ no_date = coll.count_documents({"createdAt": {"$exists": False}})
 print(f"\nHas createdAt: {has_date}, Missing: {no_date}, Total: {has_date + no_date}")
 
 # Check _id ObjectId timestamp as proxy (ObjectIds encode creation time)
-from bson import ObjectId
 first = coll.find_one(sort=[("_id", 1)])
 last = coll.find_one(sort=[("_id", -1)])
 print(f"\nFirst _id timestamp: {first['_id'].generation_time}")

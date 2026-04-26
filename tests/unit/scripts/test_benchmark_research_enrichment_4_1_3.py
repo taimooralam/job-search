@@ -50,7 +50,7 @@ def test_build_run_metadata_persists_prompt_and_transport_fields():
         model="gpt-5.4-mini",
         transport_used="none",
     )
-    assert metadata["prompt_file_path"].endswith("src/preenrich/blueprint_prompts.py")
+    assert metadata["prompt_file_path"].replace("\\", "/").endswith("src/preenrich/blueprint_prompts.py")
     assert metadata["transport_used"] == "none"
     assert metadata["prompt_version"] == "research_enrichment_bundle@v4.1.3.1"
 

@@ -24,16 +24,17 @@ from typing import Any, Dict, List, Optional, Set
 import requests
 from bs4 import BeautifulSoup
 
+from src.common.proxy_pool import ProxyPool
+from src.common.rule_scorer import compute_rule_score
+
 # Reuse existing LinkedIn scraper infrastructure
 from src.services.linkedin_scraper import (
     HEADERS,
     REQUEST_TIMEOUT,
+    LinkedInScraperError,
     extract_job_id,
     scrape_linkedin_job,
-    LinkedInScraperError,
 )
-from src.common.rule_scorer import compute_rule_score
-from src.common.proxy_pool import ProxyPool
 
 logging.basicConfig(
     level=logging.INFO,
@@ -533,7 +534,7 @@ def main():
 
     # Write descriptions to a sidecar file so the skill can read them for insertion
     desc_path = "/tmp/scout_jobs_descriptions.json"
-    with open(desc_path, "w") as df:
+    with open(desc_path, "w", encoding="utf-8") as df:
         json.dump(descriptions, df)
     logger.info(f"Descriptions written to {desc_path} ({len(descriptions)} jobs)")
 

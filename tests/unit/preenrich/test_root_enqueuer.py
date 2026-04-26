@@ -11,8 +11,8 @@ from bson import ObjectId
 from src.preenrich.blueprint_config import current_input_snapshot_id
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import (
-    ROOT_STAGE,
     DAG_VERSION,
+    ROOT_STAGE,
     RootEnqueuer,
     build_stage_states,
     canary_allows,

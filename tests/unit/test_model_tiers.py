@@ -7,14 +7,14 @@ Tests the 3-tier model system for button-triggered pipeline operations.
 import pytest
 
 from src.common.model_tiers import (
+    OPERATION_TASK_TYPES,
+    TIER_CONFIGS,
     ModelTier,
     TierModelConfig,
-    TIER_CONFIGS,
-    OPERATION_TASK_TYPES,
     get_model_for_operation,
     get_tier_cost_estimate,
-    get_tier_from_string,
     get_tier_display_info,
+    get_tier_from_string,
 )
 
 

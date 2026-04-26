@@ -10,8 +10,8 @@ Tests robust JSON parsing for LLM outputs including:
 """
 
 import pytest
-from src.common.json_utils import parse_llm_json, _strip_markdown_blocks, _extract_json_object
 
+from src.common.json_utils import _extract_json_object, _strip_markdown_blocks, parse_llm_json
 
 # ===== TESTS: Valid JSON Parsing =====
 

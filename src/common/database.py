@@ -5,12 +5,13 @@ Provides connection management, collection access, and index creation
 for STAR records and job processing state.
 """
 
-from typing import Optional, List, Dict, Any
-from pymongo import MongoClient, ASCENDING, DESCENDING
+import logging
+from typing import Dict, List, Optional
+
+from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import DuplicateKeyError
-import logging
 
 from .config import Config
 from .types import STARRecord

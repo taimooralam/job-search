@@ -16,7 +16,6 @@ import pytest
 from src.preenrich.stages.ai_classification import AIClassificationStage
 from src.preenrich.types import StageContext, StageResult, StepConfig
 
-
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
 

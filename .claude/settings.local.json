@@ -25,7 +25,8 @@
       "Bash(gh api:*)",
       "Bash(wc:*)",
       "Bash(.venv/bin/python -c ' *)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(.venv/Scripts/python *)"
     ]
   },
   "outputStyle": "default",

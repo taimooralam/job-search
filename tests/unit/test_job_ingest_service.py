@@ -9,14 +9,14 @@ Tests the IngestService class that handles:
 - MongoDB insertion
 """
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
-from src.services.job_ingest_service import IngestService, IngestResult
+from src.services.job_ingest_service import IngestResult, IngestService
 from src.services.job_sources import JobData
-
 
 # =============================================================================
 # FIXTURES

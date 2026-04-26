@@ -7,17 +7,16 @@ These tests verify that:
 3. Profile generation integrates persona correctly
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from typing import Dict, List
 
+import pytest
+
+from src.layer1_4.claude_jd_extractor import RoleCategory
 from src.layer6_v2.header_generator import (
     HeaderGenerator,
     _load_role_persona,
 )
 from src.layer6_v2.types import StitchedCV, StitchedRole
-from src.layer1_4.claude_jd_extractor import RoleCategory
-
 
 # ===== FIXTURES =====
 

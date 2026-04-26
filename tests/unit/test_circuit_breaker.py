@@ -15,26 +15,25 @@ Tests the circuit breaker pattern implementation including:
 """
 
 import asyncio
-import pytest
 import threading
-import time
-from datetime import datetime
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.common.circuit_breaker import (
     CircuitBreaker,
+    CircuitBreakerConfig,
     CircuitBreakerRegistry,
+    CircuitBreakerStats,
     CircuitOpenError,
     CircuitState,
-    CircuitBreakerStats,
-    CircuitBreakerConfig,
+    get_anthropic_breaker,
     get_circuit_breaker,
     get_circuit_breaker_registry,
-    reset_global_registry,
-    get_pdf_service_breaker,
-    get_openai_breaker,
-    get_anthropic_breaker,
     get_firecrawl_breaker,
+    get_openai_breaker,
+    get_pdf_service_breaker,
+    reset_global_registry,
 )
 
 

@@ -19,19 +19,18 @@ Usage:
     keywords = calculator.get_annotation_keywords()
 """
 
-from typing import Dict, List, Optional, Set, Tuple, Any
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from src.common.annotation_types import (
-    JDAnnotation,
-    JDAnnotations,
+    IDENTITY_MULTIPLIERS,
+    PASSION_MULTIPLIERS,
+    PRIORITY_MULTIPLIERS,
     RELEVANCE_MULTIPLIERS,
     REQUIREMENT_MULTIPLIERS,
-    PASSION_MULTIPLIERS,
-    IDENTITY_MULTIPLIERS,
-    PRIORITY_MULTIPLIERS,
-    TYPE_MODIFIERS,
     SOURCE_MULTIPLIERS,
+    TYPE_MODIFIERS,
+    JDAnnotation,
 )
 
 

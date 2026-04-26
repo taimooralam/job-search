@@ -16,10 +16,7 @@ To:
 This ensures proper parameter passing and avoids JavaScript injection issues.
 """
 
-import pytest
-from datetime import datetime
 from bson import ObjectId
-from unittest.mock import MagicMock
 
 
 class TestOutreachButtonOnclickHandlers:

@@ -14,20 +14,17 @@ Phase 5 Update: Enhanced prompts with persona, chain-of-thought reasoning,
 import json
 import re
 from dataclasses import dataclass
-from typing import Callable, List, Dict, Any, Optional, Literal, TYPE_CHECKING
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
-from langchain_core.messages import HumanMessage, SystemMessage
-from tenacity import retry, stop_after_attempt, wait_exponential
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
-from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState, ProgressCallback
+from pydantic import BaseModel, Field, ValidationError, field_validator
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from src.common.llm_config import TIER_TO_CLAUDE_MODEL, TierType
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.annotation_types import JDAnnotation, JDAnnotations
-from src.common.unified_llm import UnifiedLLM, LLMResult
-from src.common.llm_config import TierType, TIER_TO_CLAUDE_MODEL
+from src.common.state import JobState, ProgressCallback
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.unified_llm import LLMResult, UnifiedLLM
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
@@ -1220,7 +1217,7 @@ class PainPointMiner:
             error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                         for err in e.errors()]
             if logger:
-                logger.error(f"[PARSE] Pydantic validation failed:")
+                logger.error("[PARSE] Pydantic validation failed:")
                 for msg in error_msgs:
                     logger.error(f"[PARSE]   - {msg}")
             # Emit Pydantic validation failure to frontend
@@ -1231,7 +1228,7 @@ class PainPointMiner:
                     "error_type": "validation_error",
                 })
             raise ValueError(
-                f"Schema validation failed:\n" +
+                "Schema validation failed:\n" +
                 "\n".join(f"  - {msg}" for msg in error_msgs)
             )
 
@@ -1295,7 +1292,7 @@ class PainPointMiner:
                 error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                             for err in e.errors()]
                 raise ValueError(
-                    f"JSON schema validation failed:\n" +
+                    "JSON schema validation failed:\n" +
                     "\n".join(f"  - {msg}" for msg in error_msgs)
                 )
 
@@ -1309,7 +1306,7 @@ class PainPointMiner:
                 error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                             for err in e.errors()]
                 raise ValueError(
-                    f"JSON schema validation failed:\n" +
+                    "JSON schema validation failed:\n" +
                     "\n".join(f"  - {msg}" for msg in error_msgs)
                 )
 
@@ -1328,11 +1325,11 @@ class PainPointMiner:
                 error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                             for err in e.errors()]
                 raise ValueError(
-                    f"JSON schema validation failed:\n" +
+                    "JSON schema validation failed:\n" +
                     "\n".join(f"  - {msg}" for msg in error_msgs)
                 )
 
-        raise ValueError(f"JSON schema validation failed: unexpected data format")
+        raise ValueError("JSON schema validation failed: unexpected data format")
 
     def extract_pain_points(self, state: JobState) -> Dict[str, Any]:
         """

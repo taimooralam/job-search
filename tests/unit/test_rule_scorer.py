@@ -10,14 +10,13 @@ Covers:
 - Regression: lead/architect/director roles must not be discarded (score > 0, tier != D)
 """
 
-import pytest
 
 from src.common.rule_scorer import (
+    PROMOTION_THRESHOLD,
+    SENIOR_AI_TITLE_COMBO_BONUS,
     compute_rule_score,
     detect_role,
     should_promote_to_level2,
-    PROMOTION_THRESHOLD,
-    SENIOR_AI_TITLE_COMBO_BONUS,
 )
 
 # ---------------------------------------------------------------------------

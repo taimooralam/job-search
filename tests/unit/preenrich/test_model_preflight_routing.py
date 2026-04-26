@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from src.preenrich.types import get_stage_step_config
 from scripts.preenrich_model_preflight import validate_stage_routing
+from src.preenrich.types import get_stage_step_config
 
 
 def test_validate_stage_routing_covers_iteration41_stages():
@@ -12,6 +12,8 @@ def test_validate_stage_routing_covers_iteration41_stages():
     assert validate_stage_routing("research_enrichment") == []
     assert validate_stage_routing("application_surface") == []
     assert validate_stage_routing("stakeholder_surface") == []
+    assert validate_stage_routing("pain_point_intelligence") == []
+    assert validate_stage_routing("presentation_contract") == []
     assert validate_stage_routing("job_inference") == []
     assert validate_stage_routing("job_hypotheses") == []
     assert validate_stage_routing("cv_guidelines") == []
@@ -37,6 +39,19 @@ def test_application_surface_default_model_is_pinned_to_gpt52():
 def test_stakeholder_surface_default_model_is_pinned_to_gpt52():
     cfg = get_stage_step_config("stakeholder_surface")
     assert cfg.primary_model == "gpt-5.2"
+
+
+def test_presentation_contract_default_model_is_pinned_to_gpt54():
+    cfg = get_stage_step_config("presentation_contract")
+    assert cfg.primary_model == "gpt-5.4"
+    assert cfg.transport == "none"
+
+
+def test_pain_point_intelligence_default_model_is_pinned_to_gpt54():
+    cfg = get_stage_step_config("pain_point_intelligence")
+    assert cfg.primary_model == "gpt-5.4"
+    assert cfg.fallback_model == "gpt-5.2"
+    assert cfg.transport == "none"
 
 
 def test_classification_v2_preflight_requires_real_provider(monkeypatch):
@@ -106,3 +121,35 @@ def test_research_preflight_requires_codex_transport_when_live_web_enabled(monke
     monkeypatch.setenv("PREENRICH_TRANSPORT_RESEARCH_ENRICHMENT", "none")
     errors = validate_stage_routing("research_enrichment")
     assert "research_enrichment: WEB_RESEARCH_ENABLED=true requires a codex research transport" in errors
+
+
+def test_presentation_contract_preflight_requires_real_provider_when_enabled(monkeypatch):
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PROVIDER_PRESENTATION_CONTRACT", "none")
+    errors = validate_stage_routing("presentation_contract")
+    assert "presentation_contract: enabled stage requires a real provider" in errors
+
+
+def test_presentation_contract_preflight_rejects_web_transport(monkeypatch):
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PROVIDER_PRESENTATION_CONTRACT", "codex")
+    monkeypatch.setenv("PREENRICH_TRANSPORT_PRESENTATION_CONTRACT", "codex_web_search")
+    errors = validate_stage_routing("presentation_contract")
+    assert "presentation_contract: enabled stage must not use web transport" in errors
+
+
+def test_pain_point_intelligence_preflight_requires_real_provider_when_enabled(monkeypatch):
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PROVIDER_PAIN_POINT_INTELLIGENCE", "none")
+    errors = validate_stage_routing("pain_point_intelligence")
+    assert "pain_point_intelligence: enabled stage requires a real provider" in errors
+
+
+def test_presentation_contract_preflight_requires_pain_point_intelligence(monkeypatch):
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "false")
+    monkeypatch.setenv("PREENRICH_PROVIDER_PRESENTATION_CONTRACT", "codex")
+    errors = validate_stage_routing("presentation_contract")
+    assert "presentation_contract: enabled stage requires PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=true" in errors

@@ -11,16 +11,14 @@ Tests:
 
 import pytest
 
+from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
 from src.layer6_v2.types import (
+    DeduplicationResult,
     GeneratedBullet,
     RoleBullets,
-    DuplicatePair,
-    DeduplicationResult,
-    StitchedRole,
     StitchedCV,
+    StitchedRole,
 )
-from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
-
 
 # ===== FIXTURES =====
 

@@ -34,30 +34,30 @@ Usage:
 """
 
 import asyncio
-import logging
 import json
+import logging
 import subprocess
-from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any, List, Callable
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 
 # Type alias for progress callback that forwards to Redis
 # Signature: (event_type, message, data_dict) -> None
 ProgressCallback = Callable[[str, str, Dict[str, Any]], None]
 
-from src.common.claude_cli import ClaudeCLI, CLIResult
-from src.common.llm_config import (
-    get_step_config,
-    StepConfig,
-    TIER_TO_CLAUDE_MODEL,
-    TIER_TO_FALLBACK_MODEL,
-    TierType,
-)
-from src.common.json_utils import parse_llm_json
-from src.common.utils import run_async
-
 # Import TYPE_CHECKING to avoid circular imports
 from typing import TYPE_CHECKING
+
+from src.common.claude_cli import ClaudeCLI, CLIResult
+from src.common.json_utils import parse_llm_json
+from src.common.llm_config import (
+    TIER_TO_CLAUDE_MODEL,
+    StepConfig,
+    TierType,
+    get_step_config,
+)
+from src.common.utils import run_async
+
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 
@@ -509,7 +509,7 @@ class UnifiedLLM:
             )
 
             # Build messages
-            from langchain_core.messages import SystemMessage, HumanMessage
+            from langchain_core.messages import HumanMessage, SystemMessage
 
             messages = []
             if system:

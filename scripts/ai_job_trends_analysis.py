@@ -5,14 +5,14 @@ Uses _id ObjectId generation time as the reliable date source since
 createdAt is stored as string in 99.7% of documents.
 """
 
-import os
 import json
+import os
 import re
-from datetime import datetime, timezone
 from collections import Counter, defaultdict
+from datetime import datetime
 
-from pymongo import MongoClient
 from dotenv import load_dotenv
+from pymongo import MongoClient
 
 load_dotenv()
 
@@ -262,7 +262,7 @@ for window_name, cutoff in windows.items():
         bar = "█" * max(1, int(pct))
         print(f"    {cat:25s}: {count:5d} ({pct:5.1f}%) {bar}")
 
-    print(f"\n  LEADERSHIP LEVELS — ALL JOBS:")
+    print("\n  LEADERSHIP LEVELS — ALL JOBS:")
     for level, count in level_counts.most_common():
         pct = count / total_w * 100
         print(f"    {level:20s}: {count:5d} ({pct:5.1f}%)")
@@ -273,12 +273,12 @@ for window_name, cutoff in windows.items():
         print(f"    {level:20s}: {count:5d} ({pct:5.1f}%)")
 
     if tier_counts:
-        print(f"\n  TIER DISTRIBUTION (AI jobs):")
+        print("\n  TIER DISTRIBUTION (AI jobs):")
         for tier, count in tier_counts.most_common():
             pct = count / len(strong_ai_jobs) * 100 if strong_ai_jobs else 0
             print(f"    Tier {tier:10s}: {count:5d} ({pct:5.1f}%)")
 
-    print(f"\n  TOP 15 COMPANIES (AI jobs):")
+    print("\n  TOP 15 COMPANIES (AI jobs):")
     for company, count in companies.most_common(15):
         print(f"    {company[:40]:40s}: {count:3d}")
 
@@ -417,7 +417,7 @@ for m in sorted(monthly.keys()):
         "leadership": dict(d["levels"]),
     }
 
-with open("reports/ai-job-trends-data.json", "w") as f:
+with open("reports/ai-job-trends-data.json", "w", encoding="utf-8") as f:
     json.dump(output, f, indent=2, default=str)
 
-print(f"\n\nRaw data exported to reports/ai-job-trends-data.json")
+print("\n\nRaw data exported to reports/ai-job-trends-data.json")

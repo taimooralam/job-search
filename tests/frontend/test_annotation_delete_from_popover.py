@@ -9,10 +9,6 @@ Tests the following functionality:
 5. Reset form behavior when hiding delete button
 """
 
-import pytest
-from datetime import datetime
-from bson import ObjectId
-from unittest.mock import MagicMock, patch
 
 
 class TestDeleteButtonVisibility:
@@ -110,7 +106,7 @@ class TestDeleteButtonBehavior:
     def test_delete_annotation_from_popover_function_exists(self):
         """deleteAnnotationFromPopover() function should exist in jd-annotation.js."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Function should be defined
@@ -119,7 +115,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_checks_annotation_manager(self):
         """Function should check if manager exists before proceeding."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should use getActiveAnnotationManager() and have early return if manager doesn't exist
@@ -134,7 +130,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_checks_editing_annotation_id(self):
         """Function should check if editingAnnotationId exists before deleting."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should check for editingAnnotationId via manager
@@ -148,7 +144,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_executes_immediately_without_confirmation(self):
         """Function should delete immediately without confirmation (Gmail undo pattern)."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should NOT use confirm() (GAP-105: removed confirmation dialogs)
@@ -160,7 +156,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_has_gmail_pattern_comment(self):
         """Function should have a comment explaining the Gmail undo pattern."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should have comment about Gmail pattern
@@ -173,7 +169,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_calls_delete_annotation(self):
         """Function should call manager.deleteAnnotation() with correct ID."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should call deleteAnnotation via getActiveAnnotationManager()
@@ -188,7 +184,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_hides_popover_after_deletion(self):
         """Function should hide the popover after successful deletion (no save)."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should call hideAnnotationPopover with save: false (no auto-save after delete)
@@ -200,7 +196,7 @@ class TestDeleteButtonBehavior:
     def test_delete_function_exported_to_window(self):
         """Function should be exported to window for HTML onclick handlers."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should be exported to window
@@ -213,7 +209,7 @@ class TestDeleteFunctionLogic:
     def test_early_return_when_no_annotation_manager(self):
         """Should return early if manager is null/undefined."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should have guard clause at start using getActiveAnnotationManager()
@@ -227,7 +223,7 @@ class TestDeleteFunctionLogic:
     def test_early_return_when_no_editing_annotation(self):
         """Should return early and warn if no annotation is being edited."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should check for editingAnnotationId
@@ -244,7 +240,7 @@ class TestDeleteFunctionLogic:
     def test_no_confirmation_dialog_for_faster_workflow(self):
         """GAP-105: No confirmation dialog for faster workflow (Gmail undo pattern)."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should NOT have confirmation dialog
@@ -263,7 +259,7 @@ class TestShowAnnotationPopoverIntegration:
     def test_show_annotation_popover_controls_delete_button(self):
         """showAnnotationPopover() should control delete button visibility based on edit mode."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Function should check for editingAnnotation parameter
@@ -277,7 +273,7 @@ class TestShowAnnotationPopoverIntegration:
     def test_delete_button_shown_when_editing(self):
         """Delete button should be shown when editingAnnotation is provided."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should remove 'hidden' class when editing
@@ -294,7 +290,7 @@ class TestShowAnnotationPopoverIntegration:
     def test_delete_button_hidden_when_creating_new(self):
         """Delete button should be hidden when creating new annotation."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should add 'hidden' class when not editing
@@ -311,7 +307,7 @@ class TestShowAnnotationPopoverIntegration:
     def test_editing_annotation_id_stored_in_manager(self):
         """editingAnnotationId should be stored in annotationManager state."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should store editingAnnotationId
@@ -330,7 +326,7 @@ class TestResetPopoverFormIntegration:
     def test_reset_form_hides_delete_button(self):
         """Delete-button visibility should be controlled by showAnnotationPopover()."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Current implementation toggles the button in showAnnotationPopover()
@@ -345,7 +341,7 @@ class TestResetPopoverFormIntegration:
     def test_reset_form_clears_editing_state(self):
         """resetPopoverForm() should clear editingAnnotationId."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should reset editing state
@@ -363,7 +359,7 @@ class TestDeleteAnnotationMethod:
     def test_delete_annotation_removes_from_array(self):
         """deleteAnnotation() should remove annotation from array."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should use splice to remove
@@ -376,7 +372,7 @@ class TestDeleteAnnotationMethod:
     def test_delete_annotation_re_renders_ui(self):
         """deleteAnnotation() should re-render annotations list and highlights."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should call render methods
@@ -389,7 +385,7 @@ class TestDeleteAnnotationMethod:
     def test_delete_annotation_updates_stats(self):
         """deleteAnnotation() should update statistics."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should call updateStats
@@ -401,7 +397,7 @@ class TestDeleteAnnotationMethod:
     def test_delete_annotation_schedules_save(self):
         """deleteAnnotation() should schedule auto-save."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should call scheduleSave
@@ -417,7 +413,7 @@ class TestUserExperience:
     def test_delete_button_positioned_near_discard(self):
         """Delete button should be positioned near discard button for easy access."""
         # Arrange - Read the template file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r', encoding="utf-8") as f:
             template_content = f.read()
 
         # Assert - Delete button should be in same actions section as Discard button
@@ -432,7 +428,7 @@ class TestUserExperience:
     def test_delete_button_has_hover_effect(self):
         """Delete button should have hover effect for better UX."""
         # Arrange - Read the template file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r', encoding="utf-8") as f:
             template_content = f.read()
 
         # Assert - Should have hover classes
@@ -444,7 +440,7 @@ class TestUserExperience:
     def test_delete_button_text_is_clear(self):
         """Delete button should have clear text label."""
         # Arrange - Read the template file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r', encoding="utf-8") as f:
             template_content = f.read()
 
         # Assert - Should say "Delete"
@@ -456,7 +452,7 @@ class TestUserExperience:
     def test_popover_title_changes_in_edit_mode(self):
         """Popover title should change from 'Create' to 'Edit' when editing."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should update title based on mode
@@ -471,7 +467,7 @@ class TestUserExperience:
     def test_save_button_text_changes_in_edit_mode(self):
         """Save button text should change from 'Add' to 'Update' when editing."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should update button text
@@ -490,7 +486,7 @@ class TestEdgeCases:
     def test_delete_when_annotation_already_deleted(self):
         """Should handle gracefully if annotation was already deleted."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - deleteAnnotation uses findIndex which returns -1 if not found
@@ -504,7 +500,7 @@ class TestEdgeCases:
     def test_delete_with_null_annotation_id(self):
         """Should handle null/undefined annotationId gracefully."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - deleteAnnotationFromPopover checks for null/undefined
@@ -535,7 +531,7 @@ class TestAccessibility:
     def test_delete_button_has_focus_styles(self):
         """Delete button should have focus styles for keyboard navigation."""
         # Arrange - Read the template file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r', encoding="utf-8") as f:
             template_content = f.read()
 
         # Assert - Should have focus styles
@@ -547,7 +543,7 @@ class TestAccessibility:
     def test_delete_button_keyboard_accessible(self):
         """Delete button should be keyboard accessible (using button element)."""
         # Arrange - Read the template file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r', encoding="utf-8") as f:
             template_content = f.read()
 
         # Assert - Should use button element
@@ -563,7 +559,7 @@ class TestIntegrationFlow:
     def test_complete_delete_flow_structure(self):
         """Test the complete flow: click highlight -> edit popover -> delete."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - All necessary functions exist
@@ -575,7 +571,7 @@ class TestIntegrationFlow:
     def test_edit_annotation_from_highlight_passes_annotation_object(self):
         """editAnnotationFromHighlight should pass annotation object to popover."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - Should find and pass annotation
@@ -589,7 +585,7 @@ class TestIntegrationFlow:
     def test_delete_triggers_full_ui_update(self):
         """Deleting should trigger complete UI update (list + highlights + stats)."""
         # Arrange - Read the JavaScript file
-        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
+        with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Assert - deleteAnnotation should call all update methods

@@ -36,12 +36,11 @@ _embedding_model = None
 _embedding_model_lock = threading.Lock()
 
 from .annotation_priors import (
+    EMBEDDING_MODEL,
     PriorsDocument,
     load_priors,
     save_priors,
     should_rebuild_priors,
-    rebuild_priors,
-    EMBEDDING_MODEL,
 )
 
 logger = logging.getLogger(__name__)
@@ -166,7 +165,7 @@ def _load_master_cv_data() -> Dict[str, Any]:
     - keywords: Set[keyword]
     """
     try:
-        from src.common.master_cv_store import get_taxonomy, get_metadata
+        from src.common.master_cv_store import get_metadata, get_taxonomy
 
         result = {
             "jd_signals": {},
@@ -707,6 +706,7 @@ def generate_annotations_for_job(
         Dict with success, created, skipped, annotations, error
     """
     from bson import ObjectId
+
     from src.common.repositories import get_job_repository
 
     logger.info(f"Generating annotations for job {job_id}")
@@ -812,7 +812,7 @@ def _infer_dimensions_from_extracted_jd(
 
     # Get extracted_jd data
     tech_skills = [s.lower() for s in extracted_jd.get("technical_skills", [])]
-    responsibilities = [r.lower() for r in extracted_jd.get("responsibilities", [])]
+    [r.lower() for r in extracted_jd.get("responsibilities", [])]
     qualifications = [q.lower() for q in extracted_jd.get("qualifications", [])]
 
     item_lower = item_text.lower()

@@ -9,10 +9,8 @@ Validates:
 - No cross-contamination (company change does NOT stale JD-only stages)
 """
 
-import pytest
 
 from src.preenrich.dag import STAGE_ORDER, invalidate
-
 
 # ---------------------------------------------------------------------------
 # Stage order

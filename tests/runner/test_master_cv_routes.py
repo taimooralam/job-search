@@ -12,7 +12,6 @@ Note: These tests focus on route behavior, not MasterCVStore implementation.
 Store tests are in tests/test_master_cv_store.py.
 """
 
-import pytest
 
 
 # =============================================================================

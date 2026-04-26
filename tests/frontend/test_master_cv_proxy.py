@@ -13,10 +13,10 @@ Tests:
 - Response pass-through
 """
 
-import pytest
-import requests
 from unittest.mock import MagicMock
 
+import pytest
+import requests
 
 # =============================================================================
 # FIXTURES

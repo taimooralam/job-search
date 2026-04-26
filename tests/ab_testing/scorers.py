@@ -11,9 +11,8 @@ All scores are normalized to 1-10 scale where higher is better
 """
 
 import re
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-
+from typing import Any, Dict, Optional
 
 # Generic boilerplate phrases to detect
 GENERIC_PHRASES = [
@@ -284,8 +283,8 @@ def score_hallucinations(text: str, master_cv: str, state: Dict[str, Any]) -> Sc
     if not text or not text.strip():
         return ScoreResult(score=10.0, details={}, feedback="Empty text - no hallucinations")
 
-    text_lower = text.lower()
-    master_cv_lower = master_cv.lower() if master_cv else ""
+    text.lower()
+    master_cv.lower() if master_cv else ""
     details = {}
     issues = []
 

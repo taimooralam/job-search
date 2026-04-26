@@ -18,12 +18,11 @@ IMPORTANT: These tests address reported user issues:
 3. Save indicator unclear
 """
 
-import pytest
 import json
 from datetime import datetime
-from bson import ObjectId
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+from bson import ObjectId
 
 # ==============================================================================
 # Test Class: API Endpoints (High Priority - Addresses Reported Issues)

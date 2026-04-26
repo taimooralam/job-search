@@ -18,7 +18,7 @@ import argparse
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import List, Optional
 
 EVAL_DIR = Path("data/eval")
 NORM_DIR = EVAL_DIR / "normalized"
@@ -60,12 +60,12 @@ def load_category_data(category: str) -> tuple:
 
     normalized = []
     if norm_file.exists():
-        with open(norm_file) as f:
+        with open(norm_file, encoding="utf-8") as f:
             normalized = [j for j in json.load(f) if not j.get("_extraction_failed")]
 
     deep = []
     if deep_file.exists():
-        with open(deep_file) as f:
+        with open(deep_file, encoding="utf-8") as f:
             deep = [j for j in json.load(f) if not j.get("_extraction_failed")]
 
     return normalized, deep
@@ -75,7 +75,7 @@ def load_raw_jobs(category: str) -> list:
     """Load raw jobs for tier/score metadata."""
     raw_file = EVAL_DIR / "raw" / category / "jobs_all.json"
     if raw_file.exists():
-        with open(raw_file) as f:
+        with open(raw_file, encoding="utf-8") as f:
             return json.load(f)
     return []
 
@@ -249,7 +249,7 @@ def generate_composite(category: str) -> Optional[dict]:
 
     # Hard skills
     must_haves = collect_list_field(normalized, "hard_skills_must_have")
-    nice_to_haves = collect_list_field(normalized, "hard_skills_nice_to_have")
+    collect_list_field(normalized, "hard_skills_nice_to_have")
     hard_skills_freq = count_frequency(must_haves, total)
 
     # Soft skills
@@ -483,7 +483,7 @@ def generate_summary(composites: List[dict]) -> str:
     lines = []
     lines.append("# Cross-Category Summary")
     lines.append("")
-    lines.append(f"**Analysis date:** 2026-04-14")
+    lines.append("**Analysis date:** 2026-04-14")
     lines.append(f"**Categories analyzed:** {len(composites)}")
     lines.append(f"**Total jobs:** {sum(c['total_jobs'] for c in composites)}")
     lines.append("")
@@ -573,12 +573,12 @@ def main():
             continue
 
         # Save JSON
-        with open(COMP_DIR / f"{cat}.json", "w") as f:
+        with open(COMP_DIR / f"{cat}.json", "w", encoding="utf-8") as f:
             json.dump(composite, f, indent=2, default=str)
 
         # Save markdown
         md = render_markdown(composite)
-        with open(COMP_DIR / f"{cat}.md", "w") as f:
+        with open(COMP_DIR / f"{cat}.md", "w", encoding="utf-8") as f:
             f.write(md)
 
         composites.append(composite)
@@ -587,12 +587,12 @@ def main():
     # Generate cross-category summary
     if composites:
         summary = generate_summary(composites)
-        with open(COMP_DIR / "summary.md", "w") as f:
+        with open(COMP_DIR / "summary.md", "w", encoding="utf-8") as f:
             f.write(summary)
         # Also save as JSON
-        with open(COMP_DIR / "cross_category_matrix.json", "w") as f:
+        with open(COMP_DIR / "cross_category_matrix.json", "w", encoding="utf-8") as f:
             json.dump({"categories": [c["category_id"] for c in composites], "total_jobs": sum(c["total_jobs"] for c in composites)}, f, indent=2)
-        print(f"\nSummary written to data/eval/composites/summary.md")
+        print("\nSummary written to data/eval/composites/summary.md")
 
     print(f"\nStep 4 complete: {len(composites)} composites generated")
 

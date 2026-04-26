@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2026-04-21 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 4.2.1 with Mongo-native search, scrape, selector-family execution, preenrich DAG orchestration on `level-2`, and guarded stakeholder modeling
+**Last Updated**: 2026-04-25 | **Status**: main LangGraph pipeline unchanged; scout pipeline migration now through iteration 4.2.5 with Mongo-native search, scrape, selector-family execution, preenrich DAG orchestration on `level-2`, guarded stakeholder modeling, guarded pain-point intelligence, and a guarded multi-subdocument presentation contract
 
 ---
 
@@ -260,6 +260,292 @@ Snapshot behavior:
 
 - `blueprint_assembly` mirrors only a compact `stakeholder_surface_summary`
 - full real-stakeholder identities, inferred personas, sources, evidence, and coverage diagnostics remain collection-backed
+
+### Iteration 4.2.2 Presentation-Contract First Slice
+
+Iteration 4.2.2 introduces the first guarded slice of `presentation_contract`: candidate-agnostic `document_expectations` plus `cv_shape_expectations`.
+
+- `presentation_contract` is synthesis-only over upstream artifacts.
+- It does not fetch live web data.
+- It does not generate CV prose.
+- It does not perform candidate evidence matching.
+- It is the first safe seam for later 4.2.3/4.2.4/4.2.5/4.2.6 presentation work, not the full downstream contract.
+
+Contract rules:
+
+- Candidate-agnostic only:
+  - outputs describe evaluator-conditioned document shape and emphasis
+  - outputs must not include first-person candidate claims, candidate-specific bullets, or generated CV lines
+- Truth-first validation:
+  - canonical persisted models use `extra="forbid"`
+  - richer ingress is normalized before validation
+  - unknown-but-useful fields are retained under debug retention structures
+  - rejected fields record a reason instead of being silently dropped
+- Shared canonical vocabulary:
+  - section ids, anti-pattern ids, compression rules, omission rules, and proof categories are canonical enums
+  - proof categories are shared with the future 4.2.3 proof-map slice and must not fork per stage
+- Main invariants:
+  - `header_shape.density == document_expectations.density_posture.header_density`
+  - `counts.*_min <= counts.*_max`
+  - `section_emphasis[].section_id` must remain consistent with `section_order[]`
+  - `audience_variants` keys must be a subset of `stakeholder_surface.evaluator_coverage_target`
+  - `ai_section_policy` must remain compatible with `classification.ai_taxonomy.intensity`
+- Fail-open boundary:
+  - when stakeholder or proof-map evidence is thin, the stage falls back to role-family defaults with explicit unresolved markers
+  - schema-repair fallback and deterministic defaults must remain visibly partial, not silently upgraded to clean completion
+
+Rollout rules:
+
+- `presentation_contract` is feature-flagged and off by default:
+  - `PREENRICH_PRESENTATION_CONTRACT_ENABLED=false`
+- prompt-shape subflags are also guarded:
+  - `PREENRICH_PRESENTATION_CONTRACT_DOCUMENT_EXPECTATIONS_ENABLED=false`
+  - `PREENRICH_PRESENTATION_CONTRACT_CV_SHAPE_EXPECTATIONS_ENABLED=false`
+  - `PREENRICH_PRESENTATION_CONTRACT_MERGED_PROMPT_ENABLED=false`
+  - `PREENRICH_PRESENTATION_CONTRACT_IDEAL_CANDIDATE_ENABLED=false`
+  - `PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED=false`
+- when enabled, the stage uses Codex with:
+  - `model=gpt-5.4`
+  - `transport=none`
+  - `fallback_provider=none`
+  - repo context off unless explicitly overridden
+
+Pipeline integration rules:
+
+- `presentation_contract` sits after `stakeholder_surface` when enabled.
+- it is not part of the default DAG.
+- it is not `required_for_cv_ready` in 4.2.2.
+- `blueprint_assembly` may mirror only a compact `presentation_contract` snapshot when the artifact is present.
+- full `presentation_contract` detail remains collection-backed until later slices complete the downstream consumer chain.
+
+Shipped contract boundary:
+
+- `presentation_contract` now ships:
+  - 4.2.2 `document_expectations`
+  - 4.2.2 `cv_shape_expectations`
+  - 4.2.4 `ideal_candidate_presentation_model`
+  - 4.2.5 `experience_dimension_weights`
+  - 4.2.6 `truth_constrained_emphasis_rules`
+- `ideal_candidate_presentation_model` is not a standalone stage; it is a traced subdocument synthesized inside the parent `presentation_contract` stage.
+- merged prompt mode remains narrow and safe:
+  - `document_expectations`, `cv_shape_expectations`, parse-time `experience_dimension_weights`, and parse-time `truth_constrained_emphasis_rules` may hydrate from the merged prompt
+  - `ideal_candidate_presentation_model` still runs as a separate same-run subcall
+- fail-open remains explicit:
+  - if `PREENRICH_PRESENTATION_CONTRACT_IDEAL_CANDIDATE_ENABLED=false`, the parent artifact still includes a deterministic ideal-candidate fallback with confidence capped and unresolved/default markers
+  - if `PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED=false`, the parent artifact still includes deterministic role-family dimension defaults with explicit normalization/default markers
+  - if `PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED=false`, the parent artifact still includes deterministic truth-constrained emphasis defaults with explicit defaults/conflict markers and capped confidence
+  - the parent stage must not fail terminally only because the 4.2.4 / 4.2.5 / 4.2.6 subdocuments defaulted
+- `blueprint_assembly` now mirrors the compact presentation view under `job_blueprint_snapshot.presentation_contract_compact.ideal_candidate`
+- `blueprint_assembly` also mirrors `job_blueprint_snapshot.presentation_contract_compact.dimension_weights`
+ - `blueprint_assembly` also mirrors `job_blueprint_snapshot.presentation_contract_compact.emphasis_rules`
+- the legacy `job_blueprint_snapshot.presentation_contract` compact payload is still populated for compatibility during rollout
+- 4.2.6 remains a parent-stage subdocument only; no standalone stage, queue, lease, or cache key was introduced
+
+### Iteration 4.2.3 Pain-Point Intelligence And Proof Map
+
+Iteration 4.2.3 adds the canonical `pain_point_intelligence` stage between `research_enrichment` and the guarded downstream presentation work.
+
+- `pain_point_intelligence` is the canonical owner of:
+  - role-specific pain points
+  - strategic needs
+  - risks if the role is left underfilled
+  - success metrics
+  - proof-map guidance connecting pains to preferred proof types and affected CV sections
+- The stage is synthesis-first over upstream artifacts:
+  - `jd_facts`
+  - `classification`
+  - `research_enrichment`
+  - `stakeholder_surface` opportunistically
+- Supplemental web checking is optional and separately gated. The default path does not require live web research.
+
+Contract rules:
+
+- Truth before coverage:
+  - no fabricated company events
+  - no generic filler pain points
+  - unresolved is first-class
+  - proof-map referential integrity is enforced
+- Richer-first ingress:
+  - alias-heavy or wrapped payloads are normalized before validation
+  - canonical persisted models use `extra="forbid"`
+  - unknown-but-useful fields are retained in debug context
+  - rejected fields record a rejection reason
+- Fail-open boundary:
+  - terminal LLM or repair exhaustion yields a deterministic unresolved artifact
+  - thin upstream research downgrades the stage to explicit partial / `jd_only` posture instead of hard failure
+- Compatibility boundary:
+  - root-level `pain_points`, `strategic_needs`, `risks_if_unfilled`, and `success_metrics` are only projected when `PREENRICH_PAIN_POINT_INTELLIGENCE_COMPAT_PROJECTION_ENABLED=true`
+  - `blueprint_assembly` reads `pre_enrichment.outputs.pain_point_intelligence` first and only falls back to older proxy fields when the new artifact is absent
+
+Rollout rules:
+
+- `pain_point_intelligence` is feature-flagged:
+  - `PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=false` by default
+- optional bounded supplemental web is independently gated:
+  - `PREENRICH_PAIN_POINT_SUPPLEMENTAL_WEB_ENABLED=false` by default
+- the stage uses:
+  - `provider=codex`
+  - `model=gpt-5.4`
+  - `transport=none` by default
+  - no fallback provider
+  - isolated Codex workdir by default
+
+Tracing rules:
+
+- stage span: `scout.preenrich.pain_point_intelligence`
+- stage subspans:
+  - `scout.preenrich.pain_point_intelligence.evidence_mine`
+  - `scout.preenrich.pain_point_intelligence.prompt_build`
+  - `scout.preenrich.pain_point_intelligence.llm_call.primary`
+  - `scout.preenrich.pain_point_intelligence.llm_call.fallback` when needed
+  - `scout.preenrich.pain_point_intelligence.schema_repair` when needed
+  - `scout.preenrich.pain_point_intelligence.post_pass`
+  - `scout.preenrich.pain_point_intelligence.supplemental_web` when enabled
+- stage events:
+  - `scout.preenrich.pain_point_intelligence.cache.hit`
+  - `scout.preenrich.pain_point_intelligence.cache.miss`
+  - `scout.preenrich.pain_point_intelligence.fail_open`
+
+Pipeline integration:
+
+- when enabled, `pain_point_intelligence` is part of the guarded blueprint DAG
+- `presentation_contract` now depends on it when `presentation_contract` is enabled
+- `blueprint_assembly` mirrors a compact `pain_point_intelligence_compact` snapshot projection
+- `pain_point_intelligence` is required for guarded blueprint `cv_ready` progression when the slice is enabled
+
+### Iteration 4.2.4 Ideal-Candidate Presentation Model
+
+Iteration 4.2.4 extends the guarded `presentation_contract` stage with a candidate-agnostic `ideal_candidate_presentation_model` subdocument.
+
+- Inputs:
+  - `jd_facts`
+  - `classification`
+  - `research_enrichment`
+  - `stakeholder_surface`
+  - `pain_point_intelligence`
+  - same-run 4.2.2 peer subdocuments when available
+- Outputs:
+  - `visible_identity`
+  - `acceptable_titles`
+  - `title_strategy`
+  - `must_signal` / `should_signal` / `de_emphasize`
+  - `proof_ladder`
+  - `tone_profile`
+  - `credibility_markers`
+  - `risk_flags`
+  - `audience_variants`
+  - `defaults_applied` / `unresolved_markers`
+  - bounded debug context and evidence refs
+
+Safety rules:
+
+- candidate-agnostic only
+- no first-person phrasing
+- no candidate employers, tenures, or achievements
+- no unsupported title inflation
+- `ideal_candidate_presentation_model.title_strategy` must equal `cv_shape_expectations.title_strategy`
+- `audience_variants` keys must remain a subset of `stakeholder_surface.evaluator_coverage_target`
+- proof ladder categories must remain canonical 4.2.3 proof types
+
+Tracing rules:
+
+- parent stage span remains `scout.preenrich.presentation_contract`
+- 4.2.4 substage span: `scout.preenrich.presentation_contract.ideal_candidate`
+- fail-open event: `scout.preenrich.presentation_contract.ideal_candidate.fail_open`
+
+### Iteration 4.2.5 Experience-Dimension Weights And Salience
+
+Iteration 4.2.5 extends the guarded `presentation_contract` stage with a candidate-agnostic `experience_dimension_weights` subdocument. It does not create a standalone stage or parallel control plane.
+
+- Canonical ownership:
+  - `ExperienceDimension` lives in `src/preenrich/blueprint_models.py`
+  - `DIMENSION_ENUM_VERSION` is versioned alongside the canonical enum
+- Output contract:
+  - `overall_weights`
+  - `stakeholder_variant_weights`
+  - `minimum_visible_dimensions`
+  - `overuse_risks`
+  - `normalization_events`
+  - `defaults_applied`
+  - bounded debug context and evidence refs
+- Deterministic invariants:
+  - every emitted weight surface uses canonical dimension keys only
+  - every emitted weight surface uses non-negative integers only
+  - `overall_weights` sums to exactly `100`
+  - each non-null stakeholder variant sums to exactly `100`
+  - stakeholder variants are limited to `stakeholder_surface.evaluator_coverage_target`
+  - AI, architecture, and leadership caps are applied deterministically from upstream intensity/evidence bands
+- Fail-open boundary:
+  - thin or conflicting inputs degrade to role-family defaults with explicit `defaults_applied`, `normalization_events`, `unresolved_markers`, and confidence caps
+  - the parent `presentation_contract` stage must not fail terminally only because 4.2.5 required deterministic fallback
+- Merged/split behavior:
+  - split mode runs `P-experience-dimension-weights@v1`
+  - merged mode may parse a distinct `experience_dimension_weights` subdocument from the merged response, but it still validates and traces through the same 4.2.5 contract
+- Snapshot behavior:
+  - `blueprint_assembly` mirrors a compact projection under `job_blueprint_snapshot.presentation_contract_compact.dimension_weights`
+  - the compatibility mirror under `job_blueprint_snapshot.presentation_contract.dimension_weights` remains populated during rollout
+
+Tracing rules:
+
+- parent stage span remains `scout.preenrich.presentation_contract`
+- 4.2.5 substage span: `scout.preenrich.presentation_contract.dimension_weights`
+- fail-open event: `scout.preenrich.presentation_contract.dimension_weights.fail_open`
+
+Operational posture:
+
+- the subdocument remains feature-flagged:
+  - `PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED=false`
+- the deterministic default table exists even when the flag is off so the parent artifact shape remains stable and auditable
+
+### Iteration 4.2.6 Truth-Constrained Emphasis Rules
+
+Iteration 4.2.6 extends the guarded `presentation_contract` stage with a candidate-agnostic `truth_constrained_emphasis_rules` subdocument. It consumes the canonical 4.2.5 `ExperienceDimension` contract and does not create a standalone stage or parallel control plane.
+
+- Canonical ownership:
+  - `RuleTypeEnum`, `RuleTopicFamily`, and `AppliesToKindEnum` live in `src/preenrich/blueprint_models.py`
+  - `RULE_TYPE_ENUM_VERSION` and `APPLIES_TO_ENUM_VERSION` are versioned alongside the canonical enum surfaces
+- Output contract:
+  - `global_rules`
+  - `section_rules`
+  - `allowed_if_evidenced`
+  - `downgrade_rules`
+  - `omit_rules`
+  - `forbidden_claim_patterns`
+  - `credibility_ladder_rules`
+  - `topic_coverage`
+  - `defaults_applied`, `normalization_events`, `fail_open_reason`, and bounded debug context
+- Deterministic invariants:
+  - every emitted rule uses canonical enum surfaces and a stable `rule_id`
+  - mandatory `RuleTopicFamily` coverage is enforced
+  - title, AI, leadership, proof-order, must-signal, should-signal, and de-emphasize invariants are enforced at the parent `presentation_contract` cross-validator
+  - `cap_dimension_weight` rules may only clamp below 4.2.5 weights when 4.2.5 also flagged overuse risk
+  - `regex_safe` forbidden patterns must pass the bounded-regex whitelist
+- Fail-open boundary:
+  - thin or conflicting inputs degrade to deterministic role-family rule defaults with explicit `defaults_applied`, `unresolved_markers`, conflict logs, and confidence caps
+  - the parent `presentation_contract` stage must not fail terminally only because 4.2.6 required deterministic fallback
+- Merged/split behavior:
+  - split mode runs `P-emphasis-rules@v1`
+  - merged mode may parse a distinct `truth_constrained_emphasis_rules` subdocument from the merged response, but it still validates and traces through the same 4.2.6 contract
+- Snapshot behavior:
+  - `blueprint_assembly` mirrors a compact projection under `job_blueprint_snapshot.presentation_contract_compact.emphasis_rules`
+  - the compatibility mirror under `job_blueprint_snapshot.presentation_contract.emphasis_rules` remains populated during rollout
+
+Tracing rules:
+
+- parent stage span remains `scout.preenrich.presentation_contract`
+- 4.2.6 substage span: `scout.preenrich.presentation_contract.emphasis_rules`
+- optional child spans:
+  - `scout.preenrich.presentation_contract.emphasis_rules.schema_repair`
+  - `scout.preenrich.presentation_contract.emphasis_rules.rule_conflict_resolution`
+  - `scout.preenrich.presentation_contract.emphasis_rules.cross_validate`
+- fail-open event: `scout.preenrich.presentation_contract.emphasis_rules.fail_open`
+- consistency event: `scout.preenrich.presentation_contract.consistency.emphasis_rules`
+
+Operational posture:
+
+- the subdocument remains feature-flagged:
+  - `PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED=false`
+- the deterministic default table exists even when the flag is off so the parent artifact shape remains stable and auditable
 
 ### Compatibility Boundary
 

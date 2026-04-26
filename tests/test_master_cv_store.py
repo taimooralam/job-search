@@ -12,7 +12,6 @@ Integration tests would require a test database.
 """
 
 import json
-import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -26,10 +25,7 @@ from src.common.master_cv_store import (
     ROLES_DIR,
     TAXONOMY_FILE,
     MasterCVStore,
-    get_metadata,
-    get_role,
     get_store,
-    get_taxonomy,
 )
 
 
@@ -57,7 +53,7 @@ class TestMasterCVStoreFileFallback:
                     }
                 ]
             }
-            with open(data_dir / METADATA_FILE, "w") as f:
+            with open(data_dir / METADATA_FILE, "w", encoding="utf-8") as f:
                 json.dump(metadata, f)
 
             # Create taxonomy file
@@ -80,13 +76,13 @@ class TestMasterCVStoreFileFallback:
                 },
                 "default_fallback_role": "engineering_manager"
             }
-            with open(data_dir / TAXONOMY_FILE, "w") as f:
+            with open(data_dir / TAXONOMY_FILE, "w", encoding="utf-8") as f:
                 json.dump(taxonomy, f)
 
             # Create roles directory with test role
             roles_dir = data_dir / ROLES_DIR
             roles_dir.mkdir()
-            with open(roles_dir / "01_test_company.md", "w") as f:
+            with open(roles_dir / "01_test_company.md", "w", encoding="utf-8") as f:
                 f.write("# Test Company\n\n## Achievements\n\n### Achievement 1\nTest achievement.")
 
             yield data_dir

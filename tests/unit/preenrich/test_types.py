@@ -7,16 +7,14 @@ Validates:
 - attempt_token changes with different attempt_number
 """
 
-import pytest
 
 from src.preenrich.types import (
-    StageResult,
     StageContext,
+    StageResult,
     StageStatus,
     StepConfig,
     attempt_token,
 )
-
 
 # ---------------------------------------------------------------------------
 # StageResult contract

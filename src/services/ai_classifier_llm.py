@@ -10,10 +10,10 @@ Called at extraction time (per-job), NOT at ingest time (regex is kept for bulk)
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from src.common.ai_classifier import AIClassification
 from src.common.unified_llm import invoke_unified_sync

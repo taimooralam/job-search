@@ -44,6 +44,7 @@ def persist_run_to_mongo(
     """
     try:
         from bson import ObjectId
+
         from src.common.repositories import get_job_repository
 
         repo = get_job_repository()
@@ -274,6 +275,7 @@ def update_job_pipeline_failed(job_id: str, error: str) -> None:
     """
     try:
         from bson import ObjectId
+
         from src.common.repositories import get_job_repository
 
         repo = get_job_repository()

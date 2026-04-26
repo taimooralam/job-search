@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 
-from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled, stakeholder_surface_enabled
+from src.preenrich.blueprint_config import (
+    blueprint_enabled,
+    pain_point_intelligence_enabled,
+    persona_compat_enabled,
+    presentation_contract_enabled,
+    stakeholder_surface_enabled,
+)
 
 
 @dataclass(frozen=True)
@@ -167,13 +173,15 @@ LEGACY_STAGE_REGISTRY: dict[str, StageDefinition] = {
 def _blueprint_registry() -> dict[str, StageDefinition]:
     persona_required = persona_compat_enabled()
     stakeholder_required = stakeholder_surface_enabled()
+    pain_required = pain_point_intelligence_enabled()
+    presentation_required = presentation_contract_enabled()
     blueprint_assembly_prereqs = (
         "jd_facts",
         "job_inference",
         "cv_guidelines",
         "application_surface",
         "annotations",
-    ) + (("persona_compat",) if persona_required else ()) + (("stakeholder_surface",) if stakeholder_required else ())
+    ) + (("persona_compat",) if persona_required else ()) + (("stakeholder_surface",) if stakeholder_required else ()) + (("pain_point_intelligence",) if pain_required else ())
 
     registry = {
         "jd_structure": StageDefinition(
@@ -246,6 +254,30 @@ def _blueprint_registry() -> dict[str, StageDefinition]:
             default_priority=DEFAULT_PRIORITY,
             retryable_error_tags=RETRYABLE_RESEARCH_ERRORS,
             terminal_error_tags=TERMINAL_RESEARCH_ERRORS,
+            job_fail_policy="fail",
+        ),
+        "pain_point_intelligence": StageDefinition(
+            name="pain_point_intelligence",
+            task_type="preenrich.pain_point_intelligence",
+            prerequisites=("jd_facts", "classification", "research_enrichment"),
+            produces_fields=("pain_point_intelligence",),
+            required_for_cv_ready=True,
+            max_attempts=3,
+            default_priority=50,
+            retryable_error_tags=(*RETRYABLE_LLM_ERRORS, *RETRYABLE_RESEARCH_ERRORS, *RETRYABLE_LOCAL_ERRORS),
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
+            job_fail_policy="fail_open",
+        ),
+        "presentation_contract": StageDefinition(
+            name="presentation_contract",
+            task_type="preenrich.presentation_contract",
+            prerequisites=("jd_facts", "classification", "research_enrichment", "stakeholder_surface", "pain_point_intelligence"),
+            produces_fields=("presentation_contract",),
+            required_for_cv_ready=False,
+            max_attempts=3,
+            default_priority=DEFAULT_PRIORITY,
+            retryable_error_tags=RETRYABLE_LLM_ERRORS,
+            terminal_error_tags=TERMINAL_LLM_ERRORS,
             job_fail_policy="fail",
         ),
         "job_inference": StageDefinition(
@@ -323,6 +355,10 @@ def _blueprint_registry() -> dict[str, StageDefinition]:
     }
     if not stakeholder_required:
         registry.pop("stakeholder_surface", None)
+    if not pain_required:
+        registry.pop("pain_point_intelligence", None)
+    if not presentation_required:
+        registry.pop("presentation_contract", None)
     return registry
 
 

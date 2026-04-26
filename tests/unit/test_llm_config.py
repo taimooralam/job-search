@@ -8,10 +8,9 @@ Tests the per-step LLM configuration system including:
 - Tier mappings
 """
 
-import pytest
 import os
-from unittest.mock import patch
 from dataclasses import asdict
+from unittest.mock import patch
 
 
 class TestStepConfigDataclass:
@@ -133,7 +132,7 @@ class TestGetStepConfig:
 
     def test_returns_config_for_known_step(self):
         """Should return StepConfig for known steps."""
-        from src.common.llm_config import get_step_config, StepConfig
+        from src.common.llm_config import StepConfig, get_step_config
 
         config = get_step_config("grader")
 
@@ -142,7 +141,7 @@ class TestGetStepConfig:
 
     def test_returns_default_for_unknown_step(self):
         """Should return default config for unknown steps."""
-        from src.common.llm_config import get_step_config, StepConfig
+        from src.common.llm_config import StepConfig, get_step_config
 
         config = get_step_config("nonexistent_step_xyz")
 
@@ -246,7 +245,7 @@ class TestGetAllStepConfigs:
 
     def test_returns_all_configs(self):
         """get_all_step_configs should return all step configs."""
-        from src.common.llm_config import get_all_step_configs, STEP_CONFIGS
+        from src.common.llm_config import STEP_CONFIGS, get_all_step_configs
 
         all_configs = get_all_step_configs()
 
@@ -254,7 +253,7 @@ class TestGetAllStepConfigs:
 
     def test_returns_resolved_configs(self):
         """get_all_step_configs should return resolved StepConfig instances."""
-        from src.common.llm_config import get_all_step_configs, StepConfig
+        from src.common.llm_config import StepConfig, get_all_step_configs
 
         all_configs = get_all_step_configs()
 

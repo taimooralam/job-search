@@ -5,8 +5,9 @@ Tests the variant selection algorithm that chooses optimal achievement
 variants based on JD requirements.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from src.layer6_v2.variant_parser import (
     Achievement,
@@ -17,18 +18,14 @@ from src.layer6_v2.variant_parser import (
     parse_role_file,
 )
 from src.layer6_v2.variant_selector import (
-    VariantSelector,
-    VariantScore,
+    VARIANT_PREFERENCES,
     SelectedVariant,
     SelectionResult,
-    select_variants_for_role,
+    VariantScore,
+    VariantSelector,
     select_variants_for_all_roles,
-    VARIANT_PREFERENCES,
-    REBALANCE_MIN_COVERAGE,
-    REBALANCE_MAX_SCORE_DROP,
-    _FORCED_AI_ACHIEVEMENT_IDS,
+    select_variants_for_role,
 )
-
 
 # ============================================================================
 # FIXTURES

@@ -1,0 +1,75 @@
+verified_skills:
+- FastAPI
+- Pydantic V2
+- LiteLLM
+- Redis
+- Qdrant
+- Docker Compose
+- Prometheus
+- Grafana
+- GitHub Actions
+- pytest
+- ruff
+- mypy
+- pre-commit
+- httpx
+- Traefik
+- Langfuse
+verified_patterns:
+- LLM gateway
+- multi-provider routing
+- provider fallback chain
+- chat completions endpoint
+- request validation
+- error handling middleware
+- request ID propagation
+- provider config schema
+- model-to-provider mapping
+- circuit breaker
+- retry with backoff
+- unit tests
+- integration tests
+- mock providers
+- Docker multi-stage build
+- CI/CD pipeline
+- VPS deployment
+- Prometheus metrics
+- Grafana dashboards
+- observability stack
+verified_competencies:
+- LLM Gateway Design
+- Provider Fallback Chain
+- Circuit Breaker Pattern
+- Multi-Provider Routing
+- LLM-as-Judge Evaluation
+- Golden-Set Testing
+- Eval Harness Design
+- Cost Optimization
+- Langfuse Tracing
+- RAG Pipeline
+- Vector Search
+- Semantic Caching
+- Model Routing
+- LangGraph
+- LangChain
+- Agent Frameworks
+- API Gateway Design
+post_checklist_skills:
+- React
+- Vite
+- Tailwind CSS
+- Vercel
+post_checklist_competencies:
+- Faithfulness Evaluation
+- Regression Detection
+- Streaming SSE
+- Rate Limiting
+- SLO/SLI Design
+- Incident Runbooks
+- Prompt Engineering
+- Document Ingestion Pipeline
+- Hybrid Search
+not_yet_built:
+- fine-tuning pipeline
+- load balancing
+- admin dashboard

@@ -16,16 +16,15 @@ Usage:
 """
 
 import re
-from typing import List, Set, Tuple, Optional
 from difflib import SequenceMatcher
+from typing import List, Optional, Set, Tuple
 
 from src.common.logger import get_logger
 from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.types import (
-    GeneratedBullet,
-    RoleBullets,
-    QAResult,
     ATSResult,
+    QAResult,
+    RoleBullets,
     STARResult,
 )
 

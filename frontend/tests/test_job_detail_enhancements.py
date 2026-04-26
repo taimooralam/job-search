@@ -13,15 +13,14 @@ JavaScript functionality is validated through DOM structure and attributes.
 Note: client and mock_db fixtures are provided by conftest.py
 """
 
-import pytest
-from bson import ObjectId
-from unittest.mock import MagicMock, patch
 import sys
 from pathlib import Path
 
+import pytest
+from bson import ObjectId
+
 # Import the Flask app
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from frontend.app import app
 
 
 # client and mock_db fixtures are provided by conftest.py
@@ -485,7 +484,7 @@ class TestIframeViewer:
 
         assert response.status_code == 200
         # Should not have iframe viewer section
-        data = response.data.decode('utf-8')
+        response.data.decode('utf-8')
         # May not have iframe at all, or it should be conditionally hidden
         # Just verify the page renders without error
 

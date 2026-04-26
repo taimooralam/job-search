@@ -248,6 +248,111 @@ All 4.2 prompts must enforce:
   decisions (section order, title strategy, AI section policy, dimension weights,
   emphasis rules).
 
+### 8.8 Langfuse tracing principles (inherited from iteration 4)
+
+Every 4.2 stage and prompt boundary must be observable through the shared
+preenrich tracing seam. This section is the contract; it is not optional and
+sub-plans 4.2.1–4.2.6 inherit it verbatim.
+
+**Sink vs orchestration.** Langfuse is the observability sink, never the
+orchestration plane. Run-level traces and job-level correlation stay separate;
+do not collapse the pipeline into one giant session-only trace. Orchestration
+lives in Mongo (`work_items`, `preenrich_stage_runs`, `preenrich_job_runs`,
+`pre_enrichment.stage_states`). Langfuse mirrors what happened.
+
+**Session pinning.** `langfuse_session_id` is pinned to `job:<level2_object_id>`
+for every trace, span, and event emitted by any 4.2 stage or its sweeper path.
+
+**Canonical naming.** Reuse the iteration-4 scheme. Every 4.2 stage is addressed
+as `scout.preenrich.<stage_name>` for the stage span; stage-internal substeps
+use `scout.preenrich.<stage_name>.<substep>`. No new top-level namespaces.
+The canonical events that must be reachable for 4.2 jobs are:
+
+- `scout.preenrich.run` (trace)
+- `scout.preenrich.enqueue_root`
+- `scout.preenrich.claim`
+- `scout.preenrich.<stage_name>` (one per 4.2 stage: `stakeholder_surface`,
+  `pain_point_intelligence`, `presentation_contract`, etc.)
+- `scout.preenrich.enqueue_next`
+- `scout.preenrich.finalize_cv_ready`
+- `scout.preenrich.retry`
+- `scout.preenrich.deadletter`
+- `scout.preenrich.release_lease` (sweeper-driven)
+- `scout.preenrich.snapshot_invalidation` (sweeper-driven)
+
+**Required correlation metadata.** Every span and event must carry: `job_id`,
+`level2_job_id`, `correlation_id`, `langfuse_session_id`, `run_id`,
+`worker_id`, `task_type`, `stage_name`, `attempt_count`, `attempt_token`,
+`input_snapshot_id`, `jd_checksum`, `lifecycle_before`, `lifecycle_after`,
+`work_item_id`. 4.2 stages do not invent new required fields; they use the
+canonical payload builder in `PreenrichTracingSession`.
+
+**Metadata-first payloads.** Prefer counts, booleans, previews, checksums, ids,
+prompt version, provider/model, transport, cache refs, retry reason, output
+validity, and confidence band over full payload dumps. Do not attach full raw
+JD, full stakeholder profiles, full proof-map bodies, or full
+`presentation_contract` subdocuments to every span. Debug snapshots live in
+Mongo under `debug_context`, not in Langfuse.
+
+**Prompt policy.** If prompt capture is useful, it must flow through
+`_sanitize_langfuse_payload(...)` in `src/pipeline/tracing.py` and respect
+`LANGFUSE_CAPTURE_FULL_PROMPTS`. No stage may bypass the sanitizer with
+ad-hoc string truncation or direct client calls.
+
+**Span vs event discipline.**
+
+- Spans for meaningful timed work: the stage body, each live Codex research
+  call, each LLM primary/fallback attempt inside `_call_llm_with_fallback`,
+  blueprint assembly where time is non-trivial, and artifact persistence
+  when collection-backed writes happen.
+- Events for point-in-time lifecycle transitions: claim, enqueue_next,
+  finalize_cv_ready, retry, deadletter, release_lease, snapshot_invalidation.
+- Do **not** create spans for pure local helpers, tiny formatters, or
+  normalization passes that do not meaningfully affect latency. Do **not**
+  create per-bullet or per-rule spans inside prompt synthesis — metadata
+  counts are sufficient.
+
+**External boundaries are non-negotiable.** Every external boundary a 4.2
+stage reaches must be traceable: the Codex research transport
+(`CodexResearchTransport.invoke_json`), LLM calls through
+`_call_llm_with_fallback`, Mongo artifact upserts performed by the worker,
+retry/deadletter transitions, snapshot invalidation, and cv-ready
+finalization. Transport spans must expose `provider`, `model`, `transport`,
+`duration_ms`, `success`, outcome classification
+(`unsupported_transport`, `error_missing_binary`, `error_timeout`,
+`error_subprocess`, `error_no_json`, `error_schema`, `error_exception`,
+`success`), and `schema_valid`.
+
+**Shared seam.** 4.2 stages must reuse `PreenrichTracingSession` via the
+`ctx.tracer` handle threaded through `StageContext`. New helpers live in
+`src/pipeline/tracing.py` or a closely related shared module. Do not scatter
+direct `langfuse.Langfuse(...)` construction across stage files. Sweeper-side
+emissions use `emit_preenrich_sweeper_event(...)` with canonical
+`langfuse_session_id=job:<level2_id>`.
+
+**Cardinality.** Stage-internal span names must be bounded. Per-candidate
+iteration (e.g. stakeholder rank N, proof-map item N, dimension N) is
+expressed through metadata fields, **not** by baking the index into the span
+name. Unbounded candidate ranks in span names are a review blocker.
+
+**Concurrency.** Stages that parallelize sub-calls (e.g. `stakeholder_surface`
+discovery fan-out, pain extraction fan-out) must treat the shared tracer as
+thread-safe at the coarse level and must not end the parent span before all
+child spans have ended.
+
+**Trace refs on Mongo state.** When a 4.2 stage run produces a Langfuse
+trace, its `trace_id` and `trace_url` must flow into the preenrich run
+records (`preenrich_stage_runs`, `preenrich_job_runs`) and become reachable
+from the level-2 UI fields, matching the iteration-4 contract. This is what
+lets an operator open a single job in the UI and jump directly into
+Langfuse for its timing, retries, and boundary failures.
+
+**Operator goal.** A human must be able to debug one 4.2 preenrich job from
+Mongo state into Langfuse and understand where time went, which retries
+happened, which model and transport boundaries failed, and which stage
+fell back versus succeeded. Tracing exists for this goal; any instrumentation
+that does not advance it is noise.
+
 ## 9. Primary Source Surfaces for 4.2
 
 Current implementation surfaces 4.2 must build on:

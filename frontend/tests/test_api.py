@@ -7,19 +7,18 @@ Uses mocked MongoDB to avoid requiring a real database connection.
 Note: client and mock_db fixtures are provided by conftest.py
 """
 
-import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch
-from bson import ObjectId
-
 # Import the Flask app
 import sys
+from datetime import datetime
 from pathlib import Path
+from unittest.mock import MagicMock
+
+from bson import ObjectId
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from frontend.app import app, JOB_STATUSES, serialize_job
+from frontend.app import JOB_STATUSES, serialize_job
 from src.common.repositories.base import WriteResult
-
 
 # client and mock_db fixtures are provided by conftest.py
 

@@ -18,10 +18,9 @@ Usage:
 import logging
 from typing import Any, Dict, List, Optional
 
-from src.common.config import Config
-from src.common.unified_llm import invoke_unified_sync
 from src.common.database import db as database_client
 from src.common.types import FormField
+from src.common.unified_llm import invoke_unified_sync
 
 logger = logging.getLogger(__name__)
 
@@ -297,12 +296,12 @@ Return ONLY the exact text of the best option, nothing else."""
 
         if pain_points:
             context_parts.append(
-                f"\nKey Business Pain Points:\n- " + "\n- ".join(pain_points[:5])
+                "\nKey Business Pain Points:\n- " + "\n- ".join(pain_points[:5])
             )
 
         if strategic_needs:
             context_parts.append(
-                f"\nStrategic Needs:\n- " + "\n- ".join(strategic_needs[:3])
+                "\nStrategic Needs:\n- " + "\n- ".join(strategic_needs[:3])
             )
 
         if extracted_jd:
@@ -335,7 +334,7 @@ Return ONLY the exact text of the best option, nothing else."""
                 )
                 stars_text.append(star_summary)
             if stars_text:
-                context_parts.append(f"\nRelevant Achievements:\n" + "\n".join(stars_text))
+                context_parts.append("\nRelevant Achievements:\n" + "\n".join(stars_text))
 
         context = "\n".join(context_parts)
 

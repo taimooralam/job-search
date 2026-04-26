@@ -6,19 +6,17 @@ Covers three-tier model support, JSON parsing, error handling, and batch operati
 """
 
 import json
-import pytest
 import subprocess
-from unittest.mock import Mock, MagicMock, patch
-from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.common.claude_cli import (
+    CLAUDE_MODEL_TIERS,
     ClaudeCLI,
     CLIResult,
     invoke_claude,
-    CLAUDE_MODEL_TIERS,
-    TierType,
 )
-
 
 # ===== FIXTURES =====
 

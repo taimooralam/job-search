@@ -8,29 +8,27 @@ Tests the V2 header generation components with anti-hallucination guarantees:
 4. src/layer6_v2/header_generator.py - V2 integration
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
-from typing import Dict, List
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.layer6_v2.types import (
-    AchievementSource,
-    SkillsProvenance,
-    CoreCompetencySection,
-    SelectionResult,
-    ScoringWeights,
-    ProfileOutput,
-)
-from src.layer6_v2.skills_taxonomy import (
-    SkillsTaxonomy,
-    CoreCompetencyGeneratorV2,
-)
+import pytest
+
 from src.layer6_v2.prompts.header_generation import (
     VALUE_PROPOSITION_TEMPLATES,
-    build_value_proposition_prompt_v2,
     build_key_achievement_bullets_prompt_v2,
+    build_value_proposition_prompt_v2,
 )
-
+from src.layer6_v2.skills_taxonomy import (
+    CoreCompetencyGeneratorV2,
+    SkillsTaxonomy,
+)
+from src.layer6_v2.types import (
+    AchievementSource,
+    CoreCompetencySection,
+    ProfileOutput,
+    ScoringWeights,
+    SelectionResult,
+    SkillsProvenance,
+)
 
 # ============================================================================
 # TEST FIXTURES
@@ -789,8 +787,8 @@ class TestHeaderGeneratorV2Integration:
         sample_skill_whitelist
     ):
         """Should generate V2 profile with all components."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         # Mock LLM responses
         async def mock_invoke(prompt, system, validate_json=False):
@@ -867,8 +865,8 @@ class TestHeaderGeneratorV2Integration:
         sample_taxonomy_data
     ):
         """Should generate core competencies algorithmically."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         # Mock LLM responses (only for value prop and bullets, not competencies)
         async def mock_invoke(prompt, system, validate_json=False):
@@ -1007,8 +1005,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should handle rejected_jd_skills as a proper list without modification."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1068,8 +1066,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should split comma-separated string into list."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1128,8 +1126,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should convert empty string to empty list."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1188,8 +1186,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should default to empty list when field is missing."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1248,8 +1246,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should convert dict to empty list."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1308,8 +1306,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should convert integer to empty list."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1368,8 +1366,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should handle selected_bullets as non-list gracefully."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():
@@ -1423,8 +1421,8 @@ class TestLLMResponseTypeCoercion:
         sample_skill_whitelist
     ):
         """Should handle string with extra whitespace and filter empty items."""
-        from src.layer6_v2.header_generator import HeaderGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6_v2.header_generator import HeaderGenerator
 
         async def mock_invoke(prompt, system, validate_json=False):
             if "achievement bullets" in system.lower():

@@ -12,18 +12,16 @@ Tests UnifiedLLM-based job description extraction with fallback support:
 """
 
 import json
-import asyncio
-import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
-from datetime import datetime
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from src.common.unified_llm import LLMResult
 from src.layer1_4.claude_jd_extractor import (
     ClaudeJDExtractor,
     ExtractionResult,
     extract_jd_with_claude,
 )
-from src.common.unified_llm import LLMResult
-
 
 # ===== FIXTURES =====
 

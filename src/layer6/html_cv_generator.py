@@ -11,9 +11,9 @@ semantic HTML with embedded CSS for styling.
 """
 
 import logging
-from typing import List, Dict, Tuple
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 from src.common.state import JobState
 from src.layer6.cv_generator import CVGenerator

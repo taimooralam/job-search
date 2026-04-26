@@ -6,7 +6,7 @@ Handles all 20+ fields including pain points, outcome types, and embeddings.
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from src.common.types import STARRecord
 

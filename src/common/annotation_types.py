@@ -9,8 +9,7 @@ The annotation system improves CV, cover letter, and outreach personalization
 with a feedback loop to master-cv data via MongoDB.
 """
 
-from typing import TypedDict, List, Optional, Dict, Literal
-
+from typing import Dict, List, Literal, Optional, TypedDict
 
 # =============================================================================
 # ENUMS / LITERAL TYPES

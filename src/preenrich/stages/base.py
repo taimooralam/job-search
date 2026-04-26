@@ -18,9 +18,138 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 from pydantic import BaseModel, ValidationError
 
 from src.common.codex_cli import CodexCLI
-from src.preenrich.types import StageContext, StageResult
+from src.preenrich.types import PreenrichTracerHandle, StageContext, StageResult
 
 logger = logging.getLogger(__name__)
+
+
+def _start_llm_span(
+    *,
+    tracer: Optional[PreenrichTracerHandle],
+    stage_name: str | None,
+    substage: str,
+    provider: str,
+    model: str,
+    prompt: str,
+    job_id: str,
+    reasoning_effort: str | None = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Any:
+    if tracer is None or not stage_name:
+        return None
+    metadata = {
+        "provider": provider,
+        "model": model,
+        "transport": "codex_cli" if provider == "codex" else provider,
+        "prompt": prompt,
+        "prompt_length": len(prompt or ""),
+        "job_id": job_id,
+        "reasoning_effort": reasoning_effort,
+        "stage_name": stage_name,
+        "substage": substage,
+    }
+    if extra:
+        metadata.update(extra)
+    return tracer.start_substage_span(stage_name, substage, metadata)
+
+
+def _finish_llm_span(
+    *,
+    tracer: Optional[PreenrichTracerHandle],
+    span: Any,
+    provider: str,
+    model: str,
+    outcome: str,
+    success: bool,
+    duration_ms: int,
+    error: str | None,
+    schema_valid: bool | None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+) -> None:
+    if tracer is None or span is None:
+        return
+    tracer.end_span(
+        span,
+        output={
+            "provider": provider,
+            "model": model,
+            "transport": "codex_cli" if provider == "codex" else provider,
+            "outcome": outcome,
+            "success": success,
+            "duration_ms": duration_ms,
+            "error_class": outcome if not success else None,
+            "error_message_preview": (error or "")[:240] if error else None,
+            "schema_valid": schema_valid,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+        },
+    )
+
+
+def _invoke_codex_json_traced(
+    *,
+    prompt: str,
+    model: str,
+    job_id: str,
+    tracer: Optional[PreenrichTracerHandle] = None,
+    stage_name: str | None = None,
+    substage: str = "llm.primary",
+    codex_cwd: str | None = None,
+    reasoning_effort: str | None = None,
+) -> Tuple[Dict[str, Any] | None, Dict[str, Any]]:
+    span = _start_llm_span(
+        tracer=tracer,
+        stage_name=stage_name,
+        substage=substage,
+        provider="codex",
+        model=model,
+        prompt=prompt,
+        job_id=job_id,
+        reasoning_effort=reasoning_effort,
+    )
+    t0 = time.monotonic()
+    try:
+        cli = CodexCLI(model=model, cwd=codex_cwd, reasoning_effort=reasoning_effort)
+        result = cli.invoke(prompt, job_id=job_id, validate_json=True)
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        attempt = {
+            "provider": "codex",
+            "model": model,
+            "outcome": "success" if result.success else "error_subprocess",
+            "error": result.error,
+            "duration_ms": duration_ms,
+            "input_tokens": result.input_tokens,
+            "output_tokens": result.output_tokens,
+        }
+        _finish_llm_span(
+            tracer=tracer,
+            span=span,
+            provider="codex",
+            model=model,
+            outcome=attempt["outcome"],
+            success=bool(result.success),
+            duration_ms=duration_ms,
+            error=result.error,
+            schema_valid=None,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+        )
+        return (result.result or None), attempt
+    except Exception as exc:
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        _finish_llm_span(
+            tracer=tracer,
+            span=span,
+            provider="codex",
+            model=model,
+            outcome="error_exception",
+            success=False,
+            duration_ms=duration_ms,
+            error=str(exc),
+            schema_valid=None,
+        )
+        raise
 
 
 def _call_llm_with_fallback(
@@ -35,6 +164,8 @@ def _call_llm_with_fallback(
     claude_invoker: Callable[..., Any],
     codex_cwd: str | None = None,
     reasoning_effort: str | None = None,
+    tracer: Optional[PreenrichTracerHandle] = None,
+    stage_name: str | None = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     """
     Invoke the primary provider (Codex) and optionally fall back on failure.
@@ -86,6 +217,17 @@ def _call_llm_with_fallback(
     codex_result_dict: Optional[Dict[str, Any]] = None
 
     t0 = time.monotonic()
+    primary_span = _start_llm_span(
+        tracer=tracer,
+        stage_name=stage_name,
+        substage="llm.primary",
+        provider=primary_provider,
+        model=primary_model,
+        prompt=prompt,
+        job_id=job_id,
+        reasoning_effort=reasoning_effort,
+    )
+    codex_result = None
     try:
         cli = CodexCLI(model=primary_model, cwd=codex_cwd, reasoning_effort=reasoning_effort)
         codex_result = cli.invoke(prompt, job_id=job_id, validate_json=True)
@@ -116,6 +258,19 @@ def _call_llm_with_fallback(
                 codex_result_dict = raw
                 codex_outcome = "success"
 
+        _finish_llm_span(
+            tracer=tracer,
+            span=primary_span,
+            provider=primary_provider,
+            model=primary_model,
+            outcome=codex_outcome or "error_subprocess",
+            success=codex_outcome == "success",
+            duration_ms=primary_duration_ms,
+            error=codex_error,
+            schema_valid=None if schema is None else codex_outcome == "success",
+            input_tokens=codex_result.input_tokens,
+            output_tokens=codex_result.output_tokens,
+        )
         attempts.append({
             "provider": primary_provider,
             "model": primary_model,
@@ -133,6 +288,17 @@ def _call_llm_with_fallback(
         logger.warning(
             "_call_llm_with_fallback: Codex exception for job %s: %s",
             job_id, codex_error,
+        )
+        _finish_llm_span(
+            tracer=tracer,
+            span=primary_span,
+            provider=primary_provider,
+            model=primary_model,
+            outcome="error_exception",
+            success=False,
+            duration_ms=primary_duration_ms,
+            error=codex_error,
+            schema_valid=None,
         )
         attempts.append({
             "provider": primary_provider,
@@ -159,6 +325,15 @@ def _call_llm_with_fallback(
         fallback_provider, fallback_model, job_id, codex_outcome,
     )
     t1 = time.monotonic()
+    fallback_span = _start_llm_span(
+        tracer=tracer,
+        stage_name=stage_name,
+        substage="llm.fallback",
+        provider=fallback_provider,
+        model=fallback_model,
+        prompt=prompt,
+        job_id=job_id,
+    )
     try:
         fallback_output = claude_invoker(
             prompt=prompt,
@@ -171,6 +346,17 @@ def _call_llm_with_fallback(
             validated = schema.model_validate(fallback_output)
             fallback_output = validated.model_dump()
 
+        _finish_llm_span(
+            tracer=tracer,
+            span=fallback_span,
+            provider=fallback_provider,
+            model=fallback_model,
+            outcome="success",
+            success=True,
+            duration_ms=fallback_duration_ms,
+            error=None,
+            schema_valid=None if schema is None else True,
+        )
         attempts.append({
             "provider": fallback_provider,
             "model": fallback_model,
@@ -184,6 +370,17 @@ def _call_llm_with_fallback(
 
     except Exception as fb_exc:
         fallback_duration_ms = int((time.monotonic() - t1) * 1000)
+        _finish_llm_span(
+            tracer=tracer,
+            span=fallback_span,
+            provider=fallback_provider,
+            model=fallback_model,
+            outcome="error_exception",
+            success=False,
+            duration_ms=fallback_duration_ms,
+            error=str(fb_exc),
+            schema_valid=False if schema is not None else None,
+        )
         attempts.append({
             "provider": fallback_provider,
             "model": fallback_model,

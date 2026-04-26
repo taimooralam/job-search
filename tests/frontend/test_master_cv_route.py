@@ -4,7 +4,6 @@ Unit tests for Master CV Editor Flask route.
 Tests the /master-cv route that renders the Master CV editor page.
 """
 
-import pytest
 
 
 class TestMasterCVRoute:

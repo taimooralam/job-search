@@ -7,19 +7,18 @@ Tests the rule-based verification system that ensures:
 - Leadership claims are grounded in source material
 """
 
-import pytest
-from typing import List
 
+import pytest
+
+from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
 from src.layer6_v2.types import (
-    GeneratedBullet,
-    RoleBullets,
-    QAResult,
     ATSResult,
+    GeneratedBullet,
+    QAResult,
+    RoleBullets,
     STARResult,
 )
-from src.layer6_v2.cv_loader import RoleData
-
 
 # ===== FIXTURES =====
 

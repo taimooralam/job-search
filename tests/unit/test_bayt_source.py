@@ -4,9 +4,8 @@ Unit tests for BaytSource job source.
 Tests the Bayt.com integration via JobSpy for Gulf region job searching.
 """
 
-import pytest
-from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
 import pandas as pd
 
 from src.services.job_sources import JobData

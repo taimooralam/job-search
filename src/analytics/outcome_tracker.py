@@ -27,11 +27,10 @@ from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from pymongo import MongoClient
-from pymongo.database import Database
 
 from src.common.annotation_types import ApplicationOutcome
 from src.common.config import Config
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.repositories import JobRepositoryInterface, get_job_repository
 
 logger = logging.getLogger(__name__)
 

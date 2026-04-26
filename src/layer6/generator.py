@@ -15,6 +15,7 @@ Phase 8.2: STAR-driven CV generator (to be implemented).
 """
 
 import warnings
+
 warnings.warn(
     "src.layer6.generator is deprecated. Use src.layer6_v2 with ENABLE_CV_GEN_V2=true",
     DeprecationWarning,
@@ -27,18 +28,17 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.common.config import Config
 from src.common.llm_factory import create_tracked_cv_llm
-from src.common.state import JobState
-from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.state import JobState
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.utils import sanitize_path_component
 from src.layer6.cover_letter_generator import CoverLetterGenerator
 from src.layer6.recruiter_cover_letter import RecruiterCoverLetterGenerator
-
 
 CV_SYSTEM_PROMPT = """You are the second pass of a two-stage CV builder. Convert provided ROLE BULLET EVIDENCE JSON into a non-hallucinated, ATS-friendly, personalized CV that mirrors the job description language.
 

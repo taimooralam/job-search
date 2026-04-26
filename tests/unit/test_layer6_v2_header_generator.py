@@ -10,20 +10,20 @@ Tests:
 - Full header generation flow
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
+import pytest
+
+from src.layer6_v2.header_generator import HeaderGenerator, generate_header
 from src.layer6_v2.types import (
-    StitchedRole,
-    StitchedCV,
+    HeaderOutput,
+    ProfileOutput,
     SkillEvidence,
     SkillsSection,
-    ProfileOutput,
+    StitchedCV,
+    StitchedRole,
     ValidationResult,
-    HeaderOutput,
 )
-from src.layer6_v2.header_generator import HeaderGenerator, generate_header
-
 
 # ===== FIXTURES =====
 
@@ -562,7 +562,6 @@ class TestFullHeaderGeneration:
         sample_skill_whitelist,
     ):
         """Generates complete header with all sections."""
-        from unittest.mock import AsyncMock
         from src.layer6_v2.types import ProfileOutput
 
         # Mock V2 profile response

@@ -9,25 +9,26 @@ Usage:
     python scripts/reextract_target_roles.py
 """
 
-import os
-import sys
 import asyncio
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from bson import ObjectId
 from pymongo import MongoClient, UpdateOne
+
 from src.common.config import Config
-from src.layer1_4.claude_jd_extractor import JDExtractor, ExtractionResult
 from src.common.llm_config import STEP_CONFIGS, StepConfig
+from src.layer1_4.claude_jd_extractor import JDExtractor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

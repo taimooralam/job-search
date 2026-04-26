@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 from typing import Any, Iterable, List
 
 from src.preenrich.blueprint_config import (
@@ -31,11 +31,9 @@ from src.preenrich.blueprint_models import (
     StakeholderEvaluationProfile,
     StakeholderRecord,
     StakeholderSurfaceDoc,
-    normalize_company_profile_payload,
     normalize_application_surface_payload,
-    normalize_cv_preference_surface_payload,
+    normalize_company_profile_payload,
     normalize_inferred_stakeholder_persona_payload,
-    normalize_public_professional_decision_style_payload,
     normalize_role_profile_payload,
     normalize_search_journal_entry_payload,
     normalize_stakeholder_evaluation_profile_payload,
@@ -48,8 +46,8 @@ from src.preenrich.blueprint_prompts import (
     build_p_stakeholder_profile_v2,
     build_p_transport_preamble,
 )
-from src.preenrich.research_transport import CodexResearchTransport, ResearchTransportResult
-from src.preenrich.stages.blueprint_common import canonical_domain_from_url, company_slug
+from src.preenrich.research_transport import CodexResearchTransport
+from src.preenrich.stages.blueprint_common import company_slug
 from src.preenrich.types import ArtifactWrite, StageContext, StageResult
 
 logger = logging.getLogger(__name__)
@@ -122,6 +120,45 @@ def _dedupe_evidence(*groups: Iterable[EvidenceEntry | dict[str, Any]]) -> list[
                 continue
             deduped[(entry.claim, tuple(entry.source_ids))] = entry
     return list(deduped.values())
+
+
+def _normalize_unresolved_item(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        return text or None
+    if isinstance(value, dict):
+        for key in ("text", "summary", "value", "description", "bullet", "reason", "title", "label", "basis", "note", "message", "claim"):
+            candidate = _normalize_unresolved_item(value.get(key))
+            if candidate:
+                return candidate
+        flattened = [
+            f"{str(key).strip()}: {str(candidate).strip()}"
+            for key, candidate in value.items()
+            if str(key).strip() and isinstance(candidate, (str, int, float, bool)) and str(candidate).strip()
+        ]
+        if flattened:
+            return "; ".join(flattened)
+        return None
+    if isinstance(value, (list, tuple, set)):
+        parts = [item for item in (_normalize_unresolved_item(item) for item in value) if item]
+        return "; ".join(parts) if parts else None
+    text = str(value).strip()
+    return text or None
+
+
+def _dedupe_unresolved_items(*groups: Iterable[Any]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for group in groups:
+        for item in group or []:
+            normalized = _normalize_unresolved_item(item)
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(normalized)
+    return deduped
 
 
 def _prompt_metadata(*, prompt_id: str, ctx: StageContext) -> PromptMetadata:
@@ -268,17 +305,21 @@ def _validate_discovery_payload(
     if not isinstance(raw_records, list):
         raise ValueError("stakeholder_intelligence must be a list")
     records: list[StakeholderRecord] = []
+    notes = list(payload.get("notes") or [])
     for raw in raw_records:
-        normalized = normalize_stakeholder_record_payload(raw if isinstance(raw, dict) else {})
-        if _looks_constructed_profile_url(normalized.get("name"), normalized.get("profile_url")):
-            raise ValueError("constructed stakeholder profile URL rejected")
-        if not _company_matches(normalized.get("current_company"), company_aliases):
-            raise ValueError("cross-company stakeholder candidate rejected")
-        if require_source_attribution and not normalized.get("sources"):
-            raise ValueError("stakeholder discovery requires sources[] on persisted real records")
-        if require_source_attribution and not normalized.get("matched_signal_classes"):
-            raise ValueError("stakeholder discovery requires matched_signal_classes on persisted real records")
-        records.append(StakeholderRecord.model_validate(normalized))
+        try:
+            normalized = normalize_stakeholder_record_payload(raw if isinstance(raw, dict) else {})
+            if _looks_constructed_profile_url(normalized.get("name"), normalized.get("profile_url")):
+                raise ValueError("constructed stakeholder profile URL rejected")
+            if not _company_matches(normalized.get("current_company"), company_aliases):
+                raise ValueError("cross-company stakeholder candidate rejected")
+            if require_source_attribution and not normalized.get("sources"):
+                raise ValueError("stakeholder discovery requires sources[] on persisted real records")
+            if require_source_attribution and not normalized.get("matched_signal_classes"):
+                raise ValueError("stakeholder discovery requires matched_signal_classes on persisted real records")
+            records.append(StakeholderRecord.model_validate(normalized))
+        except Exception as exc:
+            notes.append(f"Rejected live stakeholder candidate during validation: {exc}")
     search_journal = [
         SearchJournalEntry.model_validate(normalize_search_journal_entry_payload(item))
         for item in (payload.get("search_journal") or [])
@@ -287,8 +328,8 @@ def _validate_discovery_payload(
     return {
         "stakeholder_intelligence": records,
         "search_journal": search_journal,
-        "unresolved_markers": list(payload.get("unresolved_markers") or []),
-        "notes": list(payload.get("notes") or []),
+        "unresolved_markers": _dedupe_unresolved_items(payload.get("unresolved_markers") or []),
+        "notes": notes,
     }
 
 
@@ -373,8 +414,8 @@ def _merge_profile_payload(record: StakeholderRecord, payload: dict[str, Any] | 
             PublicProfessionalDecisionStyle.model_validate(style) if isinstance(style, dict) else None
         ),
         cv_preference_surface=CVPreferenceSurface.model_validate(cv_surface) if isinstance(cv_surface, dict) else None,
-        likely_priorities=[GuidanceBullet.model_validate(item) for item in (payload.get("likely_priorities") or [])],
-        likely_reject_signals=[GuidanceAvoidBullet.model_validate(item) for item in (payload.get("likely_reject_signals") or [])],
+        likely_priorities=[GuidanceBullet.model_validate(item) for item in (normalized.get("likely_priorities") or [])],
+        likely_reject_signals=[GuidanceAvoidBullet.model_validate(item) for item in (normalized.get("likely_reject_signals") or [])],
         unresolved_markers=list(normalized.get("unresolved_markers") or []),
         sources=sources,
         evidence=evidence,
@@ -401,7 +442,7 @@ def _validate_personas_payload(payload: dict[str, Any]) -> dict[str, Any]:
     ]
     return {
         "inferred_stakeholder_personas": personas,
-        "unresolved_markers": list(payload.get("unresolved_markers") or []),
+        "unresolved_markers": _dedupe_unresolved_items(payload.get("unresolved_markers") or []),
         "notes": list(payload.get("notes") or []),
     }
 
@@ -538,7 +579,7 @@ class StakeholderSurfaceStage:
     def run(self, ctx: StageContext) -> StageResult:
         outputs = ((ctx.job_doc.get("pre_enrichment") or {}).get("outputs") or {})
         research = outputs.get("research_enrichment") or {}
-        jd_facts = ((outputs.get("jd_facts") or {}).get("merged_view") or {})
+        ((outputs.get("jd_facts") or {}).get("merged_view") or {})
         classification = outputs.get("classification") or {}
         application_payload = research.get("application_profile") or outputs.get("application_surface") or {}
         company_profile = CompanyProfile.model_validate(normalize_company_profile_payload(research.get("company_profile") or {}))
@@ -609,6 +650,9 @@ class StakeholderSurfaceStage:
                     company_aliases=company_aliases,
                     require_source_attribution=stakeholder_surface_require_source_attribution(),
                 ),
+                tracer=ctx.tracer,
+                stage_name=ctx.stage_name or "stakeholder_surface",
+                substage="discovery",
             )
             logger.info(
                 "stakeholder_surface discovery result: success=%s error=%s payload_keys=%s",
@@ -666,6 +710,10 @@ class StakeholderSurfaceStage:
                 profile_result = transport.invoke_json(
                     prompt=profile_prompt,
                     job_id=f"{ctx.job_doc.get('_id')}:stakeholder-profile:{record.candidate_rank or 0}",
+                    tracer=ctx.tracer,
+                    stage_name=ctx.stage_name or "stakeholder_surface",
+                    substage="profile",
+                    trace_metadata={"candidate_rank": record.candidate_rank or 0},
                 )
                 logger.info(
                     "stakeholder_surface profile result: candidate_rank=%s success=%s error=%s payload_keys=%s",
@@ -720,6 +768,9 @@ class StakeholderSurfaceStage:
                 prompt=personas_prompt,
                 job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "stakeholder-personas"),
                 validator=_validate_personas_payload,
+                tracer=ctx.tracer,
+                stage_name=ctx.stage_name or "stakeholder_surface",
+                substage="personas",
             )
             logger.info(
                 "stakeholder_surface personas result: success=%s error=%s payload_keys=%s",
@@ -775,11 +826,12 @@ class StakeholderSurfaceStage:
             score = sum(item.coverage_confidence.score for item in coverage) / len(coverage)
         if real_profiles:
             score = max(score, sum(item.confidence.score for item in real_profiles) / len(real_profiles))
+        unresolved_questions = _dedupe_unresolved_items(unresolved_questions)
         overall_confidence = ConfidenceDoc(
             score=score,
             band=_band_from_score(score),
             basis="Aggregate confidence across evaluator coverage, real stakeholder profiles, and inferred personas.",
-            unresolved_items=list(dict.fromkeys(unresolved_questions)),
+            unresolved_items=list(unresolved_questions),
         )
         artifact = StakeholderSurfaceDoc(
             job_id=str(ctx.job_doc.get("job_id") or ctx.job_doc.get("_id")),
@@ -802,7 +854,7 @@ class StakeholderSurfaceStage:
             sources=sources,
             evidence=evidence,
             confidence=overall_confidence,
-            unresolved_questions=list(dict.fromkeys(unresolved_questions)),
+            unresolved_questions=list(unresolved_questions),
             notes=[
                 "stakeholder_surface is the canonical evaluator-first stakeholder artifact for 4.2.1.",
                 "Real stakeholder identity resolution remains disjoint from inferred persona synthesis.",

@@ -1836,7 +1836,7 @@
         }
       },
       "persona": {
-        "identity_statement": "production infrastructure expert applying 11 years of distributed systems rigor to AI systems",
+        "identity_statement": "production infrastructure expert applying 12 years of distributed systems rigor to AI systems",
         "voice": "technically deep, infrastructure-grounded, AI-forward",
         "tagline_templates": [
           "Production infrastructure leader applying {years} years of distributed systems rigor to LLM reliability, evaluation, and governance at scale.",
@@ -2093,7 +2093,7 @@
         }
       },
       "persona": {
-        "identity_statement": "hands-on AI platform leader building and governing enterprise AI systems with 11 years of production infrastructure foundation",
+        "identity_statement": "hands-on AI platform leader building and governing enterprise AI systems with 12 years of production infrastructure foundation",
         "voice": "strategic, hands-on, governance-aware",
         "tagline_templates": [
           "Hands-on AI leader with {years} years building production platforms — from LLM gateway design to AI governance at enterprise scale.",

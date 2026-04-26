@@ -16,11 +16,10 @@ Test Environment:
 """
 
 import os
-import pytest
 import re
-from pathlib import Path
-from playwright.sync_api import Page, expect, BrowserContext
 
+import pytest
+from playwright.sync_api import BrowserContext, Page, expect
 
 # ==============================================================================
 # Configuration
@@ -751,7 +750,7 @@ class TestKeyboardShortcuts:
         cv_editor_page.wait_for_timeout(300)
 
         # Check for alignment (may be style attribute or class)
-        aligned_element = editor.locator('[style*="text-align: left"], [class*="left"]')
+        editor.locator('[style*="text-align: left"], [class*="left"]')
         # Left alignment is default, so this test just verifies no crash
 
     def test_ctrl_shift_e_aligns_center(self, cv_editor_page: Page):

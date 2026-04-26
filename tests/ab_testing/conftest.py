@@ -6,13 +6,13 @@ for each layer.
 """
 
 import json
-import pytest
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from .framework import ABTestRunner, create_mock_generator
-from .scorers import score_specificity, score_grounding, score_hallucinations
+import pytest
 
+from .framework import ABTestRunner
+from .scorers import score_grounding, score_hallucinations, score_specificity
 
 # Path to fixtures
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -64,7 +64,7 @@ def test_job_1() -> Dict[str, Any]:
     - Company research from Layer 3
     """
     fixture_path = FIXTURES_DIR / "test_job_1.json"
-    with open(fixture_path) as f:
+    with open(fixture_path, encoding="utf-8") as f:
         return json.load(f)
 
 

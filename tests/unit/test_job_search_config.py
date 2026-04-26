@@ -4,18 +4,17 @@ Unit tests for JobSearchConfig.
 Tests the configuration and preset system for pull-on-demand job search.
 """
 
-import pytest
 import os
 from unittest.mock import patch
 
 from src.common.job_search_config import (
+    DEFAULT_JOB_TITLES,
+    DEFAULT_REGIONS,
+    DEFAULT_SOURCES,
     JobSearchConfig,
     JobTitlePreset,
     RegionPreset,
     SourceConfig,
-    DEFAULT_JOB_TITLES,
-    DEFAULT_REGIONS,
-    DEFAULT_SOURCES,
 )
 
 

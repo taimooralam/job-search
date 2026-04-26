@@ -447,7 +447,7 @@ async def stream_operation_logs(run_id: str) -> StreamingResponse:
     async def event_generator() -> AsyncIterator[str]:
         current_state = _operation_runs.get(run_id)
         if not current_state:
-            yield f"event: error\ndata: Run not found\n\n"
+            yield "event: error\ndata: Run not found\n\n"
             return
 
         if current_state._live_logs is not None:

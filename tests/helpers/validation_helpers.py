@@ -9,7 +9,7 @@ These utilities support testing across Layer 4, 6a, and 6b by providing:
 """
 
 import re
-from typing import List, Dict, Any, Set
+from typing import Any, Dict, List, Set
 
 
 def count_pain_point_references(text: str, pain_points: List[str]) -> int:

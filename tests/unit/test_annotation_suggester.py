@@ -7,22 +7,21 @@ Tests annotation suggestion matching including:
 - Full annotation generation pipeline (generate_annotations_for_job)
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
 
 from src.services.annotation_suggester import (
-    should_generate_annotation,
-    find_best_match,
-    _cosine_similarity,
-    _extract_keywords,
-    _create_annotation,
-    infer_requirement_type,
-    suggest_keywords_for_item,
-    MatchResult,
     MatchContext,
-    SIMILARITY_THRESHOLD,
-    KEYWORD_CONFIDENCE_THRESHOLD,
+    MatchResult,
+    _cosine_similarity,
+    _create_annotation,
+    _extract_keywords,
+    find_best_match,
+    infer_requirement_type,
+    should_generate_annotation,
+    suggest_keywords_for_item,
 )
 
 

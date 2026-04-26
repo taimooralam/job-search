@@ -201,7 +201,7 @@ def load_pipeline_state(job_id: str) -> Optional[Dict]:
         return None
 
     try:
-        state_data = json.loads(state_file.read_text())
+        state_data = json.loads(state_file.read_text(encoding="utf-8"))
         # Clean up the state file after reading
         state_file.unlink()
         return state_data

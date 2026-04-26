@@ -4,19 +4,20 @@ Integration tests for runner service → PDF service communication.
 Tests that the runner service correctly proxies PDF requests to the PDF service.
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, AsyncMock
-import httpx
 
 
 @pytest.fixture
 def runner_client():
     """Create test client for runner service."""
-    import os
+    from fastapi.security import HTTPAuthorizationCredentials
+
     from runner_service.app import app
     from runner_service.auth import verify_token
-    from fastapi.security import HTTPAuthorizationCredentials
 
     # Mock authentication for all tests
     async def mock_verify_token():
@@ -273,7 +274,7 @@ class TestRunnerPDFProxyIntegration:
         mock_httpx.return_value = mock_http_client
 
         # Make request to runner
-        response = runner_client.post(
+        runner_client.post(
             "/api/jobs/507f1f77bcf86cd799439011/cv-editor/pdf"
         )
 

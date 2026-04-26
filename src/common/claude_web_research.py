@@ -22,15 +22,14 @@ Usage:
 """
 
 import logging
-import os
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Literal
-from dataclasses import dataclass, asdict, field
+from typing import Any, Dict, List, Literal, Optional
+
 from pydantic import BaseModel, Field, ValidationError
 
 from src.common.json_utils import parse_llm_json
-from src.common.unified_llm import invoke_unified_sync, LLMResult
-
+from src.common.unified_llm import LLMResult, invoke_unified_sync
 
 logger = logging.getLogger(__name__)
 
@@ -561,12 +560,12 @@ IMPORTANT: Use WebSearch to find current information. Return your findings as va
             # Try partial extraction before giving up
             partial_data = self._extract_partial_data(data, schema)
             if partial_data:
-                logger.info(f"Using partial data extraction after validation failure")
+                logger.info("Using partial data extraction after validation failure")
                 return partial_data, True  # Partial extraction success
 
             # No partial data could be extracted, raise original error
             error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors()]
-            raise ValueError(f"Schema validation failed:\n" + "\n".join(f"  - {msg}" for msg in error_msgs))
+            raise ValueError("Schema validation failed:\n" + "\n".join(f"  - {msg}" for msg in error_msgs))
 
     async def research_company(
         self,

@@ -8,7 +8,6 @@ Only after both Level‑1 and Level‑1.5 pass is a job promoted to Level‑2.
 
 from typing import Any, Dict
 
-
 TARGET_TITLES = [
     "software architect",
     "senior software architect",

@@ -5,11 +5,13 @@ These tests mock subprocess execution to prevent spawning real Python processes
 which would be slow and require MongoDB/external services.
 """
 
-import pytest
 import asyncio
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
-from runner_service.executor import execute_pipeline, discover_artifacts
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from runner_service.executor import discover_artifacts, execute_pipeline
 
 
 class MockAsyncIterator:

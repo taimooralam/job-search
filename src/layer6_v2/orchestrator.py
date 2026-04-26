@@ -19,20 +19,19 @@ Usage:
 
 import asyncio
 import json
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Any, Optional, List, Callable
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from src.common.config import Config
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
-from src.common.state import JobState
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.utils import sanitize_path_component, coerce_to_list
-from src.common.markdown_sanitizer import sanitize_markdown, sanitize_bullet_text
+from src.common.markdown_sanitizer import sanitize_bullet_text, sanitize_markdown
+from src.common.state import JobState
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.utils import coerce_to_list, sanitize_path_component
 from src.layer6_v2.cover_letter_generator import CoverLetterGenerator
 
 # GAP-014: Middle East countries for relocation tagline
@@ -199,42 +198,36 @@ def _load_ai_project() -> Optional[Dict[str, Any]]:
     return result if result["title"] else None
 
 
-from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
+from src.common.tiering import (
+    ProcessingTier,
+    get_tier_from_fit_score,
+)
+from src.layer6_v2.annotation_header_context import build_header_context
+from src.layer6_v2.cv_loader import CandidateData, CVLoader, RoleData
+from src.layer6_v2.ensemble_header_generator import (
+    generate_ensemble_header,
+)
+from src.layer6_v2.grader import CVGrader, grade_cv
+from src.layer6_v2.header_generator import HeaderGenerator, _load_role_persona, generate_header
+from src.layer6_v2.improver import CVImprover, improve_cv
+from src.layer6_v2.keyword_placement import (
+    KeywordPlacementResult,
+    KeywordPlacementValidator,
+    extract_priority_keywords_from_annotations,
+)
 from src.layer6_v2.role_generator import (
     RoleGenerator,
-    generate_all_roles_sequential,
-    generate_all_roles_with_star_enforcement,
     generate_all_roles_from_variants,
 )
 from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
-from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
-from src.layer6_v2.header_generator import HeaderGenerator, generate_header, _load_role_persona
-from src.layer6_v2.ensemble_header_generator import (
-    EnsembleHeaderGenerator,
-    generate_ensemble_header,
-)
-from src.common.tiering import (
-    ProcessingTier,
-    get_tier_config,
-    get_tier_from_fit_score,
-)
-from src.layer6_v2.grader import CVGrader, grade_cv
-from src.layer6_v2.improver import CVImprover, improve_cv
+from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles  # noqa: F401  # re-exported for test mocking
 from src.layer6_v2.types import (
+    ATSValidationResult,
+    GradeResult,
+    HeaderOutput,
+    ImprovementResult,
     RoleBullets,
     StitchedCV,
-    HeaderOutput,
-    GradeResult,
-    ImprovementResult,
-    FinalCV,
-    HeaderGenerationContext,
-    ATSValidationResult,
-)
-from src.layer6_v2.annotation_header_context import build_header_context
-from src.layer6_v2.keyword_placement import (
-    KeywordPlacementValidator,
-    KeywordPlacementResult,
-    extract_priority_keywords_from_annotations,
 )
 
 
@@ -1201,6 +1194,7 @@ class CVGeneratorV2:
             Result of the coroutine
         """
         import asyncio
+
         import nest_asyncio
 
         # Apply nest_asyncio to allow nested event loops

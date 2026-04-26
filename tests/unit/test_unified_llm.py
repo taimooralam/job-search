@@ -8,10 +8,10 @@ Tests the UnifiedLLM wrapper with fallback logic:
 - Result tracking with backend attribution
 """
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
-from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
 class TestUnifiedLLMInitialization:
@@ -361,7 +361,7 @@ class TestFallbackLogic:
         from src.common.unified_llm import UnifiedLLM
         llm = UnifiedLLM(step_name="grader")
 
-        result = await llm.invoke(prompt="Test", job_id="test")
+        await llm.invoke(prompt="Test", job_id="test")
 
         # Should log warning about fallback
         assert mock_logger.warning.called
@@ -377,8 +377,8 @@ class TestErrorHandling:
         mock_cli_class.return_value.invoke.side_effect = Exception("Unexpected error")
 
         # Disable fallback by modifying config
-        from src.common.unified_llm import UnifiedLLM
         from src.common.llm_config import StepConfig
+        from src.common.unified_llm import UnifiedLLM
 
         config = StepConfig(tier="middle", use_fallback=False)
         llm = UnifiedLLM(config=config)
@@ -544,8 +544,8 @@ class TestConfigIntegration:
 
     def test_loads_config_from_step_name(self):
         """Should load step config from llm_config."""
-        from src.common.unified_llm import UnifiedLLM
         from src.common.llm_config import get_step_config
+        from src.common.unified_llm import UnifiedLLM
 
         # grader is defined in STEP_CONFIGS
         expected_config = get_step_config("grader")
@@ -576,8 +576,8 @@ class TestStructuredLoggerIntegration:
 
     def test_init_accepts_struct_logger_parameter(self):
         """Should accept struct_logger parameter."""
-        from src.common.unified_llm import UnifiedLLM
         from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         mock_logger = StructuredLogger(job_id="test", enabled=False)
         llm = UnifiedLLM(step_name="grader", struct_logger=mock_logger)
@@ -611,9 +611,10 @@ class TestStructuredLoggerIntegration:
         mock_result.cost_usd = 0.025
         mock_cli_class.return_value.invoke.return_value = mock_result
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
         import json
+
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-123", enabled=True)
         llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
@@ -697,10 +698,11 @@ class TestStructuredLoggerIntegration:
         mock_llm.ainvoke = AsyncMock(return_value=mock_response)
         mock_langchain.return_value = mock_llm
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
-        from src.common.llm_config import StepConfig
         import json
+
+        from src.common.llm_config import StepConfig
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-123", enabled=True)
         # Use explicit config with fallback enabled for testing fallback behavior
@@ -738,8 +740,9 @@ class TestStructuredLoggerIntegration:
 
     def test_convenience_function_accepts_struct_logger(self):
         """invoke_unified_sync should accept struct_logger parameter."""
-        from src.common.unified_llm import invoke_unified_sync
         import inspect
+
+        from src.common.unified_llm import invoke_unified_sync
 
         sig = inspect.signature(invoke_unified_sync)
         params = list(sig.parameters.keys())
@@ -764,9 +767,10 @@ class TestStructuredLoggerIntegration:
         mock_result.cost_usd = 0.01
         mock_cli_class.return_value.invoke.return_value = mock_result
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
         import json
+
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-123", enabled=True)
         llm = UnifiedLLM(step_name="custom_step", struct_logger=struct_logger)
@@ -804,9 +808,10 @@ class TestStructuredLoggerIntegration:
         mock_result.cost_usd = 0.05
         mock_cli_class.return_value.invoke.return_value = mock_result
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
         import json
+
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-456", enabled=True)
         llm = UnifiedLLM(step_name="test_step", struct_logger=struct_logger)
@@ -853,9 +858,10 @@ class TestStructuredLoggerIntegration:
         mock_result.cost_usd = 0.01
         mock_cli_class.return_value.invoke.return_value = mock_result
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
         import json
+
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-111", enabled=True)
         llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
@@ -896,10 +902,11 @@ class TestStructuredLoggerIntegration:
         mock_llm.ainvoke = AsyncMock(return_value=mock_response)
         mock_langchain.return_value = mock_llm
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
-        from src.common.llm_config import StepConfig
         import json
+
+        from src.common.llm_config import StepConfig
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-222", enabled=True)
         # Use explicit config with fallback enabled for testing fallback behavior
@@ -944,10 +951,11 @@ class TestStructuredLoggerIntegration:
         mock_llm.ainvoke = AsyncMock(return_value=mock_response)
         mock_langchain.return_value = mock_llm
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
-        from src.common.llm_config import StepConfig
         import json
+
+        from src.common.llm_config import StepConfig
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-timeout", enabled=True)
         # Use explicit config with fallback enabled for testing fallback behavior
@@ -984,10 +992,11 @@ class TestStructuredLoggerIntegration:
         mock_llm.ainvoke = AsyncMock(return_value=mock_response)
         mock_langchain.return_value = mock_llm
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
-        from src.common.llm_config import StepConfig
         import json
+
+        from src.common.llm_config import StepConfig
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-notfound", enabled=True)
         # Use explicit config with fallback enabled for testing fallback behavior
@@ -1023,10 +1032,11 @@ class TestStructuredLoggerIntegration:
         mock_llm.ainvoke = AsyncMock(return_value=mock_response)
         mock_langchain.return_value = mock_llm
 
-        from src.common.unified_llm import UnifiedLLM
-        from src.common.structured_logger import StructuredLogger
-        from src.common.llm_config import StepConfig
         import json
+
+        from src.common.llm_config import StepConfig
+        from src.common.structured_logger import StructuredLogger
+        from src.common.unified_llm import UnifiedLLM
 
         struct_logger = StructuredLogger(job_id="test-disabled", enabled=True)
         # Use explicit config with fallback enabled for testing fallback behavior

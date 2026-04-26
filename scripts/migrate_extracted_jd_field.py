@@ -12,9 +12,9 @@ Options:
     --cleanup    Remove old extracted_jd_claude field after migration
 """
 
+import argparse
 import os
 import sys
-import argparse
 from datetime import datetime
 
 # Add project root to path
@@ -56,7 +56,7 @@ def migrate_extracted_jd(dry_run: bool = False, cleanup: bool = False):
     docs_to_migrate = list(collection.find(query, {"_id": 1, "title": 1}))
 
     print(f"\n{'='*60}")
-    print(f"Migration: extracted_jd_claude → extracted_jd")
+    print("Migration: extracted_jd_claude → extracted_jd")
     print(f"{'='*60}")
     print(f"Documents to migrate: {len(docs_to_migrate)}")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
@@ -113,7 +113,7 @@ def migrate_extracted_jd(dry_run: bool = False, cleanup: bool = False):
             errors += 1
 
     print(f"\n{'='*60}")
-    print(f"Migration complete!")
+    print("Migration complete!")
     print(f"  Migrated: {migrated}")
     print(f"  Errors: {errors}")
     print(f"{'='*60}")
@@ -122,7 +122,7 @@ def migrate_extracted_jd(dry_run: bool = False, cleanup: bool = False):
     total_with_extracted_jd = collection.count_documents({"extracted_jd": {"$exists": True}})
     total_with_claude = collection.count_documents({"extracted_jd_claude": {"$exists": True}})
 
-    print(f"\nCurrent stats:")
+    print("\nCurrent stats:")
     print(f"  Documents with extracted_jd: {total_with_extracted_jd}")
     print(f"  Documents with extracted_jd_claude: {total_with_claude}")
 

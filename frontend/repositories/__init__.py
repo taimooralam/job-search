@@ -15,10 +15,10 @@ Public API:
 
 from .base import JobRepositoryInterface, WriteResult
 from .config import (
-    get_job_repository,
-    reset_repository,
     RepositoryConfig,
     SyncMode,
+    get_job_repository,
+    reset_repository,
 )
 
 __all__ = [

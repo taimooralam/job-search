@@ -9,16 +9,15 @@ Tests verify:
 5. Primary and secondary contact handling
 """
 
-import pytest
-from unittest.mock import Mock, patch
-from typing import List, Dict, Any
+from typing import List
 
-from src.common.state import JobState, Contact, OutreachPackage
+import pytest
+
+from src.common.state import Contact, JobState
 from src.layer6.outreach_generator import (
     OutreachGenerator,
     outreach_generator_node,
 )
-
 
 # ===== FIXTURES =====
 

@@ -8,19 +8,19 @@ Usage:
     python scripts/compare_layer2_prompts.py <job_id>
 """
 
-import sys
 import json
 import re
-from typing import Dict, List, Any
+import sys
+from typing import Dict, List
+
 from bson import ObjectId
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 
 # Add project root to path
 sys.path.insert(0, ".")
 
 from src.common.config import Config
-from src.common.database import DatabaseClient
 
 # ============================================================
 # STATUS QUO PROMPTS (Current Implementation)
@@ -240,7 +240,7 @@ def print_results(label: str, data: Dict, reasoning: str = ""):
     print(f"{'='*70}")
 
     if reasoning:
-        print(f"\n📊 REASONING BLOCK:")
+        print("\n📊 REASONING BLOCK:")
         print("-" * 50)
         # Truncate reasoning for display
         if len(reasoning) > 1500:
@@ -276,7 +276,7 @@ def compare_quality(status_quo: Dict, improved: Dict):
     sq_total = sum(len(v) for v in status_quo.values() if isinstance(v, list))
     imp_total = sum(len(v) for v in improved.values() if isinstance(v, list))
 
-    print(f"\n📊 Item Count:")
+    print("\n📊 Item Count:")
     print(f"   Status Quo: {sq_total} items")
     print(f"   Improved:   {imp_total} items")
 
@@ -297,7 +297,7 @@ def compare_quality(status_quo: Dict, improved: Dict):
     sq_spec = count_specificity(status_quo)
     imp_spec = count_specificity(improved)
 
-    print(f"\n🎯 Specificity Markers (numbers, metrics, actions):")
+    print("\n🎯 Specificity Markers (numbers, metrics, actions):")
     print(f"   Status Quo: {sq_spec}")
     print(f"   Improved:   {imp_spec}")
 
@@ -315,7 +315,7 @@ def compare_quality(status_quo: Dict, improved: Dict):
     sq_boiler = count_boilerplate(status_quo)
     imp_boiler = count_boilerplate(improved)
 
-    print(f"\n❌ Boilerplate Phrases (lower is better):")
+    print("\n❌ Boilerplate Phrases (lower is better):")
     print(f"   Status Quo: {sq_boiler}")
     print(f"   Improved:   {imp_boiler}")
 
@@ -331,6 +331,7 @@ def main():
 
     # Connect to correct database (jobs.level-2 collection)
     from pymongo import MongoClient
+
     from src.common.config import Config
     client = MongoClient(Config.MONGODB_URI)
     db = client['jobs']
@@ -351,7 +352,7 @@ def main():
     print(f"   Description length: {len(job_description)} chars")
 
     # Run status quo extraction
-    print(f"\n🔄 Running STATUS QUO extraction...")
+    print("\n🔄 Running STATUS QUO extraction...")
     try:
         sq_result, sq_raw, _ = run_extraction(
             STATUS_QUO_SYSTEM_PROMPT,
@@ -364,7 +365,7 @@ def main():
         sq_result = {}
 
     # Run improved extraction
-    print(f"\n🔄 Running IMPROVED extraction...")
+    print("\n🔄 Running IMPROVED extraction...")
     try:
         imp_result, imp_raw, imp_reasoning = run_extraction(
             IMPROVED_SYSTEM_PROMPT,

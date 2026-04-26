@@ -5,24 +5,22 @@ Tests the OutreachGenerationService for generating per-contact outreach messages
 (LinkedIn connection requests and InMail messages) with tier-based model selection.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
+from src.common.model_tiers import ModelTier
+from src.services.operation_base import OperationResult
 from src.services.outreach_service import (
-    OutreachGenerationService,
-    generate_outreach,
-    CONNECTION_CHAR_LIMIT,
-    INMAIL_MIN_CHARS,
-    INMAIL_MAX_CHARS,
     CANDIDATE_CALENDLY,
     CANDIDATE_NAME,
     CANDIDATE_SIGNATURE,
+    CONNECTION_CHAR_LIMIT,
+    OutreachGenerationService,
+    generate_outreach,
 )
-from src.services.operation_base import OperationResult
-from src.common.model_tiers import ModelTier
-
 
 # =============================================================================
 # Sample Data Fixtures

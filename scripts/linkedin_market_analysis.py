@@ -8,14 +8,13 @@ skill requirements for market research.
 Uses pagination to fetch up to 2000 jobs (200 pages x 10 jobs per page).
 """
 
-import json
 import logging
 import re
 import time
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
 import requests
 from bs4 import BeautifulSoup
@@ -24,8 +23,8 @@ from bs4 import BeautifulSoup
 from src.services.linkedin_scraper import (
     HEADERS,
     REQUEST_TIMEOUT,
-    scrape_linkedin_job,
     extract_job_id,
+    scrape_linkedin_job,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

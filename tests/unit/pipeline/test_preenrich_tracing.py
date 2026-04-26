@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from src.pipeline import tracing
+from src.preenrich.research_transport import CodexResearchTransport
+from src.preenrich.types import StepConfig
 
 
 class _FakeObservation:
@@ -10,9 +12,12 @@ class _FakeObservation:
         self.updated = []
         self.ended = False
         self.trace_updates = []
+        self.started = []
 
     def start_observation(self, **kwargs):
-        return _FakeObservation()
+        child = _FakeObservation()
+        self.started.append({"kwargs": kwargs, "observation": child})
+        return child
 
     def update(self, **kwargs):
         self.updated.append(kwargs)
@@ -108,3 +113,94 @@ def test_emit_standalone_event_returns_trace_refs(monkeypatch):
 
     assert result["trace_id"] is not None
     assert result["trace_url"] == f"https://langfuse.example/{result['trace_id']}"
+
+
+def test_start_substage_span_uses_canonical_naming(monkeypatch):
+    monkeypatch.setenv("LANGFUSE_HOST", "https://langfuse.example")
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "public")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "secret")
+    monkeypatch.setattr(tracing, "Langfuse", _FakeLangfuse)
+
+    session = tracing.PreenrichTracingSession(
+        run_id="preenrich:research_enrichment:wi-1",
+        session_id="job:abc",
+        metadata={"job_id": "job-1"},
+    )
+
+    stage = session.start_stage_span("research_enrichment", {"attempt_token": "tok"})
+    span = stage.start_substage_span("research_enrichment", "research.company", {"provider": "codex"})
+    assert span is not None
+    assert len(session.job_span.started) == 1
+    assert session.job_span.started[0]["kwargs"]["name"] == "scout.preenrich.research_enrichment"
+    assert len(stage.span.started) == 1
+    assert stage.span.started[0]["kwargs"]["name"] == "scout.preenrich.research_enrichment.research.company"
+    assert stage.span.started[0]["kwargs"]["metadata"]["provider"] == "codex"
+
+
+def test_research_transport_prompt_metadata_is_sanitized_before_span_start(monkeypatch):
+    monkeypatch.setenv("LANGFUSE_HOST", "https://langfuse.example")
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "public")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "secret")
+    monkeypatch.delenv("LANGFUSE_CAPTURE_FULL_PROMPTS", raising=False)
+    monkeypatch.setattr(tracing, "Langfuse", _FakeLangfuse)
+
+    session = tracing.PreenrichTracingSession(
+        run_id="preenrich:research_enrichment:wi-2",
+        session_id="job:abc",
+        metadata={"job_id": "job-1"},
+    )
+    stage = session.start_stage_span("research_enrichment", {"job_id": "job-1"})
+    transport = CodexResearchTransport(StepConfig(provider="codex", primary_model="gpt-5.2", transport="none"))
+
+    result = transport.invoke_json(
+        prompt="x" * 200,
+        job_id="job-1",
+        tracer=stage,
+        stage_name="research_enrichment",
+        substage="company",
+    )
+
+    assert result.success is False
+    assert len(stage.span.started) == 1
+    metadata = stage.span.started[0]["kwargs"]["metadata"]
+    assert metadata["prompt"]["captured"] is False
+    assert metadata["prompt"]["length"] == 200
+
+
+def test_emit_preenrich_sweeper_event_pins_canonical_session(monkeypatch):
+    monkeypatch.setenv("LANGFUSE_HOST", "https://langfuse.example")
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "public")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "secret")
+    client_holder: dict = {}
+
+    class _CapturingLangfuse(_FakeLangfuse):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            client_holder["client"] = self
+
+        def start_observation(self, **kwargs):
+            client_holder["start_kwargs"] = kwargs
+            return super().start_observation(**kwargs)
+
+    monkeypatch.setattr(tracing, "Langfuse", _CapturingLangfuse)
+
+    result = tracing.emit_preenrich_sweeper_event(
+        name="scout.preenrich.release_lease",
+        level2_job_id="level2-1",
+        metadata={"stage_name": "jd_structure", "reason": "lease_expired"},
+        run_id="preenrich:sweeper:release_lease:level2-1",
+    )
+
+    assert result["trace_id"] is not None
+    # metadata for the root trace must carry the canonical session id
+    assert client_holder["start_kwargs"]["metadata"]["langfuse_session_id"] == "job:level2-1"
+    assert client_holder["start_kwargs"]["metadata"]["stage_name"] == "jd_structure"
+    assert client_holder["start_kwargs"]["metadata"]["level2_job_id"] == "level2-1"
+    root_trace = client_holder["client"].last_observation
+    assert len(root_trace.started) == 1
+    job_span = root_trace.started[0]["observation"]
+    assert root_trace.started[0]["kwargs"]["name"] == "scout.preenrich.job"
+    assert len(job_span.started) == 1
+    assert job_span.started[0]["kwargs"]["name"] == "scout.preenrich.release_lease"
+    assert job_span.started[0]["kwargs"]["metadata"]["stage_name"] == "jd_structure"
+    assert client_holder["client"].events == []

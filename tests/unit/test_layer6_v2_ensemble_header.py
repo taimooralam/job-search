@@ -7,32 +7,26 @@ Tests the tiered ensemble generation system:
 - Bronze/Skip tier: single-shot (delegates to HeaderGenerator)
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
-from dataclasses import dataclass
+from unittest.mock import Mock, patch
 
+import pytest
+
+from src.common.tiering import (
+    ProcessingTier,
+    get_tier_config,
+)
 from src.layer6_v2.ensemble_header_generator import (
     EnsembleHeaderGenerator,
     PersonaType,
-    PersonaProfileResult,
     generate_ensemble_header,
 )
 from src.layer6_v2.types import (
+    EnsembleMetadata,
+    HeaderOutput,
     StitchedCV,
     StitchedRole,
-    ProfileOutput,
-    SkillsSection,
-    SkillEvidence,
-    HeaderOutput,
     ValidationFlags,
-    EnsembleMetadata,
 )
-from src.common.tiering import (
-    ProcessingTier,
-    TierConfig,
-    get_tier_config,
-)
-
 
 # ===== FIXTURES =====
 
@@ -381,7 +375,7 @@ class TestConvenienceFunction:
         mock_header = Mock(spec=HeaderOutput)
         mock_generator_class.return_value.generate = AsyncMock(return_value=mock_header)
 
-        result = await generate_ensemble_header(
+        await generate_ensemble_header(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -404,7 +398,7 @@ class TestConvenienceFunction:
         mock_header = Mock(spec=HeaderOutput)
         mock_generator_class.return_value.generate = AsyncMock(return_value=mock_header)
 
-        result = await generate_ensemble_header(
+        await generate_ensemble_header(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,

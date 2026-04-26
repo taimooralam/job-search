@@ -80,6 +80,7 @@ def resolve_cv_path(log_text: str, expected_path: Path, pre_state: dict) -> tupl
 def resolve_via_mongo(job_id: str) -> Path | None:
     try:
         import pymongo
+
         from src.common.config import Config
         client = pymongo.MongoClient(Config.MONGODB_URI)
         db = client[Config.MONGODB_DATABASE]
@@ -115,7 +116,7 @@ def run_anchor(cat: str, jid: str, jd: str, run_root: Path) -> dict:
 
     # Run pipeline
     start = time.time()
-    with open(log_path, "w") as logf:
+    with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.run(
             [".venv/bin/python", "scripts/run_pipeline.py", "--job-id", jid],
             stdout=logf, stderr=subprocess.STDOUT, cwd=ROOT,
@@ -141,7 +142,7 @@ def run_anchor(cat: str, jid: str, jd: str, run_root: Path) -> dict:
         shutil.copy2(cv_path, snap_path)
         print(f"  SNAPSHOT: {snap_path}")
     else:
-        print(f"  UNSCOREABLE: no cv path resolved")
+        print("  UNSCOREABLE: no cv path resolved")
 
     meta = {
         "category": cat,
@@ -173,7 +174,7 @@ def main():
 
     # Resolve anchor list
     if args.anchors_json:
-        anchors_data = json.loads(Path(args.anchors_json).read_text())
+        anchors_data = json.loads(Path(args.anchors_json).read_text(encoding="utf-8"))
         anchors = [(a["category_id"], a["job_id"], a["jd_path"]) for a in anchors_data]
     else:
         anchors = ANCHORS

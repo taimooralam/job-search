@@ -13,7 +13,6 @@ Usage:
 import asyncio
 import json
 import logging
-import os
 import traceback
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -22,16 +21,14 @@ from bson import ObjectId
 
 from src.common.model_tiers import (
     ModelTier,
-    get_model_for_operation,
-    get_tier_cost_estimate,
 )
 from src.common.repositories import (
-    get_job_repository,
+    CompanyCacheRepositoryInterface,
     JobRepositoryInterface,
     get_company_cache_repository,
-    CompanyCacheRepositoryInterface,
+    get_job_repository,
 )
-from src.common.state import JobState, CompanyResearch, RoleResearch
+from src.common.state import CompanyResearch, JobState, RoleResearch
 from src.layer3.company_researcher import CompanyResearcher
 from src.layer3.role_researcher import RoleResearcher
 from src.layer5.people_mapper import PeopleMapper

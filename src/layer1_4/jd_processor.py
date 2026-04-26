@@ -12,20 +12,19 @@ Processing steps:
 4. Output HTML with <section> tags for TipTap annotation targeting
 """
 
-import re
+import hashlib
 import json
 import os
-from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
-from dataclasses import dataclass, field
+import re
+from dataclasses import dataclass
 from enum import Enum
-import hashlib
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
-from src.common.config import Config
-from src.common.logger import get_logger
-from src.common.unified_llm import invoke_unified_sync, invoke_unified, LLMResult
 from src.common.llm_config import TierType
+from src.common.logger import get_logger
+from src.common.unified_llm import LLMResult, invoke_unified_sync
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger

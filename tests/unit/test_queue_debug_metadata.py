@@ -11,14 +11,14 @@ Covers:
 """
 
 import json
-import pytest
 from datetime import datetime
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from runner_service.queue.manager import QueueManager
 from runner_service.queue.models import QueueItem, QueueItemStatus
-
 
 # ---------------------------------------------------------------------------
 # FakeRedis — copied from test_queue_manager.py and extended with get/incr

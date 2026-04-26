@@ -17,14 +17,13 @@ Usage:
 
 import asyncio
 import logging
-import os
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
 
-from src.common.model_tiers import ModelTier, get_model_for_operation
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.model_tiers import ModelTier
+from src.common.repositories import JobRepositoryInterface, get_job_repository
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -478,6 +477,7 @@ class CVGenerationService(OperationService):
             Candidate profile text, or None if not available
         """
         from pathlib import Path
+
         from src.common.config import Config
 
         # Try the configured path first
@@ -517,8 +517,9 @@ class CVGenerationService(OperationService):
         Returns:
             Dictionary with cv_text, cv_path, cv_reasoning, etc.
         """
-        from src.layer6_v2.orchestrator import CVGeneratorV2
         import json
+
+        from src.layer6_v2.orchestrator import CVGeneratorV2
 
         # Create adapter to convert orchestrator's JSON logs to progress_callback format
         def log_callback_adapter(json_str: str) -> None:

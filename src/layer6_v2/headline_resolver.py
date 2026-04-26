@@ -7,7 +7,6 @@ the candidate's verified evidence boundary. Shared by header_generator.py
 """
 
 import re
-from typing import Optional
 
 # Titles the candidate cannot credibly claim (no verified evidence)
 _REJECTED_TITLE_PATTERNS = [

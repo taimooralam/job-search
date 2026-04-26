@@ -5,13 +5,11 @@ Tests the deterministic region detection logic without making
 any external API calls.
 """
 
-import pytest
 
 from src.common.mena_detector import (
-    MenaContext,
     detect_mena_region,
-    format_mena_greeting,
     format_mena_closing,
+    format_mena_greeting,
     get_vision_reference,
 )
 

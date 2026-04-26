@@ -16,6 +16,5 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 from src.pipeline.legacy_jsonl_scraper import main  # noqa: E402
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

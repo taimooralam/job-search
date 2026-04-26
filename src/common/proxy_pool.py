@@ -132,7 +132,7 @@ def save_cache(proxies: List[str], cache_path: Optional[Path] = None) -> None:
     path = cache_path or _default_cache_path()
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(proxies, f)
         logger.info(f"ProxyPool: saved {len(proxies)} proxies to {path}")
     except IOError as e:
@@ -222,7 +222,7 @@ class ProxyPool:
             return None
 
         try:
-            with open(self._cache_path, "r") as f:
+            with open(self._cache_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, list) and data:
                 return data

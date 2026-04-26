@@ -9,13 +9,13 @@ Validates:
 - Stage satisfies StageBase protocol
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Optional
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.preenrich.types import StageContext, StepConfig
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -241,8 +241,8 @@ def test_jd_extraction_unknown_provider_raises():
 
 def test_jd_extraction_satisfies_stage_base():
     """JDExtractionStage satisfies StageBase protocol."""
-    from src.preenrich.stages.jd_extraction import JDExtractionStage
     from src.preenrich.stages.base import StageBase
+    from src.preenrich.stages.jd_extraction import JDExtractionStage
 
     stage = JDExtractionStage()
     assert isinstance(stage, StageBase)

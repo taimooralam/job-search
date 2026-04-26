@@ -10,8 +10,8 @@ from __future__ import annotations
 import functools
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generator, Optional, TypeVar
 from threading import local
+from typing import Any, Callable, Dict, Generator, Optional, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 

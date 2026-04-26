@@ -11,13 +11,12 @@ Phase 8: Cover Letter Validator + CV Generator Integration
 """
 
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
 
 from src.common.unified_llm import LLMResult
-
 
 # ============================================================================
 # FIXTURES

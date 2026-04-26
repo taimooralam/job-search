@@ -16,8 +16,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.preenrich.stages.role_research import RoleResearchStage
-from src.preenrich.types import StageContext, StageResult, StepConfig
-
+from src.preenrich.types import StageContext, StepConfig
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

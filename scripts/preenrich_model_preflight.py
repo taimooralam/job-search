@@ -86,6 +86,16 @@ _STAGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "live_keys": ["status", "evaluator_coverage_target", "evaluator_coverage", "real_stakeholders", "inferred_stakeholder_personas"],
         "default_model": "gpt-5.2",
     },
+    "pain_point_intelligence": {
+        "live_field": "pre_enrichment.outputs.pain_point_intelligence",
+        "live_keys": ["status", "pain_points", "proof_map", "search_terms", "source_scope"],
+        "default_model": "gpt-5.4",
+    },
+    "presentation_contract": {
+        "live_field": "pre_enrichment.outputs.presentation_contract",
+        "live_keys": ["status", "document_expectations", "cv_shape_expectations"],
+        "default_model": "gpt-5.4",
+    },
     "job_inference": {
         "live_field": "pre_enrichment.outputs.job_inference",
         "live_keys": ["semantic_role_model", "company_model", "qualifications", "application_surface"],
@@ -246,6 +256,12 @@ def _run_stage_codex(
         elif stage == "stakeholder_surface":
             from src.preenrich.stages.stakeholder_surface import StakeholderSurfaceStage
             stage_obj = StakeholderSurfaceStage()
+        elif stage == "pain_point_intelligence":
+            from src.preenrich.stages.pain_point_intelligence import PainPointIntelligenceStage
+            stage_obj = PainPointIntelligenceStage()
+        elif stage == "presentation_contract":
+            from src.preenrich.stages.presentation_contract import PresentationContractStage
+            stage_obj = PresentationContractStage()
         elif stage == "job_inference":
             from src.preenrich.stages.job_inference import JobInferenceStage
             stage_obj = JobInferenceStage()
@@ -319,12 +335,12 @@ def _get_historical_jobs(
 
 def validate_stage_routing(stage: str | None = None) -> list[str]:
     """Return routing config errors for the requested stage or all supported stages."""
-    from src.preenrich.types import get_stage_step_config
     from src.preenrich.blueprint_config import (
         classification_escalate_on_failure_enabled,
         classification_escalation_model,
         jd_facts_escalate_on_failure_enabled,
     )
+    from src.preenrich.types import get_stage_step_config
 
     targets = [stage] if stage else _SUPPORTED_STAGES
     errors: list[str] = []
@@ -390,6 +406,30 @@ def validate_stage_routing(stage: str | None = None) -> list[str]:
                 errors.append(f"{name}: outreach guidance requires stakeholders enabled")
             if live_compat and not require_sources:
                 errors.append(f"{name}: live compat write requires source attribution")
+        if name == "pain_point_intelligence":
+            stage_enabled = os.getenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "false").strip().lower() == "true"
+            supplemental_web = os.getenv("PREENRICH_PAIN_POINT_SUPPLEMENTAL_WEB_ENABLED", "false").strip().lower() == "true"
+            live_web_enabled = os.getenv("WEB_RESEARCH_ENABLED", "false").strip().lower() == "true"
+            if stage_enabled and cfg.provider == "none":
+                errors.append("pain_point_intelligence: enabled stage requires a real provider")
+            if stage_enabled and cfg.provider != "codex":
+                errors.append("pain_point_intelligence: enabled stage requires provider=codex")
+            if stage_enabled and (cfg.transport or "none") != "none":
+                errors.append("pain_point_intelligence: enabled stage must default to non-web transport")
+            if supplemental_web and not stage_enabled:
+                errors.append("pain_point_intelligence: supplemental web requires the stage to be enabled")
+            if supplemental_web and not live_web_enabled:
+                errors.append("pain_point_intelligence: supplemental web requires WEB_RESEARCH_ENABLED=true")
+        if name == "presentation_contract":
+            stage_enabled = os.getenv("PREENRICH_PRESENTATION_CONTRACT_ENABLED", "false").strip().lower() == "true"
+            if stage_enabled and cfg.provider == "none":
+                errors.append("presentation_contract: enabled stage requires a real provider")
+            if stage_enabled and cfg.provider != "codex":
+                errors.append("presentation_contract: enabled stage requires provider=codex")
+            if stage_enabled and (cfg.transport or "none") != "none":
+                errors.append("presentation_contract: enabled stage must not use web transport")
+            if stage_enabled and os.getenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "false").strip().lower() != "true":
+                errors.append("presentation_contract: enabled stage requires PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=true")
     return errors
 
 

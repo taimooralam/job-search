@@ -20,10 +20,7 @@ import copy
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from src.services.annotation_suggester import compute_annotations, generate_annotations_for_job
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

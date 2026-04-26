@@ -5,12 +5,13 @@ Tests the canonical STAR parser against knowledge-base.md and validates
 that all records conform to the STARRecord schema.
 """
 
-import pytest
 from pathlib import Path
 from typing import List
 
-from src.common.star_parser import parse_star_records, validate_star_record, _parse_single_star
-from src.common.types import STARRecord, OUTCOME_TYPES
+import pytest
+
+from src.common.star_parser import parse_star_records, validate_star_record
+from src.common.types import OUTCOME_TYPES, STARRecord
 
 
 @pytest.fixture

@@ -8,18 +8,15 @@ Tests the new Phase 7 types:
 - OutcomeStatus
 """
 
-import pytest
-from datetime import datetime
 
 from src.common.annotation_types import (
-    InterviewQuestion,
-    InterviewPrep,
-    ApplicationOutcome,
+    PRIORITY_MULTIPLIERS,
     RELEVANCE_MULTIPLIERS,
     REQUIREMENT_MULTIPLIERS,
-    PRIORITY_MULTIPLIERS,
+    ApplicationOutcome,
+    InterviewPrep,
+    InterviewQuestion,
 )
-
 
 # ===== INTERVIEW QUESTION TESTS =====
 

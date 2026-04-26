@@ -4,8 +4,8 @@ Direct test of Phase 5.2 improvements - NO CACHE
 Tests scraping and signal extraction directly without cache interference.
 """
 
-import json
 import logging
+
 from src.layer3.company_researcher import CompanyResearcher
 
 
@@ -26,7 +26,7 @@ def main():
     researcher = CompanyResearcher()
 
     # Step 1: Multi-source scraping with quality gate
-    print(f"\n1. Scraping with keyword-based queries and quality gate...")
+    print("\n1. Scraping with keyword-based queries and quality gate...")
     scraped_data = researcher._scrape_multiple_sources(company)
 
     print(f"\n✓ Scraped {len(scraped_data)} high/medium quality source(s)")
@@ -40,7 +40,7 @@ def main():
         return
 
     # Step 2: Signal extraction with enhanced prompt
-    print(f"\n2. Extracting signals with Phase 5.2 enhanced prompt...")
+    print("\n2. Extracting signals with Phase 5.2 enhanced prompt...")
     try:
         result = researcher._analyze_company_signals(
             company=company,
@@ -49,11 +49,11 @@ def main():
             star_outcomes="Team Scaling, Performance Optimization"
         )
 
-        print(f"\n✅ Signal extraction succeeded!")
+        print("\n✅ Signal extraction succeeded!")
 
         # Show reasoning
         if result.reasoning:
-            print(f"\n📊 REASONING:")
+            print("\n📊 REASONING:")
             print(f"  Sources: {result.reasoning.sources_analyzed}")
             print(f"  Quality: {result.reasoning.source_quality}")
             print(f"  Missing: {result.reasoning.missing_context}")
@@ -61,7 +61,7 @@ def main():
             print(f"  Confidence: {result.reasoning.confidence_level}")
 
         # Show summary
-        print(f"\n📝 SUMMARY:")
+        print("\n📝 SUMMARY:")
         print(f"  {result.summary}")
 
         # Show signals
@@ -76,7 +76,7 @@ def main():
         print(f"\n🔗 URL: {result.url}")
 
     except Exception as e:
-        print(f"\n❌ Signal extraction failed:")
+        print("\n❌ Signal extraction failed:")
         print(f"  Error: {e}")
         import traceback
         traceback.print_exc()

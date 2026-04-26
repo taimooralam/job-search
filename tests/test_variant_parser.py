@@ -4,21 +4,18 @@ Unit tests for VariantParser.
 Tests the parsing of enhanced role files with achievement variants.
 """
 
-import pytest
 from pathlib import Path
 from textwrap import dedent
 
+import pytest
+
 from src.layer6_v2.variant_parser import (
-    VariantParser,
-    Achievement,
     AchievementVariant,
     EnhancedRoleData,
-    RoleMetadata,
-    SelectionGuide,
-    parse_role_file,
+    VariantParser,
     parse_all_roles,
+    parse_role_file,
 )
-
 
 # ============================================================================
 # FIXTURES

@@ -10,15 +10,15 @@ Tests cover:
 Based on: plans/prompt-optimization-plan.md Section B (Layer 6a improvements)
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 from src.layer6.cover_letter_generator import (
+    GENERIC_BOILERPLATE_PHRASES,
     CoverLetterGenerator,
     validate_cover_letter,
-    GENERIC_BOILERPLATE_PHRASES,
 )
-
 
 # ===== VALID LETTER TEMPLATE =====
 # This template passes ALL validation gates (180+ words, 3-4 paragraphs, metrics, STAR companies, signals, pain points)

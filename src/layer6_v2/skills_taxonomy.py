@@ -21,20 +21,18 @@ Usage:
 import json
 import re
 from pathlib import Path
-from typing import List, Dict, Set, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Set, Tuple
 
 from src.common.logger import get_logger
 from src.layer6_v2.types import (
-    TaxonomySection,
+    HeaderGenerationContext,
     RoleSkillsTaxonomy,
     SectionScore,
-    SkillScore,
     SkillEvidence,
+    SkillScore,
     SkillsSection,
-    HeaderGenerationContext,
+    TaxonomySection,
 )
-
 
 # Default path to taxonomy file
 DEFAULT_TAXONOMY_PATH = Path(__file__).parent.parent.parent / "data" / "master-cv" / "role_skills_taxonomy.json"
@@ -1001,7 +999,6 @@ class CoreCompetencyGeneratorV2:
             - Dict[str, List[str]]: section_name → list of skills
             - SkillsProvenance: Full traceability for anti-hallucination proof
         """
-        from src.layer6_v2.types import SkillsProvenance
 
         # Extract JD keywords for prioritization (coerce strings to lists)
         jd_keywords = set()

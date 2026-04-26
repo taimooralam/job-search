@@ -5,16 +5,16 @@ Tests the StructureJDService for structuring job descriptions
 into annotatable HTML sections with LLM or rule-based processing.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
-from src.services.structure_jd_service import StructureJDService, structure_jd
-from src.services.operation_base import OperationResult
 from src.common.model_tiers import ModelTier
 from src.layer1_4 import LLMMetadata
-
+from src.services.operation_base import OperationResult
+from src.services.structure_jd_service import StructureJDService, structure_jd
 
 # =============================================================================
 # Sample Data Fixtures

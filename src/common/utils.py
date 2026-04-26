@@ -12,7 +12,7 @@ Includes:
 
 import asyncio
 import concurrent.futures
-from typing import Any, Coroutine, Dict, List, Optional, TypeVar, Union
+from typing import Any, Coroutine, Dict, List, Optional, TypeVar
 
 T = TypeVar('T')
 
@@ -43,7 +43,7 @@ def run_async(coro: Coroutine[None, None, T]) -> T:
     """
     try:
         # Check if there's already a running event loop
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
     except RuntimeError:
         # No running loop - we can use asyncio.run() directly
         return asyncio.run(coro)

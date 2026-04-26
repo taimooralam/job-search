@@ -7,10 +7,8 @@ Validates:
 - company_checksum is case-insensitive and whitespace-tolerant
 """
 
-import pytest
 
-from src.preenrich.checksums import normalize_jd, jd_checksum, company_checksum
-
+from src.preenrich.checksums import company_checksum, jd_checksum, normalize_jd
 
 # ---------------------------------------------------------------------------
 # normalize_jd

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from bson import ObjectId
 import pytest
+from bson import ObjectId
 
 from src.preenrich.blueprint_config import validate_blueprint_feature_flags
 from src.preenrich.blueprint_models import (
     ApplicationSurfaceDoc,
     ConfidenceDoc,
-    InitialOutreachGuidance,
     GuidanceActionBullet,
     GuidanceAvoidBullet,
     GuidanceBullet,
+    InitialOutreachGuidance,
     RoleProfile,
     StakeholderRecord,
 )
@@ -109,7 +109,7 @@ def _context() -> StageContext:
 
 
 def _mock_live_research_transport(monkeypatch):
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         if "P-research-company@" in prompt:
             payload = {
                 "summary": "Acme builds AI workflow software for enterprise operations teams.",
@@ -371,7 +371,7 @@ def test_research_stage_accepts_richer_live_shapes_after_normalization(monkeypat
     monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_RESEARCH_ENABLE_STAKEHOLDERS", "true")
 
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         if "P-research-company@" in prompt:
             payload = {
                 "summary": {"text": "Acme builds AI workflow software for enterprise teams."},
@@ -461,7 +461,7 @@ def test_research_stage_fail_opens_company_and_role_on_schema_drift(monkeypatch)
     monkeypatch.setenv("PREENRICH_RESEARCH_ENRICHMENT_V2_ENABLED", "true")
     monkeypatch.setenv("WEB_RESEARCH_ENABLED", "true")
 
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         if "P-research-company@" in prompt:
             return ResearchTransportResult(
                 success=False,

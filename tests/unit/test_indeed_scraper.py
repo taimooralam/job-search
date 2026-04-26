@@ -5,28 +5,28 @@ Tests the Indeed scraper without making actual HTTP requests.
 Uses mocked responses to test HTML parsing, error handling, and FireCrawl fallback.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.services.indeed_scraper import (
-    extract_job_key,
-    scrape_indeed_job,
-    indeed_job_to_mongodb_doc,
-    _parse_indeed_html,
-    _extract_title,
-    _extract_company,
-    _extract_location,
-    _extract_description,
-    _extract_salary,
-    _extract_job_type,
-    _clean_description,
-    _generate_dedupe_key,
     IndeedJobData,
     IndeedScraperError,
     JobNotFoundError,
-    BlockedError,
     ParseError,
+    _clean_description,
+    _extract_company,
+    _extract_description,
+    _extract_job_type,
+    _extract_location,
+    _extract_salary,
+    _extract_title,
+    _generate_dedupe_key,
+    _parse_indeed_html,
+    extract_job_key,
+    indeed_job_to_mongodb_doc,
+    scrape_indeed_job,
 )
 
 
@@ -414,7 +414,7 @@ class TestScrapeIndeedJob:
             job_url="https://indeed.com/viewjob?jk=abc123def4567890",
         )
 
-        result = scrape_indeed_job("abc123def4567890")
+        scrape_indeed_job("abc123def4567890")
 
         mock_firecrawl.assert_called_once()
 

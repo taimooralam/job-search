@@ -7,13 +7,13 @@ appear in optimal positions (top 1/3) of the CV for ATS optimization and
 """
 
 import pytest
+
 from src.layer6_v2.keyword_placement import (
     KeywordPlacement,
     KeywordPlacementResult,
     KeywordPlacementValidator,
     extract_priority_keywords_from_annotations,
 )
-
 
 # =============================================================================
 # FIXTURES

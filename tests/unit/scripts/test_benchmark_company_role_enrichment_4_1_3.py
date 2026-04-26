@@ -54,14 +54,19 @@ def _candidate() -> dict:
 
 
 def test_compare_company_role_enrichment_reports_schema_failure():
+    # The CompanyProfile / RoleProfile normalizers are intentionally permissive
+    # (they backfill defaults for empty dicts), so a non-dict payload is what
+    # actually trips schema validation. This guards against the comparator
+    # silently swallowing such errors.
     comparison = compare_company_role_enrichment(
         _gold(),
         {
-            "company_profile": {"sources": [{}]},
-            "role_profile": {},
+            "company_profile": "not-a-dict",
+            "role_profile": 12345,
         },
     )
     assert comparison["schema_valid"] is False
+    assert "error" in comparison
 
 
 def test_run_benchmark_passes_with_fixture_candidate():

@@ -9,14 +9,14 @@ Improvements included:
 5. Quality filtering
 """
 
-import json
 import logging
+
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 
 from src.common.config import Config
-from src.layer3.company_researcher import CompanyResearcher
 from src.common.state import JobState
+from src.layer3.company_researcher import CompanyResearcher
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
     print("="*100)
 
     # Fetch job
-    print(f"\n1. Fetching job from MongoDB...")
+    print("\n1. Fetching job from MongoDB...")
     mongo_client = MongoClient(Config.MONGODB_URI)
     db = mongo_client["jobs"]
     job = db["level-2"].find_one({"_id": ObjectId("6929c97b45fa3c355f84ba2d")})
@@ -57,7 +57,7 @@ def main():
         ]
     }
 
-    print(f"\n2. Running Layer 3 Company Researcher (Phase 5.2)...")
+    print("\n2. Running Layer 3 Company Researcher (Phase 5.2)...")
     researcher = CompanyResearcher()
     results = researcher.research_company(state)
 
@@ -71,7 +71,7 @@ def main():
 
         # Reasoning block (if present)
         if "reasoning" in research:
-            print(f"\n📊 REASONING BLOCK:")
+            print("\n📊 REASONING BLOCK:")
             reasoning = research["reasoning"]
             print(f"  Sources Analyzed: {len(reasoning.get('sources_analyzed', []))}")
             for idx, source in enumerate(reasoning.get('sources_analyzed', []), 1):
@@ -83,19 +83,19 @@ def main():
             confidence = reasoning.get('confidence_level', 'unknown')
 
             if missing:
-                print(f"\n  Missing Context:")
+                print("\n  Missing Context:")
                 for item in missing:
                     print(f"    - {item}")
 
             if assumptions:
-                print(f"\n  Assumptions:")
+                print("\n  Assumptions:")
                 for item in assumptions:
                     print(f"    - {item}")
 
             print(f"\n  Confidence Level: {confidence}")
 
         # Summary
-        print(f"\n📝 SUMMARY:")
+        print("\n📝 SUMMARY:")
         print(f"  {research['summary']}")
 
         # Signals

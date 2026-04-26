@@ -8,10 +8,9 @@ Uses centralized config for settings validation.
 import logging
 
 from fastapi import HTTPException, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .config import settings
-
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()

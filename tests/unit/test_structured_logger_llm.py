@@ -7,16 +7,14 @@ Tests new LLM-specific logging functionality:
 """
 
 import json
+
 import pytest
-from io import StringIO
-from unittest.mock import patch, MagicMock
-import time
 
 from src.common.structured_logger import (
-    StructuredLogger,
-    LogEvent,
-    get_structured_logger,
     EventType,
+    LogEvent,
+    StructuredLogger,
+    get_structured_logger,
 )
 
 

@@ -23,6 +23,13 @@ PROMPT_VERSIONS = {
     "stakeholder_surface_discovery": "P-stakeholder-discovery@v2",
     "stakeholder_surface_profile": "P-stakeholder-profile@v2",
     "inferred_stakeholder_personas": "P-inferred-stakeholder-personas@v1",
+    "document_expectations": "P-document-expectations@v1",
+    "cv_shape_expectations": "P-cv-shape-expectations@v1",
+    "document_and_cv_shape": "P-document-and-cv-shape@v1",
+    "pain_point_intelligence": "P-pain-point-intelligence@v1",
+    "ideal_candidate": "P-ideal-candidate@v1",
+    "experience_dimension_weights": "P-experience-dimension-weights@v1",
+    "emphasis_rules": "P-emphasis-rules@v1",
 }
 
 
@@ -895,7 +902,9 @@ def build_p_stakeholder_discovery_v2(
             "Do not construct LinkedIn URLs or infer names from URL slugs. Do not merge ambiguous profiles.",
             "A real stakeholder must match canonical company identity and role/function context simultaneously.",
             "Medium/high identity confidence requires a direct signal class or two distinct converging matched_signal_classes.",
+            "Every stakeholder_intelligence record must include non-empty sources[] and matched_signal_classes; otherwise drop that candidate and explain the rejection in search_journal or notes.",
             "Low-confidence or ambiguous candidates belong in search_journal, not stakeholder_intelligence.",
+            "search_journal.step must be exactly one of: preflight, discovery, profile, personas. Discovery substeps like company identity checks, corroboration, validation, and context review must still emit step=\"discovery\".",
             "search_journal.outcome must be exactly one of: hit, miss, ambiguous, rejected_fabrication.",
             "If a search found relevant company pages but no named people, use outcome=\"miss\" and explain that in notes instead of inventing a new outcome value.",
             "The output stakeholder_intelligence records must stay discovery-only. Do not emit evaluator personas here.",
@@ -981,6 +990,7 @@ def build_p_stakeholder_profile_v2(
             ),
             "Summarize only public-professional evidence and evaluator-style inference for this already-resolved stakeholder.",
             "Do not emit exact title text, exact header text, exact summary text, or CV section ids. preferred_signal_order must use abstract signal categories only.",
+            "cv_preference_surface must not contain its own status field. Only the top-level stakeholder profile may emit status.",
             "Mark fields unresolved rather than forcing a view when evidence is weak.",
             "Do not inspect local files, prompts, tests, or use shell commands. Use only the payload above and allowed web research.",
             "Use this minimal shape as a guide and emit JSON directly:",
@@ -1029,8 +1039,1018 @@ def build_p_inferred_stakeholder_personas_v1(
             "Do not model private motives, protected traits, or personal psychology.",
             "Persona confidence may not exceed medium.",
             "cv_preference_surface remains evaluator signal, not CV instruction. Do not emit CV section ids or exact copy.",
+            "emitted_because must be exactly one of: no_real_candidate, real_search_disabled, real_ambiguous, coverage_gap_despite_real.",
+            "cv_preference_surface.title_match_preference must be exactly one of: strict, moderate, lenient, unresolved.",
+            "Persona sources[] must contain full source objects, not bare source_id strings.",
+            "likely_priorities and likely_reject_signals items may contain only bullet, basis/reason, and source_ids. Do not add confidence fields to those nested items.",
             "Use this minimal shape as a guide and emit JSON directly:",
             _minimal_inferred_persona_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def _minimal_pain_point_intelligence_example() -> str:
+    example = {
+        "pain_point_intelligence": {
+            "status": "completed",
+            "source_scope": "jd_plus_research",
+            "pain_points": [
+                {
+                    "pain_id": "p_technical_deadbeef",
+                    "category": "technical",
+                    "statement": "The team needs someone who can shape production-grade AI architecture instead of shipping isolated experiments.",
+                    "why_now": "The role blends architecture ownership with AI delivery across product and platform surfaces.",
+                    "source_scope": "jd_plus_research",
+                    "evidence_refs": [
+                        "artifact:pre_enrichment.outputs.jd_facts.merged_view.responsibilities",
+                        "artifact:pre_enrichment.outputs.research_enrichment.role_profile.business_impact",
+                    ],
+                    "urgency": "medium",
+                    "related_stakeholders": ["hiring_manager", "peer_technical"],
+                    "likely_proof_targets": ["architecture", "ai", "metric"],
+                    "confidence": {"score": 0.79, "band": "medium", "basis": "JD and research signals converge on production-grade AI architecture scope."},
+                }
+            ],
+            "strategic_needs": [
+                {
+                    "category": "business",
+                    "statement": "The role must translate AI and platform work into reliable business delivery.",
+                    "evidence_refs": ["artifact:pre_enrichment.outputs.research_enrichment.role_profile.business_impact"],
+                    "confidence": {"score": 0.74, "band": "medium", "basis": "Role-profile business impact signals are explicit."},
+                }
+            ],
+            "risks_if_unfilled": [
+                {
+                    "category": "delivery",
+                    "statement": "AI delivery quality and system reliability will remain fragile without strong architecture ownership.",
+                    "evidence_refs": ["artifact:pre_enrichment.outputs.jd_facts.merged_view.implied_pain_points"],
+                    "confidence": {"score": 0.68, "band": "medium", "basis": "JD implies reliability and delivery pressure."},
+                }
+            ],
+            "success_metrics": [
+                {
+                    "statement": "Demonstrable production AI outcomes with clear architectural ownership and measurable delivery impact.",
+                    "metric_kind": "outcome",
+                    "horizon": "90_day",
+                    "evidence_refs": ["artifact:pre_enrichment.outputs.research_enrichment.role_profile.success_metrics"],
+                    "confidence": {"score": 0.7, "band": "medium", "basis": "Role-profile success signals point to delivery outcomes."},
+                }
+            ],
+            "proof_map": [
+                {
+                    "pain_id": "p_technical_deadbeef",
+                    "preferred_proof_type": "architecture",
+                    "preferred_evidence_shape": "Named system ownership plus concrete production impact.",
+                    "bad_proof_patterns": ["tool list without scope", "generic AI enthusiasm"],
+                    "affected_document_sections": ["summary", "key_achievements", "experience"],
+                    "rationale": "This concern is best addressed by architecture ownership paired with outcome signal.",
+                    "confidence": {"score": 0.78, "band": "medium", "basis": "Architecture proof is the strongest reassurance signal for this pain."},
+                }
+            ],
+            "search_terms": [
+                {"term": "production AI architecture reliability", "intent": "retrieval", "source_basis": "JD responsibilities and role-profile business impact."}
+            ],
+            "unresolved_questions": [],
+            "sources": [],
+            "evidence": [
+                {
+                    "claim": "The role combines AI delivery pressure with architecture ownership expectations.",
+                    "source_ids": ["jd:responsibilities:0", "source:role_profile"],
+                }
+            ],
+            "confidence": {"score": 0.76, "band": "medium", "basis": "Evidence converges across JD and research artifacts."},
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def build_p_pain_point_intelligence(
+    *,
+    preflight: dict[str, Any],
+    jd_excerpt: str,
+    classification_excerpt: dict[str, Any],
+    research_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    evidence_bag: dict[str, Any],
+    source_registry: list[dict[str, Any]],
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "jd_excerpt": jd_excerpt[:1800],
+        "classification_excerpt": classification_excerpt,
+        "research_excerpt": research_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "evidence_bag": evidence_bag,
+        "source_registry": source_registry,
+        "canonical_enums": {
+            "pain_category": ["technical", "business", "delivery", "org", "stakeholder", "application"],
+            "strategic_need_category": ["technical", "business", "delivery", "org", "stakeholder", "application"],
+            "risk_category": ["technical", "business", "delivery", "org", "stakeholder", "application"],
+            "success_metric_kind": ["outcome", "leading", "lagging", "qualitative"],
+            "success_metric_horizon": ["30_day", "90_day", "6_month", "12_month", "multi_year"],
+            "source_scope": ["jd_only", "jd_plus_research", "supplemental_web"],
+            "proof_type": ["metric", "architecture", "leadership", "domain", "reliability", "ai", "stakeholder", "process", "compliance", "scale"],
+            "stakeholder_type": ["recruiter", "hiring_manager", "skip_level_leader", "peer_technical", "cross_functional_partner", "executive_sponsor", "unknown"],
+            "document_section_id": [
+                "header",
+                "summary",
+                "key_achievements",
+                "core_competencies",
+                "ai_highlights",
+                "experience",
+                "education",
+                "certifications",
+                "projects",
+                "publications",
+                "awards",
+            ],
+            "search_term_intent": ["retrieval", "disambiguation", "ats"],
+        },
+    }
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["pain_point_intelligence"], ["pain_point_intelligence"]),
+            "You are synthesizing the canonical candidate-agnostic pain_point_intelligence artifact for Iteration 4.2.3.",
+            "Return only the `pain_point_intelligence` object.",
+            "Do not generate CV prose, section ordering, headers, summaries, bullets, outreach copy, or candidate-specific guidance.",
+            "Do not fabricate company events, leadership changes, funding rounds, layoffs, metrics, or internal priorities absent from the provided inputs.",
+            "Keep pain, strategic need, risk if unfilled, and success metric distinct. Do not collapse them into one list.",
+            "Every pain_points entry MUST have a stable pain_id, >=1 evidence_refs entry, and at least one likely_proof_targets enum.",
+            "Every proof_map entry MUST reference an existing pain_id and use only canonical proof_type and document_section_id enums.",
+            "search_terms must be concrete and retrieval-usable.",
+            "artifact:jd_excerpt is an allowed evidence_ref when the signal comes directly from the JD excerpt provided here.",
+            "Do not emit urgency=\"high\" when the evidence is jd_only or only one surface is present; downgrade it to medium instead.",
+            "Generic HR boilerplate is not acceptable unless the JD literally uses it and you still ground it carefully.",
+            "Unresolved is a valid answer. Use unresolved_questions instead of guessing.",
+            "Use only source:... or artifact:... evidence refs.",
+            "Use this shape as a guide and emit JSON directly:",
+            _minimal_pain_point_intelligence_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def _minimal_document_expectations_example() -> str:
+    example = {
+        "document_expectations": {
+            "status": "completed",
+            "primary_document_goal": "architecture_first",
+            "secondary_document_goals": ["delivery_first"],
+            "audience_variants": {
+                "recruiter": {
+                    "tilt": ["clarity_first", "keyword_visible"],
+                    "must_see": ["role_fit", "recognizable_title", "production_scope"],
+                    "risky_signals": ["tool_list_cv", "generic_mission_restatement"],
+                    "rationale": "Recruiter lens wants immediate role-fit clarity and visible relevance.",
+                },
+                "hiring_manager": {
+                    "tilt": ["evidence_first", "low_hype"],
+                    "must_see": ["architecture_judgment", "ownership_scope", "production_impact"],
+                    "risky_signals": ["hype_header", "ai_claims_without_evidence"],
+                    "rationale": "Hiring-manager lens wants proof-dense signal without inflated framing.",
+                },
+            },
+            "proof_order": ["architecture", "metric", "ai", "leadership"],
+            "anti_patterns": ["tool_list_cv", "hype_header", "ai_claims_without_evidence"],
+            "tone_posture": {
+                "primary_tone": "architect_first",
+                "hype_tolerance": "low",
+                "narrative_tolerance": "medium",
+                "formality": "neutral",
+            },
+            "density_posture": {
+                "overall_density": "high",
+                "header_density": "proof_dense",
+                "section_density_bias": [{"section_id": "summary", "bias": "medium"}],
+            },
+            "keyword_balance": {
+                "target_keyword_pressure": "high",
+                "ats_mirroring_bias": "balanced",
+                "semantic_expansion_bias": "balanced",
+            },
+            "unresolved_markers": [],
+            "rationale": "Architecture-first role with evidence-first evaluators. The document should front-load proof rather than narrative.",
+            "confidence": {"score": 0.82, "band": "high", "basis": "Upstream signals converge on architecture-first framing."},
+            "evidence": [{"claim": "Architecture-first framing is supported by role and evaluator signals.", "source_ids": ["classification.primary_role_category", "stakeholder_surface.evaluator_coverage_target"]}],
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_cv_shape_expectations_example() -> str:
+    example = {
+        "cv_shape_expectations": {
+            "status": "completed",
+            "title_strategy": "closest_truthful",
+            "header_shape": {
+                "density": "proof_dense",
+                "include_elements": ["name", "current_or_target_title", "links", "proof_line"],
+                "proof_line_policy": "required",
+                "differentiator_line_policy": "optional",
+            },
+            "section_order": ["header", "summary", "key_achievements", "core_competencies", "ai_highlights", "experience", "education"],
+            "section_emphasis": [
+                {
+                    "section_id": "summary",
+                    "emphasis": "highlight",
+                    "focus_categories": ["architecture", "ai"],
+                    "length_bias": "short",
+                    "ordering_bias": "outcome_first",
+                    "rationale": "Summary should establish architecture and AI credibility fast.",
+                },
+                {
+                    "section_id": "experience",
+                    "emphasis": "highlight",
+                    "focus_categories": ["architecture", "metric", "leadership"],
+                    "length_bias": "long",
+                    "ordering_bias": "outcome_first",
+                    "rationale": "Experience carries the main proof ladder for this role class.",
+                },
+            ],
+            "ai_section_policy": "required",
+            "counts": {
+                "key_achievements_min": 3,
+                "key_achievements_max": 5,
+                "core_competencies_min": 6,
+                "core_competencies_max": 10,
+                "summary_sentences_min": 2,
+                "summary_sentences_max": 4,
+            },
+            "ats_envelope": {
+                "pressure": "standard",
+                "format_rules": ["single_column", "no_tables_in_experience", "plain_bullets"],
+                "keyword_placement_bias": "top_heavy",
+            },
+            "evidence_density": "high",
+            "seniority_signal_strength": "high",
+            "compression_rules": ["compress_core_competencies_first", "compress_certifications_second", "compress_projects_third"],
+            "omission_rules": ["omit_publications_if_unused_in_role_family", "omit_awards_if_unused_in_role_family"],
+            "unresolved_markers": [],
+            "rationale": "Concrete CV shape mirrors the proof-dense thesis and keeps the ATS envelope conventional.",
+            "confidence": {"score": 0.8, "band": "high", "basis": "Matches thesis, evaluator surface, and AI intensity policy."},
+            "evidence": [{"claim": "Proof-dense header and required AI section are supported by the thesis and AI intensity.", "source_ids": ["document_expectations.density_posture.header_density", "classification.ai_taxonomy.intensity"]}],
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_ideal_candidate_example() -> str:
+    example = {
+        "ideal_candidate_presentation_model": {
+            "status": "completed",
+            "visible_identity": "Principal AI architecture leader for production platforms",
+            "acceptable_titles": ["Principal AI Architect", "Principal Architect, AI Platforms"],
+            "title_strategy": "closest_truthful",
+            "must_signal": [
+                {
+                    "tag": "architecture_judgment",
+                    "proof_category": "architecture",
+                    "rationale": "The document should visibly signal systems-design authority.",
+                    "evidence_refs": [{"source": "pain_point_intelligence.proof_map:p1"}],
+                },
+                {
+                    "tag": "production_impact",
+                    "proof_category": "metric",
+                    "rationale": "Evaluators need measurable production outcomes, not only tool familiarity.",
+                    "evidence_refs": [{"source": "research_enrichment.role_profile.success_metrics"}],
+                },
+            ],
+            "should_signal": [
+                {
+                    "tag": "ai_depth",
+                    "proof_category": "ai",
+                    "rationale": "AI depth should be explicit because the role is AI-core.",
+                    "evidence_refs": [{"source": "classification.ai_taxonomy.intensity"}],
+                }
+            ],
+            "de_emphasize": [
+                {
+                    "tag": "tool_listing",
+                    "proof_category": "process",
+                    "rationale": "Tool lists without ownership or outcomes should not dominate the framing.",
+                    "evidence_refs": [{"source": "stakeholder_surface.real_stakeholders[0].likely_reject_signals"}],
+                }
+            ],
+            "proof_ladder": [
+                {
+                    "proof_category": "architecture",
+                    "signal_tag": "architecture_judgment",
+                    "rationale": "Lead with architecture proof before broader leadership framing.",
+                    "evidence_refs": [{"source": "pain_point_intelligence.proof_map:p1"}],
+                },
+                {
+                    "proof_category": "metric",
+                    "signal_tag": "production_impact",
+                    "rationale": "Then ground the architecture claim in measurable outcomes.",
+                    "evidence_refs": [{"source": "pain_point_intelligence.proof_map:p2"}],
+                },
+            ],
+            "tone_profile": {
+                "primary_tone": "architect_first",
+                "hype_tolerance": "low",
+                "narrative_tolerance": "medium",
+                "formality": "neutral",
+            },
+            "credibility_markers": [
+                {
+                    "marker": "named_systems",
+                    "proof_category": "architecture",
+                    "rationale": "Named systems and platform scope make the identity credible.",
+                    "evidence_refs": [{"source": "pain_point_intelligence.proof_map:p1"}],
+                }
+            ],
+            "risk_flags": [
+                {
+                    "flag": "generic_ai_claim",
+                    "severity": "high",
+                    "rationale": "Do not claim AI depth without concrete production proof.",
+                    "evidence_refs": [{"source": "stakeholder_surface.real_stakeholders[0].likely_reject_signals"}],
+                }
+            ],
+            "audience_variants": {
+                "recruiter": {
+                    "tilt": ["clarity_first", "keyword_visible"],
+                    "must_land": ["role_fit", "recognizable_title"],
+                    "de_emphasize": ["tool_listing"],
+                    "rationale": "Recruiter view needs clear title fit and recognizable scope.",
+                },
+                "hiring_manager": {
+                    "tilt": ["evidence_first", "architect_first"],
+                    "must_land": ["architecture_judgment", "production_impact"],
+                    "de_emphasize": ["generic_leadership_claim"],
+                    "rationale": "Hiring manager wants architecture proof before abstract leadership signal.",
+                },
+            },
+            "confidence": {"score": 0.8, "band": "high", "basis": "Role, evaluator, and proof-map signals converge on this framing."},
+            "defaults_applied": [],
+            "unresolved_markers": [],
+            "evidence_refs": [
+                {"source": "jd_facts.merged_view.ideal_candidate_profile"},
+                {"source": "pain_point_intelligence.proof_map:p1"},
+                {"source": "stakeholder_surface.evaluator_coverage_target"},
+            ],
+            "debug_context": {
+                "input_summary": {"role_family": "ai_architect"},
+                "defaults_applied": [],
+                "normalization_events": [],
+                "richer_output_retained": [],
+                "rejected_output": [],
+                "retry_events": [],
+            },
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def _minimal_experience_dimension_weights_example() -> str:
+    example = {
+        "experience_dimension_weights": {
+            "status": "completed",
+            "source_scope": "jd_plus_research_plus_stakeholder",
+            "dimension_enum_version": "v1",
+            "overall_weights": {
+                "hands_on_implementation": 12,
+                "architecture_system_design": 20,
+                "leadership_enablement": 8,
+                "tools_technology_stack": 6,
+                "methodology_operating_model": 6,
+                "business_impact": 12,
+                "stakeholder_communication": 8,
+                "ai_ml_depth": 12,
+                "domain_context": 4,
+                "quality_risk_reliability": 5,
+                "delivery_execution_pace": 4,
+                "platform_scaling_change": 3,
+            },
+            "stakeholder_variant_weights": {
+                "recruiter": {
+                    "hands_on_implementation": 10,
+                    "architecture_system_design": 18,
+                    "leadership_enablement": 6,
+                    "tools_technology_stack": 8,
+                    "methodology_operating_model": 6,
+                    "business_impact": 14,
+                    "stakeholder_communication": 10,
+                    "ai_ml_depth": 10,
+                    "domain_context": 4,
+                    "quality_risk_reliability": 5,
+                    "delivery_execution_pace": 5,
+                    "platform_scaling_change": 4,
+                },
+                "hiring_manager": {
+                    "hands_on_implementation": 13,
+                    "architecture_system_design": 22,
+                    "leadership_enablement": 7,
+                    "tools_technology_stack": 5,
+                    "methodology_operating_model": 6,
+                    "business_impact": 11,
+                    "stakeholder_communication": 7,
+                    "ai_ml_depth": 12,
+                    "domain_context": 3,
+                    "quality_risk_reliability": 6,
+                    "delivery_execution_pace": 4,
+                    "platform_scaling_change": 4,
+                },
+            },
+            "minimum_visible_dimensions": ["architecture_system_design", "business_impact", "ai_ml_depth"],
+            "overuse_risks": [
+                {
+                    "dimension": "leadership_enablement",
+                    "reason": "seniority_mismatch",
+                    "threshold": 18,
+                    "mitigation": "proof_first",
+                }
+            ],
+            "rationale": "Lead with architecture, business impact, and AI depth without inflating leadership beyond the available role evidence.",
+            "unresolved_markers": [],
+            "defaults_applied": [],
+            "normalization_events": [],
+            "confidence": {
+                "score": 0.79,
+                "band": "medium",
+                "basis": "Role mandate, stakeholder surface, and proof map align on these document-facing weights.",
+            },
+            "evidence": [
+                {
+                    "claim": "Architecture and AI depth should stay visible because the role mandate and proof map both prioritize them.",
+                    "source_ids": [
+                        "research_enrichment.role_profile.mandate",
+                        "pain_point_intelligence.proof_map",
+                    ],
+                }
+            ],
+            "notes": ["Weights are candidate-agnostic and describe document emphasis only."],
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def build_p_document_expectations(
+    *,
+    preflight: dict[str, Any],
+    jd_excerpt: str,
+    classification_excerpt: dict[str, Any],
+    research_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    pain_point_excerpt: dict[str, Any],
+    job_inference_excerpt: dict[str, Any] | None = None,
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "jd_excerpt": jd_excerpt[:1800],
+        "classification_excerpt": classification_excerpt,
+        "research_excerpt": research_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "pain_point_excerpt": pain_point_excerpt,
+        "job_inference_excerpt": job_inference_excerpt or {},
+        "canonical_enums": {
+            "primary_document_goal": ["architecture_first", "delivery_first", "leadership_first", "ai_first", "platform_first", "transformation_first", "balanced", "unresolved"],
+            "proof_category": ["metric", "architecture", "leadership", "domain", "reliability", "ai", "stakeholder", "process", "compliance", "scale"],
+            "anti_pattern_id": [
+                "tool_list_cv",
+                "hype_header",
+                "metrics_without_scope",
+                "scope_without_metrics",
+                "titles_without_proof",
+                "ai_claims_without_evidence",
+                "buzzword_stacking",
+                "narrative_only_summary",
+                "skill_cloud_without_ordering",
+                "generic_mission_restatement",
+            ],
+            "evaluator_roles": ["recruiter", "hiring_manager", "skip_level_leader", "peer_technical", "cross_functional_partner", "executive_sponsor"],
+        },
+    }
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["document_expectations"], ["document_expectations"]),
+            "You are synthesizing the candidate-agnostic document thesis for a later presentation_contract stage.",
+            "Do not generate CV prose, bullets, headers, summaries, or candidate-specific claims.",
+            "Return only the `document_expectations` object.",
+            "Keep outputs candidate-agnostic. Reject first-person framing, candidate company history, private details, and invented achievements.",
+            "audience_variants keys MUST be a subset of stakeholder_surface_excerpt.evaluator_coverage_target.",
+            "proof_order MUST use only canonical proof-category ids from the payload.",
+            "anti_patterns MUST use only canonical anti-pattern ids from the payload.",
+            "If stakeholder evidence is thin, fail open to conservative role-family defaults and unresolved_markers rather than guessing.",
+            "Use this shape as a guide and emit JSON directly:",
+            _minimal_document_expectations_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_cv_shape_expectations(
+    *,
+    preflight: dict[str, Any],
+    document_expectations: dict[str, Any],
+    classification_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    pain_point_excerpt: dict[str, Any],
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "document_expectations": document_expectations,
+        "classification_excerpt": classification_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "pain_point_excerpt": pain_point_excerpt,
+        "canonical_enums": {
+            "section_id": [
+                "header",
+                "summary",
+                "key_achievements",
+                "core_competencies",
+                "ai_highlights",
+                "experience",
+                "education",
+                "certifications",
+                "projects",
+                "publications",
+                "awards",
+            ],
+            "proof_category": ["metric", "architecture", "leadership", "domain", "reliability", "ai", "stakeholder", "process", "compliance", "scale"],
+            "ai_section_policy": ["required", "optional", "discouraged", "embedded_only"],
+            "compression_rules": [
+                "compress_core_competencies_first",
+                "compress_certifications_second",
+                "compress_projects_third",
+            ],
+            "omission_rules": [
+                "omit_publications_if_unused_in_role_family",
+                "omit_awards_if_unused_in_role_family",
+                "omit_ai_highlights_if_policy_discouraged",
+                "omit_projects_if_experience_is_dominant",
+            ],
+        },
+        "ai_policy_matrix": {
+            "core": ["required", "optional"],
+            "significant": ["required", "optional", "embedded_only"],
+            "adjacent": ["optional", "embedded_only"],
+            "none": ["embedded_only", "discouraged"],
+        },
+    }
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["cv_shape_expectations"], ["cv_shape_expectations"]),
+            "You are synthesizing the candidate-agnostic CV structure contract for a later presentation_contract stage.",
+            "Do not generate CV prose or candidate evidence. Return only structural shape guidance.",
+            "Return only the `cv_shape_expectations` object.",
+            "header_shape.density MUST equal document_expectations.density_posture.header_density.",
+            "section_order MUST begin with header and include at least summary and experience.",
+            "section_emphasis.section_id MUST be a subset of section_order and use canonical section ids only.",
+            "focus_categories MUST use only canonical proof-category ids.",
+            "ai_section_policy MUST satisfy the ai_policy_matrix in the payload.",
+            "If evidence is thin, fail open to conservative role-family defaults and unresolved_markers rather than inventing shape detail.",
+            "Use this shape as a guide and emit JSON directly:",
+            _minimal_cv_shape_expectations_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_document_and_cv_shape(
+    *,
+    preflight: dict[str, Any],
+    experience_dimension_priors: dict[str, Any] | None = None,
+    emphasis_rule_priors: dict[str, Any] | None = None,
+    jd_excerpt: str,
+    classification_excerpt: dict[str, Any],
+    research_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    pain_point_excerpt: dict[str, Any],
+    job_inference_excerpt: dict[str, Any] | None = None,
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "jd_excerpt": jd_excerpt[:1800],
+        "classification_excerpt": classification_excerpt,
+        "research_excerpt": research_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "pain_point_excerpt": pain_point_excerpt,
+        "job_inference_excerpt": job_inference_excerpt or {},
+        "experience_dimension_priors": experience_dimension_priors or {},
+        "emphasis_rule_priors": emphasis_rule_priors or {},
+    }
+    keys = ["document_expectations", "cv_shape_expectations", "experience_dimension_weights"]
+    if emphasis_rule_priors:
+        keys.append("truth_constrained_emphasis_rules")
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["document_and_cv_shape"], keys),
+            "Optional merged benchmark prompt for 4.2.2. Split prompts remain the default.",
+            "Return only valid JSON with the required top-level keys named in the schema contract above.",
+            "Enforce the same constraints as the split prompts: candidate-agnostic only, no CV prose, canonical enums only, ai_section_policy must match ai_intensity, header density must match across subdocuments.",
+            "experience_dimension_weights MUST use canonical dimension keys only, non-negative integers only, and each emitted map MUST sum to 100.",
+            "When emphasis_rule_priors is non-empty, also emit truth_constrained_emphasis_rules as a distinct top-level object with canonical enums only and no candidate-specific language.",
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_ideal_candidate(
+    *,
+    preflight: dict[str, Any],
+    ideal_candidate_priors: dict[str, Any],
+    document_expectations: dict[str, Any],
+    cv_shape_expectations: dict[str, Any],
+    jd_excerpt: str,
+    classification_excerpt: dict[str, Any],
+    research_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    pain_point_excerpt: dict[str, Any],
+    ideal_candidate_profile_seed: dict[str, Any] | None = None,
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "ideal_candidate_priors": ideal_candidate_priors,
+        "document_expectations": document_expectations,
+        "cv_shape_expectations": cv_shape_expectations,
+        "jd_excerpt": jd_excerpt[:1800],
+        "classification_excerpt": classification_excerpt,
+        "research_excerpt": research_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "pain_point_excerpt": pain_point_excerpt,
+        "ideal_candidate_profile_seed": ideal_candidate_profile_seed or {},
+        "canonical_enums": {
+            "title_strategy": ["exact_match", "closest_truthful", "functional_label", "unresolved"],
+            "proof_category": ["metric", "architecture", "leadership", "domain", "reliability", "ai", "stakeholder", "process", "compliance", "scale"],
+            "signal_tag": [
+                "role_fit",
+                "recognizable_title",
+                "ownership_scope",
+                "architecture_judgment",
+                "hands_on_implementation",
+                "production_impact",
+                "ai_depth",
+                "leadership_scope",
+                "stakeholder_alignment",
+                "domain_context",
+                "delivery_rigor",
+                "platform_reliability",
+                "generic_leadership_claim",
+                "tool_listing",
+            ],
+            "credibility_marker": [
+                "named_systems",
+                "metrics",
+                "ownership_scope",
+                "cross_functional_influence",
+                "production_scale",
+                "ai_application",
+                "platform_governance",
+                "domain_recognition",
+            ],
+            "risk_flag": [
+                "title_inflation",
+                "generic_ai_claim",
+                "leadership_overclaim",
+                "domain_overclaim",
+                "tool_listing_without_proof",
+                "stakeholder_guessing",
+            ],
+            "evaluator_roles": ["recruiter", "hiring_manager", "skip_level_leader", "peer_technical", "cross_functional_partner", "executive_sponsor"],
+        },
+    }
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["ideal_candidate"], ["ideal_candidate_presentation_model"]),
+            "You are synthesizing a candidate-agnostic ideal-candidate presentation model for the existing presentation_contract stage.",
+            "Return only the `ideal_candidate_presentation_model` object. Do not generate CV prose, bullet text, summaries, first-person statements, or candidate-specific evidence.",
+            "Never introduce candidate employers, candidate tenures, candidate achievements, or unsupported title inflation.",
+            "acceptable_titles MUST remain truthful to the role evidence and MUST NOT exceed the seniority implied by jd_excerpt and classification_excerpt.",
+            "title_strategy MUST match cv_shape_expectations.title_strategy exactly.",
+            "proof_ladder entries MUST use only canonical proof_category values and must reference retrieval-usable evidence_refs.",
+            "audience_variants keys MUST be a subset of stakeholder_surface_excerpt.evaluator_coverage_target.",
+            "If the evidence is thin or conflicting, fail open with defaults_applied and unresolved_markers rather than guessing.",
+            "Use this shape as a guide and emit JSON directly:",
+            _minimal_ideal_candidate_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def build_p_experience_dimension_weights(
+    *,
+    preflight: dict[str, Any],
+    experience_dimension_priors: dict[str, Any],
+    document_expectations: dict[str, Any],
+    cv_shape_expectations: dict[str, Any],
+    ideal_candidate_presentation_model: dict[str, Any],
+    jd_excerpt: str,
+    classification_excerpt: dict[str, Any],
+    research_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    pain_point_excerpt: dict[str, Any],
+    truth_constraints_excerpt: dict[str, Any] | None = None,
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "experience_dimension_priors": experience_dimension_priors,
+        "document_expectations": document_expectations,
+        "cv_shape_expectations": cv_shape_expectations,
+        "ideal_candidate_presentation_model": ideal_candidate_presentation_model,
+        "jd_excerpt": jd_excerpt[:1800],
+        "classification_excerpt": classification_excerpt,
+        "research_excerpt": research_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "pain_point_excerpt": pain_point_excerpt,
+        "truth_constraints_excerpt": truth_constraints_excerpt or {},
+        "canonical_enums": {
+            "experience_dimension": [
+                "hands_on_implementation",
+                "architecture_system_design",
+                "leadership_enablement",
+                "tools_technology_stack",
+                "methodology_operating_model",
+                "business_impact",
+                "stakeholder_communication",
+                "ai_ml_depth",
+                "domain_context",
+                "quality_risk_reliability",
+                "delivery_execution_pace",
+                "platform_scaling_change",
+            ],
+            "evaluator_roles": [
+                "recruiter",
+                "hiring_manager",
+                "skip_level_leader",
+                "peer_technical",
+                "cross_functional_partner",
+                "executive_sponsor",
+            ],
+            "overuse_risk_reason": [
+                "weak_evidence",
+                "stakeholder_reject",
+                "role_adjacent",
+                "seniority_mismatch",
+                "keyword_inflation",
+                "saturation",
+                "ats_keyword_inflation",
+            ],
+        },
+    }
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["experience_dimension_weights"], ["experience_dimension_weights"]),
+            "You are synthesizing candidate-agnostic experience-dimension salience for the existing presentation_contract stage.",
+            "Return only the `experience_dimension_weights` object. Do not generate CV prose, candidate claims, first-person text, or candidate employment history.",
+            "Use only canonical experience_dimension enum keys from the payload. You may not invent new dimensions.",
+            "Every emitted overall_weights map and every non-null stakeholder_variant_weights entry MUST use non-negative integers only and MUST sum to exactly 100.",
+            "stakeholder_variant_weights keys MUST be a subset of stakeholder_surface_excerpt.evaluator_coverage_target.",
+            "Respect the provided ai_intensity_cap, architecture_evidence_band, leadership_evidence_band, and any truth_constraints_excerpt caps.",
+            "Weights MUST stay coherent with ideal_candidate_presentation_model.must_signal, should_signal, de_emphasize, and proof_ladder.",
+            "Unresolved is first-class. If evidence is thin or conflicting, prefer defaults_applied and unresolved_markers over invented precision.",
+            "Keep rationale short and candidate-agnostic. Use evidence refs, not named stakeholder motives.",
+            "Use this shape as a guide and emit JSON directly:",
+            _minimal_experience_dimension_weights_example(),
+            json.dumps(payload, indent=2, default=str),
+        ]
+    )
+
+
+def _minimal_emphasis_rules_example() -> str:
+    example = {
+        "truth_constrained_emphasis_rules": {
+            "status": "completed",
+            "source_scope": "jd_plus_research_plus_stakeholder",
+            "rule_type_enum_version": "v1",
+            "applies_to_enum_version": "v1",
+            "global_rules": [
+                {
+                    "rule_id": "tcer_title_inflation_global_a1b2c3",
+                    "rule_type": "forbid_without_direct_proof",
+                    "topic_family": "title_inflation",
+                    "applies_to_kind": "global",
+                    "applies_to": "global",
+                    "condition": "Requested title exceeds acceptable_titles or title_strategy envelope.",
+                    "action": "Do not authorize titles outside acceptable_titles; use closest truthful framing.",
+                    "basis": "Title safety must remain bounded by peer presentation contracts.",
+                    "evidence_refs": [
+                        "cv_shape_expectations.title_strategy",
+                        "ideal_candidate_presentation_model.acceptable_titles",
+                    ],
+                    "precedence": 80,
+                    "confidence": {"score": 0.82, "band": "high", "basis": "peer contract alignment"},
+                }
+            ],
+            "section_rules": {
+                "summary": [
+                    {
+                        "rule_id": "tcer_ai_claims_summary_d4e5f6",
+                        "rule_type": "forbid_without_direct_proof",
+                        "topic_family": "ai_claims",
+                        "applies_to_kind": "section",
+                        "applies_to": "summary",
+                        "condition": "AI depth is not directly supported by upstream evidence.",
+                        "action": "Do not lead the summary with AI depth claims without direct proof.",
+                        "basis": "Low-evidence AI framing should fail closed.",
+                        "evidence_refs": [
+                            "classification.ai_taxonomy.intensity",
+                            "experience_dimension_weights.overall_weights.ai_ml_depth",
+                        ],
+                        "precedence": 80,
+                        "confidence": {"score": 0.78, "band": "medium", "basis": "AI envelope"},
+                    }
+                ]
+            },
+            "allowed_if_evidenced": [],
+            "downgrade_rules": [
+                {
+                    "rule_id": "tcer_architecture_claims_architecture_1a2b3c",
+                    "rule_type": "prefer_softened_form",
+                    "topic_family": "architecture_claims",
+                    "applies_to_kind": "proof",
+                    "applies_to": "architecture",
+                    "condition": "Architecture framing is supported only partially.",
+                    "action": "Use conservative architecture wording unless direct named-system proof is available.",
+                    "basis": "Architecture claims should track the evidence band.",
+                    "evidence_refs": ["research_enrichment.role_profile.mandate"],
+                    "precedence": 50,
+                    "confidence": {"score": 0.7, "band": "medium", "basis": "architecture envelope"},
+                }
+            ],
+            "omit_rules": [
+                {
+                    "rule_id": "tcer_metrics_scale_claims_metric_4d5e6f",
+                    "rule_type": "omit_if_weak",
+                    "topic_family": "metrics_scale_claims",
+                    "applies_to_kind": "proof",
+                    "applies_to": "metric",
+                    "condition": "Metrics or scale proof is weak or absent.",
+                    "action": "Omit metric-led claims until direct scope and scale proof exists.",
+                    "basis": "Fabricated metrics are a hard fail surface.",
+                    "evidence_refs": ["pain_point_intelligence.proof_map"],
+                    "precedence": 65,
+                    "confidence": {"score": 0.74, "band": "medium", "basis": "proof-map pressure"},
+                }
+            ],
+            "forbidden_claim_patterns": [
+                {
+                    "pattern_id": "buzzword_stack",
+                    "pattern": "10x",
+                    "pattern_kind": "substring",
+                    "reason": "Reject hype phrases that imply inflated performance claims.",
+                    "example": "10x engineer",
+                    "evidence_refs": ["document_expectations.anti_patterns"],
+                    "confidence": {"score": 0.75, "band": "medium", "basis": "grading-rubric prior"},
+                },
+                {
+                    "pattern_id": "visionary_regex",
+                    "pattern": "(?:strategic\\s+)?visionary",
+                    "pattern_kind": "regex_safe",
+                    "reason": "Reject self-aggrandizing leadership phrasing without proof.",
+                    "example": "strategic visionary",
+                    "evidence_refs": ["document_expectations.anti_patterns"],
+                    "confidence": {"score": 0.72, "band": "medium", "basis": "grading-rubric prior"},
+                },
+            ],
+            "credibility_ladder_rules": [
+                {
+                    "ladder_id": "ladder_all_primary",
+                    "applies_to_audience": "all",
+                    "ladder": ["metric", "architecture", "stakeholder"],
+                    "fallback_rule_id": "tcer_metrics_scale_claims_metric_4d5e6f",
+                    "rationale": "Degrade gracefully from hard outcome proof to safer adjacent proof.",
+                    "evidence_refs": ["document_expectations.proof_order"],
+                    "confidence": {"score": 0.71, "band": "medium", "basis": "role-family ladder prior"},
+                }
+            ],
+            "topic_coverage": [
+                {"topic_family": "title_inflation", "rule_count": 1, "source": "llm"},
+                {"topic_family": "ai_claims", "rule_count": 1, "source": "llm"},
+                {"topic_family": "leadership_scope", "rule_count": 1, "source": "default"},
+                {"topic_family": "architecture_claims", "rule_count": 1, "source": "llm"},
+                {"topic_family": "domain_expertise", "rule_count": 1, "source": "default"},
+                {"topic_family": "stakeholder_management_claims", "rule_count": 1, "source": "default"},
+                {"topic_family": "metrics_scale_claims", "rule_count": 1, "source": "llm"},
+                {"topic_family": "credibility_ladder_degradation", "rule_count": 1, "source": "default"},
+            ],
+            "rationale": "Emit claim-policy rules only. Stay candidate-agnostic and fail closed on title, AI, leadership, and fabricated metric inflation.",
+            "unresolved_markers": [],
+            "defaults_applied": [],
+            "normalization_events": [],
+            "confidence": {"score": 0.76, "band": "medium", "basis": "mixed upstream evidence plus deterministic envelopes"},
+            "evidence": [
+                {
+                    "claim": "Emphasis rules should track the same peer envelopes as the presentation contract.",
+                    "source_ids": [
+                        "document_expectations.proof_order",
+                        "cv_shape_expectations.ai_section_policy",
+                        "ideal_candidate_presentation_model.acceptable_titles",
+                    ],
+                }
+            ],
+            "notes": ["Rules describe claim policy only, never candidate truth."],
+        }
+    }
+    return json.dumps(example, indent=2)
+
+
+def build_p_emphasis_rules(
+    *,
+    preflight: dict[str, Any],
+    emphasis_rule_priors: dict[str, Any],
+    document_expectations: dict[str, Any],
+    cv_shape_expectations: dict[str, Any],
+    ideal_candidate_presentation_model: dict[str, Any],
+    experience_dimension_weights: dict[str, Any],
+    jd_excerpt: str,
+    classification_excerpt: dict[str, Any],
+    research_excerpt: dict[str, Any],
+    stakeholder_surface_excerpt: dict[str, Any],
+    pain_point_excerpt: dict[str, Any],
+) -> str:
+    payload = {
+        "preflight": preflight,
+        "emphasis_rule_priors": emphasis_rule_priors,
+        "document_expectations": document_expectations,
+        "cv_shape_expectations": cv_shape_expectations,
+        "ideal_candidate_presentation_model": ideal_candidate_presentation_model,
+        "experience_dimension_weights": experience_dimension_weights,
+        "jd_excerpt": jd_excerpt[:1800],
+        "classification_excerpt": classification_excerpt,
+        "research_excerpt": research_excerpt,
+        "stakeholder_surface_excerpt": stakeholder_surface_excerpt,
+        "pain_point_excerpt": pain_point_excerpt,
+        "canonical_enums": {
+            "rule_type": [
+                "allowed_if_evidenced",
+                "prefer_softened_form",
+                "omit_if_weak",
+                "forbid_without_direct_proof",
+                "never_infer_from_job_only",
+                "cap_dimension_weight",
+                "require_credibility_marker",
+                "require_proof_for_emphasis",
+                "suppress_audience_variant_signal",
+            ],
+            "topic_family": [
+                "title_inflation",
+                "ai_claims",
+                "leadership_scope",
+                "architecture_claims",
+                "domain_expertise",
+                "stakeholder_management_claims",
+                "metrics_scale_claims",
+                "credibility_ladder_degradation",
+                "tooling_inflation",
+                "process_methodology_claims",
+                "compliance_regulatory_claims",
+                "keyword_stuffing",
+                "narrative_overreach",
+                "audience_variant_specific_softening",
+            ],
+            "applies_to_kind": ["section", "proof", "dimension", "audience_variant", "global"],
+            "section_id": [
+                "header",
+                "summary",
+                "key_achievements",
+                "core_competencies",
+                "ai_highlights",
+                "experience",
+                "education",
+                "certifications",
+                "projects",
+                "publications",
+                "awards",
+            ],
+            "proof_type": ["metric", "architecture", "leadership", "domain", "reliability", "ai", "stakeholder", "process", "compliance", "scale"],
+            "experience_dimension": [
+                "hands_on_implementation",
+                "architecture_system_design",
+                "leadership_enablement",
+                "tools_technology_stack",
+                "methodology_operating_model",
+                "business_impact",
+                "stakeholder_communication",
+                "ai_ml_depth",
+                "domain_context",
+                "quality_risk_reliability",
+                "delivery_execution_pace",
+                "platform_scaling_change",
+            ],
+            "audience_variant": [
+                "recruiter",
+                "hiring_manager",
+                "skip_level_leader",
+                "peer_technical",
+                "cross_functional_partner",
+                "executive_sponsor",
+            ],
+        },
+    }
+    return "\n".join(
+        [
+            _json_only_contract(PROMPT_VERSIONS["emphasis_rules"], ["truth_constrained_emphasis_rules"]),
+            "You are synthesizing truth-constrained emphasis rules for the existing presentation_contract stage.",
+            "Return only the `truth_constrained_emphasis_rules` object. This is a candidate-agnostic claim-policy artifact, never CV prose, never candidate truth, never first-person narrative.",
+            "Use only canonical enums from the payload. Every emitted rule MUST carry stable rule_id, confidence, and non-empty evidence_refs.",
+            "Mandatory topic coverage is required: title_inflation, ai_claims, leadership_scope, architecture_claims, domain_expertise, stakeholder_management_claims, metrics_scale_claims, credibility_ladder_degradation.",
+            "Fail closed on title inflation, unsupported AI depth, unsupported leadership scope, fabricated metrics/scale, candidate leakage, and unsafe regex patterns.",
+            "If evidence is thin, fail open with deterministic defaults_applied and unresolved_markers rather than inventing stronger authorization.",
+            "Do not emit candidate employers, candidate achievements, first-person pronouns, or named private motives.",
+            "Use this shape as a guide and emit JSON directly:",
+            _minimal_emphasis_rules_example(),
             json.dumps(payload, indent=2, default=str),
         ]
     )

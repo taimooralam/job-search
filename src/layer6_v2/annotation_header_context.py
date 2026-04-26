@@ -20,21 +20,14 @@ Usage:
     # Pass context to HeaderGenerator, TaxonomyBasedSkillsGenerator, etc.
 """
 
-from typing import Dict, List, Optional, Any, Set, Tuple
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.common.logger import get_logger
-from src.common.annotation_types import (
-    JDAnnotation,
-    RELEVANCE_MULTIPLIERS,
-    REQUIREMENT_MULTIPLIERS,
-    PRIORITY_MULTIPLIERS,
-)
 from src.common.types import STARRecord
 from src.layer6_v2.types import (
     AnnotationPriority,
-    HeaderGenerationContext,
     ATSRequirement,
+    HeaderGenerationContext,
 )
 
 logger = get_logger(__name__)

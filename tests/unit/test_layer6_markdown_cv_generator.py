@@ -8,14 +8,11 @@ Tests the MarkdownCVGenerator which:
 - Outputs to ./applications/<company>/<role>/CV.md
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, Mock
-from pathlib import Path
 import os
-import shutil
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from src.common.state import JobState
-
+import pytest
 
 # ===== FIXTURES =====
 
@@ -315,7 +312,7 @@ class TestMarkdownCVGenerator:
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
 
-        content = Path(cv_path).read_text()
+        content = Path(cv_path).read_text(encoding="utf-8")
 
         assert content.startswith("# Taimoor Alam")
         assert "## Profile" in content
@@ -678,7 +675,7 @@ class TestMarkdownCVGeneratorQualityGates:
         cv_path, integrity = generator.generate_cv(sample_job_state)
 
         # Read generated CV
-        cv_content = Path(cv_path).read_text()
+        cv_content = Path(cv_path).read_text(encoding='utf-8')
 
         # CV should contain employers from master CV
         assert "AdTech Co" in cv_content or "FinTech Startup" in cv_content
@@ -702,7 +699,7 @@ class TestMarkdownCVGeneratorQualityGates:
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
 
-        cv_content = Path(cv_path).read_text()
+        cv_content = Path(cv_path).read_text(encoding='utf-8')
 
         # CV should contain metrics
         import re
@@ -725,7 +722,7 @@ class TestMarkdownCVGeneratorQualityGates:
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
 
-        cv_content = Path(cv_path).read_text()
+        cv_content = Path(cv_path).read_text(encoding='utf-8')
 
         # CV should have key sections (using markdown headers)
         section_patterns = ["experience", "summary", "skill"]

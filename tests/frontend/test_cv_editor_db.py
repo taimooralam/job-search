@@ -4,10 +4,10 @@ MongoDB integration tests for CV editor state persistence.
 Tests that cv_editor_state is properly stored and retrieved from MongoDB.
 """
 
-import pytest
 from datetime import datetime
-from bson import ObjectId
 from unittest.mock import MagicMock
+
+from bson import ObjectId
 
 
 class TestMongoDBPersistence:
@@ -89,7 +89,7 @@ class TestMongoDBPersistence:
         }
 
         # Act
-        response = authenticated_client.put(
+        authenticated_client.put(
             f"/api/jobs/{job_id}/cv-editor",
             json=editor_state,
             content_type="application/json"

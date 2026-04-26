@@ -11,25 +11,25 @@ Phase 5.1 Update: Multi-source scraping with structured signal extraction.
 Previous Phase 1.3: Added MongoDB caching with 7-day TTL.
 """
 
-import asyncio
 import json
 import logging
 import re
-from datetime import datetime, timedelta
-from typing import Callable, Dict, Any, Optional, List
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
 from pydantic import BaseModel, Field, ValidationError
 from tenacity import retry, stop_after_attempt, wait_exponential
-from src.common.config import Config
+
+from src.common.claude_web_research import CLAUDE_MODEL_TIERS, ClaudeWebResearcher, TierType
+from src.common.logger import get_logger
 from src.common.repositories import (
     CompanyCacheRepositoryInterface,
     get_company_cache_repository,
 )
-from src.common.state import JobState, CompanySignal, CompanyResearch, ProgressCallback
-from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.state import CompanyResearch, JobState, ProgressCallback
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.unified_llm import invoke_unified_sync
 from src.common.utils import run_async
-from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
-from src.common.unified_llm import UnifiedLLM, invoke_unified_sync
 
 # Type alias for log callback function
 LogCallback = Callable[[str], None]
@@ -1087,7 +1087,6 @@ Return JSON with your findings:
 Be honest about uncertainty. Prefix summary with '[Based on training knowledge]' to indicate the source."""
 
         try:
-            import anthropic
             from datetime import datetime
 
             start_time = datetime.utcnow()

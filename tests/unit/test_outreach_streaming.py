@@ -11,22 +11,19 @@ Key features tested:
 4. Error handling for invalid job_id, contact_index, tier
 """
 
+from unittest.mock import MagicMock, Mock, call
+
 import pytest
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, call
 from bson import ObjectId
 from fastapi import BackgroundTasks, HTTPException
 
 from runner_service.routes.contacts import (
-    generate_outreach_stream,
-    StreamingOutreachResponse,
     OutreachRequest,
-    _validate_job_exists,
-    _get_contact,
+    StreamingOutreachResponse,
     _validate_tier,
+    generate_outreach_stream,
 )
 from src.common.model_tiers import ModelTier
-
 
 # ===== FIXTURES =====
 
@@ -187,7 +184,7 @@ class TestGenerateOutreachStreamEndpoint:
         mock_operation_streaming["append_operation_log"].assert_has_calls(
             [
                 call(run_id, f"Starting connection generation for job {sample_job_id}"),
-                call(run_id, f"Tier: quality, Contact: primary[1]"),
+                call(run_id, "Tier: quality, Contact: primary[1]"),
             ]
         )
 
@@ -299,7 +296,6 @@ class TestExecuteOutreachWithLogging:
         )
 
         # Assert - callbacks should be created for the run_id
-        run_id = "outreach_abc123def456"
         # Verify operation run was created (callbacks will be created inside background task)
         mock_operation_streaming["create_operation_run"].assert_called_once_with(
             sample_job_id, "outreach"

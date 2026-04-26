@@ -5,28 +5,27 @@ Tests the multi-agent CV generation service without making actual CLI calls.
 All external dependencies (ClaudeCLI) are mocked.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from datetime import datetime
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from src.layer6_v2.prompts.cv_generation_prompts import (
+    ACRONYM_EXPANSIONS,
+    FEW_SHOT_BULLETS,
+    ROLE_KEYWORDS,
+    build_ats_validation_prompt,
+    build_profile_prompt,
+    build_role_bullet_prompt,
+    expand_acronym,
+    get_role_level_from_category,
+)
 from src.services.claude_cv_service import (
+    ATSValidationResult,
     ClaudeCVService,
     CVResult,
-    GeneratedRole,
     GeneratedBullet,
     GeneratedProfile,
-    ATSValidationResult,
-    generate_cv_with_claude,
-)
-from src.layer6_v2.prompts.cv_generation_prompts import (
-    ROLE_KEYWORDS,
-    FEW_SHOT_BULLETS,
-    ACRONYM_EXPANSIONS,
-    build_role_bullet_prompt,
-    build_profile_prompt,
-    build_ats_validation_prompt,
-    get_role_level_from_category,
-    expand_acronym,
+    GeneratedRole,
 )
 
 
@@ -366,7 +365,7 @@ class TestClaudeCVServiceInit:
     def test_service_initialization(self, mock_cli_class):
         """Service should initialize with three CLI instances."""
         mock_cli_class.return_value = MagicMock()
-        service = ClaudeCVService(timeout=120)
+        ClaudeCVService(timeout=120)
 
         # Should create 3 CLI instances (role, profile, validator)
         assert mock_cli_class.call_count == 3
@@ -375,7 +374,7 @@ class TestClaudeCVServiceInit:
     def test_service_tier_configuration(self, mock_cli_class):
         """Service should use correct tiers for each CLI."""
         mock_cli_class.return_value = MagicMock()
-        service = ClaudeCVService()
+        ClaudeCVService()
 
         # Check tier arguments
         calls = mock_cli_class.call_args_list

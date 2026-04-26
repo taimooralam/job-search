@@ -11,7 +11,6 @@ Background:
 - Fix handles: page refresh during batch operations, panel state changes
 """
 
-import pytest
 from pathlib import Path
 
 
@@ -22,7 +21,7 @@ class TestStartRunSubscription:
         """startRun() should call subscribeToLogs() immediately, regardless of panel state."""
         # Arrange - Read the CLI panel JavaScript file
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Extract the startRun function
@@ -47,7 +46,7 @@ class TestStartRunSubscription:
         """subscribeToLogs() should be called after the run entry is created."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Find startRun and extract its body
@@ -75,7 +74,7 @@ class TestStartRunSubscription:
         """When run already exists, startRun should still subscribe if no poller exists."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Find the "run already exists" branch
@@ -93,7 +92,7 @@ class TestStartRunSubscription:
         """startRun should guard against undefined/null runId."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -115,7 +114,7 @@ class TestToggleSubscription:
         """When expanding panel, toggle() should subscribe ALL running operations."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Find toggle function
@@ -147,7 +146,7 @@ class TestToggleSubscription:
         """toggle() should only subscribe when expanding, not collapsing."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -163,7 +162,7 @@ class TestToggleSubscription:
         """toggle() should have comment explaining why it subscribes all running ops."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -188,7 +187,7 @@ class TestShowPanelSubscription:
         """showPanel() should subscribe ALL running operations when opened."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Find showPanel function
@@ -220,7 +219,7 @@ class TestShowPanelSubscription:
         """showPanel() should set expanded to true."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -236,7 +235,7 @@ class TestShowPanelSubscription:
         """showPanel() should save state after changes."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -252,7 +251,7 @@ class TestShowPanelSubscription:
         """showPanel() should have comment explaining subscription logic."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -273,7 +272,7 @@ class TestSubscribeToLogsGuards:
         """subscribeToLogs() should guard against undefined/null runId."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Find subscribeToLogs function
@@ -293,7 +292,7 @@ class TestSubscribeToLogsGuards:
         """subscribeToLogs() should verify run exists before subscribing."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -311,7 +310,7 @@ class TestSubscribeToLogsGuards:
         """subscribeToLogs() should not create duplicate pollers."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -329,7 +328,7 @@ class TestSubscribeToLogsGuards:
         """subscribeToLogs() should verify LogPoller class is available."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -351,7 +350,7 @@ class TestLogPollerIntegration:
         """LogPoller should be instantiated with runId parameter."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -367,7 +366,7 @@ class TestLogPollerIntegration:
         """LogPoller instance should be stored in run._logPoller."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -384,7 +383,7 @@ class TestLogPollerIntegration:
         """LogPoller.start() should be called with .catch() error handling."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -402,7 +401,7 @@ class TestLogPollerIntegration:
         """LogPoller callbacks (onLog, onLayerStatus, onComplete, onError) should be configured."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -428,7 +427,7 @@ class TestEdgeCases:
         """fetchRunLogs() should subscribe to logs if operation is running."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act - Find fetchRunLogs
@@ -449,7 +448,7 @@ class TestEdgeCases:
         """switchToRun() should subscribe if run is active but not polling."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -471,7 +470,7 @@ class TestEdgeCases:
         """closeRun() should stop LogPoller before removing run."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -497,7 +496,7 @@ class TestComments:
         """startRun() should have comment explaining immediate subscription."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act
@@ -519,7 +518,7 @@ class TestComments:
         """toggle() should explain why it subscribes all running operations."""
         # Arrange
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             js_content = f.read()
 
         # Act

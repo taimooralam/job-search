@@ -12,10 +12,9 @@ Tests validate:
 These tests focus on performance characteristics and edge cases.
 """
 
-import pytest
 import time
-from typing import List, Dict, Any
 
+import pytest
 
 # ==============================================================================
 # Test Class: Page Break Calculation Performance
@@ -144,7 +143,7 @@ class TestDebounceBehavior:
     def test_update_page_breaks_has_debounce_delay(self):
         """updatePageBreaks should have debounce delay defined."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -154,7 +153,7 @@ class TestDebounceBehavior:
     def test_debounce_delay_is_300ms_or_less(self):
         """Debounce delay should be reasonable (300ms or less)."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -165,7 +164,7 @@ class TestDebounceBehavior:
     def test_debounce_clears_previous_timer(self):
         """Debounce should clear previous timer to avoid multiple executions."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -177,7 +176,7 @@ class TestDebounceBehavior:
         # This is validated by the debounce pattern in the code
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -198,7 +197,7 @@ class TestConcurrentUpdates:
         # This is a structural test - actual concurrency tested in E2E
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -223,7 +222,7 @@ class TestConcurrentUpdates:
 
         # Act
         start_time = time.time()
-        breaks = calculator.calculate_page_breaks('letter', margins, content)
+        calculator.calculate_page_breaks('letter', margins, content)
         end_time = time.time()
 
         elapsed_ms = (end_time - start_time) * 1000
@@ -275,7 +274,7 @@ class TestMemoryUsage:
     def test_page_break_indicators_do_not_leak_memory(self):
         """Removing and re-adding page breaks should not leak DOM elements."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -289,7 +288,7 @@ class TestMemoryUsage:
         # TipTap's history plugin has default depth limit
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -330,7 +329,7 @@ class TestKeyboardShortcutPerformance:
     def test_keyboard_event_handler_is_efficient(self):
         """Keyboard event handler should check conditions efficiently."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -340,7 +339,7 @@ class TestKeyboardShortcutPerformance:
     def test_shortcuts_do_not_trigger_on_every_keypress(self):
         """Shortcuts should only trigger for specific key combinations."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -353,7 +352,7 @@ class TestKeyboardShortcutPerformance:
         # This is tested via the early return pattern
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -371,7 +370,7 @@ class TestRenderingPerformance:
     def test_render_page_breaks_clears_old_indicators_first(self):
         """renderPageBreaks should clear old indicators before adding new ones."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -385,7 +384,7 @@ class TestRenderingPerformance:
         # This is a structural test - actual rendering tested in E2E
 
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -397,7 +396,7 @@ class TestRenderingPerformance:
     def test_page_break_indicators_use_efficient_positioning(self):
         """Page break indicators should use absolute positioning for efficiency."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert

@@ -16,6 +16,5 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 from src.pipeline.discovery.scout_search_pipeline import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

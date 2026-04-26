@@ -25,7 +25,7 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -38,10 +38,9 @@ load_dotenv()
 from pymongo import MongoClient
 
 from src.common.config import Config
-from src.common.ingest_config import get_ingest_config, IngestConfig
-from src.services.job_sources import IndeedSource, HimalayasSource, JobSource, JobData
-from src.services.quick_scorer import quick_score_job, derive_tier_from_score
-
+from src.common.ingest_config import IngestConfig, get_ingest_config
+from src.services.job_sources import HimalayasSource, IndeedSource, JobData, JobSource
+from src.services.quick_scorer import derive_tier_from_score, quick_score_job
 
 # Configure logging
 logging.basicConfig(
@@ -261,13 +260,13 @@ def save_run_stats(stats: Dict[str, Any], output_dir: Optional[Path] = None):
 
     # Save latest run
     latest_file = output_dir / "ingest_latest.json"
-    with open(latest_file, "w") as f:
+    with open(latest_file, "w", encoding="utf-8") as f:
         json.dump(stats, f, indent=2, default=str)
 
     # Save timestamped run
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     history_file = output_dir / f"ingest_{timestamp}.json"
-    with open(history_file, "w") as f:
+    with open(history_file, "w", encoding="utf-8") as f:
         json.dump(stats, f, indent=2, default=str)
 
     logger.info(f"Stats saved to {latest_file}")

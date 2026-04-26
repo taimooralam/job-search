@@ -15,8 +15,8 @@ Each issue has tests for:
 
 import pytest
 
-from tests.ab_testing.framework import ABTestRunner, ABTestResult, Comparison
-from tests.ab_testing.scorers import score_specificity, score_grounding
+from tests.ab_testing.framework import ABTestRunner
+from tests.ab_testing.scorers import score_grounding, score_specificity
 
 
 class TestRigidStructure:
@@ -391,7 +391,7 @@ I am excited to apply for this position. I have relevant experience and would be
 I look forward to hearing from you.
         """
 
-        specific_letter = f"""
+        specific_letter = """
 Dear KAIZEN GAMING Team,
 
 Your need for a Software Engineering Team Lead to scale your .NET/microservices platform

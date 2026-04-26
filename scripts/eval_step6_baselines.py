@@ -33,7 +33,7 @@ import tempfile
 import time
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import yaml
 from tenacity import RetryError, retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -43,6 +43,11 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.common.json_utils import parse_llm_json
+from src.common.structured_data import (
+    discover_preferred_files,
+    load_structured_file,
+    resolve_preferred_path,
+)
 
 EVAL_DIR = Path("data/eval")
 BLUEPRINT_DIR = EVAL_DIR / "blueprints"
@@ -54,8 +59,10 @@ DEBUG_DIR.mkdir(parents=True, exist_ok=True)
 MASTER_CV_DIR = Path("data/master-cv")
 ROLES_DIR = MASTER_CV_DIR / "roles"
 PROJECTS_DIR = MASTER_CV_DIR / "projects"
-ROLE_METADATA_PATH = MASTER_CV_DIR / "role_metadata.json"
-ROLE_TAXONOMY_PATH = MASTER_CV_DIR / "role_skills_taxonomy.json"
+# Codex/eval/manual reader path: prefer YAML when present, fall back to JSON.
+# Legacy layer6_v2 runner reads the .json files directly and is unaffected.
+ROLE_METADATA_PATH = resolve_preferred_path(MASTER_CV_DIR / "role_metadata.json")
+ROLE_TAXONOMY_PATH = resolve_preferred_path(MASTER_CV_DIR / "role_skills_taxonomy.json")
 
 UPSTREAM_ALLOWLIST = [
     ("docs/archive/knowledge-base.md", "claimable_evidence"),
@@ -157,7 +164,7 @@ def build_debug_run_dir(category_id: str) -> Path:
 def write_json_file(path: Path, payload: Any) -> None:
     """Write JSON payload with stable formatting."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
 
 
@@ -221,7 +228,7 @@ def build_ref(path: Path, line_no: int) -> str:
 
 def read_lines(path: Path) -> List[str]:
     """Read file lines with trailing newlines stripped."""
-    return path.read_text().splitlines()
+    return path.read_text(encoding="utf-8").splitlines()
 
 
 def find_line_ref(path: Path, needle: str, fallback_line: int = 1) -> str:
@@ -230,6 +237,25 @@ def find_line_ref(path: Path, needle: str, fallback_line: int = 1) -> str:
         return path.as_posix()
     for idx, line in enumerate(read_lines(path), start=1):
         if needle in line:
+            return build_ref(path, idx)
+    return build_ref(path, fallback_line)
+
+
+def find_key_line_ref(path: Path, key: str, fallback_line: int = 1) -> str:
+    """Format-agnostic line reference for a top-level mapping key.
+
+    Works for JSON (``"key":``) and block YAML (``key:``) source files.
+    Falls back to the bare path if the file is missing.
+    """
+    if not path.exists():
+        return path.as_posix()
+    json_needle = f'"{key}"'
+    yaml_needle = f"{key}:"
+    for idx, line in enumerate(read_lines(path), start=1):
+        if json_needle in line:
+            return build_ref(path, idx)
+        stripped = line.lstrip()
+        if stripped.startswith(yaml_needle) or stripped.startswith(f"{key} :"):
             return build_ref(path, idx)
     return build_ref(path, fallback_line)
 
@@ -245,14 +271,18 @@ def list_categories() -> List[str]:
 def load_blueprint(category_id: str) -> Dict[str, Any]:
     """Load a saved Step 5 blueprint JSON."""
     path = BLUEPRINT_DIR / f"{category_id}_blueprint.json"
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def maybe_load_json(path: Path) -> Any:
-    """Load JSON content from disk."""
-    with open(path) as f:
-        return json.load(f)
+    """Load structured content from disk (YAML or JSON, by extension).
+
+    The name is kept for backwards compatibility with existing callers; the
+    helper now defers to ``load_structured_file`` so YAML siblings work
+    transparently on the Codex/eval/manual reader path.
+    """
+    return load_structured_file(path)
 
 
 def parse_role_markdown(path: Path) -> Dict[str, Any]:
@@ -400,15 +430,30 @@ def parse_project_markdown(path: Path) -> Dict[str, Any]:
 
 
 def parse_skill_json(path: Path) -> Dict[str, Any]:
-    """Load one project skills JSON and attach references."""
+    """Load one project skills source file (YAML or JSON) and attach refs.
+
+    The function is intentionally format-agnostic: keys are matched both
+    in JSON style (``"key"``) and YAML block style (``key:`` at line
+    start, ignoring indentation), so the same logic works for legacy
+    ``*_skills.json`` and migrated ``*_skills.yml`` files.
+    """
     payload = maybe_load_json(path)
+    if not isinstance(payload, dict):
+        return {"_file": path.as_posix(), "_refs": {}}
+
     lines = read_lines(path)
     refs: Dict[str, List[str]] = {}
     for key in payload.keys():
         refs[key] = []
-        pattern = f'"{key}"'
+        json_pattern = f'"{key}"'
+        yaml_prefix = f"{key}:"
         for idx, line in enumerate(lines):
-            if pattern in line:
+            stripped = line.lstrip()
+            if (
+                json_pattern in line
+                or stripped.startswith(yaml_prefix)
+                or stripped.startswith(f"{key} :")
+            ):
                 refs[key].append(build_ref(path, idx + 1))
                 break
     payload["_file"] = path.as_posix()
@@ -420,7 +465,10 @@ def load_curated_evidence() -> Dict[str, Any]:
     """Load curated candidate evidence from data/master-cv/*."""
     roles = [parse_role_markdown(path) for path in sorted(ROLES_DIR.glob("*.md"))]
     projects = [parse_project_markdown(path) for path in sorted(PROJECTS_DIR.glob("*.md"))]
-    project_skills = [parse_skill_json(path) for path in sorted(PROJECTS_DIR.glob("*_skills.json"))]
+    project_skills = [
+        parse_skill_json(path)
+        for path in discover_preferred_files(PROJECTS_DIR, "_skills")
+    ]
     metadata = maybe_load_json(ROLE_METADATA_PATH)
     taxonomy = maybe_load_json(ROLE_TAXONOMY_PATH)
     return {
@@ -507,7 +555,7 @@ def parse_markdown_sections(path: Path, source_type: str) -> List[Dict[str, Any]
 
 def parse_tracker_yaml(path: Path) -> List[Dict[str, Any]]:
     """Parse achievement tracker YAML into compact evidence items."""
-    payload = yaml.safe_load(path.read_text()) or {}
+    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     achievements = payload.get("achievements", [])
     blocks = []
     lines = read_lines(path)
@@ -572,8 +620,8 @@ def build_proxy_representation(curated_evidence: Dict[str, Any]) -> Dict[str, An
     current_role = next((role for role in roles if str(role.get("metadata", {}).get("Is Current", {}).get("value", "")).lower() == "true"), roles[0] if roles else {})
 
     headline = metadata.get("title_base", "")
-    headline_ref = find_line_ref(ROLE_METADATA_PATH, '"title_base"', 3)
-    summary_ref = find_line_ref(ROLE_METADATA_PATH, '"summary"', 3)
+    headline_ref = find_key_line_ref(ROLE_METADATA_PATH, "title_base", 3)
+    summary_ref = find_key_line_ref(ROLE_METADATA_PATH, "summary", 3)
     metadata_summary = str(metadata.get("summary", "")).strip()
     if metadata_summary:
         summary = metadata_summary
@@ -1691,7 +1739,7 @@ def call_baseline_codex(
         start_time = time.monotonic()
         next_heartbeat = heartbeat_seconds
 
-        with open(stdout_path, "w") as stdout_file, open(stderr_path, "w") as stderr_file:
+        with open(stdout_path, "w", encoding="utf-8") as stdout_file, open(stderr_path, "w", encoding="utf-8") as stderr_file:
             process = subprocess.Popen(
                 command,
                 stdin=subprocess.PIPE,
@@ -2077,9 +2125,9 @@ def write_baseline_files(category_id: str, baseline: Dict[str, Any]) -> None:
     """Write JSON and Markdown artifacts for one validated baseline."""
     json_path = BASELINE_DIR / f"{category_id}_baseline.json"
     md_path = BASELINE_DIR / f"{category_id}_baseline.md"
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(baseline, f, indent=2)
-    with open(md_path, "w") as f:
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write(render_baseline_markdown(baseline))
 
 
@@ -2089,7 +2137,7 @@ def render_baseline_index() -> None:
     for path in sorted(BASELINE_DIR.glob("*_baseline.json")):
         if path.name == "evidence_map.json":
             continue
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             baseline = json.load(f)
         rows.append(
             {
@@ -2129,10 +2177,10 @@ def render_only() -> None:
     for path in sorted(BASELINE_DIR.glob("*_baseline.json")):
         if path.name == "evidence_map.json":
             continue
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             baseline = json.load(f)
         category_id = baseline.get("meta", {}).get("category_id", path.stem.replace("_baseline", ""))
-        with open(BASELINE_DIR / f"{category_id}_baseline.md", "w") as f:
+        with open(BASELINE_DIR / f"{category_id}_baseline.md", "w", encoding="utf-8") as f:
             f.write(render_baseline_markdown(baseline))
     render_baseline_index()
 

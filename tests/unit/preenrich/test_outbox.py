@@ -12,24 +12,22 @@ Uses mongomock + fakeredis.
 """
 
 import json
-import pytest
 from datetime import datetime, timezone
-from bson import ObjectId
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 
-import mongomock
 import fakeredis
+import mongomock
+import pytest
+from bson import ObjectId
 
 from src.preenrich.outbox import (
+    DEADLETTER_KEY,
+    DEDUPE_KEY_TTL_SECONDS,
+    MAX_DELIVERY_ATTEMPTS,
+    STREAM_KEY,
     enqueue_ready,
     outbox_consumer_tick,
-    STREAM_KEY,
-    DEADLETTER_KEY,
-    CONSUMER_GROUP,
-    MAX_DELIVERY_ATTEMPTS,
-    DEDUPE_KEY_TTL_SECONDS,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -45,6 +43,18 @@ def mock_db():
 @pytest.fixture
 def redis_client():
     return fakeredis.FakeRedis()
+
+
+@pytest.fixture
+def capture_trace_events(monkeypatch):
+    captured = []
+
+    def _fake_emit(**kwargs):
+        captured.append(kwargs)
+        return {"trace_id": None, "trace_url": None}
+
+    monkeypatch.setattr("src.preenrich.outbox.emit_standalone_event", _fake_emit)
+    return captured
 
 
 def _insert_ready_job(db, jd_checksum="sha256:abc") -> ObjectId:
@@ -115,6 +125,20 @@ def test_enqueue_ready_no_jobs_returns_zero(mock_db, redis_client):
     """Returns 0 when no ready jobs exist."""
     count = enqueue_ready(mock_db, redis_client)
     assert count == 0
+
+
+def test_enqueue_ready_emits_trace_event(mock_db, redis_client, capture_trace_events):
+    job_id = _insert_ready_job(mock_db, jd_checksum="sha256:trace")
+
+    count = enqueue_ready(mock_db, redis_client)
+
+    assert count == 1
+    assert [event["name"] for event in capture_trace_events] == ["scout.preenrich.outbox.enqueue"]
+    event = capture_trace_events[0]
+    assert event["session_id"] == f"job:{job_id}"
+    assert event["metadata"]["level2_job_id"] == str(job_id)
+    assert event["metadata"]["lifecycle_before"] == "ready"
+    assert event["metadata"]["lifecycle_after"] == "queued"
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +260,41 @@ def test_consumer_deadletters_after_max_attempts(redis_client):
     }
     assert decoded["job_id"] == "job_dl"
     assert int(decoded["delivery_count"]) == MAX_DELIVERY_ATTEMPTS
+
+
+def test_consumer_retry_and_deadletter_emit_trace_events(redis_client, capture_trace_events):
+    _seed_stream(redis_client, job_id="job_trace", jd_checksum="sha256:trace")
+    retry_runner = _make_runner(status_code=500)
+
+    retry_stats = outbox_consumer_tick(redis_client, retry_runner)
+
+    assert retry_stats["retried"] == 1
+    retry_event = next(event for event in capture_trace_events if event["name"] == "scout.preenrich.outbox.retry")
+    assert retry_event["metadata"]["level2_job_id"] == "job_trace"
+    assert retry_event["metadata"]["attempt_count"] == 1
+
+    capture_trace_events.clear()
+    queue_key = "batch-pipeline:job_trace_dl:sha256:abc"
+    redis_client.xadd(
+        STREAM_KEY,
+        {
+            "job_id": "job_trace_dl",
+            "jd_checksum": "sha256:abc",
+            "queue_key": queue_key,
+            "enqueued_at": datetime.now(timezone.utc).isoformat(),
+            "delivery_count": str(MAX_DELIVERY_ATTEMPTS - 1),
+        },
+    )
+    deadletter_runner = _make_runner(status_code=503)
+
+    deadletter_stats = outbox_consumer_tick(redis_client, deadletter_runner)
+
+    assert deadletter_stats["deadlettered"] == 1
+    deadletter_event = next(
+        event for event in capture_trace_events if event["name"] == "scout.preenrich.outbox.deadletter"
+    )
+    assert deadletter_event["metadata"]["level2_job_id"] == "job_trace_dl"
+    assert deadletter_event["metadata"]["lifecycle_after"] == "deadletter"
 
 
 def test_max_delivery_attempts_is_five():

@@ -10,16 +10,14 @@ Tests verify that the three-tier system uses consistent naming:
 - Backward compatibility with legacy names (fast/balanced/quality)
 """
 
-import pytest
-from typing import Literal
 
 from src.common.claude_cli import (
     CLAUDE_MODEL_TIERS,
-    DEFAULT_BATCH_TIER,
     CLAUDE_TIER_COSTS,
+    DEFAULT_BATCH_TIER,
     TIER_ALIASES,
-    TierType,
     ClaudeCLI,
+    TierType,
 )
 
 
@@ -302,6 +300,7 @@ class TestTierNamingConsistency:
     def test_new_tier_names_in_source(self):
         """Should use new tier names (low/middle/high) in source."""
         import inspect
+
         import src.common.claude_cli as cli_module
 
         source = inspect.getsource(cli_module)
@@ -353,8 +352,8 @@ class TestConstantsImport:
         """All tier-related constants should be importable."""
         from src.common.claude_cli import (
             CLAUDE_MODEL_TIERS,
-            DEFAULT_BATCH_TIER,
             CLAUDE_TIER_COSTS,
+            DEFAULT_BATCH_TIER,
             TIER_ALIASES,
         )
 
@@ -366,6 +365,7 @@ class TestConstantsImport:
     def test_claude_cli_tier_parameter(self):
         """ClaudeCLI should accept tier parameter in __init__."""
         import inspect
+
         from src.common.claude_cli import ClaudeCLI
 
         init_signature = inspect.signature(ClaudeCLI.__init__)

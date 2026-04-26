@@ -21,27 +21,28 @@ achievements that align with the target role's competency profile.
 """
 
 import warnings
+
 warnings.warn(
     "src.layer6.cv_generator is deprecated. Use src.layer6_v2 with ENABLE_CV_GEN_V2=true",
     DeprecationWarning,
     stacklevel=2
 )
 
+import json
 import logging
 import re
-import json
-from typing import List, Dict, Optional, Tuple
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
 from pydantic import BaseModel, Field, validator
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_cv_llm
-from src.common.state import JobState, STARRecord
-from docx import Document
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-
+from src.common.state import JobState
 
 # ===== PYDANTIC SCHEMAS =====
 
@@ -616,7 +617,7 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
         # Step 6: Run hallucination QA (on text content)
         self.logger.info("Running hallucination QA pass...")
         try:
-            qa_result = self._validate_cv_content(cv_text_content, state["candidate_profile"])
+            self._validate_cv_content(cv_text_content, state["candidate_profile"])
             self.logger.info("Hallucination QA passed")
         except ValueError as e:
             self.logger.error(f"Hallucination QA failed: {e}")

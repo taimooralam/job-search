@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2026-04-21 (Iteration-4.2.1 stakeholder-surface rollout slice implemented locally)
+**Last Updated**: 2026-04-25 (Iteration-4.2.5 experience-dimension weights implemented locally)
 
 > **See also**: `docs/current/architecture.md` | `bugs.md`
 
@@ -56,6 +56,316 @@
 **Open Follow-Up**
 - Live single-job stakeholder-surface debug runs on production-like data are still pending; this slice has focused on deterministic/stage-local correctness, rollout guards, and eval coverage first.
 - The later `presentation_contract` consumer still has to be implemented in Iteration 4.2.x; `stakeholder_surface` only prepares evaluator-conditioned inputs for that downstream stage.
+
+---
+
+### Today's Session (2026-04-23): Iteration 4.2.2 Document Expectations And CV Shape Expectations
+
+**STATUS: IMPLEMENTED LOCALLY, GUARDED FOR ROLLOUT**
+
+**Scope**: Ship the first safe `presentation_contract` slice with candidate-agnostic `document_expectations` and `cv_shape_expectations`, while keeping the current default DAG and `cv_ready` path unchanged because `pain_point_intelligence` and the later presentation slices are not implemented yet.
+
+**Implemented**
+- Added canonical 4.2.2 models, enums, validators, and richer-first ingress normalization for:
+  - `DocumentExpectationsDoc`
+  - `CvShapeExpectationsDoc`
+  - `PresentationContractDoc`
+  - shared proof-category / section-id / anti-pattern / compression / omission enums intended for later 4.2.x reuse
+- Added strict truth-side validation and candidate-leakage handling:
+  - canonical persisted models remain `extra="forbid"`
+  - richer unknown fields are retained in debug retention structures
+  - rejected fields record reasons
+  - first-person / candidate-specific leakage is stripped and surfaced as explicit rejection
+- Added prompt builders and prompt versions for:
+  - `P-document-expectations@v1`
+  - `P-cv-shape-expectations@v1`
+  - `P-document-and-cv-shape@v1` as an optional guarded merged path
+- Added a guarded `presentation_contract` stage with:
+  - deterministic preflight
+  - split-prompt default behavior
+  - one-step schema-repair retry
+  - role-family fail-open defaults when upstream evidence is thin or outputs are invalid
+  - compact snapshot projection support in `blueprint_assembly`
+- Added routing/config support for the new stage:
+  - Codex
+  - `gpt-5.4`
+  - no web transport
+  - no fallback
+  - repo context off by default
+- Added targeted unit coverage for:
+  - schema validation
+  - ingress normalization
+  - stage fail-open behavior
+  - registry gating
+  - model-preflight routing
+
+**Guard Rails Preserved**
+- `presentation_contract` is absent from the default DAG.
+- `presentation_contract` is not `required_for_cv_ready`.
+- current `cv_ready` behavior remains unchanged unless the new feature flags are explicitly enabled.
+- `blueprint_assembly` only mirrors a compact `presentation_contract` snapshot if the artifact exists.
+
+**New Flags**
+- `PREENRICH_PRESENTATION_CONTRACT_ENABLED=false`
+- `PREENRICH_PRESENTATION_CONTRACT_DOCUMENT_EXPECTATIONS_ENABLED=false`
+- `PREENRICH_PRESENTATION_CONTRACT_CV_SHAPE_EXPECTATIONS_ENABLED=false`
+- `PREENRICH_PRESENTATION_CONTRACT_MERGED_PROMPT_ENABLED=false`
+
+**Open Follow-Up**
+- `pain_point_intelligence` is still absent, so 4.2.2 can only consume proof-map detail opportunistically and otherwise falls back to role-family defaults.
+- `presentation_contract` is still a first slice, not the final presentation bridge:
+  - no candidate evidence matching
+  - no CV prose generation
+  - no downstream `cv_ready` gating
+- Later 4.2.3/4.2.4/4.2.5/4.2.6 work still has to wire the proof map, presentation bridge, and downstream consumer path onto this contract.
+
+---
+
+### Today's Session (2026-04-24): Iteration 4.2.3 Pain-Point Intelligence And Proof Map
+
+**STATUS: IMPLEMENTED AND LIVE-VALIDATED, GUARDED FOR ROLLOUT**
+
+**Scope**: Ship `pain_point_intelligence` as the canonical 4.2.3 stage and artifact, wire it into the guarded blueprint DAG, add proof-map-aware downstream consumption, and keep fail-open behavior explicit when research evidence is thin or invalid.
+
+**Implemented**
+- Added canonical 4.2.3 models, enums, validators, and richer-first normalization for:
+  - `PainPointIntelligenceDoc`
+  - typed pain / strategic-need / risk / success-metric / proof-map / search-term entries
+  - shared proof-category enum extensions required by the proof-map contract
+  - compact snapshot projection via `pain_point_intelligence_compact`
+- Added the guarded `pain_point_intelligence` stage with:
+  - deterministic evidence mining pre-pass
+  - proof-map oriented Codex synthesis
+  - one-step schema-repair retry for recoverable validator drift
+  - deterministic fail-open artifact generation on thin or terminal paths
+  - optional bounded supplemental web checks behind a dedicated feature flag
+  - collection-backed artifact writes plus optional compatibility projections
+- Wired the stage into:
+  - `blueprint_config`
+  - stage routing defaults
+  - stage registry
+  - blueprint DAG dependencies
+  - stage worker factory mapping
+  - model preflight validation
+- Updated downstream readers so `blueprint_assembly`:
+  - reads `pre_enrichment.outputs.pain_point_intelligence` first
+  - mirrors `pain_point_intelligence_compact`
+  - only falls back to old proxy pain fields when the new artifact is absent
+  - only writes legacy/root compatibility fields when the compat projection flag is enabled
+- Added focused unit coverage for:
+  - normalization
+  - proof-map referential integrity
+  - fail-open behavior
+  - tracing events
+  - registry/routing guards
+  - blueprint projection preference
+- Added local operational tooling:
+  - `scripts/smoke_pain_point_intelligence.py`
+  - `scripts/vps_run_pain_point_intelligence.py`
+
+**New Flags**
+- `PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED=false`
+- `PREENRICH_PAIN_POINT_SUPPLEMENTAL_WEB_ENABLED=false`
+- `PREENRICH_PAIN_POINT_INTELLIGENCE_COMPAT_PROJECTION_ENABLED=true`
+
+**Guard Rails Preserved**
+- The slice remains feature-flagged and default-off.
+- Supplemental web research is separately gated and bounded.
+- The stage stays truth-first:
+  - no fabricated company events
+  - unresolved is better than guessed
+  - proof-map foreign keys are validated
+- Existing default-off behavior remains unchanged unless the new flags are explicitly enabled.
+
+**Open Follow-Up**
+- VPS live validation for the real stage and minimum end-to-end chain still has to be executed for this slice.
+- `presentation_contract` already consumes the artifact, but later 4.2.4/4.2.5/4.2.6 work still has to deepen the downstream presentation bridge and candidate matching path.
+
+---
+
+### Today's Session (2026-04-25): Iteration 4.2.6 Truth-Constrained Emphasis Rules
+
+**STATUS: IMPLEMENTED LOCALLY, GUARDED FOR ROLLOUT**
+
+**Scope**: Ship `truth_constrained_emphasis_rules` as a real `presentation_contract` subdocument with canonical enum ownership, deterministic normalization, split / merged prompt compatibility, cross-subdocument invariants, metadata-first tracing, compact snapshot projection, and parent-stage VPS tooling.
+
+**Implemented**
+- Added canonical 4.2.6 ownership in `blueprint_models`:
+  - `RuleTypeEnum`
+  - `RuleTopicFamily`
+  - `AppliesToKindEnum`
+  - `RULE_TYPE_ENUM_VERSION`
+  - `APPLIES_TO_ENUM_VERSION`
+  - `TruthConstrainedEmphasisRulesDoc` and its nested rule / pattern / ladder / coverage / debug records
+- Added richer-first ingress normalization for:
+  - bucket aliases and applies-to prefix coercion
+  - deterministic `rule_id` derivation
+  - duplicate collapse and precedence-based conflict suppression
+  - candidate-leakage stripping
+  - regex-safe validation and richer-output retention
+- Extended the parent `presentation_contract` stage to:
+  - synthesize `truth_constrained_emphasis_rules` in split mode
+  - parse and validate the same subdocument in merged mode
+  - apply deterministic fail-open defaults and one-step schema-repair retry
+  - enforce the 4.2.6 cross-subdocument invariant set with the parent cross-validator
+  - propagate valid `cap_dimension_weight` rules back into 4.2.5 weights
+  - emit metadata-first tracing under:
+    - `scout.preenrich.presentation_contract.emphasis_rules`
+    - `scout.preenrich.presentation_contract.consistency.emphasis_rules`
+- Added compact snapshot projection under:
+  - `job_blueprint_snapshot.presentation_contract_compact.emphasis_rules`
+- Added local operational tooling:
+  - `scripts/smoke_emphasis_rules_subdocument.py`
+  - extended `scripts/vps_run_presentation_contract.py` artifact capture for the 4.2.6 subdocument
+- Added focused unit coverage for:
+  - schema validity
+  - normalizer behavior
+  - invariant enforcement
+  - cap propagation and fail-open behavior
+  - metadata-first trace emission
+  - compact snapshot projection
+
+**New Flag**
+- `PREENRICH_PRESENTATION_CONTRACT_EMPHASIS_RULES_ENABLED=false`
+
+**Guard Rails Preserved**
+- no standalone stage, queue, collection, lease, or cache key was introduced
+- `presentation_contract` remains default-off in the DAG
+- 4.2.6 remains candidate-agnostic and metadata-first
+- parent routing remains:
+  - provider `codex`
+  - model `gpt-5.4`
+  - no web transport
+  - repo context off by default
+
+**Validation Coverage**
+- added focused unit coverage for the 4.2.6 schema, ingress, invariants, caps, fail-open behavior, trace emission, compact projection, and parent-stage happy path
+- added a dedicated smoke entrypoint:
+  - `scripts/smoke_emphasis_rules_subdocument.py`
+- extended the shared VPS runner to emit:
+  - `reports/presentation-contract/<job_id>/emphasis_rules/subdocument.json`
+  - `parent_stage_output.json`
+  - `trace_url.txt`
+  - `stage_runs_row.json`
+  - `mongo_writes.md`
+  - `acceptance.md`
+  - `run.log`
+- live Mongo / VPS validation still depends on available credentials and reachable infrastructure at execution time
+
+---
+
+### Today's Session (2026-04-25): Iteration 4.2.5 Experience-Dimension Weights And Salience
+
+**STATUS: IMPLEMENTED LOCALLY, GUARDED FOR ROLLOUT**
+
+**Scope**: Ship `experience_dimension_weights` as a real `presentation_contract` subdocument with canonical dimension ownership, deterministic caps/defaults, split/merged prompt compatibility, compact snapshot projection, and metadata-first tracing.
+
+**Implemented**
+- Added canonical 4.2.5 ownership in `blueprint_models`:
+  - `ExperienceDimension`
+  - `DIMENSION_ENUM_VERSION`
+  - `ExperienceDimensionWeightsDoc`
+  - typed normalization-event / overuse-risk / debug-context records
+- Added richer-first ingress normalization for:
+  - canonical dimension aliases
+  - float-looking integer coercion
+  - variant-role gating
+  - richer-output retention / rejected-output recording
+  - candidate-leakage stripping from rationale/debug payloads
+- Added:
+  - `P-experience-dimension-weights@v1`
+  - deterministic role-family priors
+  - AI / architecture / leadership cap helpers
+  - deterministic tail-fill and fail-open defaults
+  - merged-prompt parse-time extraction with a distinct 4.2.5 validator path
+- Extended the parent `presentation_contract` stage to:
+  - synthesize `experience_dimension_weights` in split mode
+  - parse and validate the same subdocument in merged mode
+  - apply deterministic post-pass normalization and normalization-event recording
+  - emit `scout.preenrich.presentation_contract.dimension_weights` tracing
+  - fail open to truthful defaults instead of terminal parent failure
+- Added compact snapshot projection under:
+  - `job_blueprint_snapshot.presentation_contract_compact.dimension_weights`
+- Added local operational tooling:
+  - `scripts/smoke_experience_dimension_weights.py`
+  - extended `scripts/vps_run_presentation_contract.py` artifact capture for the 4.2.5 subdocument
+- Added focused unit coverage for:
+  - schema validity
+  - normalizer behavior
+  - deterministic cap/floor validation
+  - parent-stage split / merged integration
+  - metadata-first trace emission
+  - compact snapshot projection
+
+**New Flag**
+- `PREENRICH_PRESENTATION_CONTRACT_DIMENSION_WEIGHTS_ENABLED=false`
+
+**Guard Rails Preserved**
+- no standalone stage, queue, collection, or control plane was introduced
+- `presentation_contract` remains default-off in the DAG
+- 4.2.5 remains candidate-agnostic and metadata-first
+- parent routing remains:
+  - provider `codex`
+  - model `gpt-5.4`
+  - no web transport
+  - repo context off by default
+
+**Validation Coverage**
+- live Mongo validation covered:
+  - one rich-research case
+  - one thin/fail-open case after first materializing `pain_point_intelligence`
+- added fixture-backed low/adjacent-AI validation for the third requested scenario via:
+  - `scripts/smoke_experience_dimension_weights.py --fixture data/presentation_contract_fixtures/low_ai_adjacent_full_upstream.json`
+  - `scripts/vps_run_presentation_contract.py --fixture data/presentation_contract_fixtures/low_ai_adjacent_full_upstream.json`
+- if a real low/adjacent-AI job with the full upstream footprint later appears in Mongo, rerun the third case as an extra live check rather than as a ship blocker
+- 4.2.6 now consumes the canonical 4.2.5 `ExperienceDimension` contract rather than re-owning it
+
+---
+
+### Today's Session (2026-04-25): Iteration 4.2.4 Ideal-Candidate Presentation Model
+
+**STATUS: IMPLEMENTED AND LIVE-VALIDATED**
+
+**Scope**: Ship `ideal_candidate_presentation_model` as a real `presentation_contract` subdocument, not a standalone stage, while preserving the existing guarded rollout posture and the current parent-stage routing.
+
+**Implemented**
+- Extended the canonical `presentation_contract` contract to include:
+  - `ideal_candidate_presentation_model`
+  - nested signal / proof-ladder / credibility-marker / risk-flag / audience-variant records
+  - richer-first ingress normalization and explicit candidate-leakage rejection
+  - cross-subdocument validation for `title_strategy` alignment with `cv_shape_expectations`
+- Added:
+  - `P-ideal-candidate@v1`
+  - deterministic ideal-candidate priors and role-family fallback
+  - one-step schema-repair retry
+  - conservative fail-open behavior with confidence caps and unresolved markers
+- Preserved safe incremental merged-mode behavior:
+  - existing merged 4.2.2 prompt continues to hydrate document/shape only
+  - 4.2.4 runs as a separate same-run subcall instead of widening merged-prompt scope
+- Added compact snapshot projection under:
+  - `job_blueprint_snapshot.presentation_contract_compact.ideal_candidate`
+- Kept the legacy compact mirror during rollout:
+  - `job_blueprint_snapshot.presentation_contract.ideal_candidate`
+- Added tracing for the new subdocument under:
+  - `scout.preenrich.presentation_contract.ideal_candidate`
+  - `scout.preenrich.presentation_contract.ideal_candidate.fail_open`
+- Added local smoke tooling:
+  - `scripts/smoke_ideal_candidate_subdocument.py`
+
+**New Flag**
+- `PREENRICH_PRESENTATION_CONTRACT_IDEAL_CANDIDATE_ENABLED=false`
+
+**Guard Rails Preserved**
+- no separate stage, queue, collection, or control plane was introduced
+- `presentation_contract` remains default-off in the DAG
+- parent routing remains:
+  - provider `codex`
+  - model `gpt-5.4`
+  - no web transport
+  - repo context off by default
+
+**Open Follow-Up**
+- 4.2.5 and 4.2.6 now ship inside `presentation_contract`; downstream 4.3.x consumers still need to migrate from compat projections to the canonical subdocuments
 
 ---
 
@@ -6189,6 +6499,150 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 - Debounced saves prevent excessive storage operations
 - Opens path to reactive programming patterns throughout application
 - Prepares codebase for future framework upgrades (Vue 3, Angular, etc.)
+
+---
+
+### Today's Session (2026-04-23): Iteration 4.2.3-4.2.6 and 4.3.3-4.3.8 Plan Gaps
+
+**STATUS: PLAN-LEVEL GAPS DOCUMENTED, NOT YET APPLIED**
+
+**Scope**: After upgrading 4.3.2 with explicit source-of-truth chains, deterministic composition rules, a shared header-validator API, hard prerequisites, and a triage-style open-questions table, the same structural gaps exist across the remaining 4.2 and 4.3 sub-plans. This entry catalogs the specific items that should be added to each plan before implementation starts. None of these are content rewrites; each is a missing contract, prereq, or specification.
+
+**Cross-cutting gaps (apply to every listed plan)**
+- No `§15.0 Hard prerequisites` section. Each plan should explicitly enumerate which upstream artifacts must be persisted in production before the stage's flag is allowed to flip on, and what the degraded fail-open path is when prereqs are unmet.
+- `§16 Open Questions` is a loose bullet list. Should be reformatted as a triage table with three columns: Question | Triage (must-resolve / safe-to-defer) | Resolution-or-recommendation. This forces every open question to land in one of two buckets and links to the section that resolves it.
+- No explicit downstream-consumer contract. Each plan's outputs are consumed by named later stages; the consumption contract (which fields, which IDs, which pool/pick semantics) should be co-located with the producing plan, not implied through prose elsewhere.
+
+#### 4.3.3 — CV Pattern Selection And Evidence Mapping
+- Missing hard-prereq section: `cv.header_blueprint.status in {completed, partial}` + `MASTER_CV_BLUEPRINT_V2_ENABLED=true` + `presentation_contract` subdocs persisted. Degraded path falls open to role-family default patterns with confidence capped at `medium`.
+- Missing pool-consumption contract with 4.3.2: which fields the pattern selector picks from `header_blueprint.identity.title_candidates[]`, `visible_identity_candidates[]`, `tagline_ingredients.lead_phrase_candidates[]`, `proof_anchor_pool[]`, `differentiator_anchor_pool[]`, and `hero_proof_fragments[]`; the rule that pools are never grown retroactively; the conservative-default swap rule when a pool is insufficient for a pattern's intended emphasis; the must-include rule from `viability_bands.minimum_viable_truthful_header.*_ids[]`; and the must-not-exceed rule from `viability_bands.strong_competitive_header.*_ids[]`.
+- Missing `pattern_signature` determinism specification. Currently asserted to be a "stable hash" of `(lead_role_id, primary_document_goal_override, dimension_weights_override, sorted evidence_map.achievement_ids)`. Should be a concrete byte-deterministic rule: e.g., `sha256(json.dumps({...}, sort_keys=True, separators=(",", ":")))`, with explicit canonicalization of integer dimension weights and sorted achievement_id order.
+- Missing salience-score formula for the deterministic preflight pool. Currently described as `dimension_weight × scope_band × metric_band × match_with_proof_map`. Should specify: ordinal mappings for each enum (e.g., `metric_band: none=0, small=1, medium=2, large=3, flagship=4`), the multiplication order, the tie-break rule, and whether normalization to [0, 1] occurs.
+- Missing pattern-validator API. The plan references "deterministic validators" three times but never exposes a signature. Mirror 4.3.2 §11.2: module path `src/cv_assembly/validators/pattern_validator.py`, function `validate_patterns(pattern_doc, header_blueprint, master_cv, presentation_contract, *, mode={"selection","draft_consumption"}, tracer)`, `PatternValidatorReport` shape with `violations[]`, allowed deterministic repair actions (`drop_pattern`, `swap_to_default`, `clamp_band`), one-pass bound, byte-determinism guarantee.
+- Missing cross-plan invariants restatement: `dimension_weights_override` keys must be a subset of the canonical 4.2.5 dimension enum; `proof_order_override[]` permutation of canonical 4.2.3 proof-category enum; `primary_document_goal_override` ∈ canonical 4.2.2 goal enum.
+- Open question: should the diversity Jaccard threshold (default 0.35 in §9.2) be per-role-family rather than global? Currently a single global default.
+- Open question: should `pattern_label` enum be extensible by registry, or remain literal in `models.py`? v1 says literal; should be marked safe-to-defer.
+
+#### 4.3.4 — Multi-Draft CV Assembly
+- Missing hard-prereq section: `cv.pattern_selection.status in {completed, partial}` for all three patterns; `cv.header_blueprint.status in {completed, partial}`; master-CV loader v2 succeeds; Layer 6 V2 self-grader healthy. Degraded path: when only two patterns are valid, run two drafts and mark `cv_assembly.status=degraded`.
+- Missing evidence-lineage validator API. The plan describes the validator's behavior in §9.2 but never exposes its signature. Mirror 4.3.2 §11.2: module path `src/cv_assembly/validators/evidence_lineage_validator.py`, function `validate_lineage(draft_doc, blueprint, pattern, master_cv, *, mode={"draft","synthesis"}, tracer)`, `EvidenceLineageValidatorReport` shape, allowed repair actions (`surgical_remove_bullet`, `soften_per_emphasis_rule`, `collapse_section`, `clamp_band`, `strip_skill_outside_pool`), one-pass bound, no LLM in repair, byte-determinism asserted by eval.
+- Missing reference to the 4.3.2 shared header validator. 4.3.4 must call `validate_header(..., mode="draft", pattern=current_pattern)` on every draft's header struct before persist. Currently implicit.
+- Missing `PatternContext → PatternBias` composition rule. The plan asserts "PatternBias is derived deterministically from PatternDoc" but never specifies the derivation. Mirror 4.3.2 §11.1: per-dimension multiplier formula (e.g., `multiplier_d = pattern.dimension_weights_override.get(d, default) / 100`), allowlist construction (union of `evidence_map.key_achievements.slots[].achievement_id` and `evidence_map.experience.per_role[].achievement_refs[].achievement_id`), forbidden-category derivation (projection of `truth_constrained_emphasis_rules.forbidden_claim_patterns[]` to enum), tie-break rules.
+- Missing number-resolution rule for bullet text. The plan says "numbers in bullet text must appear either in the master-CV achievement source fragment or in a whitelisted metric band." Should specify: token-extraction regex for numeric tokens (digits + units like `%`, `x`, `M`, `k`); the `scope.headcount_total` / `metric_band` lookup table; the failure mode when a number is mentioned but its source band is absent.
+- Missing cover-letter ownership resolution (current open question). Recommendation: cover letters generated only for the winning draft in 4.3.5, not per draft. Mark as resolved.
+- Open question: should all three drafts share a single prompt cache to save cost? Currently unresolved; should be marked safe-to-defer (v1: cold per draft for diversity, post-rollout optimization to revisit after cost telemetry).
+- Open question: should the cost cap be per-draft or per-job? Should be marked must-resolve (recommendation: per-job ceiling applied through 4.3.8 cost breaker, with per-draft soft budget that triggers the LLM tier downgrade in `unified_llm.py`).
+
+#### 4.3.5 — Draft Grading, Selection, And Best-Version Synthesis
+- Missing hard-prereq section: at least 2 of 3 drafts in terminal `DraftDoc.status` (not `failed`); `cv.draft_assembly.evidence_lineage_validator_report.status` not `failed`; grader model accessible OR deterministic-only mode acceptable.
+- Missing `merge_algorithm_version` semantics. Currently referenced as a field on `SynthesisDoc` but never specified. Should define: (a) semver-style versioning (`v1.0.0`); (b) when to bump (any change to promotion rules, ε thresholds, ordering, or rollback semantics); (c) backward compatibility — older versions remain runnable for replay; (d) how the rubric's "byte-level reproducible" claim composes with version bumps.
+- Missing rule_id enum for synthesis. Currently `rule_applied ∈ {higher_score_same_achievement, fill_empty_slot, higher_score_cross_pattern_section}`; should be enumerated formally with each rule's preconditions, action, and rollback trigger.
+- Missing ε-threshold calibration method. `ε_tied = 0.05`, `ε_replace = 0.07`, `ε_improve = 0.02` are asserted as defaults but not derived. Should specify: how to update these from the eval corpus when reviewer-usefulness vs synthesis-frequency curves shift; whether they are per-role-family.
+- Missing pairwise-mode prompt contract. §8.4 says pairwise mode is gated by flag but never specifies the LLM input shape or how preference orderings tie-break under deterministic re-runs.
+- Missing config-vs-hardcoded decision for rubric weights (30/20/20/30). Currently appear hardcoded; should specify whether they are tunable per role family via a config file (recommendation: yes, in `data/eval/cv_assembly/rubric_weights.json`, versioned, with regression gate on changes).
+- Missing reference to the 4.3.4 evidence-lineage validator + 4.3.2 header validator. Synthesis must call both before persist (`mode="synthesis"`). Currently implicit.
+- Open question: cross-pattern section replacements vs unfilled-slot only. Should be marked must-resolve. Recommendation: allow cross-pattern fills for unfilled slots; require pattern affinity for replacements (the promoted fragment must come from a pattern whose `pattern_label` is compatible with the winner's label per a small compatibility table).
+- Open question: multi-round merge. Mark safe-to-defer (v1: single-round deterministic; revisit if eval shows lift).
+
+#### 4.3.6 — Publisher, Renderer, And Remote Delivery Integration
+- Missing hard-prereq section: `cv_assembly.synthesis.validator_report.status in {pass, repair_attempted}`; pdf-service `/health` returns `playwright_ready=true` within last 5 minutes; n8n webhook reachable; Google Drive OAuth scopes valid; Sheets API quota not exhausted.
+- Missing n8n idempotency contract specification. Plan asserts "n8n workflow must treat duplicate `request_id` as idempotent" but does not specify (a) how n8n stores the dedup table, (b) the TTL on dedup entries, (c) whether the workflow returns the original `file_id` on duplicate `request_id` or a new one. Should reference the n8n workflow JSON in `n8n/workflows/cv-upload.json` and lock its dedup behavior.
+- Missing pdf-service health-gate exact semantics. "Persistent unhealthy" referenced but undefined. Should specify: gate fires when `/health` returns `playwright_ready=false` for ≥ N consecutive checks within a window; recovery requires M consecutive `playwright_ready=true` returns; configurable per env var.
+- Missing Sheets row schema enumeration. Plan says "schema is preserved" but never lists columns. Should enumerate: `timestamp, company, title, job_url, fit_score, fit_rationale, drive_folder_url, status, source, winner_draft_id, synthesis_hash, pattern_label`; specify which are new in 4.3.6 (the last three).
+- Missing compatibility-projection write atomicity contract. If publisher crashes between writing legacy fields and writing `cv_assembly.publish_state`, what is the recovery path? Should specify: projection write happens in the same `findOneAndUpdate` as `published_at` CAS, so crash-after-write is impossible; crash-before-write leaves both unset, retried by the next finalizer call.
+- Missing `delivered` lifecycle CAS contract. §8 only specifies `published`; the optional `delivered` finalizer needs its own CAS shape and event.
+- Open question: phase out n8n in favor of direct Drive API. Mark safe-to-defer (revisit if 4.3.8 webhook reliability telemetry shows regression).
+- Open question: dedicated higher-memory render workers. Mark safe-to-defer.
+
+#### 4.3.7 — Dossier And MongoDB `level-2` State Contract
+- Missing hard-prereq section: `cv_assembly.synthesis.degraded != true OR winner_grade.composite >= threshold`; `cv_assembly.publish_state.render.dossier.source` resolvable.
+- Missing projection module API. Plan introduces `src/cv_assembly/compat/projection.py::project_cv_assembly_to_level2(level2_doc) -> dict` but no signature detail. Should specify: full signature with type hints, return shape (the exact dict written), error handling (raises vs returns partial), idempotence guarantee, side-effect contract (no Mongo writes — pure function).
+- Missing dossier section validator API. Plan describes degraded-section semantics in §9.2 but never exposes a validator. Should mirror 4.3.4: module path `src/cv_assembly/validators/dossier_validator.py`, function `validate_dossier(dossier_state_doc, blueprint, winner_draft, master_cv, *, tracer)`, `DossierValidatorReport` shape with per-section status, allowed actions (`fall_back_to_best_effort_section`, `omit_section`).
+- Missing frontend backward-compat semantics during transition. When some jobs have `cv_assembly.*` and others do not, the frontend must render both correctly without flickering between modes. Should specify: `cv_assembly.legacy=true` flag set by `scripts/mark_legacy_cv_ready.py` is the discriminator; new dashboards default to "show only non-legacy" with a toggle.
+- Missing index migration plan. Plan adds `level-2 { "cv_assembly.status": 1, "cv_assembly.status_breakdown.publish_cv_status": 1 }` but does not specify the rolling-build strategy on a live Mongo replica set.
+- Missing partial-completion semantics formalization. `status_breakdown` rollup logic is described in prose; should be a deterministic table: input states → rollup status, with worked examples for each new lifecycle (`cv_assembling`, `cv_assembled`, `publishing`, `published`, `delivered`).
+- Open question: separate `cv_assembly` collection vs inline. Mark safe-to-defer (revisit when document size approaches 1MB; current expected size < 200KB per job).
+- Open question: dossier template v2. Mark safe-to-defer.
+- Open question: operator manual draft pick. Mark safe-to-defer (in scope for 4.4 CV Editor).
+
+#### 4.3.8 — Eval Corpora, Benchmark Harnesses, Langfuse Tracing, And Cross-Family Rollout
+- Missing hard-prereq section: every per-stage benchmark suite green; every stage has registered health probe; Langfuse retention policy verified per iteration-4 §10.
+- Missing `gate_cv_assembly_rollout.py` exit-code + output-format contract. Plan introduces the script but does not specify: exit code 0 = all gates pass, 1 = any gate fails, 2 = infrastructure error; output JSON shape (`{gates: [{name, status, detail}], overall, ts}`); whether it auto-flips flags or only reports.
+- Missing end-to-end harness input/output contract. Plan says "from frozen `cv_ready` level-2 slice to expected `published`." Should enumerate: which `level-2` fields are frozen at input (snapshot list); which fields are asserted in output (assertion list); tolerance bands per field type (byte-level for IDs, ±0.05 for LLM-assessed scores, structural for prose).
+- Missing rollout state machine. Staircase is described in prose; should be a formal state machine with explicit states (`shadow`, `canary_1`, `canary_5`, `canary_25`, `soak`, `default_on`), transition triggers, automatic-vs-manual flips, and a single `current_rollout_state.json` artifact in the repo for operator visibility.
+- Missing cross-stage cost aggregation rule. Per-stage cost is captured; should specify: how `cv_assembly.total_cost_usd` is computed (sum across drafts + grading + synthesis + publish), where it is rolled up (publisher writes after `published`), how it composes with per-job and per-hour breakers from §10.4.
+- Missing operator runbook owner/escalation. §12 scenarios lack named owner role and escalation path. Should specify: each runbook scenario has `owner_role` (`oncall_eng`, `oncall_data`, `pipeline_owner`), `escalation_path` (`<10min: oncall, <30min: pipeline_owner, <2h: tech_lead`), `acceptable_recovery_time`.
+- Missing Langfuse session lifetime. Plan says session is `job:<level2_id>` but never specifies what happens when the session_id is reused across multiple `cv_ready` cycles for the same job (e.g., snapshot invalidation re-runs). Should specify: session_id is stable per `level2_id`, all retries and re-runs append to the same session, viewable as one timeline in Langfuse.
+- Open question: per-stage timing breakdown field. Mark must-resolve. Recommendation: yes — `cv_assembly.timing_breakdown.{stage_name: {duration_ms, started_at, completed_at}}` is cheap and enables dashboard charts without Langfuse round-trip.
+- Open question: per-job cost breakdown per stage. Mark safe-to-defer (v1: aggregate only; per-stage in Langfuse metadata).
+- Open question: separate Langfuse project for 4.3. Mark safe-to-defer.
+
+#### 4.2.3 — Pain Point Intelligence v2 And Proof Map
+- Missing hard-prereq section: `jd_facts`, `classification`, and `research_enrichment` persisted at status `completed` or `partial`.
+- Missing canonical proof-category enum location declaration. The enum is referenced by 4.2.2 (`proof_order[]`), 4.2.4 (`proof_ladder[]`), 4.2.5 (`focus_categories[]`), 4.3.2 (`hero_proof_fragments[].proof_category`), 4.3.3 (`evidence_map.*.proof_category`), and 4.3.4. Should declare 4.2.3 as the canonical owner with a versioned enum file at `src/preenrich/blueprint_models.py::ProofCategory`.
+- Missing downstream-consumer contract: 4.3.3 pattern selection consumes `proof_map` for the deterministic salience score and `bad_proof_patterns[]` for forbidden category derivation. Should restate the consumption invariants.
+- Missing `search_terms[]` reuse contract. The plan says these are reusable for later candidate evidence retrieval; should specify: which 4.3 stage consumes them (recommendation: 4.3.3 pattern selection's preflight, when ranking master-CV achievements against pain coverage), and what the consumption shape is.
+- Open-questions section should become a triage table.
+
+#### 4.2.4 — Ideal Candidate Presentation Model
+- Must reflect 4.3.2 §7.5 SoT chain: `acceptable_titles[]` is a derived job-side filter constrained to be a subset of `role_metadata.acceptable_titles` (4.3.1); `title_strategy` is constrained to equal `cv_shape_expectations.title_strategy` (4.2.2). Both constraints are deterministic-validator-enforced at ingress.
+- Missing hard-prereq section: `MASTER_CV_BLUEPRINT_V2_ENABLED=true` (4.3.1 candidate allowlist must exist); `cv_shape_expectations.title_strategy` populated.
+- Missing downstream-consumer contract: 4.3.2 consumes `visible_identity` as the seed for `visible_identity_candidates[]` composition (rule §11.1.2 in 4.3.2); 4.3.2 consumes `tone_profile` and `acceptable_titles[]` for chosen_title selection (§11.1.1); 4.3.3 consumes `proof_ladder[]` and `risk_flags[]`.
+- Missing explicit constraint that `acceptable_titles[]` may not introduce titles outside the 4.3.1 allowlist. Currently asserted in 4.3.2 §7.5 but not in 4.2.4 itself.
+- Open-questions section should become a triage table.
+
+#### 4.2.5 — Experience Dimension Weights And Salience
+- Missing hard-prereq section: `jd_facts.competency_weights` and `weighting_profiles` populated; `classification.primary_role_category` resolved.
+- Missing canonical dimension enum ownership. The 12-dimension enum is referenced by 4.2.2 (`section_emphasis[].focus_categories` partially), 4.2.4 (`tone_profile`), 4.2.6 (`Rule.applies_to`), 4.3.2 (`hero_proof_fragments[].dimensions[]`), 4.3.3 (`dimension_weights_override`), 4.3.4 (`PatternBias` multipliers). Should declare 4.2.5 as canonical owner.
+- Missing downstream-consumer contract: 4.3.3 consumes `overall_weights` as the prior for `dimension_weights_override`; per-pattern override is bounded by `overall_weights ± 30 percentage points` (recommendation, to be calibrated). Pattern overrides outside this band → reject with conservative-default swap.
+- Missing stakeholder_variant_weights consumption rule by 4.3.3. Currently 4.2.5 emits per-evaluator variants but no plan formalizes how patterns map to evaluator variants.
+- Open-questions section should become a triage table.
+
+#### 4.2.6 — Truth-Constrained Emphasis Rules
+- Missing hard-prereq section: `document_expectations`, `ideal_candidate_presentation_model`, `experience_dimension_weights` persisted in same run.
+- Missing downstream-consumer contract: 4.3.4 evidence-lineage validator must enforce every `forbidden_claim_patterns[]` rule deterministically; 4.3.5 synthesis must honor `omit_rules[]` and `downgrade_rules[]` at merge time; 4.3.2 must apply `section_rules.title[]` and `section_rules.header[]` during blueprint composition. Should restate which rule types are consumed by which downstream stage.
+- Missing rule-enforceability contract. Every `Rule` must be enforceable by the deterministic validator; the plan needs to assert that LLM-only enforcement is not acceptable. Add: "Every `rule_id` must have a corresponding deterministic check in `src/cv_assembly/validators/`; rules enforceable only by LLM judgment are rejected at schema validation."
+- Missing rule_id stability guarantee. Plan says "rule_id stable across runs for the same job inputs"; should specify the deterministic composition rule (e.g., `sha1(rule_type + applies_to + condition)[:12]`).
+- Open-questions section should become a triage table.
+
+**Cross-Plan Index Of Missing Validators**
+
+The 4.3 family references three deterministic validators that remain under-specified:
+
+| Validator | Owning plan | Module path | Used by |
+|-----------|-------------|-------------|---------|
+| `validate_header()` | 4.3.2 (specified, §11.2) | `src/cv_assembly/validators/header_validator.py` | 4.3.2, 4.3.4, 4.3.5 |
+| `validate_patterns()` | 4.3.3 (under-specified) | `src/cv_assembly/validators/pattern_validator.py` | 4.3.3, 4.3.4 (consumes results) |
+| `validate_lineage()` | 4.3.4 (under-specified) | `src/cv_assembly/validators/evidence_lineage_validator.py` | 4.3.4, 4.3.5 |
+| `validate_dossier()` | 4.3.7 (missing) | `src/cv_assembly/validators/dossier_validator.py` | 4.3.7, 4.3.6 (render path) |
+
+Each validator should follow the 4.3.2 §11.2 template: explicit Python signature, `*ValidatorReport` shape, allowed deterministic repair actions, one-pass bound, no LLM in repair, byte-determinism guarantee asserted by eval, named test fixture under `tests/unit/cv_assembly/test_*_validator_determinism.py`.
+
+**Cross-Plan Index Of Missing Hard Prerequisites**
+
+Every 4.3 stage and every 4.2.3+ stage should have `§15.0 Hard prerequisites` declaring:
+
+| Plan | Required upstream | Degraded path acceptable? |
+|------|--------------------|---------------------------|
+| 4.2.3 | jd_facts, classification, research_enrichment | Yes — JD-only pain extraction with confidence cap |
+| 4.2.4 | jd_facts, classification, stakeholder_surface, research_enrichment | Yes — role-family defaults |
+| 4.2.5 | jd_facts, classification, stakeholder_surface, pain_point_intelligence | Yes — taxonomy priors |
+| 4.2.6 | All 4.2 peers in same run | No — fails the run if peers fail |
+| 4.3.3 | header_blueprint, presentation_contract subdocs, master_cv v2 | Conditional — degraded if pools insufficient |
+| 4.3.4 | pattern_selection (≥2 patterns), header_blueprint, master_cv v2 | Yes — runs with available patterns |
+| 4.3.5 | ≥2 successful drafts, lineage validator green | Yes — winner from available drafts |
+| 4.3.6 | synthesis or winner, pdf-service healthy, n8n reachable | No — fails terminally on persistent infra failure |
+| 4.3.7 | publish_state populated | Yes — projection writes available fields only |
+| 4.3.8 | All per-stage corpora green | No — gates block rollout |
+
+**Cross-Plan Index Of Open-Questions Triage Conversions**
+
+Every plan with `## 16. Open Questions` (free-bullet format) should convert to a triage table. The conversion is mechanical: each bullet becomes a row with columns Question | Triage | Resolution-or-recommendation. Items already resolved during the conversion must cite the section that resolved them.
+
+**Open Follow-Up**
+- These are plan-level documentation gaps. None block implementation of 4.3.1 itself, which remains the next deliverable.
+- The shared validator API template (4.3.2 §11.2) should be promoted to a small standalone reference doc once 4.3.3-4.3.5 adopt it, so future stages can mirror it without copy-paste drift.
+- `plans/iteration-4.2.3-pain-point-intelligence-v2-and-proof-map.md` is currently the only 4.2 sub-plan that has not received a planning revision in this session; its full triage may surface additional gaps once read against the same template.
 
 ---
 

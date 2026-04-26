@@ -130,7 +130,7 @@ def build_debug_run_dir(category_id: str) -> Path:
 def write_json_file(path: Path, payload: Any) -> None:
     """Write JSON payload with stable formatting."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
 
 
@@ -172,7 +172,7 @@ def write_attempt_debug(
 def load_composite(category_id: str) -> Dict[str, Any]:
     """Load a composite JSON payload for one category."""
     path = COMP_DIR / f"{category_id}.json"
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -181,7 +181,7 @@ def load_deep_analysis(category_id: str) -> List[Dict[str, Any]]:
     path = NORM_DIR / category_id / "deep_analysis.json"
     if not path.exists():
         return []
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return [item for item in json.load(f) if not item.get("_extraction_failed")]
 
 
@@ -1217,7 +1217,7 @@ def call_blueprint_codex(
         start_time = time.monotonic()
         next_heartbeat = heartbeat_seconds
 
-        with open(stdout_path, "w") as stdout_file, open(stderr_path, "w") as stderr_file:
+        with open(stdout_path, "w", encoding="utf-8") as stdout_file, open(stderr_path, "w", encoding="utf-8") as stderr_file:
             process = subprocess.Popen(
                 command,
                 stdin=subprocess.PIPE,
@@ -1653,9 +1653,9 @@ def write_blueprint_files(category_id: str, blueprint: Dict[str, Any]) -> None:
     json_path = BLUEPRINT_DIR / f"{category_id}_blueprint.json"
     md_path = BLUEPRINT_DIR / f"{category_id}_blueprint.md"
 
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(blueprint, f, indent=2)
-    with open(md_path, "w") as f:
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write(render_blueprint_markdown(blueprint))
 
 
@@ -1663,7 +1663,7 @@ def render_index() -> None:
     """Render a Markdown index from saved blueprint JSON files."""
     rows = []
     for path in sorted(BLUEPRINT_DIR.glob("*_blueprint.json")):
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             blueprint = json.load(f)
         meta = blueprint.get("meta", {})
         category_signature = blueprint.get("category_signature", {})
@@ -1702,17 +1702,17 @@ def render_index() -> None:
         lines.append(f"- Markdown: {row['category_id']}_blueprint.md")
         lines.append("")
 
-    with open(BLUEPRINT_DIR / "index.md", "w") as f:
+    with open(BLUEPRINT_DIR / "index.md", "w", encoding="utf-8") as f:
         f.write("\n".join(lines).rstrip() + "\n")
 
 
 def render_only() -> None:
     """Re-render Markdown artifacts from saved blueprint JSON files."""
     for path in sorted(BLUEPRINT_DIR.glob("*_blueprint.json")):
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             blueprint = json.load(f)
         category_id = blueprint.get("meta", {}).get("category_id", path.stem.replace("_blueprint", ""))
-        with open(BLUEPRINT_DIR / f"{category_id}_blueprint.md", "w") as f:
+        with open(BLUEPRINT_DIR / f"{category_id}_blueprint.md", "w", encoding="utf-8") as f:
             f.write(render_blueprint_markdown(blueprint))
     render_index()
 

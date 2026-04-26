@@ -13,18 +13,17 @@ Usage:
 import asyncio
 import json
 import logging
-import os
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
 from bson import ObjectId
 from pymongo import MongoClient
 
-from src.common.model_tiers import ModelTier, get_model_for_operation
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.model_tiers import ModelTier
+from src.common.repositories import JobRepositoryInterface, get_job_repository
 from src.common.structured_logger import StructuredLogger
-from src.common.token_tracker import TokenTracker, get_global_tracker
-from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict, LLMMetadata
+from src.common.token_tracker import TokenTracker
+from src.layer1_4 import LLMMetadata, process_jd, process_jd_sync, processed_jd_to_dict
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)

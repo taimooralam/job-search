@@ -15,7 +15,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
-
 # ── Schema for testing validation path ────────────────────────────────────────
 
 
@@ -60,6 +59,20 @@ def _make_claude_invoker(
         return return_value
 
     return _invoker
+
+
+class _CapturingTracer:
+    def __init__(self) -> None:
+        self.calls: List[Dict[str, Any]] = []
+        self.ended: List[Dict[str, Any]] = []
+
+    def start_substage_span(self, stage_name, substage, metadata):
+        span = {"stage_name": stage_name, "substage": substage, "metadata": metadata}
+        self.calls.append(span)
+        return span
+
+    def end_span(self, span, *, output=None):
+        self.ended.append({"span": span, "output": output})
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
@@ -312,3 +325,33 @@ class TestCallLlmWithFallbackFallbackArgs:
         assert len(call_log) == 1
         assert call_log[0]["model"] == "claude-sonnet-4-5"
         assert call_log[0]["job_id"] == "job-xyz"
+
+    @patch("src.preenrich.stages.base.CodexCLI")
+    def test_tracer_receives_primary_and_fallback_spans(self, mock_codex_cls):
+        from src.preenrich.stages.base import _call_llm_with_fallback
+
+        mock_cli = MagicMock()
+        mock_cli.invoke.return_value = _make_codex_result(
+            success=False,
+            error="failure",
+        )
+        mock_codex_cls.return_value = mock_cli
+        tracer = _CapturingTracer()
+
+        _call_llm_with_fallback(
+            primary_provider="codex",
+            primary_model="gpt-5.4-mini",
+            fallback_provider="claude",
+            fallback_model="claude-sonnet-4-5",
+            prompt="my prompt",
+            job_id="job-xyz",
+            schema=None,
+            claude_invoker=_make_claude_invoker({"result": "ok"}),
+            tracer=tracer,
+            stage_name="persona",
+        )
+
+        assert [call["substage"] for call in tracer.calls] == ["llm.primary", "llm.fallback"]
+        assert all(call["stage_name"] == "persona" for call in tracer.calls)
+        assert tracer.ended[0]["output"]["outcome"] == "error_subprocess"
+        assert tracer.ended[1]["output"]["outcome"] == "success"

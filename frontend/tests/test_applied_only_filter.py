@@ -14,17 +14,16 @@ Files tested:
 Note: client and mock_db fixtures are provided by conftest.py
 """
 
-import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch
-from bson import ObjectId
-
 # Import the Flask app
 import sys
+from datetime import datetime
 from pathlib import Path
+
+import pytest
+from bson import ObjectId
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from frontend.app import app
 
 
 # client and mock_db fixtures are provided by conftest.py

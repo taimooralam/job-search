@@ -3,7 +3,6 @@
 This module tests the frontend.cv_editor.converters.markdown_to_prosemirror
 function which bridges to the existing migrate_cv_text_to_editor_state function.
 """
-import pytest
 from frontend.cv_editor.converters import markdown_to_prosemirror
 
 

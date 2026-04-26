@@ -10,9 +10,9 @@ Configures:
 """
 
 import os
-import pytest
-from playwright.sync_api import Browser, BrowserContext, Page
 
+import pytest
+from playwright.sync_api import Page
 
 # ==============================================================================
 # Configuration

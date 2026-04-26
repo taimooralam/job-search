@@ -102,7 +102,7 @@ def main():
     if args.dry_run:
         print("\n** DRY RUN — no changes written to MongoDB **")
     else:
-        print(f"\nCreating sparse index on is_ai_job...")
+        print("\nCreating sparse index on is_ai_job...")
         coll.create_index("is_ai_job", name="idx_is_ai_job", sparse=True)
         print("Index created.")
 

@@ -1,0 +1,431 @@
+schema_version: '1'
+name: Taimoor Alam
+contact:
+  email: alamtaimoor.de@gmail.com
+  phone: +49 176 2979 3925
+  linkedin: linkedin.com/in/taimooralam
+  github: github.com/taimooralam
+  website: taimooralam.com
+location_primary:
+  city: Munich
+  country_code: DE
+  country_name: Germany
+  confidence:
+    score: 0.98
+    band: high
+    basis: role_metadata.json:69 + roles/01_seven_one_entertainment.md:4 — Munich, DE since 2020 (current role)
+years_experience:
+  value: 12
+  confidence:
+    score: 0.9
+    band: high
+    basis: 'Derived from role timeline: Clary Icon (2014) through present (2026) ≈ 12 years. Explicitly corroborated by data/eval/scorecards/summary.md for head_of_ai_ksa: ''actual timeline shows ~12 years but summary undersells''. Candidate-confirmed on 2026-04-26. Note: supersedes legacy role_metadata.json:20 (years_experience: 11), which should be updated separately for consistency'
+  disclosure_scope: public
+work_authorization:
+- region_code: DE
+  countries:
+  - DE
+  authorization_type: citizen
+  visa_status: n_a
+  surface_text: German citizen
+  confidence:
+    score: 0.95
+    band: high
+    basis: Nationality=German stored at role_metadata.json:12; current employer Seven.One Entertainment Group in Munich, DE since 2020
+  disclosure_scope: limited
+- region_code: EEA_CH_DERIVED
+  countries:
+  - AT
+  - BE
+  - BG
+  - HR
+  - CY
+  - CZ
+  - DK
+  - EE
+  - FI
+  - FR
+  - GR
+  - HU
+  - IE
+  - IT
+  - LV
+  - LT
+  - LU
+  - MT
+  - NL
+  - PL
+  - PT
+  - RO
+  - SK
+  - SI
+  - ES
+  - SE
+  - IS
+  - LI
+  - 'NO'
+  - CH
+  authorization_type: citizen
+  visa_status: n_a
+  surface_text: EU Citizen
+  confidence:
+    score: 0.92
+    band: high
+    basis: Definitional consequence of German citizenship under EU/EEA/CH freedom-of-movement; candidate-confirmed for surfacing as 'EU Citizen' on EEA/DACH variants on 2026-04-26
+  disclosure_scope: limited
+- region_code: UK
+  countries:
+  - GB
+  authorization_type: unresolved
+  visa_status: unresolved
+  surface_text: null
+  confidence:
+    score: 0.0
+    band: unresolved
+    basis: Post-Brexit; not derivable from EU citizenship. No candidate-owned source confirms UK work authorization
+  disclosure_scope: private
+- region_code: US
+  countries:
+  - US
+  authorization_type: unresolved
+  visa_status: unresolved
+  surface_text: null
+  confidence:
+    score: 0.0
+    band: unresolved
+    basis: No candidate-owned source confirms US work authorization or sponsorship preference
+  disclosure_scope: private
+- region_code: GCC
+  countries:
+  - AE
+  - SA
+  - QA
+  - KW
+  - BH
+  - OM
+  authorization_type: sponsorship_required
+  visa_status: sponsorship_required
+  surface_text: Open to relocation — visa sponsorship required
+  confidence:
+    score: 0.9
+    band: high
+    basis: 'Candidate-confirmed on 2026-04-26: open to GCC relocation, sponsorship required'
+  disclosure_scope: limited
+remote_posture:
+  value: flexible
+  confidence:
+    score: 0.7
+    band: medium
+    basis: Candidate-confirmed on 2026-04-26 as flexible (open to remote, hybrid, on-site depending on role). Eval baselines explicitly flag remote-first as not header-claimable; recruiter_only disclosure prevents over-claim
+  disclosure_scope: recruiter_only
+relocation_posture:
+  open: true
+  regions:
+  - GCC
+  notes: Open to relocation for GCC roles (KSA, UAE, and adjacent). Other regions (UK/US) unresolved.
+  confidence:
+    score: 0.9
+    band: high
+    basis: Candidate-confirmed on 2026-04-26
+  disclosure_scope: limited
+disclosure_scope: limited
+personal_metadata:
+  nationality:
+    value: German
+    confidence:
+      score: 0.95
+      band: high
+      basis: 'role_metadata.json:12 stores ''Nationality: German'' as candidate-owned truth; candidate-confirmed for EU Citizen surface on 2026-04-26'
+    disclosure_scope: limited
+  date_of_birth:
+    value: null
+    confidence:
+      score: 0.0
+      band: unresolved
+      basis: Not stored; methodology §5.4 says never make DOB a global default
+    disclosure_scope: private
+  driving_licenses:
+    value: []
+    confidence:
+      score: 0.0
+      band: unresolved
+      basis: Not stored in any candidate-owned source
+    disclosure_scope: private
+  marital_status:
+    value: null
+    confidence:
+      score: 0.0
+      band: unresolved
+      basis: Not stored; methodology §5.4 says omit by default in all markets
+    disclosure_scope: private
+  photo_url:
+    value: null
+    confidence:
+      score: 0.0
+      band: unresolved
+      basis: 'Candidate-confirmed on 2026-04-26: do not include a photo on any variant for now. v1 regional_variants.{de,uae,saudi}.include_photo=true is intentionally NOT promoted into v2 display_policy'
+    disclosure_scope: private
+display_policy:
+  default_variant: ats_safe
+  public_contact_fields:
+  - email
+  - phone
+  - linkedin
+  - github
+  - website
+  public_personal_fields: []
+  recruiter_only_fields:
+  - remote_posture
+  - relocation_posture
+  private_fields:
+  - personal_metadata.date_of_birth
+  - personal_metadata.driving_licenses
+  - personal_metadata.marital_status
+  - personal_metadata.photo_url
+  region_overrides:
+  - region_code: GLOBAL_ATS_SAFE
+    default_variant: ats_safe
+    allowed_public_fields:
+    - name
+    - contact
+    - location_primary
+    - languages
+    forbidden_public_fields:
+    - personal_metadata.nationality
+    - personal_metadata.date_of_birth
+    - personal_metadata.driving_licenses
+    - personal_metadata.marital_status
+    - personal_metadata.photo_url
+    - work_authorization
+    - remote_posture
+    - relocation_posture
+    preferred_header_fields:
+    - name
+    - location_primary
+    - email
+    - phone
+    - linkedin
+    rationale: 'UK National Careers + Jobscan ATS guidance: omit age, DOB, marital status, nationality, photo on the default ATS-safe CV'
+  - region_code: EEA_DACH
+    default_variant: regional_enriched
+    allowed_public_fields:
+    - name
+    - contact
+    - location_primary
+    - languages
+    - personal_metadata.nationality
+    - work_authorization[DE]
+    - work_authorization[EEA_CH_DERIVED]
+    forbidden_public_fields:
+    - personal_metadata.date_of_birth
+    - personal_metadata.marital_status
+    - personal_metadata.photo_url
+    preferred_header_fields:
+    - name
+    - location_primary
+    - email
+    - phone
+    - linkedin
+    - languages
+    - work_authorization[EEA_CH_DERIVED].surface_text
+    preferred_surface_text: EU Citizen
+    rationale: Bundesagentur guidance treats nationality as voluntary and photo as optional. Surfacing 'EU Citizen' (rather than spelling out nationality) reduces hiring friction without DOB or photo. Candidate-confirmed framing on 2026-04-26
+  - region_code: UK
+    default_variant: ats_safe
+    allowed_public_fields:
+    - name
+    - contact
+    - location_primary
+    - languages
+    forbidden_public_fields:
+    - personal_metadata.nationality
+    - personal_metadata.date_of_birth
+    - personal_metadata.driving_licenses
+    - personal_metadata.marital_status
+    - personal_metadata.photo_url
+    - work_authorization
+    preferred_header_fields:
+    - name
+    - location_primary
+    - email
+    - phone
+    - linkedin
+    rationale: 'UK National Careers Service: do not include age, DOB, marital status, nationality. UK work authorization unresolved → not surfaced'
+  - region_code: GCC_KSA_UAE
+    default_variant: regional_enriched
+    allowed_public_fields:
+    - name
+    - contact
+    - location_primary
+    - languages
+    - personal_metadata.nationality
+    - work_authorization[GCC]
+    - relocation_posture
+    forbidden_public_fields:
+    - personal_metadata.date_of_birth
+    - personal_metadata.marital_status
+    - personal_metadata.photo_url
+    preferred_header_fields:
+    - name
+    - location_primary
+    - email
+    - phone
+    - linkedin
+    - personal_metadata.nationality
+    - languages
+    - work_authorization[GCC].surface_text
+    preferred_surface_text: Open to relocation — visa sponsorship required
+    rationale: GulfTalent Dubai guidance treats nationality and language proficiency as common header content. Visa surface is now resolved (sponsorship_required) per candidate confirmation on 2026-04-26. Arabic proficiency NOT claimed (eval baseline ai_architect_ksa_uae flags as unsafe). Photo omitted per candidate decision
+  - region_code: US
+    default_variant: ats_safe
+    allowed_public_fields:
+    - name
+    - contact
+    - location_primary
+    - languages
+    forbidden_public_fields:
+    - personal_metadata.nationality
+    - personal_metadata.date_of_birth
+    - personal_metadata.driving_licenses
+    - personal_metadata.marital_status
+    - personal_metadata.photo_url
+    - work_authorization
+    preferred_header_fields:
+    - name
+    - location_primary
+    - email
+    - phone
+    - linkedin
+    rationale: 'US norm: omit personal metadata; work authorization belongs in the application form, not on the CV. US work authorization is unresolved'
+  scope_semantics:
+    public: 'Safe for all variants including ATS-safe. Currently used for: contact, location, languages, years_experience.'
+    limited: Stored; surface only on regional variants explicitly authorized in region_overrides. Never on default ATS-safe.
+    recruiter_only: Stored; never on any CV body. Available to recruiter outreach, application forms, or recruiter-rich cover letters when explicitly requested.
+    private: Stored as null/empty or for internal audit only. Never on any variant. Requires explicit candidate sign-off to surface.
+languages:
+- code: en
+  name: English
+  proficiency: C1
+  confidence:
+    score: 0.95
+    band: high
+    basis: role_metadata.json:14
+  surface_authorization:
+  - header
+  - core_competency
+  - experience_only
+  - regional_optional
+- code: de
+  name: German
+  proficiency: B2
+  confidence:
+    score: 0.95
+    band: high
+    basis: role_metadata.json:14
+  surface_authorization:
+  - header
+  - core_competency
+  - experience_only
+  - regional_optional
+- code: ur
+  name: Urdu
+  proficiency: native
+  confidence:
+    score: 0.95
+    band: high
+    basis: role_metadata.json:14
+  surface_authorization:
+  - experience_only
+  - regional_optional
+education:
+- degree: M.Sc. Computer Science
+  institution: Technical University of Munich
+  year: 2018
+  confidence:
+    score: 0.95
+    band: high
+    basis: 'Degree and institution: role_metadata.json:16. Year 2018 candidate-confirmed on 2026-04-26'
+  surface_authorization:
+  - education_section
+  - summary_optional
+  - regional_optional
+- degree: B.Sc. Computer Software Engineering
+  institution: GIK Institute (Ghulam Ishaq Khan Institute of Engineering Sciences and Technology)
+  year: 2014
+  confidence:
+    score: 0.92
+    band: high
+    basis: 'Degree: role_metadata.json:17. Year 2014 candidate-confirmed on 2026-04-26. Full institution name expanded for ATS clarity'
+  surface_authorization:
+  - education_section
+certifications:
+- name: AWS Essentials
+  issuer: null
+  year: null
+  ref_url: null
+  confidence:
+    score: 0.4
+    band: low
+    basis: role_metadata.json:19; issuer, year, and credential ID unresolved. Candidate-confirmed retention on 2026-04-26
+  surface_authorization:
+  - certifications_section_only
+- name: ECS & Multi-Region LB
+  issuer: null
+  year: null
+  ref_url: null
+  confidence:
+    score: 0.3
+    band: low
+    basis: role_metadata.json:19; ambiguous title, likely AWS-related; issuer, year, credential ID unresolved. Candidate-confirmed retention on 2026-04-26
+  surface_authorization:
+  - certifications_section_only
+- name: The Data Scientist's Toolbox
+  issuer: null
+  year: null
+  ref_url: null
+  confidence:
+    score: 0.35
+    band: low
+    basis: role_metadata.json:19; widely associated with Coursera/JHU but issuer not stored. Candidate-confirmed do_not_surface_default on 2026-04-26
+  surface_authorization:
+  - do_not_surface_default
+- name: R Programming
+  issuer: null
+  year: null
+  ref_url: null
+  confidence:
+    score: 0.35
+    band: low
+    basis: role_metadata.json:19; widely associated with Coursera/JHU but issuer not stored. Not relevant to architect-first AI lanes per eval baselines. Candidate-confirmed do_not_surface_default on 2026-04-26
+  surface_authorization:
+  - do_not_surface_default
+public_talks: []
+publications: []
+awards: []
+last_reviewed_at: '2026-04-26'
+last_reviewed_by: manual
+unresolved_fields:
+- field: personal_metadata.date_of_birth
+  reason: not stored; not requested for any variant
+- field: personal_metadata.driving_licenses
+  reason: not stored
+- field: personal_metadata.marital_status
+  reason: not stored; omit by default in all markets per methodology §5.4
+- field: personal_metadata.photo_url
+  reason: 'candidate decision 2026-04-26: no photo on any variant for now'
+- field: work_authorization[UK].authorization_type
+  reason: post-Brexit; not derivable from EU citizenship; candidate has not specified UK posture
+- field: work_authorization[US].authorization_type
+  reason: no candidate-owned source; relocation posture for US not specified
+- field: certifications[*].issuer
+  reason: not stored; candidate confirmed certifications retained as-is
+- field: certifications[*].year
+  reason: not stored
+- field: certifications[*].ref_url
+  reason: not stored
+- field: public_talks
+  reason: no candidate-owned source
+- field: publications
+  reason: no candidate-owned source
+- field: awards
+  reason: no candidate-owned source

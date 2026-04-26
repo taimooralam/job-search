@@ -10,8 +10,6 @@ This is critical functionality for Phase 2 because:
 3. Editor updates must immediately reflect in main display
 """
 
-import pytest
-from bson import ObjectId
 from unittest.mock import MagicMock
 
 
@@ -885,8 +883,6 @@ class TestCVEditorSyncToHTML:
     ):
         """PUT /api/jobs/<id>/cv-editor should update both cv_editor_state AND cv_text."""
         # Arrange
-        from bson import ObjectId
-        from unittest.mock import MagicMock
 
         job_id = str(sample_job["_id"])
         mock_db.find_one.return_value = sample_job
@@ -941,8 +937,6 @@ class TestCVEditorSyncToHTML:
     ):
         """Should convert Phase 2 formatting (fonts, alignment, highlight) to HTML."""
         # Arrange
-        from bson import ObjectId
-        from unittest.mock import MagicMock
 
         job_id = str(sample_job["_id"])
         mock_db.find_one.return_value = sample_job

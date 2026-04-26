@@ -7,10 +7,9 @@ Tests the DELETE, POST, and GET endpoints for managing contacts:
 - GET /api/jobs/<job_id>/contacts/prompt
 """
 
-import pytest
-from datetime import datetime
-from bson import ObjectId
 from unittest.mock import MagicMock
+
+from bson import ObjectId
 
 
 class TestDeleteContact:

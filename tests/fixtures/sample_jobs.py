@@ -14,8 +14,7 @@ Each fixture includes:
 - Top keywords for ATS testing
 """
 
-from typing import Dict, Any, List
-
+from typing import Any, Dict, List
 
 SAMPLE_JOBS: Dict[str, Dict[str, Any]] = {
     "tech_saas_backend_engineer": {

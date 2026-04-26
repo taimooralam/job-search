@@ -8,7 +8,6 @@ Stores operation execution records for cost tracking and auditing.
 import logging
 import os
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pymongo import MongoClient

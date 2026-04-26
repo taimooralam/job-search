@@ -24,7 +24,7 @@ Usage:
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -35,8 +35,8 @@ from src.common.annotation_types import (
     JDAnnotation,
 )
 from src.common.config import Config
-from src.common.unified_llm import invoke_unified_sync
 from src.common.state import JobState
+from src.common.unified_llm import invoke_unified_sync
 
 logger = logging.getLogger(__name__)
 

@@ -11,6 +11,7 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
+
 from pymongo import MongoClient
 
 # Add src to path
@@ -38,7 +39,7 @@ def list_jobs(limit=10, search=None, company=None):
     level1_count = db['level-1'].count_documents({})
     level2_count = db['level-2'].count_documents({})
 
-    print(f"📊 Database: jobs")
+    print("📊 Database: jobs")
     print(f"   level-1 (all jobs): {level1_count:,} documents")
     print(f"   level-2 (scored): {level2_count:,} documents")
     print()

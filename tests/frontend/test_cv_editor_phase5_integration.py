@@ -12,10 +12,8 @@ Tests validate integration between:
 These tests focus on cross-component interactions rather than isolated functionality.
 """
 
-import pytest
-from typing import Dict, Any
-from unittest.mock import MagicMock, Mock, patch
 
+import pytest
 
 # ==============================================================================
 # Test Class: Page Breaks ↔ Editor Content Integration
@@ -30,7 +28,7 @@ class TestPageBreaksEditorIntegration:
         # when editor content changes
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -42,7 +40,7 @@ class TestPageBreaksEditorIntegration:
     def test_page_breaks_use_actual_element_heights(self):
         """Page break calculator should use getBoundingClientRect for heights."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -53,7 +51,7 @@ class TestPageBreaksEditorIntegration:
     def test_page_breaks_handle_empty_editor(self):
         """Page breaks should handle empty editor gracefully."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -64,7 +62,7 @@ class TestPageBreaksEditorIntegration:
     def test_page_breaks_update_on_font_size_change(self):
         """Page breaks should recalculate when font size changes."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -76,7 +74,7 @@ class TestPageBreaksEditorIntegration:
     def test_page_breaks_update_on_line_height_change(self):
         """Page breaks should recalculate when line height changes."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -86,7 +84,7 @@ class TestPageBreaksEditorIntegration:
     def test_page_breaks_update_on_margin_change(self):
         """Page breaks should recalculate when margins change."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -96,7 +94,7 @@ class TestPageBreaksEditorIntegration:
     def test_page_breaks_update_on_page_size_change(self):
         """Page breaks should recalculate when page size changes (Letter ↔ A4)."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -118,9 +116,9 @@ class TestPageBreaksPDFIntegration:
         page_break_file = 'frontend/static/js/page-break-calculator.js'
         cv_editor_file = 'frontend/static/js/cv-editor.js'
 
-        with open(page_break_file, 'r') as f:
+        with open(page_break_file, 'r', encoding='utf-8') as f:
             pb_content = f.read()
-        with open(cv_editor_file, 'r') as f:
+        with open(cv_editor_file, 'r', encoding='utf-8') as f:
             editor_content = f.read()
 
         # Act & Assert
@@ -131,7 +129,7 @@ class TestPageBreaksPDFIntegration:
     def test_pdf_export_uses_same_page_size_as_page_breaks(self):
         """PDF export should use the same page size as page break calculator."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             pb_content = f.read()
 
         # Act & Assert
@@ -145,8 +143,8 @@ class TestPageBreaksPDFIntegration:
         # This is a structural test - actual alignment requires E2E testing
 
         # Arrange
-        import sys
         import os
+        import sys
 
         # Add tests/frontend to path
         test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -185,7 +183,7 @@ class TestKeyboardShortcutsPageBreaksIntegration:
     def test_ctrl_z_undo_triggers_page_break_update(self):
         """Undo should trigger page break recalculation."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -197,7 +195,7 @@ class TestKeyboardShortcutsPageBreaksIntegration:
         """Redo should trigger page break recalculation."""
         # Same as undo - both should trigger editor updates
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -207,7 +205,7 @@ class TestKeyboardShortcutsPageBreaksIntegration:
         """Text formatting (bold, italic) should trigger recalculation."""
         # Formatting might change text height (e.g., bold text wraps differently)
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -217,8 +215,8 @@ class TestKeyboardShortcutsPageBreaksIntegration:
     def test_alignment_shortcuts_do_not_affect_page_breaks(self):
         """Text alignment shouldn't affect page break positions (height unchanged)."""
         # Arrange
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
         from test_cv_editor_phase5_page_breaks import PageBreakCalculator
@@ -251,8 +249,8 @@ class TestUndoRedoPageBreaksIntegration:
     def test_undo_removes_page_break_if_content_fits_on_one_page(self):
         """Undoing content addition should remove page break if content now fits."""
         # Arrange
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
         from test_cv_editor_phase5_page_breaks import PageBreakCalculator
@@ -282,8 +280,8 @@ class TestUndoRedoPageBreaksIntegration:
     def test_redo_restores_page_breaks(self):
         """Redoing should restore page breaks to previous state."""
         # Arrange
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
         from test_cv_editor_phase5_page_breaks import PageBreakCalculator
@@ -314,7 +312,7 @@ class TestMobilePageBreaksIntegration:
     def test_page_breaks_render_on_mobile_viewport(self):
         """Page break indicators should render correctly on mobile."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -327,7 +325,7 @@ class TestMobilePageBreaksIntegration:
         # Page dimensions are based on PDF paper size, not screen size
 
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -338,7 +336,7 @@ class TestMobilePageBreaksIntegration:
     def test_mobile_touch_does_not_interfere_with_page_breaks(self):
         """Touch events on mobile shouldn't interfere with page break indicators."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -358,7 +356,7 @@ class TestDocumentStylesPageBreaksIntegration:
         # Different fonts have different character widths, affecting line wrap
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -368,8 +366,8 @@ class TestDocumentStylesPageBreaksIntegration:
     def test_margin_increase_reduces_available_page_height(self):
         """Increasing margins should reduce available height, possibly adding breaks."""
         # Arrange
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
         from test_cv_editor_phase5_page_breaks import PageBreakCalculator
@@ -403,8 +401,8 @@ class TestDocumentStylesPageBreaksIntegration:
     def test_page_size_change_letter_to_a4_affects_breaks(self):
         """Changing from Letter to A4 should recalculate breaks (A4 is taller)."""
         # Arrange
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
         from test_cv_editor_phase5_page_breaks import PageBreakCalculator
@@ -437,7 +435,7 @@ class TestDebouncePageBreaksIntegration:
     def test_page_breaks_update_is_debounced(self):
         """updatePageBreaks should be debounced to avoid excessive recalculations."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -451,7 +449,7 @@ class TestDebouncePageBreaksIntegration:
         # This is tested via the debounce pattern in the code
 
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert

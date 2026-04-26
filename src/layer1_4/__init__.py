@@ -16,31 +16,31 @@ The extracted data augments Layer 2's analysis and drives role-category-aware CV
 
 # Primary JD Extractor (Claude Code CLI based)
 from src.layer1_4.claude_jd_extractor import (
-    JDExtractor,
-    ExtractionResult,
-    ExtractedJDModel,
-    CompetencyWeightsModel,
-    RoleCategory,
-    SeniorityLevel,
-    RemotePolicy,
-    extract_jd,
-    # LangGraph node function
-    jd_extractor_node,
     # Backwards compatibility aliases
     ClaudeJDExtractor,
+    CompetencyWeightsModel,
+    ExtractedJDModel,
+    ExtractionResult,
+    JDExtractor,
+    RemotePolicy,
+    RoleCategory,
+    SeniorityLevel,
+    extract_jd,
     extract_jd_with_claude,
+    # LangGraph node function
+    jd_extractor_node,
 )
 
 # JD Processor (for annotation system)
 from src.layer1_4.jd_processor import (
-    process_jd,
-    process_jd_sync,
-    ProcessedJD,
     JDSection,
     JDSectionType,
     LLMMetadata,
-    processed_jd_to_dict,
+    ProcessedJD,
     dict_to_processed_jd,
+    process_jd,
+    process_jd_sync,
+    processed_jd_to_dict,
 )
 
 __all__ = [

@@ -8,21 +8,19 @@ Tests the is_synthetic flag across:
 """
 
 import json
-import pytest
 from unittest.mock import MagicMock, patch
-from pydantic import ValidationError
 
-from src.layer5.people_mapper import (
-    PeopleMapper,
-    ContactModel,
-)
+import pytest
+
 from runner_service.routes.contacts import (
     ContactCreate,
     ContactInfo,
     _contact_to_info,
 )
-from src.common.state import Contact
-
+from src.layer5.people_mapper import (
+    ContactModel,
+    PeopleMapper,
+)
 
 # ===== FIXTURES =====
 
@@ -187,7 +185,7 @@ class TestRealContactsIsSynthetic:
         mock_firecrawl_class.return_value = mock_firecrawl
 
         # Mock LLM classification (real person discovered)
-        mock_llm = MagicMock()
+        MagicMock()
         classification_response = MagicMock()
         classification_response.content = json.dumps({
             "primary_contacts": [
@@ -411,7 +409,7 @@ class TestSyntheticContactEndToEnd:
         mock_claude_researcher_class.return_value = mock_researcher
 
         # FireCrawl is disabled, so synthetic contacts will be generated
-        mock_llm = MagicMock()
+        MagicMock()
         outreach_response = MagicMock()
         outreach_response.content = json.dumps({
             "linkedin_connection_message": "Test message.\nBest. Taimoor Alam",

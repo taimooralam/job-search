@@ -9,11 +9,7 @@ Tests Bug Fix #2: CV WYSIWYG Sync - TipTap JSON rendering instead of markdown
 - Tests CSS styles and event listeners
 """
 
-import pytest
-import json
-from datetime import datetime
 from bson import ObjectId
-from unittest.mock import MagicMock, patch
 
 
 class TestCVDisplayAreaPresence:
@@ -74,7 +70,7 @@ class TestCVDisplayAreaPresence:
 
         # Assert
         assert response.status_code == 200
-        html_content = response.data.decode('utf-8')
+        response.data.decode('utf-8')
 
         # cv-display-area should not be present
         # (or should be within a conditional block that's not rendered)
@@ -325,10 +321,8 @@ class TestTipTapJsonToHtmlFunction:
         html_content = response.data.decode('utf-8')
 
         # Should handle list types
-        tiptap_section = html_content[html_content.find('tiptapJsonToHtml'):] if 'tiptapJsonToHtml' in html_content else ''
+        html_content[html_content.find('tiptapJsonToHtml'):] if 'tiptapJsonToHtml' in html_content else ''
         # Check for bulletList or orderedList handling
-        has_list_handling = 'bulletList' in tiptap_section or 'orderedList' in tiptap_section or \
-                           'ul' in tiptap_section or 'ol' in tiptap_section
         # Note: May use switch/case or if-else logic
 
 

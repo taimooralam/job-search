@@ -4,8 +4,9 @@ Unit tests for AllOpsService.
 Tests the composite service that runs JD extraction and company research in parallel.
 """
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.common.model_tiers import ModelTier
 from src.services.all_ops_service import AllOpsService
@@ -365,7 +366,7 @@ class TestAllOpsServiceExecute:
         service._extraction_service = mock_extraction
         service._research_service = mock_research
 
-        result = await service.execute(
+        await service.execute(
             job_id="test_job_id",
             tier=ModelTier.BALANCED,
             progress_callback=mock_progress,

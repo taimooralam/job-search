@@ -9,30 +9,28 @@ Tests the AnnotationHeaderContextBuilder and related functions for:
 - Prompt formatting utilities
 """
 
+from typing import Any, Dict, List
+
 import pytest
-from typing import Dict, List, Any
-from dataclasses import dataclass
 
 from src.layer6_v2.annotation_header_context import (
-    AnnotationHeaderContextBuilder,
-    build_header_context,
-    format_priorities_for_prompt,
-    format_ats_guidance_for_prompt,
-    calculate_priority_score,
-    extract_star_snippet,
-    WEIGHT_RELEVANCE,
-    WEIGHT_REQUIREMENT,
-    WEIGHT_USER_PRIORITY,
-    WEIGHT_STAR_EVIDENCE,
     RELEVANCE_SCORES,
     REQUIREMENT_SCORES,
+    WEIGHT_RELEVANCE,
+    WEIGHT_REQUIREMENT,
+    WEIGHT_STAR_EVIDENCE,
+    WEIGHT_USER_PRIORITY,
+    AnnotationHeaderContextBuilder,
+    build_header_context,
+    calculate_priority_score,
+    extract_star_snippet,
+    format_ats_guidance_for_prompt,
+    format_priorities_for_prompt,
 )
 from src.layer6_v2.types import (
     AnnotationPriority,
     HeaderGenerationContext,
-    ATSRequirement,
 )
-
 
 # =============================================================================
 # TEST FIXTURES

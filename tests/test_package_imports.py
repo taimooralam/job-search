@@ -19,11 +19,7 @@ def test_pdf_service_package_structure():
 
 def test_pdf_helpers_can_be_imported():
     """Verify pdf_helpers module can be imported with all functions."""
-    from pdf_service.pdf_helpers import (
-        sanitize_for_path,
-        tiptap_json_to_html,
-        build_pdf_html_template
-    )
+    from pdf_service.pdf_helpers import build_pdf_html_template, sanitize_for_path, tiptap_json_to_html
     assert callable(sanitize_for_path)
     assert callable(tiptap_json_to_html)
     assert callable(build_pdf_html_template)

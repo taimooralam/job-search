@@ -20,24 +20,21 @@ Usage:
 """
 
 import re
-from typing import TYPE_CHECKING, List, Dict, Set, Optional, Tuple, Any, Callable
-from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
-from src.common.config import Config
-from src.common.unified_llm import UnifiedLLM
 from src.common.persona_builder import get_persona_guidance
+from src.common.unified_llm import UnifiedLLM
 from src.common.utils import coerce_to_list
 from src.layer6_v2.skills_taxonomy import (
+    CoreCompetencyGeneratorV2,
     SkillsTaxonomy,
     TaxonomyBasedSkillsGenerator,
-    CoreCompetencyGeneratorV2,
 )
 
 
@@ -61,7 +58,7 @@ def _load_role_persona(role_category: str) -> dict:
     taxonomy_path = os.path.abspath(taxonomy_path)
 
     try:
-        with open(taxonomy_path, "r") as f:
+        with open(taxonomy_path, "r", encoding="utf-8") as f:
             taxonomy_data = json.load(f)
         role_data = taxonomy_data.get("target_roles", {}).get(role_category, {})
         return role_data.get("persona", {})
@@ -95,14 +92,13 @@ Avoid sounding like a generic list - BE this professional.
 
 
 from src.layer6_v2.types import (
-    StitchedCV,
+    HeaderGenerationContext,
+    HeaderOutput,
+    ProfileOutput,
     SkillEvidence,
     SkillsSection,
-    ProfileOutput,
+    StitchedCV,
     ValidationResult,
-    HeaderOutput,
-    HeaderGenerationContext,
-    HeaderProvenance,
 )
 
 
@@ -550,7 +546,7 @@ class HeaderGenerator:
             "Delivery": [],
         }
 
-        combined_text = " ".join(bullets).lower()
+        " ".join(bullets).lower()
 
         # GAP-001 FIX: Build skill lists from master-CV whitelist instead of hardcoded lists
         # This ensures we ONLY include skills the candidate actually has
@@ -713,16 +709,16 @@ class HeaderGenerator:
             ProfileOutput with V2 fields populated
         """
         from src.layer6_v2.prompts.header_generation import (
+            KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2,
             VALUE_PROPOSITION_SYSTEM_PROMPT_V2,
             VALUE_PROPOSITION_TEMPLATES,
-            build_value_proposition_prompt_v2,
-            KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2,
             build_key_achievement_bullets_prompt_v2,
+            build_value_proposition_prompt_v2,
         )
         from src.layer6_v2.types import (
             AchievementSource,
-            SkillsProvenance,
             SelectionResult,
+            SkillsProvenance,
         )
 
         self._logger.info("Generating V2 profile with anti-hallucination guarantees...")
@@ -842,7 +838,7 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
 
             # Phase 0: Log failure
             self._emit_struct_log("llm_call_failed", {
-                "message": f"Value proposition failed, using fallback",
+                "message": "Value proposition failed, using fallback",
                 "component": "value_proposition",
                 "success": False,
                 "error": str(vp_result.error),
@@ -1550,7 +1546,7 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             validation_result=validation,
         )
 
-        self._logger.info(f"Header generation complete:")
+        self._logger.info("Header generation complete:")
         self._logger.info(f"  Profile: {profile.word_count} words")
         self._logger.info(f"  Skills: {header.total_skills_count} across {len(skills_sections)} categories")
         self._logger.info(f"  Validation: {'PASSED' if validation.passed else 'FAILED'}")

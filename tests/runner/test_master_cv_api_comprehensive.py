@@ -24,9 +24,9 @@ Endpoints tested:
 12. GET /api/master-cv/stats
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 
 # =============================================================================
 # FIXTURES

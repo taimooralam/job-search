@@ -17,7 +17,6 @@ import argparse
 import json
 import os
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path
@@ -150,7 +149,7 @@ The candidate is Taimoor Alam: 11yr Engineering Leader / Software Architect, Tec
 
 def call_codex(prompt: str, timeout: int = TIMEOUT) -> Optional[str]:
     """Call Codex CLI and return the response text."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+    with tempfile.NamedTemporaryFile(encoding="utf-8", mode="w", suffix=".txt", delete=False) as f:
         f.write(prompt)
         prompt_file = f.name
 
@@ -259,7 +258,7 @@ def process_category_normalized(category: str, dry_run: bool = False) -> Dict:
     if not jobs_file.exists():
         return {"category": category, "status": "skipped", "reason": "no jobs_all.json"}
 
-    with open(jobs_file) as f:
+    with open(jobs_file, encoding="utf-8") as f:
         jobs = json.load(f)
 
     if not jobs:
@@ -276,7 +275,7 @@ def process_category_normalized(category: str, dry_run: bool = False) -> Dict:
     existing_results = {}
     if existing_file.exists():
         try:
-            with open(existing_file) as f:
+            with open(existing_file, encoding="utf-8") as f:
                 existing = json.load(f)
             existing_results = {r["job_id"]: r for r in existing if "job_id" in r}
             print(f"  Resuming: {len(existing_results)} already extracted")
@@ -312,7 +311,7 @@ def process_category_normalized(category: str, dry_run: bool = False) -> Dict:
             print(f"OK ({len(parsed)} extracted)")
         else:
             failed += len(batch)
-            print(f"FAILED")
+            print("FAILED")
             # Create placeholder entries for failed jobs
             for job in batch:
                 all_results.append({
@@ -323,7 +322,7 @@ def process_category_normalized(category: str, dry_run: bool = False) -> Dict:
                 })
 
         # Save incrementally after each batch
-        with open(existing_file, "w") as f:
+        with open(existing_file, "w", encoding="utf-8") as f:
             json.dump(all_results, f, indent=2, default=str)
 
         # Brief pause between batches to avoid rate limiting
@@ -344,7 +343,7 @@ def process_category_deep(category: str, dry_run: bool = False) -> Dict:
     if not jobs_file.exists():
         return {"category": category, "status": "skipped", "reason": "no jobs_all.json"}
 
-    with open(jobs_file) as f:
+    with open(jobs_file, encoding="utf-8") as f:
         jobs = json.load(f)
 
     if not jobs:
@@ -369,7 +368,7 @@ def process_category_deep(category: str, dry_run: bool = False) -> Dict:
     existing_results = {}
     if deep_file.exists():
         try:
-            with open(deep_file) as f:
+            with open(deep_file, encoding="utf-8") as f:
                 existing = json.load(f)
             existing_results = {r["job_id"]: r for r in existing if "job_id" in r}
         except (json.JSONDecodeError, KeyError):
@@ -406,14 +405,14 @@ def process_category_deep(category: str, dry_run: bool = False) -> Dict:
             print(f"OK ({len(parsed)} analyzed)")
         else:
             failed += len(batch)
-            print(f"FAILED")
+            print("FAILED")
             for job in batch:
                 all_results.append({
                     "job_id": job["_id"],
                     "_extraction_failed": True,
                 })
 
-        with open(deep_file, "w") as f:
+        with open(deep_file, "w", encoding="utf-8") as f:
             json.dump(all_results, f, indent=2, default=str)
 
         if i + deep_batch < len(remaining):

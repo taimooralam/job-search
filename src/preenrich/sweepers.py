@@ -5,14 +5,21 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import socket
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
+from uuid import uuid4
 
 from bson import ObjectId
 from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
-from src.preenrich.blueprint_config import current_dag_version, current_input_snapshot_id, validate_blueprint_feature_flags
+from src.pipeline.tracing import emit_preenrich_sweeper_event
+from src.preenrich.blueprint_config import (
+    current_dag_version,
+    current_input_snapshot_id,
+    validate_blueprint_feature_flags,
+)
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import DAG_VERSION, ROOT_STAGE, SCHEMA_VERSION, build_stage_states
 from src.preenrich.schema import idempotency_key, input_snapshot_id
@@ -20,11 +27,57 @@ from src.preenrich.stage_registry import get_stage_definition, iter_stage_defini
 
 logger = logging.getLogger(__name__)
 RETRY_BACKOFF_SECONDS = (30, 120, 600, 1800, 3600)
+SWEEPER_WORKER_ID = f"{socket.gethostname()}-{os.getpid()}-sweeper"
 
 
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp."""
     return datetime.now(timezone.utc)
+
+
+def _sweeper_run_id(step: str) -> str:
+    return f"preenrich:sweeper:{step}:{utc_now().strftime('%Y%m%d%H%M%S')}:{uuid4().hex[:8]}"
+
+
+def _sweeper_trace_metadata(
+    doc: dict[str, Any],
+    *,
+    run_id: str,
+    task_type: str,
+    stage_name: str,
+    lifecycle_before: str,
+    lifecycle_after: str,
+    attempt_count: int | None = None,
+    attempt_token: str | None = None,
+    input_snapshot_id: str | None = None,
+    jd_checksum: str | None = None,
+    work_item_id: str | None = None,
+    extra: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    level2_job_id = str(doc["_id"])
+    session_id = ((doc.get("observability") or {}).get("langfuse_session_id")) or f"job:{level2_job_id}"
+    pre = doc.get("pre_enrichment") or {}
+    metadata = {
+        "job_id": str(doc.get("job_id") or doc["_id"]),
+        "level2_job_id": level2_job_id,
+        "correlation_id": session_id,
+        "langfuse_session_id": session_id,
+        "run_id": run_id,
+        "worker_id": SWEEPER_WORKER_ID,
+        "task_type": task_type,
+        "stage_name": stage_name,
+        "attempt_count": attempt_count,
+        "attempt_token": attempt_token,
+        "input_snapshot_id": input_snapshot_id if input_snapshot_id is not None else pre.get("input_snapshot_id"),
+        "jd_checksum": jd_checksum if jd_checksum is not None else pre.get("jd_checksum"),
+        "lifecycle_before": lifecycle_before,
+        "lifecycle_after": lifecycle_after,
+        "work_item_id": work_item_id,
+        "source": "sweeper",
+    }
+    if extra:
+        metadata.update(extra)
+    return metadata
 
 
 def drain_pending_next_stages(
@@ -45,6 +98,7 @@ def drain_pending_next_stages(
         query["_id"] = _coerce_object_id(level2_id)
 
     stats = {"jobs": 0, "entries": 0}
+    run_id = _sweeper_run_id("enqueue_next")
     cursor = level2.find(query).limit(limit)
     for doc in cursor:
         pending = list(((doc.get("pre_enrichment") or {}).get("pending_next_stages")) or [])
@@ -81,6 +135,23 @@ def drain_pending_next_stages(
             set_doc = {"pre_enrichment.pending_next_stages": pending, "updated_at": current_time}
             set_doc.update(stage_state_updates)
             level2.update_one({"_id": doc["_id"]}, {"$set": set_doc})
+            emit_preenrich_sweeper_event(
+                name="scout.preenrich.enqueue_next",
+                level2_job_id=str(doc["_id"]),
+                metadata=_sweeper_trace_metadata(
+                    doc,
+                    run_id=run_id,
+                    task_type="preenrich.sweeper.enqueue_next",
+                    stage_name="sweeper",
+                    lifecycle_before=str(doc.get("lifecycle") or "preenriching"),
+                    lifecycle_after=str(doc.get("lifecycle") or "preenriching"),
+                    extra={
+                        "entries_enqueued": len(stage_state_updates),
+                        "stage_names": [str(entry["payload"]["stage_name"]) for entry in pending if entry.get("enqueued_at") == current_time],
+                    },
+                ),
+                run_id=run_id,
+            )
 
     return stats
 
@@ -139,6 +210,22 @@ def finalize_cv_ready(
             {"level2_job_id": str(doc["_id"]), "status": {"$ne": "completed"}},
             {"$set": {"status": "completed", "updated_at": current_time, "completed_at": current_time}},
         )
+        run_id = _sweeper_run_id("finalize_cv_ready")
+        emit_preenrich_sweeper_event(
+            name="scout.preenrich.finalize_cv_ready",
+            level2_job_id=str(doc["_id"]),
+            metadata=_sweeper_trace_metadata(
+                doc,
+                run_id=run_id,
+                task_type="preenrich.sweeper.finalize_cv_ready",
+                stage_name="sweeper",
+                lifecycle_before="preenriching",
+                lifecycle_after="cv_ready",
+                input_snapshot_id=snapshot_id,
+                extra={"finalized": True},
+            ),
+            run_id=run_id,
+        )
         return True
     return False
 
@@ -159,6 +246,7 @@ def release_expired_stage_leases(
         **_lte_now("lease_expires_at", current_time, collection=work_items),
     }
     stats = {"released": 0}
+    run_id = _sweeper_run_id("release_lease")
     cursor = work_items.find(query).limit(limit)
     for item in cursor:
         new_attempt_count = int(item.get("attempt_count", 0)) + 1
@@ -210,6 +298,25 @@ def release_expired_stage_leases(
             },
         )
         stats["released"] += 1
+        doc = level2.find_one({"_id": _coerce_object_id(item["subject_id"])}) or {"_id": _coerce_object_id(item["subject_id"])}
+        emit_preenrich_sweeper_event(
+            name="scout.preenrich.release_lease",
+            level2_job_id=str(item["subject_id"]),
+            metadata=_sweeper_trace_metadata(
+                doc,
+                run_id=run_id,
+                task_type="preenrich.sweeper.release_lease",
+                stage_name=stage_name,
+                lifecycle_before="preenriching",
+                lifecycle_after="preenriching",
+                attempt_count=new_attempt_count,
+                input_snapshot_id=payload.get("input_snapshot_id"),
+                jd_checksum=payload.get("jd_checksum"),
+                work_item_id=str(item["_id"]),
+                extra={"reason": "lease_expired", "leased_task_type": item["task_type"]},
+            ),
+            run_id=run_id,
+        )
 
     return stats
 
@@ -322,6 +429,31 @@ def invalidate_snapshot_if_changed(
                 "updated_at": current_time,
             }
         },
+    )
+    run_id = _sweeper_run_id("snapshot_invalidation")
+    emit_preenrich_sweeper_event(
+        name="scout.preenrich.snapshot_invalidation",
+        level2_job_id=str(doc["_id"]),
+        metadata=_sweeper_trace_metadata(
+            doc,
+            run_id=run_id,
+            task_type="preenrich.sweeper.snapshot_invalidation",
+            stage_name="sweeper",
+            lifecycle_before="preenriching",
+            lifecycle_after="preenriching",
+            input_snapshot_id=new_snapshot,
+            jd_checksum=new_jd_checksum,
+            extra={
+                "old_input_snapshot_id": pre.get("input_snapshot_id"),
+                "new_input_snapshot_id": new_snapshot,
+                "new_jd_checksum": new_jd_checksum,
+                "new_company_checksum": new_company_checksum,
+                "dag_version": dag_version,
+                "reason": "snapshot_changed",
+                "rerooted": True,
+            },
+        ),
+        run_id=run_id,
     )
     return True
 

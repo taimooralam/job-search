@@ -24,18 +24,18 @@ MongoDB Integration (Phase 5 - JD Annotation System):
 """
 
 import json
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
 from src.common.logger import get_logger
-from src.common.utils import coerce_to_list, coerce_to_dict, safe_get_nested
+from src.common.utils import coerce_to_dict, coerce_to_list
 
 # Import enhanced format support
 from src.layer6_v2.variant_parser import (
-    VariantParser,
-    EnhancedRoleData,
     Achievement,
-    AchievementVariant,
+    EnhancedRoleData,
+    VariantParser,
 )
 
 if TYPE_CHECKING:
@@ -438,7 +438,7 @@ class CVLoader:
                 "Run the CV split setup first."
             )
 
-        with open(self.metadata_path, "r") as f:
+        with open(self.metadata_path, "r", encoding="utf-8") as f:
             metadata = json.load(f)
 
         # Build candidate data (static fields only - profile/skills generated later)
@@ -479,7 +479,7 @@ class CVLoader:
         if not role_file.exists():
             raise FileNotFoundError(f"Role file not found: {role_file}")
 
-        with open(role_file, "r") as f:
+        with open(role_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Try to parse as enhanced format first

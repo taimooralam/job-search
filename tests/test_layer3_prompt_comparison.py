@@ -6,16 +6,16 @@ This test runs real FireCrawl scraping with both prompt versions to assess quali
 
 import json
 import logging
-from typing import Dict, Any, List
-from pydantic import BaseModel, Field
-from firecrawl import FirecrawlApp
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from typing import Any, Dict, List
+
 from bson.objectid import ObjectId
+from firecrawl import FirecrawlApp
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
 from src.common.config import Config
-
 
 # ===== ENHANCED PROMPTS (Based on Modernization Blueprint) =====
 
@@ -298,7 +298,7 @@ class PromptComparisonTest:
                         }
                         print(f"    ✓ Scraped {len(content)} chars")
             else:
-                print(f"    ✗ No LinkedIn URL found")
+                print("    ✗ No LinkedIn URL found")
 
         except Exception as e:
             print(f"    ✗ LinkedIn search/scrape failed: {e}")
@@ -409,7 +409,7 @@ class PromptComparisonTest:
         enh_data = enhanced["parsed"]
 
         # Show reasoning block
-        print(f"\nREASONING BLOCK:")
+        print("\nREASONING BLOCK:")
         reasoning = enh_data['reasoning']
         print(f"  Sources Analyzed: {', '.join(reasoning['sources_analyzed']) if reasoning['sources_analyzed'] else 'None listed'}")
         print(f"  Source Quality: {reasoning['source_quality']}")
@@ -434,25 +434,25 @@ class PromptComparisonTest:
         print("="*100)
 
         # Comparative metrics
-        print(f"\nSignal Count:")
+        print("\nSignal Count:")
         print(f"  Status Quo: {len(sq_data['signals'])}")
         print(f"  Enhanced: {len(enh_data['signals'])}")
 
-        print(f"\nSummary Length:")
+        print("\nSummary Length:")
         print(f"  Status Quo: {len(sq_data['summary'])} chars")
         print(f"  Enhanced: {len(enh_data['summary'])} chars")
 
-        print(f"\nPrompt Complexity:")
+        print("\nPrompt Complexity:")
         print(f"  Status Quo: {status_quo['prompt_length']} chars")
         print(f"  Enhanced: {enhanced['prompt_length']} chars (+{enhanced['prompt_length'] - status_quo['prompt_length']})")
 
-        print(f"\nEnhanced Features:")
-        print(f"  ✓ Reasoning block with source quality assessment")
-        print(f"  ✓ Missing context identification")
-        print(f"  ✓ Explicit assumptions tracking")
-        print(f"  ✓ Confidence level reporting")
-        print(f"  ✓ Business context per signal")
-        print(f"  ✓ Self-evaluation loop")
+        print("\nEnhanced Features:")
+        print("  ✓ Reasoning block with source quality assessment")
+        print("  ✓ Missing context identification")
+        print("  ✓ Explicit assumptions tracking")
+        print("  ✓ Confidence level reporting")
+        print("  ✓ Business context per signal")
+        print("  ✓ Self-evaluation loop")
 
         print("\n" + "="*100)
 
@@ -470,7 +470,7 @@ class PromptComparisonTest:
         print(f"   Role: {job.get('title')}")
 
         # 2. Scrape sources
-        print(f"\n2. Scraping company sources (2 sources max for speed)...")
+        print("\n2. Scraping company sources (2 sources max for speed)...")
         scraped_data = self.scrape_company_sources(company)
         print(f"   Successfully scraped {len(scraped_data)} source(s)")
 
@@ -479,19 +479,19 @@ class PromptComparisonTest:
             return
 
         # 3. Run status quo prompt
-        print(f"\n3. Running STATUS QUO prompt...")
+        print("\n3. Running STATUS QUO prompt...")
         try:
             status_quo_results = self.run_status_quo_prompt(company, scraped_data)
-            print(f"   ✓ Status quo prompt completed")
+            print("   ✓ Status quo prompt completed")
         except Exception as e:
             print(f"   ✗ Status quo prompt failed: {e}")
             status_quo_results = None
 
         # 4. Run enhanced prompt
-        print(f"\n4. Running ENHANCED prompt...")
+        print("\n4. Running ENHANCED prompt...")
         try:
             enhanced_results = self.run_enhanced_prompt(company, scraped_data)
-            print(f"   ✓ Enhanced prompt completed")
+            print("   ✓ Enhanced prompt completed")
         except Exception as e:
             print(f"   ✗ Enhanced prompt failed: {e}")
             enhanced_results = None

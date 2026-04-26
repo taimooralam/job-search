@@ -4,12 +4,9 @@ Unit tests for Layer 6 Cover Letter Generator (Phase 8.1).
 Tests validation logic, STAR metric presence, JD-specificity, and generic boilerplate detection.
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import MagicMock, patch
-from pydantic import ValidationError
-
-from src.common.state import JobState
-
 
 # ===== FIXTURES =====
 
@@ -350,8 +347,8 @@ class TestCoverLetterGenerator:
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_generates_cover_letter_successfully(self, mock_invoke, sample_job_state, valid_cover_letter):
         """CoverLetterGenerator.generate_cover_letter returns valid letter."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         # Mock invoke_unified_sync to return valid cover letter
         mock_invoke.return_value = LLMResult(
@@ -374,8 +371,8 @@ class TestCoverLetterGenerator:
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_single_attempt_no_retry(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics):
         """Generator makes a single attempt and returns result even if validation warns."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         mock_invoke.return_value = LLMResult(
             content=invalid_cover_letter_no_metrics,
@@ -396,8 +393,8 @@ class TestCoverLetterGenerator:
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_returns_result_even_with_validation_warnings(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics):
         """Generator returns result even when validation logs warnings."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         mock_invoke.return_value = LLMResult(
             content=invalid_cover_letter_no_metrics,
@@ -418,8 +415,8 @@ class TestCoverLetterGenerator:
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_includes_company_research_in_prompt(self, mock_invoke, sample_job_state, valid_cover_letter):
         """Generator includes company research in LLM prompt."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         mock_invoke.return_value = LLMResult(
             content=valid_cover_letter,
@@ -443,8 +440,8 @@ class TestCoverLetterGenerator:
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_includes_role_research_in_prompt(self, mock_invoke, sample_job_state, valid_cover_letter):
         """Generator includes role research in LLM prompt."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         mock_invoke.return_value = LLMResult(
             content=valid_cover_letter,
@@ -468,8 +465,8 @@ class TestCoverLetterGenerator:
     @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
     def test_references_star_metrics(self, mock_invoke, sample_job_state, valid_cover_letter):
         """Generated cover letter references STAR metrics."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         mock_invoke.return_value = LLMResult(
             content=valid_cover_letter,
@@ -489,8 +486,8 @@ class TestCoverLetterGenerator:
 
     def test_validates_on_generation_warns_not_raises(self, sample_job_state):
         """Generator validates output and warns on failure instead of raising."""
-        from src.layer6.cover_letter_generator import CoverLetterGenerator
         from src.common.unified_llm import LLMResult
+        from src.layer6.cover_letter_generator import CoverLetterGenerator
 
         with patch('src.layer6.cover_letter_generator.invoke_unified_sync') as mock_invoke:
             mock_invoke.return_value = LLMResult(

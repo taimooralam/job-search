@@ -15,8 +15,9 @@ These show up as confusing CORS errors in the browser console. This fix adds
 user-friendly toast messages and proper backoff.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 class TestQueuePollerServiceUnavailable:
@@ -26,7 +27,7 @@ class TestQueuePollerServiceUnavailable:
     def queue_poller_js(self):
         """Load QueuePoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/queue-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_has_service_unavailable_backoff_config(self, queue_poller_js):
@@ -178,7 +179,7 @@ class TestLogPollerServiceUnavailable:
     def log_poller_js(self):
         """Load LogPoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/log-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_has_service_unavailable_backoff_config(self, log_poller_js):
@@ -252,14 +253,14 @@ class TestSharedServiceStatus:
     def queue_poller_js(self):
         """Load QueuePoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/queue-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     @pytest.fixture
     def log_poller_js(self):
         """Load LogPoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/log-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_queue_poller_creates_shared_state(self, queue_poller_js):
@@ -334,14 +335,14 @@ class TestOnServiceStatusCallback:
     def queue_poller_js(self):
         """Load QueuePoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/queue-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     @pytest.fixture
     def log_poller_js(self):
         """Load LogPoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/log-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_queue_poller_has_on_service_status_callback(self, queue_poller_js):
@@ -382,14 +383,14 @@ class TestDocstringsAndComments:
     def queue_poller_js(self):
         """Load QueuePoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/queue-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     @pytest.fixture
     def log_poller_js(self):
         """Load LogPoller JavaScript content."""
         js_path = Path(__file__).parent.parent.parent / "frontend/static/js/log-poller.js"
-        with open(js_path, 'r') as f:
+        with open(js_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_queue_poller_fetch_state_has_docstring(self, queue_poller_js):

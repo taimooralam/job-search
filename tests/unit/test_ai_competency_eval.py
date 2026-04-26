@@ -28,8 +28,8 @@ Design intent:
 - total_claims counts every distinct AI claim found in the CV.
 """
 
+
 import pytest
-from typing import List
 
 # ---------------------------------------------------------------------------
 # Import guard — skip the whole module gracefully if not yet implemented

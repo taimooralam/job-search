@@ -10,7 +10,6 @@ import os
 import sys
 from typing import Optional
 
-
 # Global debug mode flag - can be set via environment or API
 _GLOBAL_DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 

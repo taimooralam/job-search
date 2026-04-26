@@ -12,7 +12,7 @@ These types represent the intermediate outputs of the CV generation pipeline:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -1594,8 +1594,9 @@ class HeaderOutput:
 
 # Import annotation types for type hints
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from src.common.annotation_types import SkillRelevance, RequirementType
+    pass
 
 
 @dataclass

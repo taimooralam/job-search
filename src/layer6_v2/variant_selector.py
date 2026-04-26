@@ -27,16 +27,15 @@ Usage:
 import re
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Any, Dict, List, Optional, Set, Tuple
 
+from src.common.annotation_boost import AnnotationBoostCalculator
 from src.common.logger import get_logger
-from src.common.annotation_boost import AnnotationBoostCalculator, BoostResult
 from src.layer6_v2.variant_parser import (
     Achievement,
     AchievementVariant,
     EnhancedRoleData,
 )
-
 
 # ============================================================================
 # CONFIGURATION
@@ -454,7 +453,7 @@ class VariantSelector:
                         selected.append(forced)
                     selected.insert(0, selected.pop())  # Move to position 0
                     selected_achievement_ids.add(ach15_id)
-                    self._logger.info(f"🤖 Forced Achievement 15 (AI Platform Engineering) at position 0")
+                    self._logger.info("🤖 Forced Achievement 15 (AI Platform Engineering) at position 0")
 
             # Ensure at least one of achievements 16-18 is also selected
             ai_extra_ids = {"achievement_16", "achievement_17", "achievement_18"}

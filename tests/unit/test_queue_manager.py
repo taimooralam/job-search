@@ -13,14 +13,14 @@ Tests the Redis-backed queue manager including:
 - Interrupted run restoration
 """
 
-import asyncio
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from datetime import datetime, date, timedelta
-from unittest.mock import MagicMock, AsyncMock, patch, call
-from typing import Dict, Any, List
 
 from runner_service.queue.manager import QueueManager
-from runner_service.queue.models import QueueItem, QueueItemStatus, QueueState
+from runner_service.queue.models import QueueItemStatus, QueueState
 
 
 class FakeRedis:
@@ -291,7 +291,7 @@ class TestQueueManagerEnqueue:
     @pytest.mark.asyncio
     async def test_enqueue_creates_queue_item(self, manager):
         """Should create and return QueueItem."""
-        with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             item = await manager.enqueue(
                 job_id="job_12345",
                 job_title="Software Engineer",
@@ -412,8 +412,8 @@ class TestQueueManagerDequeue:
     async def test_dequeue_returns_newest_item_lifo(self, manager):
         """Should return newest item (LIFO order — process newest jobs first)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item1 = await manager.enqueue("job1", "First", "Company")
-            item2 = await manager.enqueue("job2", "Second", "Company")
+            await manager.enqueue("job1", "First", "Company")
+            await manager.enqueue("job2", "Second", "Company")
             item3 = await manager.enqueue("job3", "Third", "Company")
 
             # Dequeue should return item3 (newest — LIFO)
@@ -426,7 +426,7 @@ class TestQueueManagerDequeue:
     async def test_dequeue_moves_to_running(self, manager):
         """Should move item from pending to running set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
 
             dequeued = await manager.dequeue()
 
@@ -508,7 +508,7 @@ class TestQueueManagerComplete:
     async def test_complete_success_marks_as_completed(self, manager):
         """Should mark item as completed when success=True."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             completed = await manager.complete(dequeued.queue_id, success=True)
@@ -521,7 +521,7 @@ class TestQueueManagerComplete:
     async def test_complete_success_adds_to_history(self, manager):
         """Should add completed item to history list."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             await manager.complete(dequeued.queue_id, success=True)
@@ -534,7 +534,7 @@ class TestQueueManagerComplete:
     async def test_complete_success_removes_from_running(self, manager):
         """Should remove item from running set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             await manager.complete(dequeued.queue_id, success=True)
@@ -547,7 +547,7 @@ class TestQueueManagerComplete:
     async def test_complete_failure_marks_as_failed(self, manager):
         """Should mark item as failed when success=False."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             completed = await manager.complete(
@@ -564,10 +564,10 @@ class TestQueueManagerComplete:
     async def test_complete_failure_adds_to_failed_zset(self, manager):
         """Should add failed item to failed sorted set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
-            completed = await manager.complete(
+            await manager.complete(
                 dequeued.queue_id,
                 success=False,
                 error="Test error"
@@ -581,7 +581,7 @@ class TestQueueManagerComplete:
     async def test_complete_publishes_completed_event(self, manager):
         """Should publish 'completed' event for success."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             mock_publish.reset_mock()
 
@@ -597,7 +597,7 @@ class TestQueueManagerComplete:
     async def test_complete_publishes_failed_event(self, manager):
         """Should publish 'failed' event for failure."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             mock_publish.reset_mock()
 
@@ -649,7 +649,7 @@ class TestQueueManagerComplete:
             assert item.queue_id in pending
 
             # Complete the item (should remove from both running AND pending)
-            completed = await manager.complete(item.queue_id, success=True)
+            await manager.complete(item.queue_id, success=True)
 
             # Verify item is removed from pending (the failsafe fix)
             pending_after = await manager._redis.lrange(manager.PENDING_KEY, 0, -1)
@@ -675,7 +675,7 @@ class TestQueueManagerRetry:
     async def test_retry_moves_failed_back_to_pending(self, manager):
         """Should move failed item back to pending queue."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -691,7 +691,7 @@ class TestQueueManagerRetry:
     async def test_retry_removes_from_failed_set(self, manager):
         """Should remove item from failed zset."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -705,7 +705,7 @@ class TestQueueManagerRetry:
     async def test_retry_adds_to_pending_queue(self, manager):
         """Should add item back to pending queue."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -719,7 +719,7 @@ class TestQueueManagerRetry:
     async def test_retry_sets_position_to_one(self, manager):
         """Should set position to 1 (next to be processed)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -750,7 +750,7 @@ class TestQueueManagerRetry:
     async def test_retry_publishes_retried_event(self, manager):
         """Should publish 'retried' event."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
             mock_publish.reset_mock()
@@ -823,7 +823,7 @@ class TestQueueManagerCancel:
     async def test_cancel_returns_false_for_non_pending_item(self, manager):
         """Should return False if item is not pending."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Try to cancel a running item
@@ -870,7 +870,7 @@ class TestQueueManagerDismissFailed:
     async def test_dismiss_failed_removes_from_failed_set(self, manager):
         """Should remove item from failed zset."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -886,7 +886,7 @@ class TestQueueManagerDismissFailed:
     async def test_dismiss_failed_moves_to_history(self, manager):
         """Should move failed item to history."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -918,7 +918,7 @@ class TestQueueManagerDismissFailed:
     async def test_dismiss_failed_publishes_dismissed_event(self, manager):
         """Should publish 'dismissed' event."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
             mock_publish.reset_mock()
@@ -985,8 +985,8 @@ class TestQueueManagerGetItem:
     async def test_get_item_by_job_id_finds_in_running(self, manager):
         """Should find item by job_id in running set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
-            dequeued = await manager.dequeue()
+            await manager.enqueue("job_12345", "Test", "Company")
+            await manager.dequeue()
 
             found = await manager.get_item_by_job_id("job_12345")
 
@@ -998,7 +998,7 @@ class TestQueueManagerGetItem:
     async def test_get_item_by_job_id_finds_in_pending(self, manager):
         """Should find item by job_id in pending queue."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
 
             found = await manager.get_item_by_job_id("job_12345")
 
@@ -1010,9 +1010,9 @@ class TestQueueManagerGetItem:
     async def test_get_item_by_job_id_finds_in_failed(self, manager):
         """Should find item by job_id in failed set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
-            failed = await manager.complete(dequeued.queue_id, success=False, error="Error")
+            await manager.complete(dequeued.queue_id, success=False, error="Error")
 
             found = await manager.get_item_by_job_id("job_12345")
 
@@ -1031,9 +1031,9 @@ class TestQueueManagerGetItem:
     async def test_get_item_by_job_id_sets_position_for_pending(self, manager):
         """Should calculate position for pending items."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item1 = await manager.enqueue("job1", "First", "Company")
-            item2 = await manager.enqueue("job2", "Second", "Company")
-            item3 = await manager.enqueue("job3", "Third", "Company")
+            await manager.enqueue("job1", "First", "Company")
+            await manager.enqueue("job2", "Second", "Company")
+            await manager.enqueue("job3", "Third", "Company")
 
             found = await manager.get_item_by_job_id("job2")
 
@@ -1056,10 +1056,10 @@ class TestQueueManagerGetState:
         """Should return QueueState with all lists."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             # Create items in different states
-            item1 = await manager.enqueue("job1", "Pending 1", "Company")
-            item2 = await manager.enqueue("job2", "Pending 2", "Company")
-            item3 = await manager.enqueue("job3", "Pending 3", "Company")
-            dequeued = await manager.dequeue()  # item3 is now running (LIFO)
+            await manager.enqueue("job1", "Pending 1", "Company")
+            await manager.enqueue("job2", "Pending 2", "Company")
+            await manager.enqueue("job3", "Pending 3", "Company")
+            await manager.dequeue()  # item3 is now running (LIFO)
 
             state = await manager.get_state()
 
@@ -1085,8 +1085,8 @@ class TestQueueManagerGetState:
     async def test_get_state_includes_stats(self, manager):
         """Should include queue statistics."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item1 = await manager.enqueue("job1", "Test 1", "Company")
-            item2 = await manager.enqueue("job2", "Test 2", "Company")
+            await manager.enqueue("job1", "Test 1", "Company")
+            await manager.enqueue("job2", "Test 2", "Company")
             dequeued = await manager.dequeue()
             await manager.complete(dequeued.queue_id, success=False, error="Error")
 
@@ -1183,7 +1183,7 @@ class TestQueueManagerRestoreInterruptedRuns:
     async def test_restore_interrupted_runs_moves_running_to_pending(self, manager):
         """Should move stale interrupted runs back to pending."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Backdate started_at to 10 min ago (> 5 min threshold)
@@ -1203,7 +1203,7 @@ class TestQueueManagerRestoreInterruptedRuns:
     async def test_restore_interrupted_runs_removes_from_running_set(self, manager):
         """Should remove stale items from running set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Backdate started_at to 10 min ago (> 5 min threshold)
@@ -1220,7 +1220,7 @@ class TestQueueManagerRestoreInterruptedRuns:
     async def test_restore_interrupted_runs_adds_to_pending_queue(self, manager):
         """Should add stale items back to pending queue."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Backdate started_at to 10 min ago (> 5 min threshold)
@@ -1267,7 +1267,7 @@ class TestQueueManagerHistoryTrimming:
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             # Complete more items than the history limit (100)
             for i in range(105):
-                item = await manager.enqueue(f"job{i}", f"Job {i}", "Company")
+                await manager.enqueue(f"job{i}", f"Job {i}", "Company")
                 dequeued = await manager.dequeue()
                 await manager.complete(dequeued.queue_id, success=True)
 
@@ -1368,7 +1368,7 @@ class TestQueueManagerEdgeCases:
     async def test_complete_same_item_twice_handles_gracefully(self, manager):
         """Should handle completing same item twice."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             await manager.complete(dequeued.queue_id, success=True)
@@ -1382,9 +1382,9 @@ class TestQueueManagerEdgeCases:
     async def test_lifo_ordering_maintained(self, manager):
         """Should maintain LIFO ordering (newest jobs first)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item1 = await manager.enqueue("job1", "First", "Company")
-            item2 = await manager.enqueue("job2", "Second", "Company")
-            item3 = await manager.enqueue("job3", "Third", "Company")
+            await manager.enqueue("job1", "First", "Company")
+            await manager.enqueue("job2", "Second", "Company")
+            await manager.enqueue("job3", "Third", "Company")
 
             dequeued1 = await manager.dequeue()
             dequeued2 = await manager.dequeue()
@@ -1413,7 +1413,7 @@ class TestQueueManagerEdgeCases:
     async def test_long_error_messages_stored(self, manager):
         """Should handle long error messages."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             long_error = "Error: " + "x" * 5000
@@ -1431,7 +1431,7 @@ class TestQueueManagerEdgeCases:
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
             # Complete some items
             for i in range(3):
-                item = await manager.enqueue(f"job{i}", f"Job {i}", "Company")
+                await manager.enqueue(f"job{i}", f"Job {i}", "Company")
                 dequeued = await manager.dequeue()
                 await manager.complete(dequeued.queue_id, success=True)
 
@@ -1468,7 +1468,7 @@ class TestQueueManagerReclaimStaleRunning:
     async def test_reclaim_re_enqueues_stale_item(self, manager):
         """Should re-enqueue items stuck in running state (under max retries)."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Backdate started_at to 3 hours ago
@@ -1499,7 +1499,7 @@ class TestQueueManagerReclaimStaleRunning:
     async def test_reclaim_fails_item_at_max_retries(self, manager):
         """Should move item to FAILED when max retries exceeded."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Set retry_count to max and backdate
@@ -1527,7 +1527,7 @@ class TestQueueManagerReclaimStaleRunning:
     async def test_reclaim_preserves_recent_running_items(self, manager):
         """Should NOT reclaim recently started running items."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # started_at is set by dequeue() to now — should not be reclaimed
@@ -1561,7 +1561,7 @@ class TestQueueManagerReclaimStaleRunning:
     async def test_reclaim_handles_status_mismatch(self, manager):
         """Should remove items with non-RUNNING status from running set."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Simulate status mismatch
@@ -1580,7 +1580,7 @@ class TestQueueManagerReclaimStaleRunning:
     async def test_reclaim_publishes_events(self, manager):
         """Should publish events for reclaimed items."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock) as mock_publish:
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
             dequeued.started_at = datetime.utcnow() - timedelta(hours=3)
             await manager._update_item(dequeued)
@@ -1612,7 +1612,7 @@ class TestQueueManagerCleanupOrphans:
     async def test_cleanup_removes_status_mismatch_from_running(self, manager):
         """Should remove items from running set if their status is not RUNNING."""
         with patch.object(manager, '_publish_event', new_callable=AsyncMock):
-            item = await manager.enqueue("job_12345", "Test", "Company")
+            await manager.enqueue("job_12345", "Test", "Company")
             dequeued = await manager.dequeue()
 
             # Simulate status mismatch: item completed but still in running set

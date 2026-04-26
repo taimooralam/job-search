@@ -20,21 +20,19 @@ Usage:
 """
 
 import asyncio
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from src.common.claude_cli import CLIResult, ClaudeCLI
+from src.common.claude_cli import ClaudeCLI, CLIResult
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 from src.layer6_v2.prompts.cv_generation_prompts import (
-    ROLE_KEYWORDS,
-    build_role_bullet_prompt,
-    build_profile_prompt,
     build_ats_validation_prompt,
+    build_profile_prompt,
+    build_role_bullet_prompt,
     get_role_level_from_category,
 )
 
@@ -383,8 +381,8 @@ class ClaudeCVService:
         role_title = role.get("title", "Unknown")
         role_company = role.get("company", "Unknown")
         achievements = role.get("achievements", [])
-        period = role.get("period", "")
-        location = role.get("location")
+        role.get("period", "")
+        role.get("location")
 
         # Build prompt
         prompt = build_role_bullet_prompt(

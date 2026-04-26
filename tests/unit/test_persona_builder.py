@@ -4,17 +4,17 @@ Unit tests for PersonaBuilder module.
 Tests persona synthesis from identity annotations and prompt injection.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.common.persona_builder import (
+    IDENTITY_STRENGTH_ORDER,
     PersonaBuilder,
     SynthesizedPersona,
     get_persona_guidance,
-    IDENTITY_STRENGTH_ORDER,
 )
-
 
 # ===== Fixtures =====
 

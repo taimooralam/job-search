@@ -183,6 +183,8 @@ class AIClassificationStage:
             job_id=job_id,
             schema=None,
             claude_invoker=_invoker,
+            tracer=ctx.tracer,
+            stage_name=ctx.stage_name or self.name,
         )
         duration_ms = int((time.monotonic() - t0) * 1000)
 

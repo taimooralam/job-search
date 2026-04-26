@@ -5,14 +5,14 @@ Each operation (Structure JD, Research, Generate CV, etc.) extends this
 to provide consistent execution, cost tracking, and persistence.
 """
 
+import logging
+import time
+import uuid
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, Generator, Optional
-import logging
-import time
-import uuid
 
 from src.common.model_tiers import (
     ModelTier,

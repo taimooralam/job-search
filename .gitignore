@@ -38,6 +38,9 @@ credentials/
 *~
 .DS_Store
 
+# Local debugging / Codex temp artifacts
+.codex-temp/
+
 # Test / Coverage (GAP-019: added coverage_html and coverage.xml)
 .pytest_cache/
 .coverage

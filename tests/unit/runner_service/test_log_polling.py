@@ -6,7 +6,6 @@ metadata (backend, tier, cost_usd) from JSON-formatted structured logs.
 """
 
 import json
-import pytest
 
 from runner_service.routes.log_polling import _parse_log_entry
 

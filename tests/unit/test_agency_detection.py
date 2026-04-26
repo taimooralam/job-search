@@ -9,11 +9,11 @@ Tests the detection and handling of recruitment agencies in the pipeline:
 - Agency note in fit rationale
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
-from src.common.state import JobState, CompanyResearch
-
+from src.common.state import CompanyResearch
 
 # ===== FIXTURES =====
 
@@ -385,7 +385,6 @@ class TestCompanyResearchTypeAnnotation:
 
     def test_company_research_has_company_type_field(self):
         """CompanyResearch TypedDict includes company_type field."""
-        from src.common.state import CompanyResearch
         import typing
 
         # Get the annotations from the TypedDict

@@ -9,14 +9,13 @@ These tests validate ROADMAP Phase 4 quality gates:
 Designed to run against 5 diverse test jobs to ensure quality across different scenarios.
 """
 
-import pytest
 import re
-import json
 from unittest.mock import patch
+
+import pytest
 
 from src.common.unified_llm import LLMResult
 from src.layer2.pain_point_miner import pain_point_miner_node
-
 
 # ===== TEST JOB FIXTURES =====
 

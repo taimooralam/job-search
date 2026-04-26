@@ -4,11 +4,9 @@ Unit tests for CV Rich Text Editor Phase 2 backend functions.
 Tests the TipTap JSON to HTML conversion, markdown migration, and API endpoints.
 """
 
-import pytest
-from datetime import datetime
+from unittest.mock import MagicMock
+
 from bson import ObjectId
-from unittest.mock import MagicMock, patch
-import json
 
 
 class TestTipTapJsonToHtml:

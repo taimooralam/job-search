@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any, List
 
-from src.common.codex_cli import CodexCLI
 from src.preenrich.blueprint_config import (
     classification_ai_taxonomy_enabled,
     classification_disambiguation_margin,
@@ -24,9 +22,8 @@ from src.preenrich.blueprint_models import (
     PreScoreEntry,
 )
 from src.preenrich.blueprint_prompts import build_p_classify
-from src.preenrich.stages.base import StageBase
+from src.preenrich.stages.base import StageBase, _invoke_codex_json_traced
 from src.preenrich.stages.blueprint_common import (
-    ai_relevance,
     apply_disambiguation_rules,
     detect_ai_taxonomy,
     score_categories_from_taxonomy,
@@ -145,22 +142,22 @@ def _invoke_codex_json(
     prompt: str,
     model: str,
     job_id: str,
+    tracer: Any = None,
+    stage_name: str | None = None,
+    substage: str = "llm.primary",
     cwd: str | None = None,
     reasoning_effort: str | None = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
-    t0 = time.monotonic()
-    cli = CodexCLI(model=model, cwd=cwd, reasoning_effort=reasoning_effort)
-    result = cli.invoke(prompt, job_id=job_id, validate_json=True)
-    duration_ms = int((time.monotonic() - t0) * 1000)
-    return (result.result or None), {
-        "provider": "codex",
-        "model": model,
-        "outcome": "success" if result.success else "error_subprocess",
-        "error": result.error,
-        "duration_ms": duration_ms,
-        "input_tokens": result.input_tokens,
-        "output_tokens": result.output_tokens,
-    }
+    return _invoke_codex_json_traced(
+        prompt=prompt,
+        model=model,
+        job_id=job_id,
+        tracer=tracer,
+        stage_name=stage_name,
+        substage=substage,
+        codex_cwd=cwd,
+        reasoning_effort=reasoning_effort,
+    )
 
 
 def _build_fail_open_doc(
@@ -270,6 +267,9 @@ class ClassificationStage:
                 prompt=prompt,
                 model=ctx.config.primary_model or "gpt-5.4-mini",
                 job_id=job_id,
+                tracer=ctx.tracer,
+                stage_name=ctx.stage_name or self.name,
+                substage="llm.primary",
                 cwd=ctx.config.codex_workdir,
                 reasoning_effort=ctx.config.reasoning_effort,
             )
@@ -281,6 +281,9 @@ class ClassificationStage:
                     prompt=prompt,
                     model=classification_escalation_model(),
                     job_id=job_id,
+                    tracer=ctx.tracer,
+                    stage_name=ctx.stage_name or self.name,
+                    substage="llm.escalation",
                     cwd=ctx.config.codex_workdir,
                     reasoning_effort=ctx.config.reasoning_effort,
                 )

@@ -14,9 +14,10 @@ Enhanced sections (22 Nov 2025):
 """
 
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Dict, List
+
 from src.common.config import Config
-from src.common.state import JobState, STARRecord, Contact, OutreachPackage
+from src.common.state import JobState, OutreachPackage
 
 
 class DossierGenerator:

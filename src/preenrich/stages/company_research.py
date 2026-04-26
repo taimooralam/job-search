@@ -27,10 +27,10 @@ import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from src.preenrich.stages.base import StageBase
-from src.preenrich.types import StageContext, StageResult
 from src.common.repositories import get_company_cache_repository
 from src.layer3.company_researcher import CompanyResearcher
+from src.preenrich.stages.base import StageBase
+from src.preenrich.types import StageContext, StageResult
 
 logger = logging.getLogger(__name__)
 

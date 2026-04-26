@@ -10,21 +10,20 @@ Validates:
 - Multiple stages each get their own shadow_output entry
 """
 
-import pytest
 from datetime import datetime, timezone
-from bson import ObjectId
 from unittest.mock import MagicMock, patch
 
 import mongomock
+import pytest
+from bson import ObjectId
 
+from src.preenrich.dispatcher import run_sequence, single_stage
 from src.preenrich.types import (
     StageContext,
     StageResult,
     StageStatus,
     StepConfig,
 )
-from src.preenrich.dispatcher import single_stage, run_sequence
-
 
 WORKER_ID = "shadow-test-worker"
 

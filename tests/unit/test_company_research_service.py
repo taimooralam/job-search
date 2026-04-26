@@ -9,19 +9,17 @@ Tests the button-triggered company research operation service:
 - MongoDB persistence
 """
 
-import json
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
 from src.common.model_tiers import ModelTier
 from src.services.company_research_service import (
-    CompanyResearchService,
     COMPANY_CACHE_TTL_DAYS,
+    CompanyResearchService,
 )
-from src.services.operation_base import OperationResult
-
 
 # ===== FIXTURES =====
 

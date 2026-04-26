@@ -15,7 +15,6 @@ Research Foundation (from profile-section.guide.md):
 
 from src.layer6_v2.prompts.shared import ANTI_HALLUCINATION_RULES
 
-
 # ============================================================================
 # HYBRID EXECUTIVE SUMMARY PROFILE GENERATION PROMPT
 # ============================================================================

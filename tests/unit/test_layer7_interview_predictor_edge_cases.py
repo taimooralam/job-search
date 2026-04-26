@@ -7,20 +7,17 @@ in the main test file.
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from src.common.state import JobState
 from src.layer7.interview_predictor import (
     InterviewPredictor,
     PredictedQuestion,
     QuestionGenerationOutput,
     predict_interview_questions,
 )
-
 
 # ===== MOCK LLM RESULT HELPER =====
 

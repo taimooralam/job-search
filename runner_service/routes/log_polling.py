@@ -13,8 +13,7 @@ This replaces SSE streaming for better reliability during long operations.
 import json
 import logging
 import re
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -591,9 +590,9 @@ async def poll_logs(
     # MULTI-RUNNER: Check if we own this run (fastest path)
     try:
         from runner_service.routes.operation_streaming import (
-            is_log_owner,
             get_operation_state,
             get_runner_id,
+            is_log_owner,
         )
 
         # If we own this run, serve from in-memory (instant, no Redis latency)

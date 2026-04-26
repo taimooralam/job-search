@@ -4,21 +4,21 @@ Tests for the country code extraction service.
 Tests static pattern matching and validates output format.
 """
 
-import pytest
+import os
+import sys
 from unittest.mock import AsyncMock, patch
 
-import sys
-import os
+import pytest
 
 # Add frontend to path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
 
 from country_codes import (
-    extract_from_pattern,
-    get_country_code_sync,
-    get_country_code,
-    extract_country_code_llm,
     COUNTRY_PATTERNS,
+    extract_country_code_llm,
+    extract_from_pattern,
+    get_country_code,
+    get_country_code_sync,
 )
 
 
@@ -255,7 +255,7 @@ class TestExtractCountryCodeLLM:
                     with patch("httpx.AsyncClient.__aexit__", return_value=None):
                         # Use actual async client mock
                         import httpx
-                        async with httpx.AsyncClient() as client:
+                        async with httpx.AsyncClient():
                             pass  # Just to verify mock works
                         # Since mocking is complex, skip the actual call test
                         pass

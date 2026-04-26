@@ -19,28 +19,28 @@ Usage:
     )
 """
 
-import asyncio
 import hashlib
 import json
 import logging
 import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
+from pymongo import ASCENDING, DESCENDING
 from pymongo.database import Database
-from pymongo import ASCENDING, DESCENDING, TEXT
 
-from src.services.job_sources import IndeedSource, HimalayasSource, BaytSource, JobData
-from src.common.dedupe import generate_dedupe_key as _unified_dedupe_key, extract_source_id_from_url
+from src.common.dedupe import extract_source_id_from_url
+from src.common.dedupe import generate_dedupe_key as _unified_dedupe_key
 from src.common.job_search_config import JobSearchConfig
 from src.common.repositories import (
-    get_job_search_repository,
-    get_job_repository,
-    JobSearchRepositoryInterface,
     JobRepositoryInterface,
+    JobSearchRepositoryInterface,
+    get_job_repository,
+    get_job_search_repository,
 )
+from src.services.job_sources import BaytSource, HimalayasSource, IndeedSource, JobData
 
 logger = logging.getLogger(__name__)
 

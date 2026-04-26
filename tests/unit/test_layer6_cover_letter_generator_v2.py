@@ -12,32 +12,25 @@ These tests follow TDD approach and should FAIL initially until
 prompt improvements are implemented.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any
 import re
 
 # Import test utilities
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from fixtures.sample_jobs import SAMPLE_STARS, create_mock_state_for_job
 from helpers.validation_helpers import (
-    validate_cover_letter_v2,
     count_pain_point_references,
-    extract_star_companies,
     extract_sentences_with_keyword,
-    count_generic_phrases,
-    extract_metrics
-)
-from fixtures.sample_jobs import (
-    create_mock_state_for_job,
-    SAMPLE_STARS,
-    get_sample_job
+    validate_cover_letter_v2,
 )
 
 # Import module under test
-from src.layer6.cover_letter_generator import CoverLetterGenerator
 
 # ===== FIXTURES =====
 

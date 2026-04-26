@@ -9,10 +9,10 @@ Tests the startup_queue_polling_loop() function that:
 - Skips polling when queue manager is unavailable or runner is at capacity
 """
 
-import asyncio
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from runner_service.queue.models import QueueItem, QueueItemStatus
 
@@ -63,7 +63,6 @@ class TestQueuePollingLoop:
              patch("runner_service.routes.operation_streaming.get_runner_id", mock_get_runner_id):
 
             # Import after patching
-            from runner_service.app import QUEUE_POLL_INTERVAL_SECONDS
 
             # Simulate one iteration of the polling loop
             # We can't easily test the infinite loop, so test the core logic directly
@@ -196,7 +195,7 @@ class TestQueuePollingLoop:
     @pytest.mark.asyncio
     async def test_tier_fallback_to_balanced(self):
         """When tier string is invalid, should fall back to BALANCED."""
-        from src.common.model_tiers import get_tier_from_string, ModelTier
+        from src.common.model_tiers import ModelTier, get_tier_from_string
 
         item = _make_queue_item(processing_tier="invalid_tier")
 
@@ -206,7 +205,7 @@ class TestQueuePollingLoop:
     @pytest.mark.asyncio
     async def test_tier_resolves_correctly(self):
         """When tier string is valid, should resolve to the correct ModelTier."""
-        from src.common.model_tiers import get_tier_from_string, ModelTier
+        from src.common.model_tiers import ModelTier, get_tier_from_string
 
         item = _make_queue_item(processing_tier="balanced")
         tier = get_tier_from_string(item.processing_tier) or ModelTier.BALANCED
@@ -240,6 +239,7 @@ class TestStaleCleanupTimeout:
         """Verify the startup code passes max_age_minutes=1440."""
         # This test verifies the code change by reading the source
         import inspect
+
         from runner_service.app import startup_queue_manager
 
         source = inspect.getsource(startup_queue_manager)

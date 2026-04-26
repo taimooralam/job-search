@@ -7,14 +7,13 @@ These assertions track the current repository-backed batch table contract:
 - the current column set includes location and actions columns
 """
 
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from unittest.mock import MagicMock
 
 import pytest
 from bson import ObjectId
-
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 

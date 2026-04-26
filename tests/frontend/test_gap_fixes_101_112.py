@@ -11,9 +11,9 @@ Tests cover:
 - GAP-112: Batch Pipeline Popups Removed
 """
 
-import pytest
 from pathlib import Path
 
+import pytest
 
 # ==============================================================================
 # GAP-101: CV Preview Sync After Save

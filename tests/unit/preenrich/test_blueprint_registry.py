@@ -10,6 +10,7 @@ def test_blueprint_stage_registry_contains_iteration41_stage_set(monkeypatch):
     monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_PERSONA_COMPAT_ENABLED", "true")
     monkeypatch.setenv("PREENRICH_STAKEHOLDER_SURFACE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "false")
 
     assert list(stage_registry().keys()) == [
         "jd_structure",
@@ -68,3 +69,49 @@ def test_stakeholder_surface_can_be_disabled(monkeypatch):
     registry = stage_registry()
     assert "stakeholder_surface" not in current_stage_order()
     assert "stakeholder_surface" not in registry
+
+
+def test_presentation_contract_is_absent_by_default(monkeypatch):
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_STAKEHOLDER_SURFACE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "false")
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_ENABLED", "false")
+
+    registry = stage_registry()
+    assert "presentation_contract" not in current_stage_order()
+    assert "presentation_contract" not in registry
+
+
+def test_pain_point_intelligence_is_absent_by_default(monkeypatch):
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_STAKEHOLDER_SURFACE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "false")
+
+    registry = stage_registry()
+    assert "pain_point_intelligence" not in current_stage_order()
+    assert "pain_point_intelligence" not in registry
+
+
+def test_presentation_contract_can_be_enabled_without_becoming_cv_ready_gate(monkeypatch):
+    monkeypatch.setenv("PREENRICH_BLUEPRINT_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_STAKEHOLDER_SURFACE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PAIN_POINT_INTELLIGENCE_ENABLED", "true")
+    monkeypatch.setenv("PREENRICH_PRESENTATION_CONTRACT_ENABLED", "true")
+
+    registry = stage_registry()
+    assert "pain_point_intelligence" in current_stage_order()
+    assert registry["pain_point_intelligence"].prerequisites == (
+        "jd_facts",
+        "classification",
+        "research_enrichment",
+    )
+    assert registry["pain_point_intelligence"].required_for_cv_ready is True
+    assert "presentation_contract" in current_stage_order()
+    assert registry["presentation_contract"].prerequisites == (
+        "jd_facts",
+        "classification",
+        "research_enrichment",
+        "stakeholder_surface",
+        "pain_point_intelligence",
+    )
+    assert registry["presentation_contract"].required_for_cv_ready is False

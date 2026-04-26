@@ -18,11 +18,12 @@ Phase 5 Enhancement (JD Annotation System):
 """
 
 from typing import Any, Dict, List, Optional
-from src.layer6_v2.cv_loader import RoleData
-from src.layer6_v2.types import CareerContext
-from src.layer6_v2.achievement_mapper import map_achievements_to_pain_points
+
 from src.common.state import ExtractedJD
+from src.layer6_v2.achievement_mapper import map_achievements_to_pain_points
+from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.prompts.shared import ANTI_HALLUCINATION_RULES
+from src.layer6_v2.types import CareerContext
 
 
 def _filter_skills_by_evidence(skills: List[str], achievements: List[str]) -> List[str]:

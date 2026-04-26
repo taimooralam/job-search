@@ -5,16 +5,12 @@ Tests the defensive programming fixes for handling missing or None upstream data
 from Layer 3 (Company Research) and Layer 2.5 (STAR Selector).
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
 
 from src.common.config import Config
-from src.layer5.people_mapper import (
-    PeopleMapper,
-    people_mapper_node,
-    _safe_get_nested
-)
-
+from src.layer5.people_mapper import PeopleMapper, _safe_get_nested, people_mapper_node
 
 # ===== FIXTURES =====
 

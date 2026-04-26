@@ -25,8 +25,7 @@ except ImportError:
     HAS_MONGOMOCK = False
 
 from src.preenrich.dispatcher import run_sequence
-from src.preenrich.types import StageContext, StageResult, StageStatus, StepConfig
-
+from src.preenrich.types import StageContext, StageResult, StepConfig
 
 pytestmark = pytest.mark.skipif(
     not HAS_MONGOMOCK,

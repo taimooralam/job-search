@@ -8,35 +8,34 @@ Tests priors management including:
 - Computing statistics and rebuild triggers
 """
 
-import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, patch, call
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
 
 from src.services.annotation_priors import (
-    load_priors,
-    save_priors,
-    should_rebuild_priors,
-    capture_feedback,
-    _aggregate_dimension,
-    get_priors_stats,
-    _empty_priors,
-    rebuild_priors,
-    _recompute_skill_priors,
-    _extract_primary_skill,
-    PRIORS_DOC_ID,
-    DeletionResponse,
-    determine_deletion_response,
-    get_owned_skills,
-    NO_LEARNING_SECTIONS,
-    SKILL_REQUIREMENT_SECTIONS,
     CHUNK_SIZE,
     MAX_EMBEDDING_ANNOTATIONS,
-    _EmbeddingCache,
-    load_sentence_index_from_chunks,
-    _write_embedding_chunks,
+    PRIORS_DOC_ID,
+    DeletionResponse,
+    _aggregate_dimension,
     _delete_old_chunks,
+    _EmbeddingCache,
+    _empty_priors,
+    _extract_primary_skill,
+    _recompute_skill_priors,
+    _write_embedding_chunks,
+    capture_feedback,
+    determine_deletion_response,
+    get_owned_skills,
+    get_priors_stats,
+    load_priors,
+    load_sentence_index_from_chunks,
     migrate_inline_to_chunks,
+    rebuild_priors,
+    save_priors,
+    should_rebuild_priors,
 )
 
 
@@ -160,7 +159,13 @@ class TestSavePriors:
     def test_updates_timestamp_on_save(self, mock_repo, sample_priors):
         """Should update updated_at timestamp when saving."""
         # Arrange
+        import time
         original_timestamp = sample_priors["updated_at"]
+        # Force a measurable gap so save_priors's datetime.now() falls in a
+        # later microsecond than the fixture's _empty_priors() call. Without
+        # this the test is flaky on fast machines where both timestamps land
+        # in the same microsecond.
+        time.sleep(0.001)
 
         # Act
         save_priors(sample_priors)

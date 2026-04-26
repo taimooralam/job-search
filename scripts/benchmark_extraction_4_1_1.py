@@ -193,6 +193,8 @@ def _override_jd_facts_codex_timeout(timeout_seconds: int | None):
     import src.preenrich.stages.jd_facts as jd_facts_module
     from src.common.codex_cli import (
         CodexCLI as BaseCodexCLI,
+    )
+    from src.common.codex_cli import (
         CodexResult,
         _extract_json_from_stdout,
     )
@@ -312,7 +314,7 @@ def _override_jd_facts_codex_timeout(timeout_seconds: int | None):
                     )
 
                 elapsed = time.monotonic() - last_heartbeat
-                total_elapsed = time.monotonic() - (time.monotonic() - elapsed)
+                time.monotonic() - (time.monotonic() - elapsed)
                 if elapsed >= heartbeat_seconds:
                     runtime = int((datetime.utcnow() - start_time).total_seconds())
                     print(

@@ -6,6 +6,7 @@ including the STARRecord schema for knowledge base management and job-related ty
 """
 
 from typing import Any, Dict, List, Optional, TypedDict
+
 from typing_extensions import NotRequired
 
 

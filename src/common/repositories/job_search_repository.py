@@ -8,11 +8,10 @@ Used by JobSearchService for pull-on-demand job search functionality.
 import logging
 import os
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pymongo import MongoClient, ASCENDING, DESCENDING
+from pymongo import ASCENDING, DESCENDING, MongoClient
 
 logger = logging.getLogger(__name__)
 

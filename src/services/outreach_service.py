@@ -16,16 +16,14 @@ Usage:
 """
 
 import logging
-import os
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from bson import ObjectId
 
+from src.common.model_tiers import ModelTier
+from src.common.repositories import JobRepositoryInterface, get_job_repository
 from src.common.unified_llm import invoke_unified_sync
-from src.common.repositories import get_job_repository, JobRepositoryInterface
-
-from src.common.model_tiers import ModelTier, get_model_for_operation
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -281,6 +279,7 @@ class OutreachGenerationService(OperationService):
             Candidate profile text, or None if not available
         """
         from pathlib import Path
+
         from src.common.config import Config
 
         # Try the configured path first
@@ -636,7 +635,6 @@ class OutreachGenerationService(OperationService):
                 # Get the skill/text that represents this strength
                 text = ann.get("matching_skill") or ann.get("target", {}).get("text", "")
                 if text and len(text) < 60:  # Only short, clean texts
-                    label = "Core strength" if is_strength else "Identity"
                     strengths.append(f"- {text}")
 
             # Limit to top 5 strengths

@@ -10,7 +10,6 @@ Outputs:
 """
 
 import json
-import os
 import re
 import unicodedata
 from collections import Counter, defaultdict
@@ -128,9 +127,9 @@ def classify_job(job):
     """
     title = normalize_text(job.get("title", ""))
     location = normalize_text(job.get("location", ""))
-    ai_cats = job.get("ai_categories", []) or []
+    job.get("ai_categories", []) or []
     extracted = job.get("extracted_jd", {}) or {}
-    role_cat = (extracted.get("role_category") or "").lower()
+    (extracted.get("role_category") or "").lower()
     jd = normalize_text(job.get("job_description", ""))
 
     # Blank location with "remote" in title → treat as remote for matching
@@ -183,7 +182,7 @@ def classify_job(job):
         if title_match:
             rationale_parts.append(f"title_match:{cat['title_re'][:40]}")
         if loc_match:
-            rationale_parts.append(f"loc_match")
+            rationale_parts.append("loc_match")
         if jd_ai_signal:
             rationale_parts.append("jd_ai_signal")
 
@@ -219,7 +218,7 @@ def sanitize_filename(text, max_len=60):
 
 def main():
     # Load eligible jobs
-    with open(RAW_DIR / "all_eligible_jobs.json") as f:
+    with open(RAW_DIR / "all_eligible_jobs.json", encoding="utf-8") as f:
         jobs = json.load(f)
     print(f"Loaded {len(jobs)} eligible jobs")
 
@@ -259,7 +258,7 @@ def main():
     print(f"Unclassified: {len(unclassified)}")
 
     # Save assignment log
-    with open(EVAL_DIR / "category_assignment_log.json", "w") as f:
+    with open(EVAL_DIR / "category_assignment_log.json", "w", encoding="utf-8") as f:
         json.dump(assignment_log, f, indent=2, default=str)
 
     # Create per-category directories and files
@@ -272,7 +271,7 @@ def main():
         cat_job_list = category_jobs.get(cat_id, [])
 
         # Save jobs_all.json
-        with open(cat_dir / "jobs_all.json", "w") as f:
+        with open(cat_dir / "jobs_all.json", "w", encoding="utf-8") as f:
             json.dump(cat_job_list, f, indent=2, default=str)
 
         # Save individual JD text files
@@ -288,7 +287,7 @@ def main():
             header += f"**Score:** {job.get('score', 'N/A')} (Tier {job.get('_signal_tier', '?')})\n"
             header += f"**Status:** {job.get('status', 'N/A')}\n\n---\n\n"
 
-            with open(jd_dir / filename, "w") as f:
+            with open(jd_dir / filename, "w", encoding="utf-8") as f:
                 f.write(header + jd_text)
 
     # ── Summary Table ──
@@ -329,7 +328,7 @@ def main():
     print(f"{'Unclassified':<45} {len(unclassified):>6}")
 
     if low_confidence_cats:
-        print(f"\nLow-confidence categories (<8 jobs):")
+        print("\nLow-confidence categories (<8 jobs):")
         for c in low_confidence_cats:
             print(f"  - {c}")
 

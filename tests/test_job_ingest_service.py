@@ -4,12 +4,13 @@ Tests for JobIngestService.
 Tests job ingestion logic including deduplication, scoring, and state management.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
-from src.services.job_ingest_service import IngestService, IngestResult
+from src.services.job_ingest_service import IngestResult, IngestService
 from src.services.job_sources import JobData
 
 

@@ -44,13 +44,13 @@ OUTPUT_DIR = Path("/var/lib/scout")
 def _build_stages() -> List[Any]:
     """Instantiate all Phase 2 stages in DAG order."""
     from src.preenrich.stages import (
-        JDStructureStage,
-        JDExtractionStage,
         AIClassificationStage,
-        PainPointsStage,
         AnnotationsStage,
-        PersonaStage,
         CompanyResearchStage,
+        JDExtractionStage,
+        JDStructureStage,
+        PainPointsStage,
+        PersonaStage,
         RoleResearchStage,
     )
     return [
@@ -141,10 +141,10 @@ def _replay_job(
     Returns:
         Report dict with job_id, stage outcomes, timings, cost
     """
-    from src.preenrich.types import StageContext, StepConfig
-    from src.preenrich.dispatcher import run_sequence
-    from src.preenrich.checksums import jd_checksum as _jd_cs_fn
     from src.preenrich.checksums import company_checksum as _co_cs_fn
+    from src.preenrich.checksums import jd_checksum as _jd_cs_fn
+    from src.preenrich.dispatcher import run_sequence
+    from src.preenrich.types import StageContext, StepConfig
 
     job_id = str(job_doc["_id"])
     t_start = time.monotonic()

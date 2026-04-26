@@ -6,15 +6,15 @@ and CoverLetterGenerator for button-triggered generation with tier-based
 model selection.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
+
+import pytest
 from bson import ObjectId
 
+from src.common.model_tiers import ModelTier
 from src.services.cv_generation_service import CVGenerationService
 from src.services.operation_base import OperationResult
-from src.common.model_tiers import ModelTier
-
 
 # ============================================================================
 # FIXTURES

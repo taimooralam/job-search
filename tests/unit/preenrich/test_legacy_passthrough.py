@@ -11,14 +11,13 @@ when the worker ticks, then it sets lifecycle="legacy" and the job is
 handled by the runner with today's Full Extraction path.
 """
 
-import pytest
 from datetime import datetime, timezone
-from bson import ObjectId
 
 import mongomock
+import pytest
+from bson import ObjectId
 
 from src.preenrich.lease import claim_one
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

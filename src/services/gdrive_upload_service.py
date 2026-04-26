@@ -130,7 +130,7 @@ async def upload_cv_to_gdrive(
             _log(f"PDF generated ({len(pdf_content)} bytes)")
 
             # Step 2: Upload to n8n webhook
-            _log(f"Uploading to Google Drive...")
+            _log("Uploading to Google Drive...")
 
             files = {
                 "data": (
@@ -156,7 +156,7 @@ async def upload_cv_to_gdrive(
 
             # Parse n8n response
             n8n_result = upload_response.json()
-            _log(f"CV uploaded successfully to Google Drive")
+            _log("CV uploaded successfully to Google Drive")
 
             # Step 3: Update MongoDB with upload timestamp
             uploaded_at = datetime.utcnow()
@@ -217,8 +217,9 @@ async def upload_dossier_to_gdrive(
     Returns:
         Dict with: success, error, gdrive_file_id, gdrive_folder_id, uploaded_at
     """
-    import httpx
     import sys
+
+    import httpx
 
     def _log(message: str) -> None:
         """Emit log to callback if provided."""
@@ -314,7 +315,7 @@ async def upload_dossier_to_gdrive(
             _log(f"Dossier PDF generated ({len(pdf_content)} bytes)")
 
             # Step 2: Upload to n8n webhook
-            _log(f"Uploading dossier to Google Drive...")
+            _log("Uploading dossier to Google Drive...")
 
             files = {
                 "data": (
@@ -340,7 +341,7 @@ async def upload_dossier_to_gdrive(
 
             # Parse n8n response
             n8n_result = upload_response.json()
-            _log(f"Dossier uploaded successfully to Google Drive")
+            _log("Dossier uploaded successfully to Google Drive")
 
             # Step 3: Update MongoDB with upload timestamp
             uploaded_at = datetime.utcnow()

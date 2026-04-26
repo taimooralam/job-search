@@ -5,12 +5,12 @@ Tests the IndeedSource, HimalayasSource, and common utilities
 for the automated job ingestion system.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
 
-from src.services.job_sources import JobData, IndeedSource, HimalayasSource
+from src.services.job_sources import HimalayasSource, IndeedSource, JobData
 
 
 class TestJobData:
@@ -287,6 +287,7 @@ class TestIngestConfig:
     def test_config_from_env_with_values(self):
         """Test loading config from environment variables."""
         import os
+
         from src.common.ingest_config import IngestConfig
 
         with patch.dict(os.environ, {

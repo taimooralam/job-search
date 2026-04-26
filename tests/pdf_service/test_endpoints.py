@@ -4,9 +4,10 @@ Unit tests for PDF service endpoints.
 Tests health check, render-pdf, and cv-to-pdf endpoints.
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, AsyncMock
 
 
 @pytest.fixture

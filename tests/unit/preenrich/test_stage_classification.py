@@ -74,3 +74,46 @@ def test_classification_fail_open_returns_valid_low_confidence(monkeypatch):
     result = ClassificationStage().run(ctx)
     assert result.stage_output["confidence"] == "low"
     assert result.stage_output["decision_path"] in {"fail_open", "deterministic_short_circuit"}
+
+
+def test_classification_forwards_tracing_kwargs_to_llm(monkeypatch):
+    ctx = _context()
+    ctx.tracer = object()
+    calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr("src.preenrich.stages.classification.classification_short_circuit_margin", lambda: 2.0)
+    monkeypatch.setattr("src.preenrich.stages.classification.classification_escalate_on_failure_enabled", lambda: False)
+
+    def _fake_invoke_codex_json(
+        *,
+        prompt: str,
+        model: str,
+        job_id: str,
+        tracer=None,
+        stage_name: str | None = None,
+        substage: str = "llm.primary",
+        cwd: str | None = None,
+        reasoning_effort: str | None = None,
+    ):
+        calls.append(
+            {
+                "prompt": prompt,
+                "model": model,
+                "job_id": job_id,
+                "tracer": tracer,
+                "stage_name": stage_name,
+                "substage": substage,
+                "cwd": cwd,
+                "reasoning_effort": reasoning_effort,
+            }
+        )
+        return None, {"provider": "codex", "model": model, "outcome": "error_subprocess", "error": "forced", "duration_ms": 10}
+
+    monkeypatch.setattr("src.preenrich.stages.classification._invoke_codex_json", _fake_invoke_codex_json)
+
+    ClassificationStage().run(ctx)
+
+    assert len(calls) == 1
+    assert calls[0]["tracer"] is ctx.tracer
+    assert calls[0]["stage_name"] == "classification"
+    assert calls[0]["substage"] == "llm.primary"

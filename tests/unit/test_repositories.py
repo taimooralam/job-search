@@ -5,17 +5,16 @@ Tests the job repository abstraction layer that enables
 future dual-write (Atlas + VPS) support.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch, PropertyMock
 
 from src.common.repositories import (
-    get_job_repository,
-    reset_repository,
-    JobRepositoryInterface,
-    WriteResult,
     RepositoryConfig,
     SyncMode,
+    WriteResult,
+    get_job_repository,
+    reset_repository,
 )
 from src.common.repositories.atlas_repository import AtlasJobRepository
 
@@ -336,7 +335,7 @@ class TestResetRepository:
         """Should clear singleton so next call creates new instance."""
         with patch.dict("os.environ", {"MONGODB_URI": "mongodb://test"}, clear=True):
             with patch("src.common.repositories.atlas_repository.MongoClient"):
-                repo1 = get_job_repository()
+                get_job_repository()
                 reset_repository()
                 repo2 = get_job_repository()
 

@@ -11,21 +11,21 @@ Tests structured job description extraction using UnifiedLLM:
 """
 
 import json
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from pydantic import ValidationError
 
+from src.common.unified_llm import LLMResult
 from src.layer1_4.claude_jd_extractor import (
-    JDExtractor,
-    ExtractionResult,
-    ExtractedJDModel,
     CompetencyWeightsModel,
+    ExtractedJDModel,
+    ExtractionResult,
+    JDExtractor,
+    RemotePolicy,
     RoleCategory,
     SeniorityLevel,
-    RemotePolicy,
 )
-from src.common.unified_llm import LLMResult
-
 
 # ===== FIXTURES =====
 

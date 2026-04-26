@@ -12,13 +12,11 @@ Also tests helper methods:
 - _research_with_llm_knowledge(): LLM training data fallback
 """
 
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
-import asyncio
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
-from datetime import datetime
 
-from src.layer3.company_researcher import CompanyResearcher, CompanyResearchOutput
-
+from src.layer3.company_researcher import CompanyResearcher
 
 # ===== MOCK REPOSITORY FIXTURE =====
 

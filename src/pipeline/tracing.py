@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import uuid4
@@ -345,6 +346,36 @@ class SelectorTracingSession:
             logger.warning("Langfuse selector trace finalize failed: %s", exc)
 
 
+class PreenrichStageTracingHandle:
+    """Stage-scoped tracing handle that nests substages under one stage span."""
+
+    def __init__(self, session: "PreenrichTracingSession", *, stage_name: str, span: Any) -> None:
+        self._session = session
+        self.stage_name = stage_name
+        self.span = span
+        self.trace = session.trace
+        self.trace_id = session.trace_id
+        self.trace_url = session.trace_url
+        self.enabled = bool(session.enabled and span is not None)
+
+    def start_substage_span(self, stage_name: str, substage: str, metadata: dict[str, Any]):
+        target_stage = stage_name or self.stage_name
+        return self._session._start_span(
+            f"scout.preenrich.{target_stage}.{substage}",
+            metadata,
+            parent=self.span,
+        )
+
+    def end_span(self, span: Any, *, output: Optional[dict[str, Any]] = None) -> None:
+        self._session.end_span(span, output=output)
+
+    def record_event(self, name: str, metadata: dict[str, Any]) -> None:
+        self._session.record_event(name, metadata)
+
+    def complete(self, *, output: Optional[dict[str, Any]] = None) -> None:
+        self._session.end_span(self.span, output=output)
+
+
 class PreenrichTracingSession:
     """Optional Langfuse wrapper for iteration-4 preenrich traces."""
 
@@ -363,6 +394,8 @@ class PreenrichTracingSession:
         self.trace_url = None
         self._client = None
         self._metadata = _sanitize_langfuse_payload(metadata)
+        self._lock = threading.RLock()
+        self.job_span = None
 
         if Langfuse is None:
             return
@@ -392,6 +425,12 @@ class PreenrichTracingSession:
                     input=self._metadata,
                     metadata=self._metadata,
                 )
+            self.job_span = self.trace.start_observation(
+                name="scout.preenrich.job",
+                as_type="span",
+                input=self._metadata,
+                metadata=self._metadata,
+            )
             self.trace_url = _resolve_trace_url(self._client, self.trace_id)
             self.enabled = True
         except Exception as exc:  # pragma: no cover - defensive logging
@@ -399,11 +438,29 @@ class PreenrichTracingSession:
 
     def start_claim_span(self, metadata: dict[str, Any]):
         """Start the canonical claim span."""
-        return self._start_span("scout.preenrich.claim", metadata)
+        return self._start_span("scout.preenrich.claim", metadata, parent=self.job_span)
 
     def start_stage_span(self, stage_name: str, metadata: dict[str, Any]):
         """Start the stage execution span for one preenrich stage."""
-        return self._start_span(f"scout.preenrich.{stage_name}", metadata)
+        span = self._start_span(
+            f"scout.preenrich.{stage_name}",
+            metadata,
+            parent=self.job_span,
+        )
+        return PreenrichStageTracingHandle(self, stage_name=stage_name, span=span)
+
+    def start_substage_span(self, stage_name: str, substage: str, metadata: dict[str, Any]):
+        """Start a stage-internal child span (e.g. research transport sub-call).
+
+        Emitted as `scout.preenrich.<stage_name>.<substage>` so operators can
+        see per-sub-call timing inside a stage without duplicating metadata
+        assembly in every stage implementation.
+        """
+        return self._start_span(
+            f"scout.preenrich.{stage_name}.{substage}",
+            metadata,
+            parent=self.job_span,
+        )
 
     def record_event(self, name: str, metadata: dict[str, Any]) -> None:
         """Record one preenrich orchestration event."""
@@ -411,29 +468,33 @@ class PreenrichTracingSession:
             return
         payload = _sanitize_langfuse_payload(metadata)
         try:
-            if self._client is not None and self.trace_id is not None:
-                self._client.create_event(
-                    trace_context={"trace_id": self.trace_id},
-                    name=name,
-                    input=payload,
-                    output=payload,
-                    metadata=payload,
-                )
-                return
-            span = self.trace.start_observation(name=name, as_type="span", input=payload, metadata=payload)
-            span.update(output=payload)
-            span.end()
+            with self._lock:
+                if self._client is not None and self.trace_id is not None:
+                    self._client.create_event(
+                        trace_context={"trace_id": self.trace_id},
+                        name=name,
+                        input=payload,
+                        output=payload,
+                        metadata=payload,
+                    )
+                    return
+                span = self.trace.start_observation(name=name, as_type="span", input=payload, metadata=payload)
+                span.update(output=payload)
+                span.end()
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.warning("Langfuse preenrich event %s failed: %s", name, exc)
 
     def end_span(self, span: Any, *, output: Optional[dict[str, Any]] = None) -> None:
         """End a previously started preenrich span."""
+        if hasattr(span, "span"):
+            span = span.span
         if span is None:
             return
         try:
-            if output is not None:
-                span.update(output=_sanitize_langfuse_payload(output))
-            span.end()
+            with self._lock:
+                if output is not None:
+                    span.update(output=_sanitize_langfuse_payload(output))
+                span.end()
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.warning("Langfuse preenrich span end failed: %s", exc)
 
@@ -443,29 +504,69 @@ class PreenrichTracingSession:
             return
         try:
             safe_output = _sanitize_langfuse_payload(output or {})
-            self.trace.update(output=safe_output)
-            if hasattr(self.trace, "update_trace"):
-                self.trace.update_trace(output=safe_output)
-            self.trace.end()
-            if self._client is not None:
-                self._client.flush()
+            with self._lock:
+                if self.job_span is not None:
+                    self.job_span.update(output=safe_output)
+                    self.job_span.end()
+                    self.job_span = None
+                self.trace.update(output=safe_output)
+                if hasattr(self.trace, "update_trace"):
+                    self.trace.update_trace(output=safe_output)
+                self.trace.end()
+                if self._client is not None:
+                    self._client.flush()
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.warning("Langfuse preenrich trace finalize failed: %s", exc)
 
-    def _start_span(self, name: str, metadata: dict[str, Any]):
-        if not self.trace:
+    def _start_span(self, name: str, metadata: dict[str, Any], *, parent: Any = None):
+        parent_observation = parent or self.job_span or self.trace
+        if not parent_observation:
             return None
         payload = _sanitize_langfuse_payload(metadata)
         try:
-            return self.trace.start_observation(
-                name=name,
-                as_type="span",
-                input=payload,
-                metadata=payload,
-            )
+            with self._lock:
+                return parent_observation.start_observation(
+                    name=name,
+                    as_type="span",
+                    input=payload,
+                    metadata=payload,
+                )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.warning("Langfuse preenrich span %s failed: %s", name, exc)
             return None
+
+
+def emit_preenrich_sweeper_event(
+    *,
+    name: str,
+    level2_job_id: str,
+    metadata: dict[str, Any],
+    run_id: Optional[str] = None,
+) -> dict[str, Optional[str]]:
+    """Emit a canonical preenrich sweeper/finalizer event.
+
+    Pins `langfuse_session_id` to `job:<level2_job_id>` and emits the sweeper
+    action inside a short-lived `scout.preenrich.run` trace with a real
+    `scout.preenrich.job` span. Callers supply the canonical event `name` (e.g.
+    `scout.preenrich.enqueue_next`, `scout.preenrich.release_lease`,
+    `scout.preenrich.snapshot_invalidation`, `scout.preenrich.finalize_cv_ready`).
+    """
+    session_id = f"job:{level2_job_id}"
+    enriched: dict[str, Any] = {
+        "level2_job_id": level2_job_id,
+        "langfuse_session_id": session_id,
+    }
+    enriched.update(metadata or {})
+    session = PreenrichTracingSession(
+        run_id=run_id
+        or f"preenrich:sweeper:{name}:{level2_job_id}:{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}:{uuid4().hex[:8]}",
+        session_id=session_id,
+        metadata=enriched,
+    )
+    span = session._start_span(name, enriched, parent=session.job_span)
+    session.end_span(span, output=enriched)
+    session.complete(output={"status": "completed", "event_name": name, "source": "sweeper"})
+    return {"trace_id": session.trace_id, "trace_url": session.trace_url}
 
 
 def emit_standalone_event(

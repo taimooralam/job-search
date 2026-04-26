@@ -7,26 +7,21 @@ Tests:
 - Orchestrator _should_apply_tailoring: Tailoring decision logic
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from typing import Dict, Any, List
 
 from src.layer6_v2.cv_tailorer import (
     CVTailorer,
     build_tailoring_system_prompt_with_persona,
-    build_tailoring_user_prompt,
-)
-from src.layer6_v2.prompts.role_generation import (
-    build_role_system_prompt_with_persona,
-    ROLE_GENERATION_SYSTEM_PROMPT,
 )
 from src.layer6_v2.keyword_placement import (
     KeywordPlacementResult,
-    KeywordPlacement,
 )
-from src.layer6_v2.types import TailoringResult
 from src.layer6_v2.orchestrator import CVGeneratorV2
-
+from src.layer6_v2.prompts.role_generation import (
+    build_role_system_prompt_with_persona,
+)
 
 # ===== FIXTURES =====
 

@@ -10,23 +10,21 @@ Analyzes the specific role's business impact and timing significance.
 New in Phase 5.2: Complete role research with "why now" analysis.
 """
 
-import asyncio
 import json
 import logging
 import re
 import traceback
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field, ValidationError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.common.config import Config
-from src.common.state import JobState, RoleResearch, ProgressCallback
-from src.common.unified_llm import invoke_unified_sync
+from src.common.claude_web_research import CLAUDE_MODEL_TIERS, ClaudeWebResearcher, TierType
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
+from src.common.state import JobState, ProgressCallback, RoleResearch
+from src.common.structured_logger import get_structured_logger
+from src.common.unified_llm import invoke_unified_sync
 from src.common.utils import run_async
-
 
 # ===== PYDANTIC SCHEMA VALIDATION (Phase 5.2) =====
 
@@ -259,7 +257,6 @@ class RoleResearcher:
         self.logger.info(f"[Claude API] Researching role: {title} at {company}")
 
         # Extract company signals if available (from Phase 5.1)
-        company_signals_text = "No company signals available."
         company_research = state.get("company_research")
         if company_research:
             signals = company_research.get("signals", [])
@@ -270,7 +267,7 @@ class RoleResearcher:
                         f"- [{sig.get('type', 'unknown')}] {sig.get('description', 'N/A')} "
                         f"({sig.get('date', 'unknown')})"
                     )
-                company_signals_text = "\n".join(signal_lines)
+                "\n".join(signal_lines)
 
         # Call Claude API with web search
         try:
@@ -441,7 +438,7 @@ class RoleResearcher:
                 error_messages.append(f"{field}: {msg}")
 
             raise ValueError(
-                f"RoleResearch schema validation failed:\n" +
+                "RoleResearch schema validation failed:\n" +
                 "\n".join(f"  - {msg}" for msg in error_messages) +
                 f"\nReceived data: {json.dumps(data, indent=2)[:500]}"
             )
@@ -471,7 +468,7 @@ class RoleResearcher:
             return self._research_role_with_claude_api(state)
 
         # Legacy LLM-only mode (Firecrawl removed)
-        self.logger.info(f"[Research Backend] Using LLM-only (legacy mode) for role research")
+        self.logger.info("[Research Backend] Using LLM-only (legacy mode) for role research")
 
         try:
             # Extract company signals if available (from Phase 5.1)

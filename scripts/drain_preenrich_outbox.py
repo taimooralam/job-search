@@ -6,16 +6,14 @@ import argparse
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
 from pymongo import MongoClient
 
-from src.preenrich.outbox import DEADLETTER_KEY, STREAM_KEY, outbox_consumer_tick
-
 from scripts.backfill_preenrich_states import _cv_ready_at, _derive_stage_states_from_legacy, utc_now
-
+from src.preenrich.outbox import DEADLETTER_KEY, outbox_consumer_tick
 
 REPORT_DIR = Path("reports")
 
@@ -93,7 +91,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Drain the legacy Redis preenrich outbox")
     parser.add_argument("--apply", action="store_true", help="Apply changes instead of dry-run")
     parser.add_argument("--deadline-seconds", type=int, default=1800)
-    args = parser.parse_args()
+    parser.parse_args()
     raise RuntimeError("Use this module with a real Redis client and runner client from the VPS environment")
 
 

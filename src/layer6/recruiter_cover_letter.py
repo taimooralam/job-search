@@ -13,13 +13,11 @@ This is used when company_type == "recruitment_agency" in the pipeline.
 
 import logging
 import re
-from typing import List
+
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.common.config import Config
-from src.common.unified_llm import invoke_unified_sync
 from src.common.state import JobState
-
+from src.common.unified_llm import invoke_unified_sync
 
 # ===== VALIDATION CONFIGURATION =====
 

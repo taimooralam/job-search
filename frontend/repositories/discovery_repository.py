@@ -905,7 +905,7 @@ class DiscoveryRepository:
         failures_only: bool,
         cursor: Optional[str],
     ) -> dict[str, Any]:
-        current_time = datetime.now(timezone.utc)
+        datetime.now(timezone.utc)
         query: dict[str, Any] = {}
         query["$and"] = query.get("$and", [])
         query["$and"].append({"$expr": _window_expr("last_seen_at", window)})

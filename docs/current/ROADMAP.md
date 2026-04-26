@@ -113,6 +113,10 @@ See `plans/next-steps.md` for detailed steps:
 
 ## Future Enhancements (Backlog)
 
+### Preenrich / 4.x Follow-up
+- [ ] Add Langfuse tracking for preenrich stage runs, live validations, and retry/debug traces
+- [ ] Implement Iteration 4.2.2 plan after 4.2.1 stakeholder-surface stabilization is complete
+
 ### High Value
 - [ ] Add mocking to CV generator tests (avoid real API calls in CI)
 - [ ] Structured logging with run_id tagging

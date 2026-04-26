@@ -1,0 +1,1544 @@
+{
+  "job_id": "fixture-low-ai-adjacent-platform-architect",
+  "level2_job_id": "507f1f77bcf86cd799439011",
+  "input_snapshot_id": "sha256:e96ee7130c2fbaad4ce5cfc8dde80d2f9936f26e57a025b19fbf3cbb36a9a862",
+  "stage_version": "presentation_contract.v4.2.6",
+  "prompt_versions": {
+    "document_expectations": "P-document-expectations@v1",
+    "cv_shape_expectations": "P-cv-shape-expectations@v1",
+    "ideal_candidate": "P-ideal-candidate@v1",
+    "experience_dimension_weights": "P-experience-dimension-weights@v1",
+    "emphasis_rules": "P-emphasis-rules@v1"
+  },
+  "prompt_metadata": {
+    "document_expectations": {
+      "prompt_id": "document_expectations",
+      "prompt_version": "P-document-expectations@v1",
+      "prompt_file_path": "C:\\Users\\taimo\\pers\\job-search\\src\\preenrich\\stages\\presentation_contract.py",
+      "git_sha": "d93a45c3",
+      "provider": "codex",
+      "model": "gpt-5.4",
+      "transport_used": "none",
+      "fallback_provider": "none",
+      "fallback_transport": "none"
+    },
+    "cv_shape_expectations": {
+      "prompt_id": "cv_shape_expectations",
+      "prompt_version": "P-cv-shape-expectations@v1",
+      "prompt_file_path": "C:\\Users\\taimo\\pers\\job-search\\src\\preenrich\\stages\\presentation_contract.py",
+      "git_sha": "d93a45c3",
+      "provider": "codex",
+      "model": "gpt-5.4",
+      "transport_used": "none",
+      "fallback_provider": "none",
+      "fallback_transport": "none"
+    },
+    "ideal_candidate": {
+      "prompt_id": "ideal_candidate",
+      "prompt_version": "P-ideal-candidate@v1",
+      "prompt_file_path": "C:\\Users\\taimo\\pers\\job-search\\src\\preenrich\\stages\\presentation_contract.py",
+      "git_sha": "d93a45c3",
+      "provider": "codex",
+      "model": "gpt-5.4",
+      "transport_used": "none",
+      "fallback_provider": "none",
+      "fallback_transport": "none"
+    },
+    "experience_dimension_weights": {
+      "prompt_id": "experience_dimension_weights",
+      "prompt_version": "P-experience-dimension-weights@v1",
+      "prompt_file_path": "C:\\Users\\taimo\\pers\\job-search\\src\\preenrich\\stages\\presentation_contract.py",
+      "git_sha": "d93a45c3",
+      "provider": "codex",
+      "model": "gpt-5.4",
+      "transport_used": "none",
+      "fallback_provider": "none",
+      "fallback_transport": "none"
+    },
+    "emphasis_rules": {
+      "prompt_id": "emphasis_rules",
+      "prompt_version": "P-emphasis-rules@v1",
+      "prompt_file_path": "C:\\Users\\taimo\\pers\\job-search\\src\\preenrich\\stages\\presentation_contract.py",
+      "git_sha": "d93a45c3",
+      "provider": "codex",
+      "model": "gpt-5.4",
+      "transport_used": "none",
+      "fallback_provider": "none",
+      "fallback_transport": "none"
+    }
+  },
+  "status": "partial",
+  "document_expectations": {
+    "status": "completed",
+    "primary_document_goal": "architecture_first",
+    "secondary_document_goals": [],
+    "audience_variants": {
+      "recruiter": {
+        "tilt": [
+          "clarity_first",
+          "keyword_visible"
+        ],
+        "must_see": [
+          "role_fit",
+          "ownership_scope"
+        ],
+        "risky_signals": [
+          "tool_list_cv",
+          "generic_mission_restatement"
+        ],
+        "rationale": "recruiter lens defaulted from role-family priors because upstream evidence was thin."
+      },
+      "hiring_manager": {
+        "tilt": [
+          "clarity_first",
+          "evidence_first"
+        ],
+        "must_see": [
+          "ownership_scope",
+          "production_impact"
+        ],
+        "risky_signals": [
+          "hype_header",
+          "ai_claims_without_evidence"
+        ],
+        "rationale": "hiring_manager lens defaulted from role-family priors because upstream evidence was thin."
+      },
+      "peer_technical": {
+        "tilt": [
+          "clarity_first",
+          "evidence_first"
+        ],
+        "must_see": [
+          "ownership_scope",
+          "production_impact"
+        ],
+        "risky_signals": [
+          "hype_header",
+          "ai_claims_without_evidence"
+        ],
+        "rationale": "peer_technical lens defaulted from role-family priors because upstream evidence was thin."
+      }
+    },
+    "proof_order": [
+      "architecture",
+      "metric",
+      "stakeholder"
+    ],
+    "anti_patterns": [
+      "tool_list_cv",
+      "hype_header",
+      "ai_claims_without_evidence"
+    ],
+    "tone_posture": {
+      "primary_tone": "architect_first",
+      "hype_tolerance": "low",
+      "narrative_tolerance": "medium",
+      "formality": "neutral"
+    },
+    "density_posture": {
+      "overall_density": "high",
+      "header_density": "proof_dense",
+      "section_density_bias": [
+        {
+          "section_id": "summary",
+          "bias": "medium"
+        }
+      ]
+    },
+    "keyword_balance": {
+      "target_keyword_pressure": "medium",
+      "ats_mirroring_bias": "balanced",
+      "semantic_expansion_bias": "balanced"
+    },
+    "unresolved_markers": [],
+    "rationale": "Candidate-agnostic thesis defaulted from architecture_first role-family priors with ai_intensity=adjacent.",
+    "debug_context": {
+      "input_summary": {
+        "role_family": "staff_principal_engineer",
+        "seniority": "principal",
+        "ai_intensity": "adjacent",
+        "evaluator_roles_in_scope": [
+          "recruiter",
+          "hiring_manager",
+          "peer_technical"
+        ],
+        "proof_category_frequencies": {
+          "architecture": 1,
+          "metric": 1,
+          "stakeholder": 1
+        },
+        "top_keywords_top10": [
+          "platform",
+          "architecture",
+          "distributed systems",
+          "developer productivity",
+          "ai enablement",
+          "reliability"
+        ],
+        "company_identity_band": "high",
+        "research_status": "completed",
+        "stakeholder_surface_status": "completed",
+        "pain_point_intelligence_status": null
+      },
+      "defaults_applied": [],
+      "normalization_events": [],
+      "richer_output_retained": [],
+      "rejected_output": [],
+      "retry_events": []
+    },
+    "confidence": {
+      "score": 0.74,
+      "band": "high",
+      "basis": "Role-family priors plus available evaluator and research signals.",
+      "evidence_summary": "Role-family priors plus available evaluator and research signals.",
+      "unresolved_items": []
+    },
+    "evidence": [
+      {
+        "claim": "Default document thesis is derived from classification, stakeholder surface, and ATS posture priors.",
+        "source_ids": [
+          "classification.primary_role_category",
+          "stakeholder_surface.evaluator_coverage_target",
+          "research_enrichment.application_profile.portal_family"
+        ],
+        "excerpt": null,
+        "basis": null
+      }
+    ]
+  },
+  "cv_shape_expectations": {
+    "status": "completed",
+    "title_strategy": "closest_truthful",
+    "header_shape": {
+      "density": "proof_dense",
+      "include_elements": [
+        "name",
+        "current_or_target_title",
+        "links",
+        "proof_line"
+      ],
+      "proof_line_policy": "required",
+      "differentiator_line_policy": "optional"
+    },
+    "section_order": [
+      "header",
+      "summary",
+      "key_achievements",
+      "core_competencies",
+      "ai_highlights",
+      "projects",
+      "experience",
+      "education"
+    ],
+    "section_emphasis": [
+      {
+        "section_id": "summary",
+        "emphasis": "highlight",
+        "focus_categories": [
+          "architecture",
+          "metric"
+        ],
+        "length_bias": "short",
+        "ordering_bias": "outcome_first",
+        "rationale": "Summary should establish role-fit and proof posture quickly."
+      },
+      {
+        "section_id": "key_achievements",
+        "emphasis": "highlight",
+        "focus_categories": [
+          "architecture",
+          "metric",
+          "stakeholder"
+        ],
+        "length_bias": "medium",
+        "ordering_bias": "outcome_first",
+        "rationale": "Key achievements carry the condensed proof ladder."
+      },
+      {
+        "section_id": "experience",
+        "emphasis": "highlight",
+        "focus_categories": [
+          "architecture",
+          "metric",
+          "stakeholder"
+        ],
+        "length_bias": "long",
+        "ordering_bias": "outcome_first",
+        "rationale": "Experience is the main proof surface for this role class."
+      },
+      {
+        "section_id": "core_competencies",
+        "emphasis": "balanced",
+        "focus_categories": [
+          "architecture",
+          "metric"
+        ],
+        "length_bias": "medium",
+        "ordering_bias": "tech_first",
+        "rationale": "Competencies support ATS parseability without dominating the document."
+      },
+      {
+        "section_id": "ai_highlights",
+        "emphasis": "balanced",
+        "focus_categories": [
+          "ai",
+          "metric"
+        ],
+        "length_bias": "medium",
+        "ordering_bias": "outcome_first",
+        "rationale": "AI highlights are visible when the AI intensity warrants explicit signaling."
+      }
+    ],
+    "ai_section_policy": "optional",
+    "counts": {
+      "key_achievements_min": 3,
+      "key_achievements_max": 5,
+      "core_competencies_min": 6,
+      "core_competencies_max": 10,
+      "summary_sentences_min": 2,
+      "summary_sentences_max": 4
+    },
+    "ats_envelope": {
+      "pressure": "standard",
+      "format_rules": [
+        "single_column",
+        "no_tables_in_experience",
+        "plain_bullets"
+      ],
+      "keyword_placement_bias": "top_heavy"
+    },
+    "evidence_density": "high",
+    "seniority_signal_strength": "high",
+    "compression_rules": [
+      "compress_core_competencies_first",
+      "compress_certifications_second",
+      "compress_projects_third"
+    ],
+    "omission_rules": [
+      "omit_publications_if_unused_in_role_family",
+      "omit_awards_if_unused_in_role_family"
+    ],
+    "unresolved_markers": [],
+    "rationale": "Concrete CV shape mirrors the document thesis and conservative ATS posture priors.",
+    "debug_context": {
+      "input_summary": {
+        "role_family": "staff_principal_engineer",
+        "seniority": "principal",
+        "ai_intensity": "adjacent",
+        "evaluator_roles_in_scope": [
+          "recruiter",
+          "hiring_manager",
+          "peer_technical"
+        ],
+        "proof_category_frequencies": {
+          "architecture": 1,
+          "metric": 1,
+          "stakeholder": 1
+        },
+        "top_keywords_top10": [
+          "platform",
+          "architecture",
+          "distributed systems",
+          "developer productivity",
+          "ai enablement",
+          "reliability"
+        ],
+        "company_identity_band": "high",
+        "research_status": "completed",
+        "stakeholder_surface_status": "completed",
+        "pain_point_intelligence_status": null
+      },
+      "defaults_applied": [],
+      "normalization_events": [],
+      "richer_output_retained": [],
+      "rejected_output": [],
+      "retry_events": []
+    },
+    "confidence": {
+      "score": 0.76,
+      "band": "high",
+      "basis": "Role-family priors plus thesis alignment.",
+      "evidence_summary": "Role-family priors plus thesis alignment.",
+      "unresolved_items": []
+    },
+    "evidence": [
+      {
+        "claim": "Default CV shape is derived from document thesis, AI intensity, and ATS posture priors.",
+        "source_ids": [
+          "document_expectations.primary_document_goal",
+          "classification.ai_taxonomy.intensity",
+          "research_enrichment.application_profile.portal_family"
+        ],
+        "excerpt": null,
+        "basis": null
+      }
+    ]
+  },
+  "ideal_candidate_presentation_model": {
+    "status": "completed",
+    "visible_identity": "Principal platform architect who improves developer systems and safely enables AI-assisted workflows.",
+    "acceptable_titles": [
+      "Principal Platform Architect, AI Enablement",
+      "Principal Platform Architect"
+    ],
+    "title_strategy": "closest_truthful",
+    "must_signal": [
+      {
+        "tag": "architecture_judgment",
+        "proof_category": "architecture",
+        "rationale": "architecture judgment is part of the default framing for this role family.",
+        "evidence_refs": [
+          {
+            "source": "jd_facts.merged_view.ideal_candidate_profile",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "tag": "ownership_scope",
+        "proof_category": "metric",
+        "rationale": "ownership scope is part of the default framing for this role family.",
+        "evidence_refs": [
+          {
+            "source": "jd_facts.merged_view.ideal_candidate_profile",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "tag": "production_impact",
+        "proof_category": "stakeholder",
+        "rationale": "production impact is part of the default framing for this role family.",
+        "evidence_refs": [
+          {
+            "source": "jd_facts.merged_view.ideal_candidate_profile",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "should_signal": [
+      {
+        "tag": "ai_depth",
+        "proof_category": "architecture",
+        "rationale": "ai depth is useful but secondary for this evaluator surface.",
+        "evidence_refs": [
+          {
+            "source": "document_expectations.audience_variants",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "tag": "platform_reliability",
+        "proof_category": "metric",
+        "rationale": "platform reliability is useful but secondary for this evaluator surface.",
+        "evidence_refs": [
+          {
+            "source": "document_expectations.audience_variants",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "tag": "stakeholder_alignment",
+        "proof_category": "stakeholder",
+        "rationale": "stakeholder alignment is useful but secondary for this evaluator surface.",
+        "evidence_refs": [
+          {
+            "source": "document_expectations.audience_variants",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "de_emphasize": [
+      {
+        "tag": "tool_listing",
+        "proof_category": "process",
+        "rationale": "tool listing should not outrun stronger proof.",
+        "evidence_refs": [
+          {
+            "source": "document_expectations.anti_patterns",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "tag": "generic_leadership_claim",
+        "proof_category": "process",
+        "rationale": "generic leadership claim should not outrun stronger proof.",
+        "evidence_refs": [
+          {
+            "source": "document_expectations.anti_patterns",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "proof_ladder": [
+      {
+        "proof_category": "architecture",
+        "signal_tag": "architecture_judgment",
+        "rationale": "Lead with architecture proof because it is upstream-prioritized for this role.",
+        "evidence_refs": [
+          {
+            "source": "pain_point_intelligence.proof_map:1",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "proof_category": "metric",
+        "signal_tag": "production_impact",
+        "rationale": "Lead with metric proof because it is upstream-prioritized for this role.",
+        "evidence_refs": [
+          {
+            "source": "pain_point_intelligence.proof_map:2",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "proof_category": "stakeholder",
+        "signal_tag": "stakeholder_alignment",
+        "rationale": "Lead with stakeholder proof because it is upstream-prioritized for this role.",
+        "evidence_refs": [
+          {
+            "source": "pain_point_intelligence.proof_map:3",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "tone_profile": {
+      "primary_tone": "architect_first",
+      "hype_tolerance": "low",
+      "narrative_tolerance": "medium",
+      "formality": "neutral"
+    },
+    "credibility_markers": [
+      {
+        "marker": "named_systems",
+        "proof_category": "architecture",
+        "rationale": "architecture proof should be concrete and recruiter-visible.",
+        "evidence_refs": [
+          {
+            "source": "pain_point_intelligence.proof_map:1",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "marker": "metrics",
+        "proof_category": "metric",
+        "rationale": "metric proof should be concrete and recruiter-visible.",
+        "evidence_refs": [
+          {
+            "source": "pain_point_intelligence.proof_map:2",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "marker": "ownership_scope",
+        "proof_category": "stakeholder",
+        "rationale": "stakeholder proof should be concrete and recruiter-visible.",
+        "evidence_refs": [
+          {
+            "source": "pain_point_intelligence.proof_map:3",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "risk_flags": [
+      {
+        "flag": "generic_ai_claim",
+        "severity": "medium",
+        "rationale": "Avoid unsupported AI positioning that outruns the proof ladder.",
+        "evidence_refs": [
+          {
+            "source": "classification.ai_taxonomy.intensity",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "flag": "tool_listing_without_proof",
+        "severity": "medium",
+        "rationale": "Do not let tool lists displace scope and production evidence.",
+        "evidence_refs": [
+          {
+            "source": "stakeholder_surface.evaluator_coverage_target",
+            "locator": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "audience_variants": {
+      "recruiter": {
+        "tilt": [
+          "clarity_first",
+          "keyword_visible"
+        ],
+        "must_land": [
+          "architecture_judgment",
+          "ownership_scope"
+        ],
+        "de_emphasize": [
+          "tool_listing",
+          "generic_leadership_claim"
+        ],
+        "rationale": "recruiter framing defaulted from stakeholder coverage and role-family priors."
+      },
+      "hiring_manager": {
+        "tilt": [
+          "evidence_first",
+          "architect_first"
+        ],
+        "must_land": [
+          "architecture_judgment",
+          "production_impact"
+        ],
+        "de_emphasize": [
+          "tool_listing",
+          "generic_leadership_claim"
+        ],
+        "rationale": "hiring_manager framing defaulted from stakeholder coverage and role-family priors."
+      },
+      "peer_technical": {
+        "tilt": [
+          "evidence_first",
+          "architect_first"
+        ],
+        "must_land": [
+          "architecture_judgment",
+          "ownership_scope"
+        ],
+        "de_emphasize": [
+          "tool_listing",
+          "generic_leadership_claim"
+        ],
+        "rationale": "peer_technical framing defaulted from stakeholder coverage and role-family priors."
+      }
+    },
+    "confidence": {
+      "score": 0.74,
+      "band": "high",
+      "basis": "Ideal-candidate framing defaulted from upstream role-family, proof-map, and stakeholder priors.",
+      "evidence_summary": "Ideal-candidate framing defaulted from upstream role-family, proof-map, and stakeholder priors.",
+      "unresolved_items": []
+    },
+    "defaults_applied": [],
+    "unresolved_markers": [],
+    "evidence_refs": [
+      {
+        "source": "jd_facts.merged_view.ideal_candidate_profile",
+        "locator": null,
+        "quote": null
+      },
+      {
+        "source": "pain_point_intelligence.proof_map",
+        "locator": null,
+        "quote": null
+      },
+      {
+        "source": "stakeholder_surface.evaluator_coverage_target",
+        "locator": null,
+        "quote": null
+      }
+    ],
+    "debug_context": {
+      "input_summary": {
+        "role_family": "staff_principal_engineer",
+        "seniority": "principal",
+        "ai_intensity": "adjacent",
+        "evaluator_roles_in_scope": [
+          "recruiter",
+          "hiring_manager",
+          "peer_technical"
+        ],
+        "proof_category_frequencies": {
+          "architecture": 1,
+          "metric": 1,
+          "stakeholder": 1
+        },
+        "top_keywords_top10": [
+          "platform",
+          "architecture",
+          "distributed systems",
+          "developer productivity",
+          "ai enablement",
+          "reliability"
+        ],
+        "company_identity_band": "high",
+        "research_status": "completed",
+        "stakeholder_surface_status": "completed",
+        "pain_point_intelligence_status": null
+      },
+      "defaults_applied": [],
+      "normalization_events": [],
+      "richer_output_retained": [],
+      "rejected_output": [],
+      "retry_events": []
+    }
+  },
+  "experience_dimension_weights": {
+    "status": "partial",
+    "source_scope": "jd_plus_research_plus_stakeholder",
+    "dimension_enum_version": "v1",
+    "prompt_version": null,
+    "prompt_metadata": null,
+    "overall_weights": {
+      "hands_on_implementation": 13,
+      "architecture_system_design": 8,
+      "leadership_enablement": 6,
+      "tools_technology_stack": 6,
+      "methodology_operating_model": 6,
+      "business_impact": 16,
+      "stakeholder_communication": 11,
+      "ai_ml_depth": 10,
+      "domain_context": 4,
+      "quality_risk_reliability": 5,
+      "delivery_execution_pace": 5,
+      "platform_scaling_change": 10
+    },
+    "stakeholder_variant_weights": {
+      "recruiter": {
+        "hands_on_implementation": 13,
+        "architecture_system_design": 22,
+        "leadership_enablement": 6,
+        "tools_technology_stack": 6,
+        "methodology_operating_model": 6,
+        "business_impact": 12,
+        "stakeholder_communication": 7,
+        "ai_ml_depth": 10,
+        "domain_context": 4,
+        "quality_risk_reliability": 5,
+        "delivery_execution_pace": 5,
+        "platform_scaling_change": 4
+      },
+      "hiring_manager": {
+        "hands_on_implementation": 13,
+        "architecture_system_design": 14,
+        "leadership_enablement": 6,
+        "tools_technology_stack": 6,
+        "methodology_operating_model": 6,
+        "business_impact": 20,
+        "stakeholder_communication": 7,
+        "ai_ml_depth": 10,
+        "domain_context": 4,
+        "quality_risk_reliability": 5,
+        "delivery_execution_pace": 5,
+        "platform_scaling_change": 4
+      },
+      "peer_technical": {
+        "hands_on_implementation": 13,
+        "architecture_system_design": 22,
+        "leadership_enablement": 6,
+        "tools_technology_stack": 6,
+        "methodology_operating_model": 6,
+        "business_impact": 12,
+        "stakeholder_communication": 7,
+        "ai_ml_depth": 10,
+        "domain_context": 4,
+        "quality_risk_reliability": 5,
+        "delivery_execution_pace": 5,
+        "platform_scaling_change": 4
+      }
+    },
+    "minimum_visible_dimensions": [
+      "architecture_system_design",
+      "hands_on_implementation",
+      "business_impact"
+    ],
+    "overuse_risks": [
+      {
+        "dimension": "leadership_enablement",
+        "reason": "seniority_mismatch",
+        "threshold": 18,
+        "mitigation": "proof_first"
+      }
+    ],
+    "rationale": "Experience-dimension salience defaulted from role-family priors plus available stakeholder and proof-map pressure.",
+    "unresolved_markers": [
+      "cross_validated_dimension_weights_default"
+    ],
+    "defaults_applied": [
+      "cross_validator_dimension_weights_default"
+    ],
+    "normalization_events": [
+      {
+        "kind": "floor_boost",
+        "from_value": 4,
+        "to_value": 10,
+        "reason": "must_signal_floor",
+        "path": "platform_scaling_change"
+      }
+    ],
+    "confidence": {
+      "score": 0.78,
+      "band": "medium",
+      "basis": "Deterministic role-family priors with stakeholder and proof-map pressure.",
+      "evidence_summary": null,
+      "unresolved_items": []
+    },
+    "evidence": [
+      {
+        "claim": "Default weight priors are grounded in role family, stakeholder coverage, and proof-map pressure.",
+        "source_ids": [
+          "classification.primary_role_category",
+          "stakeholder_surface.evaluator_coverage_target",
+          "pain_point_intelligence.proof_map"
+        ],
+        "excerpt": null,
+        "basis": null
+      }
+    ],
+    "notes": [],
+    "debug_context": {
+      "input_summary": {
+        "role_family": "staff_principal_engineer",
+        "seniority": "principal",
+        "ai_intensity": "adjacent",
+        "evaluator_roles_in_scope": [
+          "recruiter",
+          "hiring_manager",
+          "peer_technical"
+        ],
+        "proof_category_frequencies": {
+          "architecture": 1,
+          "metric": 1,
+          "stakeholder": 1
+        },
+        "top_keywords_top10": [
+          "platform",
+          "architecture",
+          "distributed systems",
+          "developer productivity",
+          "ai enablement",
+          "reliability"
+        ],
+        "company_identity_band": "high",
+        "research_status": "completed",
+        "stakeholder_surface_status": "completed",
+        "pain_point_intelligence_status": "completed"
+      },
+      "role_family_weight_priors": {
+        "hands_on_implementation": 13,
+        "architecture_system_design": 22,
+        "leadership_enablement": 6,
+        "tools_technology_stack": 6,
+        "methodology_operating_model": 6,
+        "business_impact": 12,
+        "stakeholder_communication": 7,
+        "ai_ml_depth": 10,
+        "domain_context": 4,
+        "quality_risk_reliability": 5,
+        "delivery_execution_pace": 5,
+        "platform_scaling_change": 4
+      },
+      "evaluator_dimension_pressure": {
+        "recruiter": {
+          "hands_on_implementation": 0,
+          "architecture_system_design": 0,
+          "leadership_enablement": 0,
+          "tools_technology_stack": 0,
+          "methodology_operating_model": 0,
+          "business_impact": 0,
+          "stakeholder_communication": 0,
+          "ai_ml_depth": 0,
+          "domain_context": 0,
+          "quality_risk_reliability": 0,
+          "delivery_execution_pace": 0,
+          "platform_scaling_change": 0
+        },
+        "hiring_manager": {
+          "hands_on_implementation": 0,
+          "architecture_system_design": 4,
+          "leadership_enablement": 0,
+          "tools_technology_stack": 0,
+          "methodology_operating_model": 0,
+          "business_impact": 4,
+          "stakeholder_communication": 0,
+          "ai_ml_depth": 0,
+          "domain_context": 0,
+          "quality_risk_reliability": 0,
+          "delivery_execution_pace": 0,
+          "platform_scaling_change": 0
+        },
+        "peer_technical": {
+          "hands_on_implementation": 0,
+          "architecture_system_design": 0,
+          "leadership_enablement": 0,
+          "tools_technology_stack": 0,
+          "methodology_operating_model": 0,
+          "business_impact": 0,
+          "stakeholder_communication": 0,
+          "ai_ml_depth": 0,
+          "domain_context": 0,
+          "quality_risk_reliability": 0,
+          "delivery_execution_pace": 0,
+          "platform_scaling_change": 0
+        }
+      },
+      "ai_intensity_cap": 15,
+      "architecture_evidence_band": "strong",
+      "leadership_evidence_band": "none",
+      "defaults_applied": [
+        "cross_validator_dimension_weights_default"
+      ],
+      "normalization_events": [],
+      "richer_output_retained": [],
+      "rejected_output": [],
+      "retry_events": []
+    },
+    "fail_open_reason": null
+  },
+  "truth_constrained_emphasis_rules": {
+    "status": "partial",
+    "source_scope": "jd_plus_research_plus_stakeholder",
+    "rule_type_enum_version": "v1",
+    "applies_to_enum_version": "v1",
+    "prompt_version": null,
+    "prompt_metadata": null,
+    "global_rules": [
+      {
+        "rule_id": "tcer_leadership_scope_leadership_enablement_68e7fe",
+        "rule_type": "cap_dimension_weight",
+        "topic_family": "leadership_scope",
+        "applies_to_kind": "dimension",
+        "applies_to": "leadership_enablement",
+        "condition": "Leadership scope evidence is limited by seniority or direct-report envelope.",
+        "action": "Cap leadership framing to the evidence band and require direct proof for stronger leadership claims.",
+        "basis": "Leadership claims must not outrun the leadership evidence envelope.",
+        "evidence_refs": [
+          "jd_facts.merged_view.team_context",
+          "experience_dimension_weights.debug_context.leadership_evidence_band"
+        ],
+        "precedence": 80,
+        "cap_value": 18,
+        "confidence": {
+          "score": 0.76,
+          "band": "medium",
+          "basis": "Leadership cap derived from seniority, direct reports, and 4.2.5 leadership band.",
+          "evidence_summary": "Leadership cap derived from seniority, direct reports, and 4.2.5 leadership band.",
+          "unresolved_items": []
+        }
+      }
+    ],
+    "section_rules": {
+      "experience": [
+        {
+          "rule_id": "tcer_credibility_ladder_degradation_experience_ba18a9",
+          "rule_type": "require_credibility_marker",
+          "topic_family": "credibility_ladder_degradation",
+          "applies_to_kind": "section",
+          "applies_to": "experience",
+          "condition": "Every high-emphasis claim needs at least one credibility marker.",
+          "action": "Require named systems, scoped metrics, or ownership markers before emphasis is increased.",
+          "basis": "Emphasis must degrade gracefully when proof is thin.",
+          "evidence_refs": [
+            "ideal_candidate_presentation_model.credibility_markers",
+            "pain_point_intelligence.proof_map"
+          ],
+          "precedence": 70,
+          "cap_value": null,
+          "confidence": {
+            "score": 0.73,
+            "band": "medium",
+            "basis": "Credibility ladder rules are anchored to the proof ladder and evidence map.",
+            "evidence_summary": "Credibility ladder rules are anchored to the proof ladder and evidence map.",
+            "unresolved_items": []
+          }
+        }
+      ]
+    },
+    "allowed_if_evidenced": [
+      {
+        "rule_id": "tcer_architecture_claims_architecture_6de130",
+        "rule_type": "allowed_if_evidenced",
+        "topic_family": "architecture_claims",
+        "applies_to_kind": "proof",
+        "applies_to": "architecture",
+        "condition": "Architecture framing is grounded in upstream mandate and proof.",
+        "action": "Architecture claims are permitted when anchored to direct proof.",
+        "basis": "Architecture claim posture must track the architecture evidence band.",
+        "evidence_refs": [
+          "research_enrichment.role_profile.mandate",
+          "pain_point_intelligence.proof_map"
+        ],
+        "precedence": 20,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.74,
+          "band": "medium",
+          "basis": "Role mandate and proof map define the architecture claim band.",
+          "evidence_summary": "Role mandate and proof map define the architecture claim band.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "rule_id": "tcer_credibility_ladder_degradation_metric_a86402",
+        "rule_type": "allowed_if_evidenced",
+        "topic_family": "credibility_ladder_degradation",
+        "applies_to_kind": "proof",
+        "applies_to": "metric",
+        "condition": "metric claims stay optional until direct proof is available.",
+        "action": "Allow this proof category only when direct evidence is visible and truthful.",
+        "basis": "Should-signal proof categories need an explicit evidentiary escape hatch.",
+        "evidence_refs": [
+          "ideal_candidate_presentation_model.should_signal",
+          "pain_point_intelligence.proof_map"
+        ],
+        "precedence": 20,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.68,
+          "band": "medium",
+          "basis": "Should-signal proof categories remain conditional on direct proof.",
+          "evidence_summary": "Should-signal proof categories remain conditional on direct proof.",
+          "unresolved_items": []
+        }
+      }
+    ],
+    "downgrade_rules": [
+      {
+        "rule_id": "tcer_stakeholder_management_claims_stakeholder_73c246",
+        "rule_type": "prefer_softened_form",
+        "topic_family": "stakeholder_management_claims",
+        "applies_to_kind": "proof",
+        "applies_to": "stakeholder",
+        "condition": "Stakeholder-management evidence is indirect or inferred.",
+        "action": "Use conservative stakeholder-language unless direct cross-functional proof is visible.",
+        "basis": "Stakeholder claims should not outrun the evaluator surface.",
+        "evidence_refs": [
+          "stakeholder_surface.evaluator_coverage_target",
+          "pain_point_intelligence.proof_map"
+        ],
+        "precedence": 50,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.7,
+          "band": "medium",
+          "basis": "Stakeholder surface and proof map determine safe stakeholder framing.",
+          "evidence_summary": "Stakeholder surface and proof map determine safe stakeholder framing.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "rule_id": "tcer_credibility_ladder_degradation_process_f523e2",
+        "rule_type": "prefer_softened_form",
+        "topic_family": "credibility_ladder_degradation",
+        "applies_to_kind": "proof",
+        "applies_to": "process",
+        "condition": "tool_listing should stay secondary unless direct proof is strong.",
+        "action": "Prefer softened wording or omit the claim when supporting proof is thin.",
+        "basis": "4.2.4 de-emphasize signals must remain visible in claim-policy rules.",
+        "evidence_refs": [
+          "ideal_candidate_presentation_model.de_emphasize",
+          "experience_dimension_weights.overall_weights"
+        ],
+        "precedence": 50,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.69,
+          "band": "medium",
+          "basis": "De-emphasize priors should degrade unsupported proof-led framing.",
+          "evidence_summary": "De-emphasize priors should degrade unsupported proof-led framing.",
+          "unresolved_items": []
+        }
+      }
+    ],
+    "omit_rules": [
+      {
+        "rule_id": "tcer_title_inflation_global_d89772",
+        "rule_type": "forbid_without_direct_proof",
+        "topic_family": "title_inflation",
+        "applies_to_kind": "global",
+        "applies_to": "global",
+        "condition": "Requested title exceeds acceptable_titles or title_strategy envelope.",
+        "action": "Do not authorize titles outside acceptable_titles; use closest truthful framing.",
+        "basis": "Title claims must stay within the truthful title envelope.",
+        "evidence_refs": [
+          "document_expectations.proof_order",
+          "cv_shape_expectations.title_strategy",
+          "ideal_candidate_presentation_model.acceptable_titles"
+        ],
+        "precedence": 80,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.78,
+          "band": "medium",
+          "basis": "Peer title strategy and acceptable_titles define the safe envelope.",
+          "evidence_summary": "Peer title strategy and acceptable_titles define the safe envelope.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "rule_id": "tcer_ai_claims_summary_f71451",
+        "rule_type": "forbid_without_direct_proof",
+        "topic_family": "ai_claims",
+        "applies_to_kind": "section",
+        "applies_to": "summary",
+        "condition": "AI depth is weak, adjacent, or absent in upstream evidence.",
+        "action": "Do not lead the summary with AI depth claims without direct proof.",
+        "basis": "AI claim policy must track classification intensity and 4.2.5 caps.",
+        "evidence_refs": [
+          "classification.ai_taxonomy.intensity",
+          "experience_dimension_weights.overall_weights.ai_ml_depth"
+        ],
+        "precedence": 80,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.78,
+          "band": "medium",
+          "basis": "Classification AI intensity plus dimension-weight cap defines the AI claim envelope.",
+          "evidence_summary": "Classification AI intensity plus dimension-weight cap defines the AI claim envelope.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "rule_id": "tcer_ai_claims_ai_highlights_9d9c47",
+        "rule_type": "forbid_without_direct_proof",
+        "topic_family": "ai_claims",
+        "applies_to_kind": "section",
+        "applies_to": "ai_highlights",
+        "condition": "AI highlights would overstate AI depth for adjacent or non-AI roles.",
+        "action": "Do not surface a dedicated AI highlights section without direct proof.",
+        "basis": "Low-AI roles must fail closed on dedicated AI depth framing.",
+        "evidence_refs": [
+          "classification.ai_taxonomy.intensity",
+          "cv_shape_expectations.ai_section_policy"
+        ],
+        "precedence": 80,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.79,
+          "band": "medium",
+          "basis": "AI section policy and intensity define whether a dedicated AI section is safe.",
+          "evidence_summary": "AI section policy and intensity define whether a dedicated AI section is safe.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "rule_id": "tcer_domain_expertise_domain_46a188",
+        "rule_type": "never_infer_from_job_only",
+        "topic_family": "domain_expertise",
+        "applies_to_kind": "proof",
+        "applies_to": "domain",
+        "condition": "Domain expertise is not directly evidenced beyond the JD context.",
+        "action": "Do not infer deep domain expertise from job fit alone.",
+        "basis": "Domain claims require more than JD-only inference.",
+        "evidence_refs": [
+          "jd_facts.merged_view.qualifications",
+          "research_enrichment.role_profile.summary"
+        ],
+        "precedence": 85,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.7,
+          "band": "medium",
+          "basis": "Domain claims need explicit upstream evidence beyond the JD.",
+          "evidence_summary": "Domain claims need explicit upstream evidence beyond the JD.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "rule_id": "tcer_metrics_scale_claims_metric_cf9e02",
+        "rule_type": "omit_if_weak",
+        "topic_family": "metrics_scale_claims",
+        "applies_to_kind": "proof",
+        "applies_to": "metric",
+        "condition": "Metric or scale proof is weak, generic, or lacks scope.",
+        "action": "Omit metric-led claims until direct scope and scale proof exists.",
+        "basis": "Fabricated metrics and scale are not permitted.",
+        "evidence_refs": [
+          "pain_point_intelligence.proof_map",
+          "document_expectations.anti_patterns"
+        ],
+        "precedence": 65,
+        "cap_value": null,
+        "confidence": {
+          "score": 0.76,
+          "band": "medium",
+          "basis": "Proof-map quality and anti-pattern priors define metric safety.",
+          "evidence_summary": "Proof-map quality and anti-pattern priors define metric safety.",
+          "unresolved_items": []
+        }
+      }
+    ],
+    "forbidden_claim_patterns": [
+      {
+        "pattern_id": "buzzword_10x",
+        "pattern": "10x",
+        "pattern_kind": "substring",
+        "reason": "Reject inflated performance language that implies unsupported superiority.",
+        "example": "10x engineer",
+        "evidence_refs": [
+          "document_expectations.anti_patterns"
+        ],
+        "confidence": {
+          "score": 0.72,
+          "band": "medium",
+          "basis": "Buzzword-stacking anti-pattern prior.",
+          "evidence_summary": "Buzzword-stacking anti-pattern prior.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "pattern_id": "visionary_hype",
+        "pattern": "(?:strategic\\s+)?visionary",
+        "pattern_kind": "regex_safe",
+        "reason": "Reject inflated leadership wording without direct proof.",
+        "example": "strategic visionary",
+        "evidence_refs": [
+          "document_expectations.anti_patterns"
+        ],
+        "confidence": {
+          "score": 0.7,
+          "band": "medium",
+          "basis": "Leadership-overclaim anti-pattern prior.",
+          "evidence_summary": "Leadership-overclaim anti-pattern prior.",
+          "unresolved_items": []
+        }
+      },
+      {
+        "pattern_id": "thought_leader",
+        "pattern": "thought leader",
+        "pattern_kind": "substring",
+        "reason": "Reject status language that implies external authority without evidence.",
+        "example": "thought leader in AI",
+        "evidence_refs": [
+          "document_expectations.anti_patterns"
+        ],
+        "confidence": {
+          "score": 0.69,
+          "band": "medium",
+          "basis": "External-authority anti-pattern prior.",
+          "evidence_summary": "External-authority anti-pattern prior.",
+          "unresolved_items": []
+        }
+      }
+    ],
+    "credibility_ladder_rules": [
+      {
+        "ladder_id": "architecture_first_all_ladder",
+        "applies_to_audience": "all",
+        "ladder": [
+          "architecture",
+          "metric",
+          "stakeholder"
+        ],
+        "fallback_rule_id": "tcer_metrics_scale_claims_metric_cf9e02",
+        "rationale": "Degrade emphasis from strongest proof to safer adjacent proof when evidence is thin.",
+        "evidence_refs": [
+          "document_expectations.proof_order",
+          "pain_point_intelligence.proof_map"
+        ],
+        "confidence": {
+          "score": 0.71,
+          "band": "medium",
+          "basis": "Role-family credibility ladder prior.",
+          "evidence_summary": "Role-family credibility ladder prior.",
+          "unresolved_items": []
+        }
+      }
+    ],
+    "topic_coverage": [
+      {
+        "topic_family": "title_inflation",
+        "rule_count": 1,
+        "source": "llm"
+      },
+      {
+        "topic_family": "ai_claims",
+        "rule_count": 2,
+        "source": "llm"
+      },
+      {
+        "topic_family": "leadership_scope",
+        "rule_count": 1,
+        "source": "llm"
+      },
+      {
+        "topic_family": "architecture_claims",
+        "rule_count": 1,
+        "source": "llm"
+      },
+      {
+        "topic_family": "domain_expertise",
+        "rule_count": 1,
+        "source": "llm"
+      },
+      {
+        "topic_family": "stakeholder_management_claims",
+        "rule_count": 1,
+        "source": "llm"
+      },
+      {
+        "topic_family": "metrics_scale_claims",
+        "rule_count": 1,
+        "source": "llm"
+      },
+      {
+        "topic_family": "credibility_ladder_degradation",
+        "rule_count": 3,
+        "source": "llm"
+      }
+    ],
+    "rationale": "Truth-constrained emphasis rules defaulted deterministically from peer-owned presentation contracts and evidence envelopes.",
+    "unresolved_markers": [
+      "cross_validated_emphasis_rules_default"
+    ],
+    "defaults_applied": [
+      "should_signal_companion_default",
+      "cross_validator_emphasis_rules_default"
+    ],
+    "normalization_events": [],
+    "confidence": {
+      "score": 0.78,
+      "band": "medium",
+      "basis": "Deterministic emphasis-rule priors built from peer contracts and upstream envelopes.",
+      "evidence_summary": "Deterministic emphasis-rule priors built from peer contracts and upstream envelopes.",
+      "unresolved_items": []
+    },
+    "evidence": [
+      {
+        "claim": "Emphasis rules are bounded by title, AI, leadership, architecture, and proof envelopes from the parent presentation contract.",
+        "source_ids": [
+          "document_expectations.proof_order",
+          "cv_shape_expectations.ai_section_policy",
+          "ideal_candidate_presentation_model.acceptable_titles",
+          "experience_dimension_weights.overall_weights"
+        ],
+        "excerpt": null,
+        "basis": null
+      }
+    ],
+    "notes": [
+      "Rules describe claim policy only, never candidate truth or CV prose."
+    ],
+    "debug_context": {
+      "input_summary": {
+        "role_family": "staff_principal_engineer",
+        "seniority": "principal",
+        "ai_intensity": "adjacent",
+        "evaluator_roles_in_scope": [
+          "recruiter",
+          "hiring_manager",
+          "peer_technical"
+        ],
+        "proof_category_frequencies": {
+          "architecture": 1,
+          "metric": 1,
+          "stakeholder": 1
+        },
+        "top_keywords_top10": [
+          "platform",
+          "architecture",
+          "distributed systems",
+          "developer productivity",
+          "ai enablement",
+          "reliability"
+        ],
+        "company_identity_band": "high",
+        "research_status": "completed",
+        "stakeholder_surface_status": "completed",
+        "pain_point_intelligence_status": null
+      },
+      "role_family_emphasis_rule_priors": {
+        "title_inflation": [
+          "tcer_title_inflation_global_d89772"
+        ],
+        "ai_claims": [
+          "tcer_ai_claims_summary_f71451",
+          "tcer_ai_claims_ai_highlights_9d9c47"
+        ],
+        "leadership_scope": [
+          "tcer_leadership_scope_leadership_enablement_68e7fe"
+        ],
+        "architecture_claims": [
+          "tcer_architecture_claims_architecture_6de130"
+        ],
+        "domain_expertise": [
+          "tcer_domain_expertise_domain_46a188"
+        ],
+        "stakeholder_management_claims": [
+          "tcer_stakeholder_management_claims_stakeholder_73c246"
+        ],
+        "metrics_scale_claims": [
+          "tcer_metrics_scale_claims_metric_cf9e02"
+        ],
+        "credibility_ladder_degradation": [
+          "tcer_credibility_ladder_degradation_experience_ba18a9",
+          "tcer_credibility_ladder_degradation_process_f523e2"
+        ]
+      },
+      "title_safety_envelope": {
+        "title_strategy": "closest_truthful",
+        "acceptable_titles": [
+          "Principal Platform Architect, AI Enablement",
+          "Principal Platform Architect"
+        ]
+      },
+      "ai_claim_envelope": {
+        "ai_intensity": "adjacent",
+        "ai_section_policy": "optional",
+        "ai_intensity_cap": 15
+      },
+      "leadership_claim_envelope": {
+        "seniority": "principal",
+        "direct_reports": 0,
+        "leadership_evidence_band": "none"
+      },
+      "architecture_claim_envelope": {
+        "architecture_evidence_band": "strong"
+      },
+      "forbidden_claim_pattern_examples": [
+        "10x engineer",
+        "strategic visionary",
+        "thought leader in AI",
+        "10x engineer",
+        "strategic visionary",
+        "thought leader in AI"
+      ],
+      "defaults_applied": [
+        "should_signal_companion_default",
+        "cross_validator_emphasis_rules_default"
+      ],
+      "normalization_events": [],
+      "richer_output_retained": [],
+      "rejected_output": [],
+      "retry_events": [],
+      "conflict_resolution_log": []
+    },
+    "fail_open_reason": "cross_invariant_suppressed"
+  },
+  "debug": {
+    "preflight": {
+      "role_thesis_priors": {
+        "goal": "architecture_first",
+        "header_density": "proof_dense",
+        "section_order": [
+          "header",
+          "summary",
+          "key_achievements",
+          "core_competencies",
+          "ai_highlights",
+          "projects",
+          "experience",
+          "education"
+        ],
+        "ai_section_policy": "optional",
+        "ats_pressure": "standard",
+        "keyword_placement_bias": "top_heavy",
+        "format_rules": [
+          "single_column",
+          "no_tables_in_experience",
+          "plain_bullets"
+        ],
+        "proof_order": [
+          "architecture",
+          "metric",
+          "ai",
+          "leadership"
+        ],
+        "target_roles": [
+          "recruiter",
+          "hiring_manager",
+          "peer_technical"
+        ]
+      },
+      "evaluator_axis_summary": [
+        {
+          "role": "recruiter",
+          "top_review_objectives": [],
+          "top_preferred_evidence_types": [],
+          "reject_signals": [],
+          "ai_section_preference": "unresolved"
+        },
+        {
+          "role": "hiring_manager",
+          "top_review_objectives": [
+            "Verify architecture judgment",
+            "Verify platform reliability ownership"
+          ],
+          "top_preferred_evidence_types": [
+            "named_systems",
+            "metrics",
+            "governance_examples"
+          ],
+          "reject_signals": [
+            "AI hype without shipped platform evidence."
+          ],
+          "ai_section_preference": "embedded_if_adjacent"
+        },
+        {
+          "role": "peer_technical",
+          "top_review_objectives": [],
+          "top_preferred_evidence_types": [],
+          "reject_signals": [],
+          "ai_section_preference": "unresolved"
+        }
+      ],
+      "proof_order_candidates": [
+        "architecture",
+        "metric",
+        "stakeholder"
+      ],
+      "ats_envelope_profile": {
+        "pressure": "standard",
+        "keyword_placement_bias": "top_heavy",
+        "format_rules": [
+          "single_column",
+          "no_tables_in_experience",
+          "plain_bullets"
+        ]
+      }
+    },
+    "raw_outputs": {
+      "document_expectations": null,
+      "cv_shape_expectations": null,
+      "ideal_candidate": null,
+      "experience_dimension_weights": null,
+      "truth_constrained_emphasis_rules": null
+    }
+  },
+  "unresolved_questions": [
+    "truth_constrained_emphasis_rules used deterministic defaults for some claim-policy decisions."
+  ],
+  "notes": [
+    "presentation_contract now ships 4.2.2 document/shape, 4.2.4 ideal-candidate framing, 4.2.5 experience-dimension weights, and 4.2.6 truth-constrained emphasis rules.",
+    "presentation_contract cross-validation fell back to deterministic defaults: 1 validation error for PresentationContractDoc\n  Value error, experience_dimension_weights must keep ideal_candidate must-signal dimensions at >=10 or record unresolved markers: architecture_system_design [type=value_error, input_value={'job_id': 'fixture-low-a...x', 'model': 'gpt-5.4'}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+  ],
+  "timing": {
+    "generated_at": "2026-04-25T15:47:30+00:00"
+  },
+  "usage": {
+    "provider": "codex",
+    "model": "gpt-5.4"
+  },
+  "cache_refs": {},
+  "trace_ref": {
+    "trace_id": null,
+    "trace_url": null
+  }
+}

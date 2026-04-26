@@ -6,7 +6,6 @@ HTML documents for PDF rendering via Playwright.
 """
 
 import re
-from typing import Optional
 
 
 def sanitize_for_path(text: str) -> str:

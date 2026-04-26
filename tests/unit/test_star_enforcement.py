@@ -5,19 +5,20 @@ Tests the STAR validation, correction prompts, and retry logic
 that ensures all CV bullets follow the STAR format.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+
+from src.layer6_v2.prompts.role_generation import (
+    STAR_CORRECTION_SYSTEM_PROMPT,
+    build_star_correction_user_prompt,
+)
 from src.layer6_v2.role_qa import RoleQA
 from src.layer6_v2.types import (
     GeneratedBullet,
     RoleBullets,
     STARResult,
 )
-from src.layer6_v2.prompts.role_generation import (
-    STAR_CORRECTION_SYSTEM_PROMPT,
-    build_star_correction_user_prompt,
-)
-
 
 # ===== STAR Format Detection Tests =====
 

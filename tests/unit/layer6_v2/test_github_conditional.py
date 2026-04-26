@@ -5,7 +5,6 @@ Tests the hybrid logic that determines whether to include GitHub
 in the CV header based on job title and JD content analysis.
 """
 
-import pytest
 from src.layer6_v2.orchestrator import should_include_github
 
 

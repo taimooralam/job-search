@@ -6,16 +6,15 @@ Tests form scraping, LLM field extraction, caching, and answer generation integr
 
 import json
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.services.form_scraper_service import (
-    FormScraperService,
-    FormExtractionOutput,
     ExtractedFormField,
+    FormExtractionOutput,
+    FormScraperService,
 )
-
 
 # ===== FIXTURES =====
 

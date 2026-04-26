@@ -24,15 +24,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from src.common.unified_llm import UnifiedLLM, LLMResult
 from src.common.llm_config import TierType
 from src.common.mena_detector import MenaContext, detect_mena_region
+from src.common.unified_llm import LLMResult, UnifiedLLM
 from src.layer6_v2.prompts.outreach_prompts import (
     CONNECTION_CHAR_LIMIT,
-    EMAIL_MAX_WORDS,
-    EMAIL_MIN_WORDS,
-    INMAIL_MAX_CHARS,
-    INMAIL_MIN_CHARS,
     build_outreach_system_prompt,
     build_outreach_user_prompt,
     validate_connection_message,
@@ -177,7 +173,7 @@ class ClaudeOutreachService:
         # Build persona from job context
         persona_statement = job_context.get(
             "persona_statement",
-            f"Senior engineering leader with expertise in building high-performing teams"
+            "Senior engineering leader with expertise in building high-performing teams"
         )
         core_strengths = job_context.get(
             "core_strengths",

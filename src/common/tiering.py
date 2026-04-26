@@ -10,9 +10,9 @@ Design Philosophy:
 - Lower tiers skip expensive operations (contacts, full CV) entirely
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Literal
+from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, Optional
 
 
 class ProcessingTier(str, Enum):

@@ -11,19 +11,20 @@ Usage:
     python scripts/analyze_role_patterns.py
 """
 
+import json
 import os
 import sys
-import json
-from pathlib import Path
-from typing import Dict, List, Any
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from pymongo import MongoClient
@@ -730,7 +731,7 @@ def save_raw_data(role_data: Dict[str, Dict[str, Any]]):
         }
 
     output_file = REPORTS_DIR / "role-analysis-raw.json"
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
     print(f"   ✓ Saved raw data to {output_file.name}")
 

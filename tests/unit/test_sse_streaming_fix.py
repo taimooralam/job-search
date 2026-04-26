@@ -12,17 +12,15 @@ Key changes tested:
 """
 
 import asyncio
-import json
-import pytest
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 
-from src.services.full_extraction_service import FullExtractionService
-from src.services.company_research_service import CompanyResearchService
-from src.services.cv_generation_service import CVGenerationService
+import pytest
+
 from src.common.model_tiers import ModelTier
 from src.layer1_4.jd_processor import LLMMetadata
-
+from src.services.company_research_service import CompanyResearchService
+from src.services.cv_generation_service import CVGenerationService
+from src.services.full_extraction_service import FullExtractionService
 
 # ===== FIXTURES =====
 
@@ -108,7 +106,7 @@ class TestAsyncEmitProgress:
              patch.object(service, '_persist_results', return_value=True):
 
             # Execute with progress callback
-            result = await service.execute(
+            await service.execute(
                 job_id=str(mock_job_doc["_id"]),
                 tier=ModelTier.FAST,
                 progress_callback=mock_progress_callback
@@ -202,7 +200,7 @@ class TestAsyncEmitProgress:
              patch.object(service, '_persist_research', return_value=True):
 
             # Execute with progress callback
-            result = await service.execute(
+            await service.execute(
                 job_id=str(mock_job_doc["_id"]),
                 tier=ModelTier.FAST,
                 force_refresh=False,
@@ -241,7 +239,7 @@ class TestAsyncEmitProgress:
             mock_cv_gen.return_value = mock_generator
 
             # Execute with progress callback
-            result = await service.execute(
+            await service.execute(
                 job_id=str(mock_job_doc["_id"]),
                 tier=ModelTier.FAST,
                 progress_callback=mock_progress_callback
@@ -294,10 +292,10 @@ class TestSSEGeneratorPollInterval:
     async def test_sse_generator_delivers_logs_quickly(self):
         """SSE generator delivers logs promptly for responsive UI updates."""
         from runner_service.routes.operation_streaming import (
-            stream_operation_logs,
-            create_operation_run,
             _operation_runs,
             append_operation_log,
+            create_operation_run,
+            stream_operation_logs,
         )
 
         # Create a test operation run
@@ -402,8 +400,9 @@ class TestFlaskProxyStreaming:
 
     def test_stream_logs_handles_connection_errors(self):
         """Flask proxy handles connection errors gracefully."""
-        from frontend.runner import stream_logs
         import requests
+
+        from frontend.runner import stream_logs
 
         with patch('frontend.runner.requests.get', side_effect=requests.exceptions.ConnectionError):
             from flask import Flask
@@ -478,7 +477,7 @@ class TestSSEStreamingIntegration:
              patch.object(service, '_run_layer_2', side_effect=delayed_layer_2), \
              patch.object(service, '_persist_results', return_value=True):
 
-            start_time = asyncio.get_event_loop().time()
+            asyncio.get_event_loop().time()
 
             await service.execute(
                 job_id=str(mock_job_doc["_id"]),

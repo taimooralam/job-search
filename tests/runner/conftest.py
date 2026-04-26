@@ -3,7 +3,7 @@ Pytest fixtures for runner service tests.
 """
 
 import os
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 
 # IMPORTANT: Set environment variables BEFORE any imports from runner_service
 # to ensure RunnerSettings is configured correctly when first loaded.

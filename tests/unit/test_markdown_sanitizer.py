@@ -4,15 +4,14 @@ Unit Tests for Markdown Sanitizer (GAP-006).
 Tests the markdown removal functionality for clean CV output.
 """
 
-import pytest
 
 from src.common.markdown_sanitizer import (
-    sanitize_markdown,
-    sanitize_cv_text,
-    sanitize_bullet_text,
-    remove_bold_markers,
-    format_cv_section_header,
     format_cv_job_title,
+    format_cv_section_header,
+    remove_bold_markers,
+    sanitize_bullet_text,
+    sanitize_cv_text,
+    sanitize_markdown,
 )
 
 

@@ -5,9 +5,8 @@ Tests the role-based skills taxonomy system that replaces
 LLM-generated categories with pre-defined, curated sections.
 """
 
+
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from src.layer6_v2.skills_taxonomy import (
     SkillsTaxonomy,
@@ -15,12 +14,11 @@ from src.layer6_v2.skills_taxonomy import (
     create_taxonomy_generator,
 )
 from src.layer6_v2.types import (
-    TaxonomySection,
     RoleSkillsTaxonomy,
     SectionScore,
     SkillScore,
-    SkillEvidence,
     SkillsSection,
+    TaxonomySection,
 )
 
 

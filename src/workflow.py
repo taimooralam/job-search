@@ -9,15 +9,17 @@ import os
 import time
 import uuid
 from datetime import datetime
-from typing import Dict, Any
-from langgraph.graph import StateGraph, END
+from typing import Any, Dict
+
+from langgraph.graph import END, StateGraph
+
 from src.common.config import Config
-from src.common.state import JobState, ProgressCallback
-from src.common.logger import setup_logging, get_logger
-from src.common.structured_logger import get_structured_logger, StructuredLogger
-from src.common.token_tracker import get_global_tracker
-from src.common.llm_factory import set_run_context, clear_run_context
 from src.common.database import DatabaseClient
+from src.common.llm_factory import clear_run_context, set_run_context
+from src.common.logger import get_logger, setup_logging
+from src.common.state import JobState, ProgressCallback
+from src.common.structured_logger import get_structured_logger
+from src.common.token_tracker import get_global_tracker
 
 # Initialize logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -477,7 +479,7 @@ def run_pipeline(
             else:
                 serializable_state[key] = value
 
-        state_output_path.write_text(json.dumps(serializable_state, indent=2, default=str))
+        state_output_path.write_text(json.dumps(serializable_state, indent=2, default=str), encoding="utf-8")
         run_logger.info(f"[StateFile] ✓ Pipeline state written to: {state_output_path}")
     except Exception as e:
         run_logger.error(f"[StateFile] ✗ Failed to write pipeline state: {e}", exc_info=True)

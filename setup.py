@@ -4,7 +4,7 @@ Setup script for job-search project.
 Allows development installation with `pip install -e .`
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="job-search",

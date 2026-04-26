@@ -10,7 +10,10 @@ import pytest
 from src.common.dedupe import generate_dedupe_key
 from src.pipeline.discovery import SearchDiscoveryStore
 from src.pipeline.queue import WorkItemQueue
-from src.pipeline.selector_common import compute_main_selector_plan, compute_profile_selector_plan, load_selector_profiles
+from src.pipeline.selector_common import (
+    compute_profile_selector_plan,
+    load_selector_profiles,
+)
 from src.pipeline.selector_scheduler import SelectorFeatureFlags, SelectorScheduler
 from src.pipeline.selector_store import SelectorStore
 from src.pipeline.selector_worker import NativeSelectorWorker

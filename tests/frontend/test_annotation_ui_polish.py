@@ -13,10 +13,8 @@ of JavaScript functions, CSS classes, and HTML patterns without running
 the actual JavaScript code.
 """
 
-import pytest
 import re
 from pathlib import Path
-
 
 # File paths
 JS_FILE = Path(__file__).parent.parent.parent / "frontend" / "static" / "js" / "jd-annotation.js"

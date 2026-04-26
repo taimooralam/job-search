@@ -9,8 +9,9 @@ Log formats to detect:
 - Backend= format: backend=langchain, backend=claude_cli
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 class TestDetectBackendFromText:
@@ -20,7 +21,7 @@ class TestDetectBackendFromText:
     def cli_panel_js(self):
         """Read the CLI panel JavaScript file."""
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_function_exists(self, cli_panel_js):
@@ -121,7 +122,7 @@ class TestGetBackendStatsUsesDetection:
     def cli_panel_js(self):
         """Read the CLI panel JavaScript file."""
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_getbackendstats_uses_detectbackendfromtext(self, cli_panel_js):
@@ -151,7 +152,7 @@ class TestTemplateBackendBadges:
     def cli_panel_template(self):
         """Read the CLI panel template file."""
         template_path = Path(__file__).parent.parent.parent / "frontend/templates/components/cli_panel.html"
-        with open(template_path, 'r') as f:
+        with open(template_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_template_uses_detected_backend_variable(self, cli_panel_template):
@@ -185,7 +186,7 @@ class TestSubscribeToLogsBackendExtraction:
     def cli_panel_js(self):
         """Read the CLI panel JavaScript file."""
         cli_panel_path = Path(__file__).parent.parent.parent / "frontend/static/js/cli-panel.js"
-        with open(cli_panel_path, 'r') as f:
+        with open(cli_panel_path, 'r', encoding="utf-8") as f:
             return f.read()
 
     def test_onlog_extracts_backend(self, cli_panel_js):

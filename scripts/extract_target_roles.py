@@ -6,17 +6,19 @@ Saves results incrementally in batches.
 
 import asyncio
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from bson import ObjectId
 from pymongo import MongoClient, UpdateOne
+
 from src.common.config import Config
 from src.layer1_4.claude_jd_extractor import JDExtractor
 
@@ -128,11 +130,6 @@ async def main():
     print(f"Rate: {total_succeeded/duration*60:.1f} jobs/min")
 
     # Role category distribution
-    pipeline = [
-        {'$match': {**QUERY, 'extracted_jd': {'$type': 'object'}}},
-        {'$group': {'_id': '$extracted_jd.role_category', 'count': {'$sum': 1}}},
-        {'$sort': {'count': -1}}
-    ]
     # Remove the extraction filter for final query
     final_query = {
         'title': QUERY['title'],

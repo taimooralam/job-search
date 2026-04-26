@@ -4,14 +4,13 @@ Tests for CV Editor Phase 2 - Conversion Functions
 Tests the TipTap JSON to HTML converter and Markdown to TipTap JSON migration.
 """
 
-import pytest
-import sys
 import os
+import sys
 
 # Add frontend directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../frontend'))
 
-from app import tiptap_json_to_html, migrate_cv_text_to_editor_state
+from app import migrate_cv_text_to_editor_state, tiptap_json_to_html
 
 
 class TestTipTapJSONToHTML:

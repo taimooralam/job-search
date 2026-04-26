@@ -1,7 +1,8 @@
 """Tests for the title sanitizer regex pass."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from src.layer6_v2.title_sanitizer import sanitize_job_title, sanitize_job_title_llm
 

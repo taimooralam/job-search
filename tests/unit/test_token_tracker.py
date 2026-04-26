@@ -2,26 +2,27 @@
 Unit tests for src/common/token_tracker.py
 """
 
-import pytest
 import threading
 import time
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
+import pytest
 from langchain_core.messages import AIMessage
-from langchain_core.outputs import LLMResult, Generation
+from langchain_core.outputs import Generation, LLMResult
 
 from src.common.token_tracker import (
+    TOKEN_COSTS_PER_MILLION,
+    BudgetExceededError,
+    Provider,
+    RunCostSummary,
+    RunCostTracker,
     TokenTracker,
+    TokenTrackingCallback,
     TokenUsage,
     UsageSummary,
-    BudgetExceededError,
-    TokenTrackingCallback,
-    Provider,
-    TOKEN_COSTS_PER_MILLION,
     get_global_tracker,
     reset_global_tracker,
-    RunCostTracker,
-    RunCostSummary,
 )
 
 
@@ -958,7 +959,7 @@ class TestPerRunTracking:
         assert output_path.exists()
 
         import json
-        with open(output_path) as f:
+        with open(output_path, encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["run_id"] == "run_1"

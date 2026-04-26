@@ -4,8 +4,9 @@ Integration tests for runner service.
 These tests use mocked pipeline execution but test the full request/response cycle.
 """
 
-import pytest
 import time
+
+import pytest
 from fastapi.testclient import TestClient
 
 

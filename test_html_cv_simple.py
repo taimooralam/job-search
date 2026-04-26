@@ -10,9 +10,10 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.layer6.html_cv_generator import HTMLCVGenerator
-from src.common.state import JobState
 from pydantic import BaseModel
+
+from src.common.state import JobState
+from src.layer6.html_cv_generator import HTMLCVGenerator
 
 
 class MockCompetencyMix(BaseModel):
@@ -98,7 +99,7 @@ def test_html_cv_building():
         # Call the HTML building method directly
         html_content = generator._build_html_cv(state, competency_mix, selected_stars)
 
-        print(f"✅ HTML CV built successfully!")
+        print("✅ HTML CV built successfully!")
         print(f"   Content length: {len(html_content)} characters")
 
         # Verify HTML structure

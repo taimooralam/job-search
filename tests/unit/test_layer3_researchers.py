@@ -10,25 +10,18 @@ Tests Phase 5.1 (Company Researcher) and Phase 5.2 (Role Researcher):
 """
 
 import json
-import pytest
-from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from src.common.unified_llm import LLMResult
-
-
 from src.layer3.company_researcher import (
     CompanyResearcher,
     CompanyResearchOutput,
-    CompanySignalModel,
-    company_researcher_node
+    company_researcher_node,
 )
-from src.layer3.role_researcher import (
-    RoleResearcher,
-    RoleResearchOutput,
-    role_researcher_node
-)
-
+from src.layer3.role_researcher import RoleResearcher, RoleResearchOutput, role_researcher_node
 
 # ===== FIXTURES =====
 
@@ -595,7 +588,7 @@ class TestRoleResearcherWithMockedLLM:
         }
 
         # Mock LLM to return valid role research JSON
-        mock_llm = MagicMock()
+        MagicMock()
         mock_response = MagicMock()
         mock_response.content = json.dumps(valid_role_research_json)
         mock_invoke.return_value = mock_response

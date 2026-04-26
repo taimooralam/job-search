@@ -8,14 +8,12 @@ Validates:
 - Stage satisfies StageBase protocol
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 from dataclasses import dataclass
 from typing import Any, Optional
+from unittest.mock import patch
 
-from src.preenrich.types import StageContext, StepConfig
 from src.preenrich.stages.base import StageBase
-
+from src.preenrich.types import StageContext, StepConfig
 
 # ---------------------------------------------------------------------------
 # Minimal mocks for layer1_4 dependency

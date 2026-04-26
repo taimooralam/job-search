@@ -11,18 +11,13 @@ Tests Phase 7 deliverables:
 """
 
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
 from pydantic import ValidationError
 
-from src.layer5.people_mapper import (
-    PeopleMapper,
-    people_mapper_node,
-    ContactModel,
-    PeopleMapperOutput
-)
 from src.common.config import Config
-
+from src.layer5.people_mapper import ContactModel, PeopleMapper, PeopleMapperOutput, people_mapper_node
 
 # ===== FIXTURES =====
 
@@ -365,7 +360,7 @@ class TestLLMContactClassification:
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_classifies_into_primary_and_secondary(self, mock_invoke, sample_job_state):
         """LLM classifies contacts into primary vs secondary buckets."""
-        mock_llm = MagicMock()
+        MagicMock()
         mock_response = MagicMock()
         mock_response.content = json.dumps({
             "primary_contacts": [
@@ -448,7 +443,7 @@ class TestLLMContactClassification:
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_falls_back_to_role_based_contacts(self, mock_invoke, sample_job_state):
         """Generates role-based contacts when no names found."""
-        mock_llm = MagicMock()
+        MagicMock()
         mock_response = MagicMock()
         mock_response.content = json.dumps({
             "primary_contacts": [
@@ -533,7 +528,7 @@ class TestLLMContactClassification:
             "source": "https://techcorp.com/news"
         })
 
-        mock_llm = MagicMock()
+        MagicMock()
         mock_response = MagicMock()
         mock_response.content = json.dumps({
             "primary_contacts": [
@@ -575,7 +570,7 @@ class TestOutreachPackageGeneration:
     def test_generates_outreach_packages_for_contacts(self, mock_invoke, sample_job_state):
         """Generates OutreachPackage for each primary contact."""
         # Mock outreach generation
-        mock_llm = MagicMock()
+        MagicMock()
         mock_response = MagicMock()
         mock_response.content = json.dumps({
             "linkedin_message": "Hi Sarah! Reduced incidents 75% at AdTech through CI/CD automation. Would love to chat about TechCorp's platform modernization. Coffee?",
@@ -623,7 +618,7 @@ class TestOutreachPackageGeneration:
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_outreach_cites_star_metrics(self, mock_invoke, sample_job_state):
         """Outreach messages cite specific STAR metrics."""
-        mock_llm = MagicMock()
+        MagicMock()
         mock_response = MagicMock()
 
         # Create 150-word email body for Phase 9 validation (100-200 words)
@@ -943,7 +938,7 @@ class TestSkipOutreachParameter:
         mock_researcher = MagicMock()
         mock_claude_researcher_class.return_value = mock_researcher
 
-        mock_llm = MagicMock()
+        MagicMock()
         # mock_invoke is patched at function level
 
         mapper = PeopleMapper()
@@ -976,7 +971,7 @@ class TestSkipOutreachParameter:
         mock_claude_researcher_class.return_value = mock_researcher
 
         # Mock LLM for outreach generation
-        mock_llm = MagicMock()
+        MagicMock()
         outreach_response = MagicMock()
         outreach_response.content = json.dumps({
             "linkedin_connection_message": "Test message.\nBest. Taimoor Alam",
@@ -1006,7 +1001,7 @@ class TestSkipOutreachParameter:
         # Set up agency detection
         sample_job_state["company_research"]["company_type"] = "recruitment_agency"
 
-        mock_llm = MagicMock()
+        MagicMock()
         # mock_invoke is patched at function level
 
         mapper = PeopleMapper()
@@ -1024,7 +1019,7 @@ class TestSkipOutreachParameter:
     @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_skip_outreach_applies_contact_limits(self, mock_invoke, sample_job_state):
         """skip_outreach=True still applies GAP-060 contact limits."""
-        mock_llm = MagicMock()
+        MagicMock()
         # mock_invoke is patched at function level
 
         # Use FireCrawl backend (use_claude_api=False) - FireCrawl disabled, will use synthetic
@@ -1075,7 +1070,7 @@ class TestClaudeAPIDiscoveryBackend:
 
         # Mock LLM for classification - must return valid JSON for Pydantic validation
         # PeopleMapperOutput requires at least 4 primary and 4 secondary contacts
-        mock_llm = MagicMock()
+        MagicMock()
         classification_response = MagicMock()
         classification_response.content = json.dumps({
             "primary_contacts": [

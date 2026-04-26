@@ -12,13 +12,9 @@ Tests cover:
 Phase 4 uses an external PDF service for rendering.
 """
 
-import pytest
-import json
-from datetime import datetime
-from bson import ObjectId
-from unittest.mock import MagicMock, patch, Mock
-from io import BytesIO
+from unittest.mock import Mock, patch
 
+from bson import ObjectId
 
 # ==============================================================================
 # Test Class: PDF Generation Endpoint
@@ -186,7 +182,7 @@ class TestPDFServiceIntegration:
         )
 
         # Act
-        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+        authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
 
         # Assert
         call_kwargs = mock_post.call_args

@@ -25,7 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.common.proxy_pool import fetch_candidates, validate_parallel, save_cache
+from src.common.proxy_pool import fetch_candidates, save_cache, validate_parallel
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,7 +47,7 @@ def load_json_list(path: Path) -> list:
     if not path.exists():
         return []
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
@@ -58,7 +58,7 @@ def load_blocklist() -> set:
     if not BLOCKLIST_PATH.exists():
         return set()
     try:
-        with open(BLOCKLIST_PATH) as f:
+        with open(BLOCKLIST_PATH, encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, IOError):
         return set()
@@ -73,7 +73,7 @@ def save_blocklist(blocked: dict) -> None:
     """Save blocklist with timestamps."""
     try:
         BLOCKLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(BLOCKLIST_PATH, "w") as f:
+        with open(BLOCKLIST_PATH, "w", encoding="utf-8") as f:
             json.dump(blocked, f)
     except IOError as e:
         logger.warning(f"Failed to save blocklist: {e}")
@@ -131,7 +131,7 @@ def main() -> None:
     newly_passing_set = set(newly_passing)
     # Load existing blocklist with timestamps (not just active ones)
     try:
-        with open(BLOCKLIST_PATH) as f:
+        with open(BLOCKLIST_PATH, encoding="utf-8") as f:
             blocklist_data = json.load(f)
     except (json.JSONDecodeError, IOError, FileNotFoundError):
         blocklist_data = {}

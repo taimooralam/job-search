@@ -6,25 +6,25 @@ Covers web search integration via invoke_unified_sync, schema validation, error 
 """
 
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
 from pydantic import ValidationError
 
 from src.common.claude_web_research import (
+    CLAUDE_MODEL_TIERS,
     ClaudeWebResearcher,
-    WebResearchResult,
-    CompanySignalModel,
     CompanyResearchModel,
+    CompanySignalModel,
     ContactModel,
     PeopleResearchModel,
     RoleResearchModel,
+    WebResearchResult,
     research_company,
     research_people,
     research_role,
-    CLAUDE_MODEL_TIERS,
 )
 from src.common.unified_llm import LLMResult
-
 
 # ===== FIXTURES =====
 

@@ -10,11 +10,11 @@ MCP Server: https://mcp.himalayas.app/sse
 
 import logging
 from datetime import datetime
-from typing import Callable, List, Optional, Any, Dict
+from typing import Any, Callable, Dict, List, Optional
 
 import requests
 
-from . import JobSource, JobData
+from . import JobData, JobSource
 
 logger = logging.getLogger(__name__)
 

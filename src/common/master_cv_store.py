@@ -172,7 +172,7 @@ class MasterCVStore:
         # File fallback
         metadata_path = self.data_dir / METADATA_FILE
         if metadata_path.exists():
-            with open(metadata_path, "r") as f:
+            with open(metadata_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return {
                     "version": 1,
@@ -302,7 +302,7 @@ class MasterCVStore:
         # File fallback
         taxonomy_path = self.data_dir / TAXONOMY_FILE
         if taxonomy_path.exists():
-            with open(taxonomy_path, "r") as f:
+            with open(taxonomy_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return {
                     "version": 1,
@@ -435,7 +435,7 @@ class MasterCVStore:
         # File fallback
         role_path = self.data_dir / ROLES_DIR / f"{role_id}.md"
         if role_path.exists():
-            with open(role_path, "r") as f:
+            with open(role_path, "r", encoding="utf-8") as f:
                 content = f.read()
                 return {
                     "role_id": role_id,

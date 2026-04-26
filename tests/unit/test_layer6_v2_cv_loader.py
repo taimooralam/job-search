@@ -10,12 +10,10 @@ Tests loading pre-split CV data from data/master-cv/:
 """
 
 import json
+
 import pytest
-from pathlib import Path
-from unittest.mock import patch, mock_open
 
-from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
-
+from src.layer6_v2.cv_loader import CVLoader
 
 # ===== FIXTURES =====
 
@@ -135,16 +133,16 @@ def mock_data_path(tmp_path, sample_metadata, sample_role_content_current, sampl
 
     # Write metadata
     metadata_file = tmp_path / "role_metadata.json"
-    with open(metadata_file, "w") as f:
+    with open(metadata_file, "w", encoding="utf-8") as f:
         json.dump(sample_metadata, f)
 
     # Write role files
     current_role = roles_dir / "01_current_company.md"
-    with open(current_role, "w") as f:
+    with open(current_role, "w", encoding="utf-8") as f:
         f.write(sample_role_content_current)
 
     previous_role = roles_dir / "02_previous_company.md"
-    with open(previous_role, "w") as f:
+    with open(previous_role, "w", encoding="utf-8") as f:
         f.write(sample_role_content_previous)
 
     return tmp_path
@@ -320,7 +318,7 @@ class TestCVLoaderErrors:
         """Raises error if role file missing."""
         # Create metadata but no role files
         metadata_file = tmp_path / "role_metadata.json"
-        with open(metadata_file, "w") as f:
+        with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(sample_metadata, f)
 
         loader = CVLoader(data_path=tmp_path)
@@ -424,7 +422,7 @@ class TestRealDataIntegration:
         if not loader.metadata_path.exists():
             pytest.skip("Real master-cv data not available")
 
-        candidate = loader.load()
+        loader.load()
 
         # Check if enhanced data is available
         current = loader.get_current_role()
@@ -456,7 +454,7 @@ class TestRealDataIntegration:
         if not loader.metadata_path.exists():
             pytest.skip("Real master-cv data not available")
 
-        candidate = loader.load()
+        loader.load()
         current = loader.get_current_role()
 
         # With enhanced disabled, enhanced_data should be None

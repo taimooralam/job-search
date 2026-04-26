@@ -81,8 +81,8 @@ class JobSource(ABC):
 
 
 # Import concrete implementations for convenience
-from .indeed_source import IndeedSource
-from .himalayas_source import HimalayasSource
 from .bayt_source import BaytSource
+from .himalayas_source import HimalayasSource
+from .indeed_source import IndeedSource
 
 __all__ = ["JobSource", "JobData", "IndeedSource", "HimalayasSource", "BaytSource"]

@@ -24,7 +24,6 @@ Usage:
     )
 """
 
-import asyncio
 import logging
 import warnings
 from dataclasses import dataclass, field
@@ -33,13 +32,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pymongo.database import Database
 
-
 from src.common.dedupe import generate_dedupe_key as _generate_dedupe_key
 from src.common.repositories import (
-    get_job_repository,
     JobRepositoryInterface,
-    get_system_state_repository,
     SystemStateRepositoryInterface,
+    get_job_repository,
+    get_system_state_repository,
 )
 from src.services.job_sources import JobData
 

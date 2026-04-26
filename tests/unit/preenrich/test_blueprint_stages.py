@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from bson import ObjectId
 import pytest
+from bson import ObjectId
 
 from src.preenrich.blueprint_models import GuidelineBlock
 from src.preenrich.blueprint_prompts import build_p_cv_guidelines
@@ -67,6 +67,7 @@ def test_jd_facts_does_not_silently_overwrite_deterministic_fields(monkeypatch):
         job_id: str,
         cwd: str | None = None,
         reasoning_effort: str | None = None,
+        **_kwargs,
     ):
         payload = _sample_extracted_jd()
         payload["title"] = "Changed title"
@@ -115,7 +116,7 @@ def test_application_surface_uses_live_codex_resolution_for_aggregator_only_jobs
     ctx.job_doc["jobUrl"] = "https://linkedin.com/jobs/view/123456"
     ctx.job_doc["application_url"] = "https://linkedin.com/jobs/view/123456"
 
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         payload = {
             "status": "resolved",
             "job_url": "https://linkedin.com/jobs/view/123456",
@@ -184,7 +185,7 @@ def test_application_surface_fail_opens_on_verified_partial_employer_portal(monk
     ctx.job_doc["company"] = "Robson Bale"
     ctx.job_doc["company_url"] = "https://www.robsonbale.com"
 
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         payload = {
             "job_url": "https://linkedin.com/jobs/view/4401620360",
             "canonical_application_url": "https://www.robsonbale.com/jobs/",
@@ -242,7 +243,7 @@ def test_application_surface_rejects_cross_company_live_candidate(monkeypatch):
     ctx.job_doc["company"] = "Robson Bale"
     ctx.job_doc["company_url"] = "https://www.robsonbale.com"
 
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         payload = {
             "job_url": "https://linkedin.com/jobs/view/4401620360",
             "canonical_application_url": "https://jobs.other-company.example.com/123",
@@ -278,7 +279,7 @@ def test_application_surface_preserves_unresolved_but_useful_findings(monkeypatc
     ctx.job_doc["application_url"] = "https://linkedin.com/jobs/view/4401620360"
     ctx.job_doc["company"] = "Robson Bale"
 
-    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None):
+    def _fake_invoke(self, *, prompt: str, job_id: str, validator=None, **_kwargs):
         payload = {
             "job_url": "https://linkedin.com/jobs/view/4401620360",
             "status": "unresolved",
@@ -447,3 +448,68 @@ def test_blueprint_assembly_excludes_hypotheses_from_snapshot_and_preserves_comp
     artifact = result.artifact_writes[0].document
     assert "job_hypotheses_id" in artifact
     assert "job_hypotheses" not in artifact["snapshot"]
+
+
+def test_blueprint_assembly_projects_ideal_candidate_compact_snapshot():
+    ctx = _context()
+    ctx.job_doc["pre_enrichment"]["outputs"] = {
+        "jd_facts": {"merged_view": {"title": "Principal AI Architect"}},
+        "classification": {
+            "primary_role_category": "ai_architect",
+            "secondary_role_categories": [],
+            "search_profiles": [],
+            "selector_profiles": [],
+            "tone_family": "executive",
+            "taxonomy_version": "2026-04-19-v1",
+        },
+        "research_enrichment": {"company_profile": {"summary": "AI company", "company_type": "employer", "url": "https://acme.example.com", "signals": []}},
+        "application_surface": {},
+        "job_inference": {"semantic_role_model": {"role_mandate": "Lead AI architecture."}, "qualifications": {"must_have": []}},
+        "cv_guidelines": {
+            "title_guidance": {"title": "Title", "bullets": ["Lead with architecture"], "evidence_refs": [{"source": "jd_facts"}]},
+            "identity_guidance": {"title": "Identity", "bullets": ["Keep truthful"], "evidence_refs": [{"source": "jd_facts"}]},
+            "bullet_theme_guidance": {"title": "Bullets", "bullets": ["Show impact"], "evidence_refs": [{"source": "jd_facts"}]},
+            "ats_keyword_guidance": {"title": "ATS", "bullets": ["ai", "architecture"], "evidence_refs": [{"source": "jd_facts"}]},
+            "cover_letter_expectations": {"title": "Cover", "bullets": ["Align to mandate"], "evidence_refs": [{"source": "jd_facts"}]},
+        },
+        "presentation_contract": {
+            "status": "completed",
+            "trace_ref": {"trace_id": "trace:pc", "trace_url": "https://langfuse.example/trace:pc"},
+            "document_expectations": {
+                "status": "completed",
+                "primary_document_goal": "architecture_first",
+                "confidence": {"score": 0.8, "band": "high"},
+            },
+            "cv_shape_expectations": {
+                "status": "completed",
+                "section_order": ["header", "summary", "experience"],
+                "ai_section_policy": "required",
+                "confidence": {"score": 0.77, "band": "medium"},
+            },
+            "ideal_candidate_presentation_model": {
+                "status": "completed",
+                "acceptable_titles": ["Principal AI Architect", "Architect, AI Platforms"],
+                "must_signal": [{"tag": "architecture_judgment"}],
+                "should_signal": [{"tag": "ai_depth"}],
+                "de_emphasize": [{"tag": "tool_listing"}],
+                "proof_ladder": [{"proof_category": "architecture", "signal_tag": "architecture_judgment"}],
+                "audience_variants": {"recruiter": {}, "hiring_manager": {}},
+                "credibility_markers": [{"marker": "named_systems"}],
+                "risk_flags": [{"flag": "generic_ai_claim"}],
+                "defaults_applied": [],
+                "unresolved_markers": [],
+                "title_strategy": "closest_truthful",
+                "confidence": {"score": 0.74, "band": "medium"},
+            },
+        },
+        "annotations": {"annotations": []},
+        "persona_compat": {"status": "skipped"},
+    }
+
+    result = BlueprintAssemblyStage().run(ctx)
+    compact = result.stage_output["snapshot"]["presentation_contract"]["ideal_candidate"]
+    compact_v2 = result.stage_output["snapshot"]["presentation_contract_compact"]["ideal_candidate"]
+    assert compact["acceptable_titles_count"] == 2
+    assert compact["proof_ladder_length"] == 1
+    assert compact["trace_ref"]["trace_id"] == "trace:pc"
+    assert compact_v2 == compact

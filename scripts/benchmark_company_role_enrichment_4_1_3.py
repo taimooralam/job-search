@@ -75,7 +75,7 @@ def compare_company_role_enrichment(gold: dict[str, Any], candidate: dict[str, A
             company.canonical_url and company.canonical_url == gold_company.get("canonical_url"),
         )
     )
-    role_summary_actual = company_role_summary = role.summary or role.role_summary
+    role_summary_actual = role.summary or role.role_summary
     role_summary_gold = gold_role.get("summary") or gold_role.get("role_summary")
     company_summary_gold = gold_company.get("summary")
     status_gold = gold.get("status") or "partial"

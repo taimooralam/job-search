@@ -14,10 +14,9 @@ Usage:
 
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple
-from collections import defaultdict
+from typing import Dict, List, Tuple
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -83,7 +82,7 @@ class RolePattern:
 def load_jd_patterns() -> Dict[str, RolePattern]:
     """Load aggregated JD patterns."""
     pattern_file = PROJECT_ROOT / "reports" / "jd-pattern-analysis.json"
-    with open(pattern_file) as f:
+    with open(pattern_file, encoding="utf-8") as f:
         data = json.load(f)
 
     patterns = {}
@@ -103,7 +102,7 @@ def load_jd_patterns() -> Dict[str, RolePattern]:
 
 def parse_achievements_from_file(file_path: Path) -> List[Achievement]:
     """Parse achievements from a role markdown file."""
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
 
     achievements = []
@@ -341,7 +340,7 @@ def main():
     }
 
     output_file = PROJECT_ROOT / "reports" / "bullet-analysis-raw.json"
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
 
     print(f"\nSaved raw analysis to {output_file}")
@@ -354,7 +353,7 @@ def main():
     for role, data in analysis.items():
         print(f"\n## {role.upper().replace('_', ' ')} ({data['job_count']} jobs)")
         print(f"   Format: {data['format_recommendation'].get('primary', 'N/A')}")
-        print(f"   Top 3 Achievements:")
+        print("   Top 3 Achievements:")
         for ach in data["top_5"][:3]:
             print(f"     - {ach['title'][:50]} (score: {ach['overall_score']})")
         print(f"   Keyword Coverage: {gaps[role]['coverage_rate']:.1f}%")

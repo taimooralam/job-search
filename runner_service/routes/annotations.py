@@ -23,10 +23,10 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from .operation_streaming import (
-    create_operation_run,
     create_log_callback,
-    update_operation_status,
+    create_operation_run,
     get_operation_state,
+    update_operation_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -354,7 +354,7 @@ async def get_annotation_priors() -> PriorsStatsResponse:
         PriorsStatsResponse with priors statistics
     """
     try:
-        from src.services.annotation_priors import load_priors, get_priors_stats
+        from src.services.annotation_priors import get_priors_stats, load_priors
 
         priors = load_priors()
         stats = get_priors_stats(priors)
@@ -435,8 +435,8 @@ async def capture_annotation_feedback(request: FeedbackRequest) -> FeedbackRespo
     """
     try:
         from src.services.annotation_priors import (
-            load_priors,
             capture_feedback,
+            load_priors,
             save_priors,
         )
 

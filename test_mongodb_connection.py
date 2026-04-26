@@ -11,6 +11,7 @@ Usage:
 import os
 import sys
 import time
+
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
@@ -33,7 +34,7 @@ def test_connection_with_retry():
     max_retries = 3
     retry_delay = 2  # seconds
 
-    print(f"🔍 Testing MongoDB connection...")
+    print("🔍 Testing MongoDB connection...")
     print(f"   URI: {uri_display}")
     print()
 
@@ -61,13 +62,13 @@ def test_connection_with_retry():
                 # Test database access
                 db = client["jobs"]
                 collections = db.list_collection_names()
-                print(f"✅ Database 'jobs' accessible")
+                print("✅ Database 'jobs' accessible")
                 print(f"   Collections: {', '.join(collections[:5])}" + ("..." if len(collections) > 5 else ""))
                 print()
 
                 # Test query
                 level2_count = db["level-2"].count_documents({})
-                print(f"✅ Query test successful")
+                print("✅ Query test successful")
                 print(f"   level-2 collection: {level2_count} documents")
                 print()
 
@@ -83,7 +84,7 @@ def test_connection_with_retry():
             )
 
             if is_dns_error:
-                print(f"⚠️  DNS resolution failed")
+                print("⚠️  DNS resolution failed")
                 if attempt < max_retries - 1:
                     print(f"   Retrying in {retry_delay}s...")
                     print()
@@ -115,13 +116,13 @@ def test_connection_with_retry():
                     print()
                     return False
             else:
-                print(f"❌ MongoDB connection error (non-DNS):")
+                print("❌ MongoDB connection error (non-DNS):")
                 print(f"   {error_str[:200]}...")
                 print()
                 return False
 
         except Exception as e:
-            print(f"❌ Unexpected error:")
+            print("❌ Unexpected error:")
             print(f"   {type(e).__name__}: {str(e)[:200]}...")
             print()
             return False

@@ -10,14 +10,13 @@ This module enforces quality standards on annotations before they can be saved:
 These rules ensure that annotations are actionable and complete.
 """
 
-from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 from src.common.annotation_types import (
     JDAnnotation,
     JDAnnotations,
-    TextSpan,
 )
 
 
@@ -393,9 +392,9 @@ def calculate_annotation_boost(annotation: JDAnnotation) -> Tuple[float, Dict]:
         Tuple of (boost_factor, metadata_dict)
     """
     from src.common.annotation_types import (
+        PRIORITY_MULTIPLIERS,
         RELEVANCE_MULTIPLIERS,
         REQUIREMENT_MULTIPLIERS,
-        PRIORITY_MULTIPLIERS,
         TYPE_MODIFIERS,
     )
 

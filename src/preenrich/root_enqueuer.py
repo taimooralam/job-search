@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 from pymongo import ReturnDocument
 
 from src.pipeline.queue import WorkItemQueue
 from src.pipeline.tracing import emit_standalone_event
-from src.preenrich.blueprint_config import current_dag_version, current_input_snapshot_id, taxonomy_version, validate_blueprint_feature_flags
+from src.preenrich.blueprint_config import (
+    current_dag_version,
+    current_input_snapshot_id,
+    taxonomy_version,
+    validate_blueprint_feature_flags,
+)
 from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.schema import idempotency_key
 from src.preenrich.stage_registry import get_stage_definition, iter_stage_definitions

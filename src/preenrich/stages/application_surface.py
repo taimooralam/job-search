@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from typing import Any, List
 
 from src.preenrich.blueprint_config import web_research_enabled
-from src.preenrich.blueprint_prompts import build_p_application_surface, build_p_transport_preamble
 from src.preenrich.blueprint_models import (
     ApplicationSurfaceDoc,
     ConfidenceDoc,
@@ -14,6 +13,7 @@ from src.preenrich.blueprint_models import (
     SourceEntry,
     normalize_application_surface_payload,
 )
+from src.preenrich.blueprint_prompts import build_p_application_surface, build_p_transport_preamble
 from src.preenrich.research_transport import CodexResearchTransport
 from src.preenrich.stages.blueprint_common import (
     AGGREGATOR_HOST_TOKENS,
@@ -351,6 +351,9 @@ class ApplicationSurfaceStage:
                     prompt=prompt,
                     job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "application-surface"),
                     validator=lambda payload: ApplicationSurfaceDoc.model_validate(normalize_application_surface_payload(payload)),
+                    tracer=ctx.tracer,
+                    stage_name=ctx.stage_name or "application_surface",
+                    substage="live_lookup",
                 )
                 provider_used = result.provider_used
                 model_used = result.model_used

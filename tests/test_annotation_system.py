@@ -7,45 +7,38 @@ Tests cover:
 3. jd_processor.py - JD structuring into annotatable sections
 """
 
-import pytest
 from datetime import datetime
 from uuid import uuid4
 
+import pytest
+
 from src.common.annotation_types import (
-    JDAnnotation,
-    JDAnnotations,
-    TextSpan,
-    AnnotationSettings,
-    ConcernAnnotation,
+    PRIORITY_MULTIPLIERS,
+    RELEVANCE_COLORS,
     RELEVANCE_MULTIPLIERS,
     REQUIREMENT_MULTIPLIERS,
-    PRIORITY_MULTIPLIERS,
-    TYPE_MODIFIERS,
-    RELEVANCE_COLORS,
+    JDAnnotation,
+    TextSpan,
 )
 from src.common.annotation_validator import (
+    ValidationSeverity,
+    aggregate_annotation_boosts,
+    calculate_annotation_boost,
+    validate_annotations,
     validate_core_strength_has_star,
     validate_gap_has_mitigation,
     validate_must_have_gap_warning,
     validate_no_overlapping_spans,
     validate_single_annotation,
-    validate_annotations,
-    calculate_annotation_boost,
-    aggregate_annotation_boosts,
-    ValidationSeverity,
-    ValidationResult,
 )
 from src.layer1_4.jd_processor import (
-    process_jd_sync,
     JDSectionType,
     detect_section_type,
-    split_into_items,
-    parse_jd_sections_rule_based,
-    generate_processed_html,
-    processed_jd_to_dict,
     dict_to_processed_jd,
+    process_jd_sync,
+    processed_jd_to_dict,
+    split_into_items,
 )
-
 
 # =============================================================================
 # FIXTURES

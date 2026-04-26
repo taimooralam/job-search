@@ -6,8 +6,8 @@ and removes the jobId from the queue only if the run completes successfully.
 """
 
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import List, Tuple
 
 # Ensure project root on path
@@ -15,9 +15,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.run_pipeline import load_candidate_profile, load_job_from_mongo  # noqa: E402
 from src.common.config import Config  # noqa: E402
 from src.workflow import run_pipeline  # noqa: E402
-from scripts.run_pipeline import load_candidate_profile, load_job_from_mongo  # noqa: E402
 
 
 def read_job_ids(queue_path: Path) -> List[str]:

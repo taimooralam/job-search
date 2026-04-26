@@ -5,8 +5,10 @@ Provides mock_db fixture that properly mocks the repository pattern
 used by frontend/app.py after the repository migration.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 # Import from frontend repositories (works on Vercel) or fallback to src
 try:
     from repositories.base import WriteResult

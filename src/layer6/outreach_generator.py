@@ -16,11 +16,10 @@ Phase 9 master-cv.md integration:
 
 import logging
 import re
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
 
-from src.common.state import JobState, Contact, OutreachPackage
-from src.common.config import Config
-from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.state import Contact, JobState, OutreachPackage
+from src.common.structured_logger import LayerContext, get_structured_logger
 from src.layer6.cover_letter_generator import _extract_companies_from_profile
 
 

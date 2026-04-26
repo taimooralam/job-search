@@ -9,21 +9,20 @@ Validates:
 Covers plan §3.2 manual execution rules.
 """
 
-import pytest
 from datetime import datetime, timezone
-from bson import ObjectId
 from unittest.mock import MagicMock, patch
 
 import mongomock
+import pytest
+from bson import ObjectId
 
+from src.preenrich.dispatcher import PrerequisiteNotMet, single_stage
 from src.preenrich.types import (
     StageContext,
     StageResult,
     StageStatus,
     StepConfig,
 )
-from src.preenrich.dispatcher import single_stage, PrerequisiteNotMet
-
 
 WORKER_ID = "manual-op-worker"
 
@@ -213,7 +212,7 @@ def test_manual_stage_writes_through_dispatcher(mock_db):
     ctx = _make_ctx(job)
     stage = _make_stage("jd_structure", output={"processed_jd_sections": ["sec1"]})
 
-    result = single_stage(mock_db, ctx, stage, WORKER_ID)
+    single_stage(mock_db, ctx, stage, WORKER_ID)
 
     doc = mock_db["level-2"].find_one({"_id": job["_id"]})
     # Dispatcher wrote stage metadata to Mongo

@@ -15,25 +15,27 @@ Usage:
     python scripts/test_single_jd_extraction.py
 """
 
-import os
-import sys
-import re
 import logging
-from pathlib import Path
-from typing import Optional, Dict, Any
+import os
+import re
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from pymongo import MongoClient
+
 from src.common.config import Config
-from src.layer1_4.claude_jd_extractor import JDExtractor, ExtractionResult
 from src.common.llm_config import STEP_CONFIGS, StepConfig
+from src.layer1_4.claude_jd_extractor import ExtractionResult, JDExtractor
 
 # Configure logging
 logging.basicConfig(
@@ -74,7 +76,7 @@ def step_1_verify_mongodb_connection() -> Optional[MongoClient]:
 
         # Force connection to verify
         client.admin.command('ping')
-        print(f"✅ Connected to MongoDB")
+        print("✅ Connected to MongoDB")
 
         # Access jobs database and level-2 collection
         jobs_db = client['jobs']
@@ -85,8 +87,8 @@ def step_1_verify_mongodb_connection() -> Optional[MongoClient]:
         with_extraction = level2.count_documents({"extracted_jd": {"$exists": True, "$ne": None}})
         with_description = level2.count_documents({"description": {"$exists": True, "$ne": ""}})
 
-        print(f"   Database: jobs")
-        print(f"   Collection: level-2")
+        print("   Database: jobs")
+        print("   Collection: level-2")
         print(f"   Total jobs: {total_jobs:,}")
         print(f"   With description: {with_description:,}")
         print(f"   Already extracted: {with_extraction:,}")
@@ -148,7 +150,7 @@ def step_2_find_sample_job(client: MongoClient) -> Optional[Dict[str, Any]]:
         })
 
     if sample:
-        print(f"✅ Found sample job:")
+        print("✅ Found sample job:")
         print(f"   ID: {sample['_id']}")
         print(f"   Title: {sample.get('title', 'N/A')}")
         print(f"   Company: {sample.get('company', 'N/A')}")
@@ -160,7 +162,7 @@ def step_2_find_sample_job(client: MongoClient) -> Optional[Dict[str, Any]]:
                 print(f"   Matched role: {role_key}")
                 break
         else:
-            print(f"   Matched role: (no target role match)")
+            print("   Matched role: (no target role match)")
 
         return sample
 
@@ -235,7 +237,7 @@ def step_4_run_extraction(sample: Dict[str, Any]) -> Optional[ExtractionResult]:
         log_callback=extraction_log,
     )
 
-    print(f"   Starting extraction...")
+    print("   Starting extraction...")
     print(f"   Model: {extractor.model}")
     print(f"   Timeout: {extractor.timeout}s")
 
@@ -254,7 +256,7 @@ def step_4_run_extraction(sample: Dict[str, Any]) -> Optional[ExtractionResult]:
     print(f"   Backend used: {backend_used['value'] or 'unknown'}")
 
     if result.success:
-        print(f"✅ Extraction successful!")
+        print("✅ Extraction successful!")
         print(f"   Role category: {result.extracted_jd.get('role_category')}")
         print(f"   Seniority: {result.extracted_jd.get('seniority_level')}")
         print(f"   Technical skills: {len(result.extracted_jd.get('technical_skills', []))}")
@@ -263,7 +265,7 @@ def step_4_run_extraction(sample: Dict[str, Any]) -> Optional[ExtractionResult]:
 
         # Show competency weights
         weights = result.extracted_jd.get('competency_weights', {})
-        print(f"   Competency weights:")
+        print("   Competency weights:")
         print(f"      Delivery: {weights.get('delivery', 0)}%")
         print(f"      Process: {weights.get('process', 0)}%")
         print(f"      Architecture: {weights.get('architecture', 0)}%")

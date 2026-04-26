@@ -20,7 +20,6 @@ Usage:
 
 import asyncio
 import logging
-from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from src.common.model_tiers import ModelTier

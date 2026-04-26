@@ -6,9 +6,10 @@ Verifies that boolean progress flags (processed_jd, has_research, generated_cv)
 are set based on data presence, not just pipeline completion status.
 """
 
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.common.repositories import WriteResult, reset_repository
 

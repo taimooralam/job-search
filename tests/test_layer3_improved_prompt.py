@@ -11,16 +11,16 @@ Improvements implemented:
 
 import json
 import logging
-from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
-from firecrawl import FirecrawlApp
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from typing import Any, Dict, List, Optional
+
 from bson.objectid import ObjectId
+from firecrawl import FirecrawlApp
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
 from src.common.config import Config
-
 
 # ===== IMPROVED ENHANCED PROMPT (Compressed + Few-Shot) =====
 
@@ -273,7 +273,7 @@ class ImprovedCompanyResearcher:
         scraped_data = {}
 
         # Source 1: Official site (using search, not URL construction)
-        print(f"  [1/3] Searching for official site...")
+        print("  [1/3] Searching for official site...")
         official_result = self._search_and_scrape(
             f"{company} official website about careers company",
             expected_domain=None
@@ -281,10 +281,10 @@ class ImprovedCompanyResearcher:
         if official_result and official_result['quality'] in ['high', 'medium']:
             scraped_data['official_site'] = official_result
         else:
-            print(f"      ✗ Official site: low quality or failed")
+            print("      ✗ Official site: low quality or failed")
 
         # Source 2: Crunchbase (IMPROVEMENT #2: fallback source)
-        print(f"  [2/3] Searching Crunchbase...")
+        print("  [2/3] Searching Crunchbase...")
         crunchbase_result = self._search_and_scrape(
             f"{company} crunchbase company profile funding",
             expected_domain="crunchbase.com"
@@ -292,10 +292,10 @@ class ImprovedCompanyResearcher:
         if crunchbase_result and crunchbase_result['quality'] in ['high', 'medium']:
             scraped_data['crunchbase'] = crunchbase_result
         else:
-            print(f"      ✗ Crunchbase: not found or low quality")
+            print("      ✗ Crunchbase: not found or low quality")
 
         # Source 3: Recent news (IMPROVEMENT #2: fallback source)
-        print(f"  [3/3] Searching recent news...")
+        print("  [3/3] Searching recent news...")
         news_result = self._search_and_scrape(
             f"{company} news funding acquisition partnership launch 2024",
             expected_domain=None
@@ -303,7 +303,7 @@ class ImprovedCompanyResearcher:
         if news_result and news_result['quality'] in ['high', 'medium']:
             scraped_data['news'] = news_result
         else:
-            print(f"      ✗ News: not found or low quality")
+            print("      ✗ News: not found or low quality")
 
         return scraped_data
 
@@ -362,7 +362,7 @@ def main():
     print("="*100)
 
     # Fetch job
-    print(f"\n1. Fetching job from MongoDB...")
+    print("\n1. Fetching job from MongoDB...")
     mongo_client = MongoClient(Config.MONGODB_URI)
     db = mongo_client["jobs"]
     job = db["level-2"].find_one({"_id": ObjectId("6929c97b45fa3c355f84ba2d")})
@@ -374,7 +374,7 @@ def main():
     # Run improved researcher
     researcher = ImprovedCompanyResearcher()
 
-    print(f"\n2. Scraping with improved strategy (quality gates + fallbacks)...")
+    print("\n2. Scraping with improved strategy (quality gates + fallbacks)...")
     scraped_data = researcher.scrape_with_fallbacks(company)
     print(f"   ✓ Successfully scraped {len(scraped_data)} source(s)")
 
@@ -382,7 +382,7 @@ def main():
         print("\n   ERROR: No high/medium quality sources found. Cannot proceed.")
         return
 
-    print(f"\n3. Extracting signals with improved prompt...")
+    print("\n3. Extracting signals with improved prompt...")
     results = researcher.extract_signals(company, scraped_data)
 
     # Display results
@@ -393,7 +393,7 @@ def main():
     parsed = results["parsed"]
 
     # Reasoning block
-    print(f"\n📊 REASONING BLOCK:")
+    print("\n📊 REASONING BLOCK:")
     reasoning = parsed['reasoning']
     print(f"  Sources Analyzed: {len(reasoning['sources_analyzed'])}")
     for idx, source in enumerate(reasoning['sources_analyzed'], 1):
@@ -405,7 +405,7 @@ def main():
     print(f"  Confidence Level: {reasoning['confidence_level']}")
 
     # Summary
-    print(f"\n📝 SUMMARY:")
+    print("\n📝 SUMMARY:")
     print(f"  {parsed['summary']}")
 
     # Signals
@@ -423,7 +423,7 @@ def main():
     print(f"\n🔗 PRIMARY URL: {parsed['url']}")
 
     # Metrics
-    print(f"\n" + "-"*100)
+    print("\n" + "-"*100)
     print("📈 METRICS:")
     print(f"  Sources scraped: {results['sources_used']}")
     print(f"  Signals extracted: {len(parsed['signals'])}")

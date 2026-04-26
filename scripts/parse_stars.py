@@ -18,14 +18,14 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Dict, List
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.common.star_parser import parse_star_records, validate_star_record
-from src.common.types import STARRecord, OUTCOME_TYPES
 from src.common.config import Config
+from src.common.star_parser import parse_star_records, validate_star_record
+from src.common.types import OUTCOME_TYPES, STARRecord
 
 
 def parse_args():
@@ -113,7 +113,7 @@ def show_statistics(stars: List[STARRecord]) -> None:
     print("=" * 80)
 
     # Basic counts
-    print(f"\n📊 Basic Metrics:")
+    print("\n📊 Basic Metrics:")
     print(f"   Total STAR records: {len(stars)}")
     print(f"   Companies represented: {len(set(s['company'] for s in stars))}")
     print(f"   Unique role titles: {len(set(s['role_title'] for s in stars))}")
@@ -126,7 +126,7 @@ def show_statistics(stars: List[STARRecord]) -> None:
     total_soft_skills = sum(len(s.get('soft_skills', [])) for s in stars)
     total_actions = sum(len(s.get('actions', [])) for s in stars)
 
-    print(f"\n📈 Content Distribution (avg per STAR):")
+    print("\n📈 Content Distribution (avg per STAR):")
     print(f"   Pain Points Addressed: {total_pain_points/len(stars):.1f}")
     print(f"   Outcome Types: {total_outcome_types/len(stars):.1f}")
     print(f"   Quantified Metrics: {total_metrics/len(stars):.1f}")
@@ -140,7 +140,7 @@ def show_statistics(stars: List[STARRecord]) -> None:
         for ot in star.get('outcome_types', []):
             outcome_counts[ot] = outcome_counts.get(ot, 0) + 1
 
-    print(f"\n🎯 Outcome Type Coverage:")
+    print("\n🎯 Outcome Type Coverage:")
     for ot, count in sorted(outcome_counts.items(), key=lambda x: -x[1]):
         bar = "█" * count
         print(f"   {ot:30s} {bar} ({count})")
@@ -151,7 +151,7 @@ def show_statistics(stars: List[STARRecord]) -> None:
         for domain in star.get('domain_areas', []):
             domain_counts[domain] = domain_counts.get(domain, 0) + 1
 
-    print(f"\n🌐 Domain Coverage (top 10):")
+    print("\n🌐 Domain Coverage (top 10):")
     for domain, count in sorted(domain_counts.items(), key=lambda x: -x[1])[:10]:
         bar = "█" * count
         print(f"   {domain:30s} {bar} ({count})")
@@ -162,7 +162,7 @@ def show_statistics(stars: List[STARRecord]) -> None:
         for skill in star.get('hard_skills', []):
             skill_counts[skill] = skill_counts.get(skill, 0) + 1
 
-    print(f"\n🔧 Top Hard Skills (top 10):")
+    print("\n🔧 Top Hard Skills (top 10):")
     for skill, count in sorted(skill_counts.items(), key=lambda x: -x[1])[:10]:
         bar = "█" * count
         print(f"   {skill:30s} {bar} ({count})")
@@ -239,7 +239,7 @@ def main():
         sys.exit(1)
 
     # Brief summary
-    print(f"\n📊 Quick Summary:")
+    print("\n📊 Quick Summary:")
     for i, star in enumerate(stars, 1):
         role = star.get('role_title', 'Unknown')[:40]
         metrics = len(star.get('metrics', []))

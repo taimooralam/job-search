@@ -10,8 +10,8 @@ import pytest
 from bson import ObjectId
 
 from src.pipeline.queue import WorkItemQueue
-from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.blueprint_config import current_input_snapshot_id
+from src.preenrich.checksums import company_checksum, jd_checksum
 from src.preenrich.root_enqueuer import build_stage_states
 from src.preenrich.schema import idempotency_key, input_snapshot_id
 from src.preenrich.stage_worker import StageWorker
@@ -111,6 +111,53 @@ class _ExplodingStage:
 
     def run(self, ctx):
         raise RuntimeError("provider timeout")
+
+
+class _FakeStageTracer:
+    def __init__(self, *, stage_name: str, started: list[dict[str, Any]], ended: list[dict[str, Any]]) -> None:
+        self.stage_name = stage_name
+        self.trace = object()
+        self._started = started
+        self._ended = ended
+
+    def start_substage_span(self, stage_name, substage, metadata):
+        span = {"stage_name": stage_name, "substage": substage, "metadata": metadata}
+        self._started.append({"kind": "substage", **span})
+        return span
+
+    def end_span(self, span, *, output=None):
+        self._ended.append({"kind": "span_end", "span": span, "output": output})
+
+    def record_event(self, name, metadata):
+        self._started.append({"kind": "event", "name": name, "metadata": metadata})
+
+    def complete(self, *, output=None):
+        self._ended.append({"kind": "stage_complete", "stage_name": self.stage_name, "output": output})
+
+
+class _FakeTracingSession:
+    started: list[dict[str, Any]] = []
+    ended: list[dict[str, Any]] = []
+
+    def __init__(self, *, run_id: str, session_id: str, metadata: dict[str, Any]) -> None:
+        self.run_id = run_id
+        self.session_id = session_id
+        self.trace_id = f"trace:{run_id}"
+        self.trace_url = f"https://langfuse.example/{self.trace_id}"
+        self.trace = object()
+        self.started = type(self).started
+        self.ended = type(self).ended
+        self.started.append({"kind": "session", "metadata": metadata, "run_id": run_id, "session_id": session_id})
+
+    def start_stage_span(self, stage_name: str, metadata: dict[str, Any]):
+        self.started.append({"kind": "stage_start", "stage_name": stage_name, "metadata": metadata})
+        return _FakeStageTracer(stage_name=stage_name, started=self.started, ended=self.ended)
+
+    def record_event(self, name: str, metadata: dict[str, Any]) -> None:
+        self.started.append({"kind": "event", "name": name, "metadata": metadata})
+
+    def complete(self, *, output=None) -> None:
+        self.ended.append({"kind": "session_complete", "output": output})
 
 
 def test_claim_race_exactly_one_worker_wins(mock_db):
@@ -223,6 +270,97 @@ def test_phase_a_success_can_be_drained_by_sweeper_when_inline_enqueue_is_skippe
     drained = mock_db["level-2"].find_one({"_id": job_id})["pre_enrichment"]["pending_next_stages"]
     assert drained[0]["enqueued_at"] is not None
     assert mock_db["work_items"].count_documents({"task_type": "preenrich.jd_extraction"}) == 1
+
+
+def test_stage_context_carries_tracer_handle(mock_db):
+    job_id = _insert_job(mock_db)
+    snapshot_id = mock_db["level-2"].find_one({"_id": job_id})["pre_enrichment"]["input_snapshot_id"]
+    _enqueue_stage(mock_db, job_id=job_id, stage_name="jd_structure", snapshot_id=snapshot_id)
+
+    seen = {}
+
+    class _CapturingStage:
+        name = "jd_structure"
+
+        def run(self, ctx):
+            seen["stage_name"] = ctx.stage_name
+            seen["tracer"] = ctx.tracer
+            return StageResult(
+                output={"processed_jd_sections": [{"section_type": "summary", "content": "ok"}]},
+                provider_used="codex",
+                model_used="gpt-5.4",
+            )
+
+    worker = StageWorker(
+        mock_db,
+        stage_name="jd_structure",
+        worker_id="worker-a",
+        stage_factories={"jd_structure": _CapturingStage},
+    )
+    worker.process_one()
+
+    assert seen["stage_name"] == "jd_structure"
+    # Tracer is always a PreenrichTracingSession instance, even when Langfuse
+    # is not configured (in that case `.enabled` is False and calls are no-ops).
+    assert seen["tracer"] is not None
+    assert getattr(seen["tracer"], "stage_name", None) == "jd_structure"
+    assert hasattr(seen["tracer"], "start_substage_span")
+    assert hasattr(seen["tracer"], "record_event")
+    assert hasattr(seen["tracer"], "complete")
+
+
+def test_artifact_persistence_emits_traced_substage(mock_db, monkeypatch):
+    job_id = _insert_job(mock_db)
+    snapshot_id = mock_db["level-2"].find_one({"_id": job_id})["pre_enrichment"]["input_snapshot_id"]
+    _enqueue_stage(mock_db, job_id=job_id, stage_name="jd_structure", snapshot_id=snapshot_id)
+
+    _FakeTracingSession.started = []
+    _FakeTracingSession.ended = []
+    monkeypatch.setattr("src.preenrich.stage_worker.PreenrichTracingSession", _FakeTracingSession)
+
+    def _fake_upsert_artifact(db, *, collection, unique_filter, document, now):
+        return {"_id": ObjectId(), "collection": collection, **document}
+
+    monkeypatch.setattr("src.preenrich.stage_worker.upsert_artifact", _fake_upsert_artifact)
+
+    class _ArtifactStage:
+        name = "jd_structure"
+
+        def run(self, ctx):
+            return StageResult(
+                output={"merged_view": {"title": "Engineering Manager"}},
+                stage_output={"merged_view": {"title": "Engineering Manager"}},
+                provider_used="codex",
+                model_used="gpt-5.2",
+                artifact_writes=[
+                    ArtifactWrite(
+                        collection="jd_facts",
+                        unique_filter={"job_id": str(ctx.job_doc["_id"])},
+                        document={"job_id": str(ctx.job_doc["_id"]), "title": "Engineering Manager"},
+                        ref_name="jd_facts",
+                    )
+                ],
+            )
+
+    worker = StageWorker(
+        mock_db,
+        stage_name="jd_structure",
+        worker_id="worker-a",
+        stage_factories={"jd_structure": _ArtifactStage},
+    )
+    result = worker.process_one()
+
+    assert result["status"] == "completed"
+    artifact_span = next(item for item in _FakeTracingSession.started if item.get("substage") == "artifact_persist")
+    assert artifact_span["metadata"]["artifact_count"] == 1
+    assert artifact_span["metadata"]["collections"] == ["jd_facts"]
+    artifact_end = next(
+        item
+        for item in _FakeTracingSession.ended
+        if item.get("span", {}).get("substage") == "artifact_persist"
+    )
+    assert artifact_end["output"]["status"] == "completed"
+    assert artifact_end["output"]["artifact_ref_names"] == ["jd_facts"]
 
 
 def test_retryable_stage_failure_sets_retry_pending(mock_db):

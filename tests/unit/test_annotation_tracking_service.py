@@ -8,17 +8,15 @@ Tests:
 4. Effectiveness calculations (without database)
 """
 
-import pytest
-from datetime import datetime
 
 from src.services.annotation_tracking_service import (
-    AnnotationTrackingService,
-    PersonaVariant,
-    AnnotationOutcome,
-    ApplicationTracking,
-    ApplicationOutcome,
-    AnnotationEffectivenessStats,
     OUTCOME_SCORES,
+    AnnotationEffectivenessStats,
+    AnnotationOutcome,
+    AnnotationTrackingService,
+    ApplicationOutcome,
+    ApplicationTracking,
+    PersonaVariant,
 )
 
 

@@ -11,9 +11,8 @@ Tests validate ALL keyboard shortcuts individually:
 - Platform-specific modifiers (Mac vs Windows)
 """
 
-import pytest
-from typing import Dict, Any
 
+import pytest
 
 # ==============================================================================
 # Test Class: Individual Keyboard Shortcuts
@@ -24,7 +23,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_b_bold_shortcut_exists(self):
         """Ctrl+B should toggle bold formatting."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # TipTap handles Ctrl+B natively via Bold extension
@@ -33,21 +32,21 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_i_italic_shortcut_exists(self):
         """Ctrl+I should toggle italic formatting."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'italic' in content.lower() or 'Italic' in content
 
     def test_ctrl_u_underline_shortcut_exists(self):
         """Ctrl+U should toggle underline formatting."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'underline' in content.lower() or 'Underline' in content
 
     def test_ctrl_shift_x_strikethrough_shortcut_implemented(self):
         """Ctrl+Shift+X should toggle strikethrough."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Check for strikethrough in keyboard shortcut handler
@@ -56,7 +55,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_z_undo_shortcut_exists(self):
         """Ctrl+Z should undo last action."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # TipTap handles undo natively
@@ -64,7 +63,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_y_redo_shortcut_exists(self):
         """Ctrl+Y should redo last undone action."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # TipTap handles redo natively
@@ -72,7 +71,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_shift_l_align_left_shortcut_implemented(self):
         """Ctrl+Shift+L should align text left."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'l'" in content or "'L'" in content
@@ -80,7 +79,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_shift_e_align_center_shortcut_implemented(self):
         """Ctrl+Shift+E should align text center."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'e'" in content or "'E'" in content
@@ -88,7 +87,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_shift_r_align_right_shortcut_implemented(self):
         """Ctrl+Shift+R should align text right."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'r'" in content or "'R'" in content
@@ -96,7 +95,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_shift_j_align_justify_shortcut_implemented(self):
         """Ctrl+Shift+J should justify text."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'j'" in content or "'J'" in content
@@ -104,7 +103,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_shift_7_numbered_list_shortcut_implemented(self):
         """Ctrl+Shift+7 should create numbered list."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'7'" in content or "'&'" in content  # Shift+7 = &
@@ -112,7 +111,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_shift_8_bullet_list_shortcut_implemented(self):
         """Ctrl+Shift+8 should create bullet list."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'8'" in content or "'*'" in content  # Shift+8 = *
@@ -120,7 +119,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_s_save_shortcut_implemented(self):
         """Ctrl+S should trigger manual save."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "'s'" in content or "'S'" in content
@@ -128,7 +127,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_escape_close_editor_shortcut_implemented(self):
         """Escape should close editor panel."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "key === 'Escape'" in content or "'Escape'" in content
@@ -136,7 +135,7 @@ class TestIndividualKeyboardShortcuts:
 
     def test_ctrl_slash_shortcuts_panel_shortcut_implemented(self):
         """Ctrl+/ should toggle keyboard shortcuts panel."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert "key === '/'" in content or "'Slash'" in content
@@ -152,7 +151,7 @@ class TestShortcutPreventDefault:
 
     def test_ctrl_s_prevents_browser_save_dialog(self):
         """Ctrl+S should call preventDefault() to avoid browser save dialog."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Look for preventDefault() in keyboard handler
@@ -162,14 +161,14 @@ class TestShortcutPreventDefault:
     def test_ctrl_b_prevents_browser_bookmark(self):
         """Ctrl+B should prevent browser bookmark dialog (if custom handler)."""
         # TipTap handles this natively, but check for preventDefault pattern
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'preventDefault' in content
 
     def test_all_custom_shortcuts_have_prevent_default(self):
         """All custom shortcuts should call preventDefault()."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Count instances of shortcuts and preventDefault calls
@@ -189,7 +188,7 @@ class TestShortcutConflicts:
 
     def test_ctrl_b_vs_ctrl_shift_b_no_conflict(self):
         """Ctrl+B and Ctrl+Shift+B should be distinct shortcuts."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Check that shiftKey is checked for differentiation
@@ -197,14 +196,14 @@ class TestShortcutConflicts:
 
     def test_ctrl_i_vs_ctrl_shift_i_no_conflict(self):
         """Ctrl+I and Ctrl+Shift+I should be distinct."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'shiftKey' in content
 
     def test_ctrl_vs_ctrl_shift_shortcuts_differentiated(self):
         """Ctrl and Ctrl+Shift shortcuts should be properly differentiated."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Should check both modKey and shiftKey
@@ -213,7 +212,7 @@ class TestShortcutConflicts:
 
     def test_escape_closes_shortcuts_panel_before_editor(self):
         """Escape should close shortcuts panel first if open, then editor."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Should check if shortcuts panel is open before closing editor
@@ -231,7 +230,7 @@ class TestPlatformSpecificModifiers:
 
     def test_mac_platform_detection(self):
         """Code should detect Mac platform for Cmd key."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Check for Mac platform detection
@@ -239,7 +238,7 @@ class TestPlatformSpecificModifiers:
 
     def test_mod_key_variable_for_cross_platform(self):
         """Code should use modKey variable (Cmd on Mac, Ctrl elsewhere)."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Should use metaKey (Cmd) or ctrlKey depending on platform
@@ -248,7 +247,7 @@ class TestPlatformSpecificModifiers:
 
     def test_keyboard_shortcuts_panel_shows_platform_key(self):
         """Shortcuts panel should show ⌘ on Mac, Ctrl on Windows/Linux."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Should display different symbols based on platform
@@ -265,7 +264,7 @@ class TestShortcutStates:
 
     def test_shortcuts_only_work_when_editor_panel_open(self):
         """Shortcuts should only work when CV editor panel is open."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Should check panel state before processing shortcuts
@@ -274,7 +273,7 @@ class TestShortcutStates:
 
     def test_escape_shortcut_always_active(self):
         """Escape shortcut should work regardless of editor state (to close panel)."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Escape should be handled even if panel is opening/closing
@@ -284,7 +283,7 @@ class TestShortcutStates:
         """Text shortcuts should not work when shortcuts reference panel is open."""
         # This prevents conflicts (e.g., typing in search box triggers shortcuts)
 
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # May check if shortcuts panel is focused
@@ -303,7 +302,7 @@ class TestRapidShortcutCombinations:
         # This is handled by TipTap's native mark system
         # Just verify both marks can coexist
 
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Both bold and italic should be supported
@@ -315,7 +314,7 @@ class TestRapidShortcutCombinations:
         # Text can only have one alignment, so last shortcut wins
         # This is structural - actual behavior tested in E2E
 
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'textAlign' in content
@@ -326,7 +325,7 @@ class TestRapidShortcutCombinations:
         # TipTap's history plugin handles this
         # Verify history is enabled
 
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'History' in content or 'history' in content.lower()
@@ -342,28 +341,28 @@ class TestShortcutsWithContentTypes:
     def test_bold_shortcut_works_on_paragraphs(self):
         """Ctrl+B should work on paragraph text."""
         # TipTap handles this natively
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'Paragraph' in content or 'paragraph' in content
 
     def test_bold_shortcut_works_on_headings(self):
         """Ctrl+B should work on heading text."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'Heading' in content or 'heading' in content
 
     def test_bold_shortcut_works_on_list_items(self):
         """Ctrl+B should work on list item text."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'ListItem' in content or 'listItem' in content or 'BulletList' in content
 
     def test_alignment_shortcuts_work_on_all_block_types(self):
         """Alignment shortcuts should work on paragraphs, headings, list items."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # textAlign should be available for multiple node types
@@ -371,7 +370,7 @@ class TestShortcutsWithContentTypes:
 
     def test_list_shortcuts_convert_paragraphs_to_lists(self):
         """Ctrl+Shift+7/8 should convert paragraphs to numbered/bullet lists."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'toggleBulletList' in content or 'toggleOrderedList' in content
@@ -386,7 +385,7 @@ class TestShortcutAccessibility:
 
     def test_shortcuts_panel_has_aria_modal(self):
         """Keyboard shortcuts panel should have role=dialog and aria-modal."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'role' in content.lower()
@@ -395,7 +394,7 @@ class TestShortcutAccessibility:
 
     def test_shortcuts_panel_has_aria_labelledby(self):
         """Shortcuts panel should have aria-labelledby for title."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         assert 'aria-labelledby' in content
@@ -403,7 +402,7 @@ class TestShortcutAccessibility:
     def test_shortcuts_panel_focus_trap(self):
         """Shortcuts panel should trap focus for keyboard users."""
         # Check for focus management when panel opens
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # May set focus on panel when opened
@@ -411,7 +410,7 @@ class TestShortcutAccessibility:
 
     def test_shortcuts_reference_panel_lists_all_shortcuts(self):
         """Shortcuts panel should list all available shortcuts."""
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Should contain shortcut descriptions

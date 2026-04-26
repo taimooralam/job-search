@@ -15,14 +15,13 @@ Coverage:
 - Error handling for invalid inputs
 """
 
-import pytest
-import requests
-from unittest.mock import MagicMock, Mock, patch
-from datetime import datetime
-from bson import ObjectId
-from flask import Flask
 import sys
+from datetime import datetime
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+from bson import ObjectId
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))

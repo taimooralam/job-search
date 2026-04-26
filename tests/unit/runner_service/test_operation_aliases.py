@@ -5,9 +5,7 @@ Ensures legacy operation names are correctly mapped to canonical names
 and that deprecation warnings are logged appropriately.
 """
 
-import pytest
 import logging
-from unittest.mock import patch
 
 
 class TestOperationAliases:
@@ -180,7 +178,6 @@ class TestOperationTimeEstimates:
         """All canonical operations should have time estimates."""
         from runner_service.routes.operations import (
             OPERATION_TIME_ESTIMATES,
-            VALID_QUEUE_OPERATIONS,
         )
 
         canonical_ops = {

@@ -17,9 +17,9 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
+from src.common.persona_builder import PersonaBuilder
 from src.preenrich.stages.base import StageBase, _call_llm_with_fallback
 from src.preenrich.types import StageContext, StageResult
-from src.common.persona_builder import PersonaBuilder, SynthesizedPersona
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +197,8 @@ class PersonaStage:
             job_id=job_id,
             schema=None,
             claude_invoker=_invoker,
+            tracer=ctx.tracer,
+            stage_name=ctx.stage_name or self.name,
         )
         duration_ms = int((time.monotonic() - t0) * 1000)
 

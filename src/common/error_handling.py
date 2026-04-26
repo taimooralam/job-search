@@ -6,10 +6,10 @@ logging, and fallback behavior across all pipeline layers.
 """
 
 import logging
-from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, List
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import wraps
+from typing import Any, Callable, List, Optional, TypeVar
 
 # Type variable for generic return types
 T = TypeVar("T")

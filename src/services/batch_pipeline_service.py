@@ -19,7 +19,6 @@ Usage:
     result = await service.execute(job_id="...", tier=ModelTier.QUALITY)
 """
 
-import asyncio
 import logging
 import os
 import traceback
@@ -29,7 +28,7 @@ from typing import Any, Callable, Dict, Optional
 from bson import ObjectId
 
 from src.common.model_tiers import ModelTier
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.repositories import JobRepositoryInterface, get_job_repository
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -89,7 +88,6 @@ class BatchPipelineService(OperationService):
         Returns:
             Dict with: success, error, gdrive_file_id, etc.
         """
-        import os
         import httpx
 
         # Get runner service URL (use localhost since we're in the same service)

@@ -7,12 +7,12 @@
 # - AnnotationFitSignal: Annotation signal calculator
 # - blend_fit_scores: Score blending function
 
-from src.layer4.opportunity_mapper import OpportunityMapper, opportunity_mapper_node
 from src.layer4.annotation_fit_signal import (
     AnnotationFitSignal,
     blend_fit_scores,
     get_annotation_analysis,
 )
+from src.layer4.opportunity_mapper import OpportunityMapper, opportunity_mapper_node
 
 __all__ = [
     "OpportunityMapper",

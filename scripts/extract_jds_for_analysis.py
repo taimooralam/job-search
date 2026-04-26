@@ -23,30 +23,32 @@ Options (via environment variables):
     TARGET_ROLES_ONLY=true  - Only extract target roles (default: true)
 """
 
-import os
-import sys
-import re
 import asyncio
-import logging
 import json
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+import logging
+import os
+import re
+import sys
 from collections import defaultdict
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from bson import ObjectId
 from pymongo import MongoClient, UpdateOne
+
 from src.common.config import Config
-from src.layer1_4.claude_jd_extractor import JDExtractor, ExtractionResult
 from src.common.llm_config import STEP_CONFIGS, StepConfig
+from src.layer1_4.claude_jd_extractor import ExtractionResult, JDExtractor
 
 # Configure logging
 logging.basicConfig(
@@ -104,7 +106,7 @@ def configure_mandatory_cli():
         max_retries=original_config.max_retries,
         use_fallback=False,  # MANDATORY: Claude CLI only
     )
-    logger.info(f"Configured Claude CLI mandatory (no fallback)")
+    logger.info("Configured Claude CLI mandatory (no fallback)")
 
 
 def get_mongodb_client() -> MongoClient:
@@ -377,7 +379,7 @@ def save_pattern_analysis(
 ) -> None:
     """Save pattern analysis to JSON file."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(patterns, f, indent=2)
     logger.info(f"Saved pattern analysis to {output_path}")
 
@@ -388,7 +390,7 @@ def print_summary(stats: ExtractionStats, patterns: Dict[str, Dict[str, Any]]):
     print("EXTRACTION SUMMARY")
     print("=" * 60)
 
-    print(f"\nJobs:")
+    print("\nJobs:")
     print(f"   Total in database: {stats.total_jobs:,}")
     print(f"   With descriptions: {stats.jobs_with_description:,}")
     print(f"   Needing extraction: {stats.jobs_needing_extraction:,}")
@@ -398,11 +400,11 @@ def print_summary(stats: ExtractionStats, patterns: Dict[str, Dict[str, Any]]):
     print(f"   Duration: {stats.total_duration_seconds:.1f}s")
 
     if patterns:
-        print(f"\nRole Categories Found:")
+        print("\nRole Categories Found:")
         for role_cat, data in sorted(patterns.items(), key=lambda x: x[1]["count"], reverse=True):
             print(f"   {role_cat}: {data['count']} jobs")
 
-        print(f"\nTop Technical Skills (across all roles):")
+        print("\nTop Technical Skills (across all roles):")
         all_tech = defaultdict(int)
         for role_data in patterns.values():
             for skill, count in role_data["top_technical_skills"]:
@@ -425,7 +427,7 @@ async def main():
     reextract = os.getenv("REEXTRACT", "false").lower() == "true"
     target_roles_only = os.getenv("TARGET_ROLES_ONLY", "true").lower() == "true"
 
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"   Max concurrent: {max_concurrent}")
     print(f"   Max jobs: {max_jobs or 'unlimited'}")
     print(f"   Re-extract: {reextract}")
@@ -443,7 +445,7 @@ async def main():
     stats.total_jobs = level2.count_documents({})
     stats.jobs_with_description = level2.count_documents({"description": {"$exists": True, "$ne": ""}})
 
-    print(f"\nDatabase stats:")
+    print("\nDatabase stats:")
     print(f"   Total jobs: {stats.total_jobs:,}")
     print(f"   With descriptions: {stats.jobs_with_description:,}")
 
@@ -471,7 +473,7 @@ async def main():
     stats.jobs_failed = sum(1 for r in results if not r.success)
 
     # Save results to MongoDB
-    save_counts = save_results_to_mongodb(client, results)
+    save_results_to_mongodb(client, results)
 
     # Aggregate patterns (Phase 2)
     print("\n" + "=" * 60)

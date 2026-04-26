@@ -5,11 +5,10 @@ Tests the GET and PUT endpoints at /api/jobs/<job_id>/cv-editor
 for managing TipTap editor state in MongoDB.
 """
 
-import pytest
-import json
 from datetime import datetime
-from bson import ObjectId
 from unittest.mock import MagicMock
+
+from bson import ObjectId
 
 
 class TestGetCvEditorState:

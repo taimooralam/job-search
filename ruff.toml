@@ -1,0 +1,58 @@
+# Ruff config for job-search.
+#
+# Scope: pragmatic. Enable real-bug detection (`F`), import sorting (`I`), and
+# the encoding-rule guard (`PLW1514`) without churning the whole codebase
+# under stylistic rules.
+#
+# Why this set:
+#   F        — pyflakes; catches actual bugs (undefined names, unused vars,
+#              repeated dict keys). Real-bug rule, not stylistic.
+#   I        — isort; deterministic import ordering, auto-fixable, low-noise.
+#   PLW1514  — open() / Path.read_text/write_text without explicit encoding.
+#              Default platform encoding (cp1252 on Windows) silently produced
+#              UnicodeDecodeError and mojibake before this guard. See AGENTS.md
+#              "File-Encoding Policy".
+#
+# Run on demand:
+#   python -m ruff check
+# Auto-fix (most F401/F541/I001 fix cleanly):
+#   python -m ruff check --fix --unsafe-fixes
+#
+# CI:
+#   .github/workflows/lint.yml runs `ruff check` on every push/PR to main.
+#
+# Future broadening (deliberately out of scope for this turn):
+#   E,W      — pycodestyle: 6000+ violations, mostly cosmetic.
+#   UP       — pyupgrade: 600+ violations, requires PEP 604 / 3.10+ migration.
+#   B,SIM    — flake8-bugbear / flake8-simplify: 300+ violations, semantically
+#              invasive (defaults, control-flow simplification).
+
+target-version = "py311"
+line-length = 120
+
+# Exclude local-only artifacts (also gitignored).
+extend-exclude = [".codex-temp", ".venv", "node_modules"]
+
+[lint]
+preview = true
+select = ["F", "I", "PLW1514"]
+
+# F811 / F841: noisy in tests (intentional reassignment, _-prefixed unused
+# locals for clarity). Globally disable rather than scattering noqa.
+ignore = ["F811", "F841"]
+
+[lint.per-file-ignores]
+# n8n skill packages have their own self-contained linting.
+"n8n/**" = ["F", "I", "PLW1514"]
+
+# Pre-existing F821 (undefined-name) sites in legacy code paths. Each is a
+# real latent bug and should be fixed in a focused follow-up — not silenced
+# silently, but grandfathered explicitly so CI stays green during the soft
+# migration. New F821 violations elsewhere will still fail CI.
+"frontend/app.py" = ["F821", "F601"]
+"runner_service/app.py" = ["F821"]
+"src/layer5/people_mapper.py" = ["F821"]
+"src/layer6_v2/cv_loader.py" = ["F821"]
+"src/layer6_v2/skills_taxonomy.py" = ["F821"]
+"src/layer6_v2/role_generator.py" = ["F402"]
+"src/services/full_extraction_service.py" = ["F821"]

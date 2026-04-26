@@ -5,8 +5,9 @@ Tests the AnswerGeneratorService which generates planned answers
 for job application forms using LLM with job context.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestAnswerGeneratorServiceInit:

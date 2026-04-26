@@ -8,20 +8,19 @@ Tests rate limiting infrastructure including:
 - Error handling and timeout scenarios
 """
 
-import asyncio
-import pytest
 import threading
-import time
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from datetime import datetime
+from unittest.mock import patch
+
+import pytest
 
 from src.common.rate_limiter import (
+    DEFAULT_RATE_LIMITS,
+    Provider,
     RateLimiter,
     RateLimiterRegistry,
     RateLimitExceededError,
     RateLimitStats,
-    Provider,
-    DEFAULT_RATE_LIMITS,
     get_rate_limiter,
     get_rate_limiter_registry,
     reset_global_registry,

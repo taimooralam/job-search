@@ -8,10 +8,10 @@ Tests the Flask proxy routes that forward ingestion requests to the runner servi
 - GET /api/runner/jobs/ingest/history/<source>
 """
 
-import pytest
-import requests
 from unittest.mock import MagicMock
 
+import pytest
+import requests
 
 # =============================================================================
 # FIXTURES

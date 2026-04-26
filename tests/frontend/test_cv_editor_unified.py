@@ -11,12 +11,8 @@ Tests validate:
 - CV content detection and empty state handling
 """
 
-import pytest
-import re
-from pathlib import Path
-from bson import ObjectId
-from datetime import datetime
 
+import pytest
 
 # ==============================================================================
 # Test Class: Panel Mode Configuration
@@ -28,13 +24,13 @@ class TestPanelModeConfiguration:
     @pytest.fixture
     def panel_wrapper_content(self):
         """Read the panel wrapper template."""
-        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_panel_wrapper_sets_correct_mode(self, panel_wrapper_content):
@@ -94,13 +90,13 @@ class TestSidebarModeConfiguration:
     @pytest.fixture
     def sidebar_wrapper_content(self):
         """Read the sidebar wrapper template."""
-        with open('frontend/templates/partials/batch/_cv_sidebar_content.html', 'r') as f:
+        with open('frontend/templates/partials/batch/_cv_sidebar_content.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_sidebar_wrapper_sets_correct_mode(self, sidebar_wrapper_content):
@@ -156,7 +152,7 @@ class TestOverlayConditionalRendering:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_overlay_default_based_on_mode(self, component_content):
@@ -205,7 +201,7 @@ class TestCloseButtonConditionalRendering:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_close_button_default_based_on_mode(self, component_content):
@@ -250,7 +246,7 @@ class TestJobInfoConditionalRendering:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_job_info_default_based_on_mode(self, component_content):
@@ -302,7 +298,7 @@ class TestPanelToggleConditionalRendering:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_panel_toggle_default_based_on_mode(self, component_content):
@@ -347,7 +343,7 @@ class TestElementIDPrefixing:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_id_prefix_defaults_to_empty(self, component_content):
@@ -443,7 +439,7 @@ class TestCoreFeaturesInBothModes:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_tiptap_editor_container_exists(self, component_content):
@@ -549,7 +545,7 @@ class TestThemeClassesBasedOnMode:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_theme_classes_defined_based_on_mode(self, component_content):
@@ -602,7 +598,7 @@ class TestSizeClassesBasedOnCompactMode:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_compact_toolbar_default_based_on_mode(self, component_content):
@@ -660,7 +656,7 @@ class TestCVContentDetectionAndEmptyState:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_cv_content_detection_logic(self, component_content):
@@ -729,7 +725,7 @@ class TestSkipLinkAccessibility:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_skip_link_only_in_panel_mode(self, component_content):
@@ -766,7 +762,7 @@ class TestJavaScriptFunctionCallsBasedOnMode:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_editor_instance_varies_by_mode(self, component_content):
@@ -811,7 +807,7 @@ class TestLoadingStateSidebarMode:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_loading_state_only_in_sidebar_mode(self, component_content):
@@ -855,7 +851,7 @@ class TestCVReasoningDisplay:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_cv_reasoning_only_in_sidebar_with_job(self, component_content):
@@ -907,7 +903,7 @@ class TestDataAttributesSidebarMode:
     @pytest.fixture
     def component_content(self):
         """Read the unified component template."""
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             return f.read()
 
     def test_editor_content_has_job_id_attribute(self, component_content):

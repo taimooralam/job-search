@@ -13,9 +13,8 @@ Tests validate WCAG 2.1 AA compliance:
 These tests focus on accessibility features beyond basic structure.
 """
 
-import pytest
-from typing import Dict, Any
 
+import pytest
 
 # ==============================================================================
 # Test Class: Full Keyboard Navigation Flow
@@ -27,7 +26,7 @@ class TestKeyboardNavigationFlow:
     def test_editor_can_be_reached_via_tab_navigation(self):
         """Editor should be reachable via Tab key from page start."""
         # Arrange
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -38,7 +37,7 @@ class TestKeyboardNavigationFlow:
     def test_toolbar_buttons_are_keyboard_accessible(self):
         """All toolbar buttons should be accessible via Tab."""
         # Arrange
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -52,20 +51,20 @@ class TestKeyboardNavigationFlow:
         # This is optional but recommended for long toolbars
 
         # Arrange
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
         # May have skip link (optional feature)
         # If not present, that's okay - just document it
         # This test is informational
-        has_skip_link = 'skip' in content.lower() and 'content' in content.lower()
+        'skip' in content.lower() and 'content' in content.lower()
         # Note: Skip link is optional, test doesn't fail without it
 
     def test_focus_visible_styles_defined_in_css(self):
         """focus-visible styles should be defined for keyboard focus."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -76,7 +75,7 @@ class TestKeyboardNavigationFlow:
     def test_tab_order_is_logical(self):
         """Tab order should follow visual layout (top to bottom, left to right)."""
         # Arrange
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/job_detail.html', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -101,7 +100,7 @@ class TestScreenReaderSupport:
     def test_editor_has_descriptive_aria_label(self):
         """Editor should have aria-label describing its purpose."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -112,10 +111,10 @@ class TestScreenReaderSupport:
     def test_save_indicator_has_aria_live_region(self):
         """Save indicator should use aria-live for screen reader announcements."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             js_content = f.read()
 
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             html_content = f.read()
 
         # Act & Assert
@@ -128,7 +127,7 @@ class TestScreenReaderSupport:
     def test_announce_to_screen_reader_function_exists(self):
         """Function to announce messages to screen readers should exist."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -137,7 +136,7 @@ class TestScreenReaderSupport:
     def test_page_break_indicators_have_aria_labels(self):
         """Page break indicators should have aria-label for screen readers."""
         # Arrange
-        with open('frontend/static/js/page-break-calculator.js', 'r') as f:
+        with open('frontend/static/js/page-break-calculator.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -149,7 +148,7 @@ class TestScreenReaderSupport:
         """Toolbar should have role='toolbar' for screen readers."""
         # Arrange
         # Note: CV editor HTML is now in components/cv_editor.html (unified component)
-        with open('frontend/templates/components/cv_editor.html', 'r') as f:
+        with open('frontend/templates/components/cv_editor.html', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -158,7 +157,7 @@ class TestScreenReaderSupport:
     def test_toggle_buttons_have_aria_pressed(self):
         """Toggle buttons (bold, italic) should have aria-pressed attribute."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -167,7 +166,7 @@ class TestScreenReaderSupport:
     def test_shortcuts_modal_has_aria_modal(self):
         """Keyboard shortcuts modal should have aria-modal='true'."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -178,7 +177,7 @@ class TestScreenReaderSupport:
     def test_shortcuts_modal_has_aria_labelledby(self):
         """Shortcuts modal should have aria-labelledby pointing to title."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -195,7 +194,7 @@ class TestFocusManagement:
     def test_shortcuts_modal_traps_focus(self):
         """Keyboard shortcuts modal should trap focus when open."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -207,7 +206,7 @@ class TestFocusManagement:
     def test_editor_receives_focus_when_panel_opens(self):
         """Editor should receive focus when CV editor panel opens."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -217,7 +216,7 @@ class TestFocusManagement:
     def test_focus_returns_to_trigger_after_modal_close(self):
         """Focus should return to element that opened modal after closing."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -229,7 +228,7 @@ class TestFocusManagement:
     def test_undo_redo_buttons_show_focus_indicator(self):
         """Undo/redo buttons should show focus indicator on Tab."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -248,7 +247,7 @@ class TestColorContrast:
     def test_focus_indicators_meet_3_to_1_contrast(self):
         """Focus indicators should have 3:1 contrast ratio (WCAG AA for UI)."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -260,7 +259,7 @@ class TestColorContrast:
     def test_text_has_sufficient_contrast_in_editor(self):
         """Editor text should have 4.5:1 contrast ratio (WCAG AA for text)."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -271,13 +270,12 @@ class TestColorContrast:
     def test_disabled_buttons_still_meet_minimum_contrast(self):
         """Disabled buttons should still be perceivable (not invisible)."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
-            content = f.read()
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
+            f.read()
 
         # Act & Assert
         # Disabled styles should still have some contrast
         # Check for disabled styles
-        has_disabled_styles = 'disabled' in content or ':disabled' in content
 
 
 # ==============================================================================
@@ -290,7 +288,7 @@ class TestTouchTargetSizes:
     def test_mobile_buttons_meet_44px_minimum(self):
         """Mobile buttons should be at least 44x44px (WCAG AAA)."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -300,7 +298,7 @@ class TestTouchTargetSizes:
     def test_desktop_buttons_meet_minimum_target_size(self):
         """Desktop buttons should have reasonable hit areas (min 24x24px)."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -311,7 +309,7 @@ class TestTouchTargetSizes:
     def test_toolbar_buttons_have_spacing_on_mobile(self):
         """Toolbar buttons on mobile should have spacing to prevent mis-taps."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -329,7 +327,7 @@ class TestReducedMotionSupport:
     def test_prefers_reduced_motion_media_query_exists(self):
         """CSS should have prefers-reduced-motion media query."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -338,7 +336,7 @@ class TestReducedMotionSupport:
     def test_animations_disabled_in_reduced_motion_mode(self):
         """Animations should be disabled when user prefers reduced motion."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -348,7 +346,7 @@ class TestReducedMotionSupport:
     def test_panel_transitions_respect_reduced_motion(self):
         """Editor panel slide transitions should respect reduced motion."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -366,7 +364,7 @@ class TestHighContrastModeSupport:
     def test_prefers_contrast_media_query_exists(self):
         """CSS should have prefers-contrast media query."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -375,7 +373,7 @@ class TestHighContrastModeSupport:
     def test_high_contrast_mode_increases_border_visibility(self):
         """High contrast mode should make borders more visible."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -396,7 +394,7 @@ class TestARIAStateUpdates:
     def test_aria_pressed_updates_on_button_toggle(self):
         """aria-pressed should update when toggle buttons are clicked."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -407,8 +405,8 @@ class TestARIAStateUpdates:
     def test_aria_expanded_updates_on_panel_toggle(self):
         """aria-expanded should update when panels open/close."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
-            content = f.read()
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
+            f.read()
 
         # Act & Assert
         # May use aria-expanded for collapsible sections
@@ -418,7 +416,7 @@ class TestARIAStateUpdates:
     def test_aria_live_announcements_triggered_on_save(self):
         """aria-live region should announce save status changes."""
         # Arrange
-        with open('frontend/static/js/cv-editor.js', 'r') as f:
+        with open('frontend/static/js/cv-editor.js', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -438,7 +436,7 @@ class TestPrintAccessibility:
     def test_print_styles_hide_ui_elements(self):
         """Print styles should hide editor UI (toolbar, buttons)."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert
@@ -448,7 +446,7 @@ class TestPrintAccessibility:
     def test_print_styles_preserve_content(self):
         """Print styles should preserve editor content."""
         # Arrange
-        with open('frontend/static/css/cv-editor.css', 'r') as f:
+        with open('frontend/static/css/cv-editor.css', 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Act & Assert

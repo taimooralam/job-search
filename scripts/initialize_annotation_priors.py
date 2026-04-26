@@ -69,10 +69,10 @@ def main():
     # Import after logging setup to capture import logs
     try:
         from src.services.annotation_priors import (
+            get_priors_stats,
             load_priors,
             rebuild_priors,
             save_priors,
-            get_priors_stats,
             should_rebuild_priors,
         )
     except ImportError as e:

@@ -10,16 +10,15 @@ that have been manually linked to annotations.
 
 import re
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.common.config import Config
-from src.common.unified_llm import invoke_unified_sync
-from src.common.state import JobState
-from src.common.star_parser import parse_star_records
-from src.common.types import STARRecord
 from src.common.annotation_boost import AnnotationBoostCalculator
-
+from src.common.star_parser import parse_star_records
+from src.common.state import JobState
+from src.common.types import STARRecord
+from src.common.unified_llm import invoke_unified_sync
 
 # ===== PROMPT DESIGN =====
 
@@ -315,9 +314,9 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
             }
 
         print(f"\n{'='*80}")
-        print(f"LAYER 2.5: STAR SELECTOR")
+        print("LAYER 2.5: STAR SELECTOR")
         print(f"{'='*80}")
-        print(f"Job analysis dimensions:")
+        print("Job analysis dimensions:")
         print(f"  - Pain points: {len(pain_points)}")
         print(f"  - Strategic needs: {len(strategic_needs)}")
         print(f"  - Risks if unfilled: {len(risks)}")
@@ -327,7 +326,7 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
         # Phase 4: Log annotation status
         if annotation_calculator and annotation_calculator.has_annotations():
             stats = annotation_calculator.get_stats()
-            print(f"📌 Annotation boost ACTIVE:")
+            print("📌 Annotation boost ACTIVE:")
             print(f"   - Active annotations: {stats['total_active']}")
             print(f"   - STARs linked: {stats['stars_linked']}")
             print(f"   - Core strengths: {stats['core_strengths']}")

@@ -9,8 +9,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.layer6.html_cv_generator import HTMLCVGenerator
 from src.common.state import JobState
+from src.layer6.html_cv_generator import HTMLCVGenerator
 
 
 def test_html_cv_generation():
@@ -98,7 +98,7 @@ def test_html_cv_generation():
 
     try:
         html_path, reasoning = generator.generate_html_cv(state)
-        print(f"✅ HTML CV generated successfully!")
+        print("✅ HTML CV generated successfully!")
         print(f"   Path: {html_path}")
         print(f"\n📄 CV Reasoning:\n{reasoning}\n")
 
@@ -112,7 +112,7 @@ def test_html_cv_generation():
                 first_lines = ''.join([f.readline() for _ in range(10)])
             print(f"\n📋 First 10 lines of HTML:\n{first_lines}")
 
-            print(f"\n🌐 Open in browser:")
+            print("\n🌐 Open in browser:")
             print(f"   file://{Path(html_path).absolute()}")
 
             return True

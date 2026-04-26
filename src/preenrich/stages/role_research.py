@@ -19,9 +19,9 @@ import logging
 import time
 from typing import Any, Dict, List
 
+from src.layer3.role_researcher import RoleResearcher
 from src.preenrich.stages.base import StageBase
 from src.preenrich.types import StageContext, StageResult
-from src.layer3.role_researcher import RoleResearcher
 
 logger = logging.getLogger(__name__)
 

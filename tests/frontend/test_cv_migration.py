@@ -5,7 +5,6 @@ Tests the migrate_cv_text_to_editor_state() function that converts
 legacy markdown CV content to TipTap JSON format.
 """
 
-import pytest
 
 
 class TestMigrationFunction:

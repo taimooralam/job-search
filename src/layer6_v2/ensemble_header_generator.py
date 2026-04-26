@@ -22,41 +22,37 @@ Ensemble Strategy:
 
 import re
 import time
-from enum import Enum
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Any, Callable
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
-from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
-from src.common.config import Config
-from src.common.unified_llm import UnifiedLLM
 from src.common.tiering import (
+    CLAUDE_STANDARD,
     ProcessingTier,
     TierConfig,
     get_tier_config,
     get_tier_from_fit_score,
-    CLAUDE_STANDARD,
 )
+from src.common.unified_llm import UnifiedLLM
 from src.layer6_v2.header_generator import HeaderGenerator, ProfileResponse
-from src.layer6_v2.types import (
-    StitchedCV,
-    ProfileOutput,
-    SkillsSection,
-    HeaderOutput,
-    ValidationResult,
-    ValidationFlags,
-    EnsembleMetadata,
-    HeaderGenerationContext,
-)
 from src.layer6_v2.prompts.header_generation import (
+    KEYWORD_PERSONA_SYSTEM_PROMPT,
     METRIC_PERSONA_SYSTEM_PROMPT,
     NARRATIVE_PERSONA_SYSTEM_PROMPT,
-    KEYWORD_PERSONA_SYSTEM_PROMPT,
     SYNTHESIS_SYSTEM_PROMPT,
     build_persona_user_prompt,
     build_synthesis_user_prompt,
+)
+from src.layer6_v2.types import (
+    EnsembleMetadata,
+    HeaderGenerationContext,
+    HeaderOutput,
+    ProfileOutput,
+    StitchedCV,
+    ValidationFlags,
 )
 
 

@@ -9,22 +9,23 @@ Usage:
     python scripts/aggregate_jd_patterns.py
 """
 
-import os
-import sys
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Any
+import sys
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from pymongo import MongoClient
+
 from src.common.config import Config
 
 # Configure logging
@@ -206,32 +207,32 @@ def print_pattern_summary(patterns: Dict[str, Dict[str, Any]]):
         print(f"{'─' * 70}")
 
         # Sample titles
-        print(f"\n  📝 Sample Titles:")
+        print("\n  📝 Sample Titles:")
         for title in data["sample_titles"][:5]:
             print(f"     • {title}")
 
         # Competency weights
         if data["competency_weight_stats"]:
-            print(f"\n  ⚖️  Competency Weights (average):")
+            print("\n  ⚖️  Competency Weights (average):")
             for key, stats in data["competency_weight_stats"].items():
                 print(f"     • {key.capitalize()}: {stats['avg']}% (range: {stats['min']}-{stats['max']})")
 
         # Top technical skills
-        print(f"\n  🔧 Top Technical Skills:")
+        print("\n  🔧 Top Technical Skills:")
         for skill, count in data["top_technical_skills"][:10]:
             pct = count / data["count"] * 100
             bar = "█" * int(pct / 10) + "░" * (10 - int(pct / 10))
             print(f"     {bar} {skill}: {count} ({pct:.0f}%)")
 
         # Top keywords
-        print(f"\n  🏷️  Top ATS Keywords:")
+        print("\n  🏷️  Top ATS Keywords:")
         for kw, count in data["top_keywords"][:10]:
             pct = count / data["count"] * 100
             print(f"     • {kw}: {count} ({pct:.0f}%)")
 
         # Pain points
         if data["implied_pain_points"]:
-            print(f"\n  🎯 Common Pain Points:")
+            print("\n  🎯 Common Pain Points:")
             for pain in data["implied_pain_points"][:5]:
                 print(f"     • {pain}")
 
@@ -261,7 +262,7 @@ def print_pattern_summary(patterns: Dict[str, Dict[str, Any]]):
 def save_pattern_analysis(patterns: Dict[str, Dict[str, Any]], output_path: Path):
     """Save pattern analysis to JSON file."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(patterns, f, indent=2)
     logger.info(f"Saved pattern analysis to {output_path}")
 

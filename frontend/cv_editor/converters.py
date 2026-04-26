@@ -7,7 +7,7 @@ to satisfy imports from cv_generation_service.py.
 This module uses lazy importing to avoid Flask initialization
 overhead when the module is first loaded.
 """
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def markdown_to_prosemirror(cv_text: str) -> Dict[str, Any]:

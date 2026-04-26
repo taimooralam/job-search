@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from src.preenrich.blueprint_config import load_job_taxonomy
-from src.preenrich.stages.blueprint_common import apply_disambiguation_rules, detect_ai_taxonomy, score_categories_from_taxonomy
+from src.preenrich.stages.blueprint_common import (
+    apply_disambiguation_rules,
+    detect_ai_taxonomy,
+    score_categories_from_taxonomy,
+)
 
 
 def test_taxonomy_has_signal_blocks_for_each_category():

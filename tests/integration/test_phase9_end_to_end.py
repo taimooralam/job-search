@@ -23,8 +23,7 @@ Quality Gates Validated:
 
 import sys
 from pathlib import Path
-from typing import Dict, Any
-from unittest.mock import patch
+from typing import Any, Dict
 
 import pytest
 
@@ -33,7 +32,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from scripts.run_pipeline import load_job_from_mongo
 from src.workflow import run_pipeline
-
 
 # ===== TEST JOB FIXTURES (7 diverse scenarios) =====
 
@@ -56,7 +54,7 @@ Engineering leader with 10+ years building scalable systems, leading teams, and 
 - Improved system reliability from 99.5% to 99.95% uptime
         """.strip()
 
-    with open(kb_path, 'r') as f:
+    with open(kb_path, 'r', encoding="utf-8") as f:
         return f.read()
 
 
@@ -777,11 +775,11 @@ def test_generate_regression_report(
 
     report_path = Path(__file__).parent.parent.parent / "report.md"
 
-    with open(report_path, 'w') as f:
+    with open(report_path, 'w', encoding="utf-8") as f:
         f.write("# Phase 9 End-to-End Regression Report\n\n")
         f.write(f"**Generated**: {Path(__file__).name}\n")
-        f.write(f"**Test Suite**: Phase 9.2 - End-to-End Pipeline Validation (ROADMAP)\n")
-        f.write(f"**Coverage**: Phases 4-9 (Layers 2-6b)\n\n")
+        f.write("**Test Suite**: Phase 9.2 - End-to-End Pipeline Validation (ROADMAP)\n")
+        f.write("**Coverage**: Phases 4-9 (Layers 2-6b)\n\n")
 
         # Executive Summary
         total_jobs = len(results)

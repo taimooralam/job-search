@@ -14,12 +14,9 @@ Phase 3 focuses on document-level formatting that affects the entire CV layout,
 not individual text selections.
 """
 
-import pytest
-import json
-from datetime import datetime
-from bson import ObjectId
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+from bson import ObjectId
 
 # ==============================================================================
 # Test Class: Document Margin Controls

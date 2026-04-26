@@ -61,6 +61,7 @@ def verify_connection(job_id: str = None) -> dict:
 
     try:
         from bson import ObjectId
+
         from src.common.repositories import get_job_repository
 
         repo = get_job_repository()
@@ -105,8 +106,7 @@ def verify_write_result() -> dict:
     logger.info("\n=== Step 3: WriteResult Verification ===")
 
     try:
-        from bson import ObjectId
-        from src.common.repositories import get_job_repository, WriteResult
+        from src.common.repositories import WriteResult, get_job_repository
 
         repo = get_job_repository()
 
@@ -119,7 +119,7 @@ def verify_write_result() -> dict:
         job_id = sample_job["_id"]
 
         # Update with no-op (set field to same value)
-        original_updated_at = sample_job.get("updatedAt", datetime.utcnow())
+        sample_job.get("updatedAt", datetime.utcnow())
         result = repo.update_one(
             {"_id": job_id},
             {"$set": {"_repository_test": True}},
@@ -137,7 +137,7 @@ def verify_write_result() -> dict:
             {"$unset": {"_repository_test": ""}},
         )
 
-        logger.info(f"  ✓ WriteResult returned correctly")
+        logger.info("  ✓ WriteResult returned correctly")
         logger.info(f"    matched_count: {result.matched_count}")
         logger.info(f"    modified_count: {result.modified_count}")
         logger.info(f"    atlas_success: {result.atlas_success}")

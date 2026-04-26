@@ -18,13 +18,12 @@ Usage:
 import json
 import re
 from datetime import datetime
-from typing import List, Dict, Optional, Callable, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_exponential, RetryCallState
+from tenacity import RetryCallState, retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
-from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
 from src.layer6_v2.types import (
     GradeResult,
@@ -561,7 +560,7 @@ Return JSON matching this ImprovementResponse schema:
                 improvement_summary=response.improvement_summary,
             )
 
-            self._logger.info(f"Improvement complete:")
+            self._logger.info("Improvement complete:")
             self._logger.info(f"  Target: {target_dimension}")
             self._logger.info(f"  Changes: {len(response.changes_made)}")
             self._logger.info(f"  Summary: {response.improvement_summary[:100]}...")

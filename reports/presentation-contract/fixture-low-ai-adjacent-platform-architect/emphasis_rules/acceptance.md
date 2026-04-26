@@ -1,0 +1,12 @@
+- presentation_contract status: partial
+- truth_constrained_emphasis_rules status: partial
+- mandatory topic coverage count: 8
+- forbidden_claim_patterns count: 3
+- credibility_ladder_rules count: 1
+- title_strategy_conflict_count: 0
+- ai_section_policy_conflict_count: 0
+- dimension_weight_conflict_count: 0
+- must_signal_contradiction_count: 0
+- trace url: missing
+- stage run id: missing
+- run ok line: PRESENTATION_CONTRACT_RUN_OK job=fixture-low-ai-adjacent-platform-architect status=partial emphasis_rules=partial trace=missing

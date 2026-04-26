@@ -4,14 +4,13 @@ Unit tests for src/common/telegram.py
 Tests Telegram notification module with mocked HTTP calls.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.common.telegram import (
-    send_telegram,
     notify_cron_complete,
     notify_pipeline_complete,
     notify_pipeline_failed,
+    send_telegram,
 )
 
 

@@ -14,22 +14,21 @@ Output:
 """
 
 import json
-import os
 import sys
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from tests.ab_testing.scorers import (
-    score_specificity,
+    ScoreResult,
+    calculate_combined_score,
     score_grounding,
     score_hallucinations,
-    calculate_combined_score,
-    ScoreResult,
+    score_specificity,
 )
 
 
@@ -75,7 +74,7 @@ def load_fixtures() -> Dict[str, Any]:
 
     # Load test job 1 (real from MongoDB)
     test_job_path = fixtures_dir / "test_job_1.json"
-    with open(test_job_path) as f:
+    with open(test_job_path, encoding="utf-8") as f:
         test_job_1 = json.load(f)
 
     # Load master CV (MongoDB first, then file fallback)
@@ -120,6 +119,7 @@ def load_fixtures() -> Dict[str, Any]:
 def run_layer4_integration(job_state: Dict[str, Any], master_cv: str) -> IntegrationTestResult:
     """Run Layer 4 integration test with actual LLM call."""
     import time
+
     from src.layer4.opportunity_mapper import opportunity_mapper_node
 
     start_time = time.time()
@@ -170,6 +170,7 @@ def run_layer4_integration(job_state: Dict[str, Any], master_cv: str) -> Integra
 def run_layer6a_integration(job_state: Dict[str, Any], master_cv: str) -> IntegrationTestResult:
     """Run Layer 6a integration test with actual LLM call."""
     import time
+
     from src.layer6.cover_letter_generator import CoverLetterGenerator
 
     start_time = time.time()
@@ -218,6 +219,7 @@ def run_layer6a_integration(job_state: Dict[str, Any], master_cv: str) -> Integr
 def run_layer6b_integration(job_state: Dict[str, Any], master_cv: str) -> IntegrationTestResult:
     """Run Layer 6b integration test with actual LLM call."""
     import time
+
     from src.layer6.cv_generator import CVGenerator
 
     start_time = time.time()
@@ -553,7 +555,7 @@ def main():
     reports_dir.mkdir(parents=True, exist_ok=True)
     report_path = reports_dir / "integration-final.md"
 
-    with open(report_path, "w") as f:
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write(report)
 
     print(f"Report saved to: {report_path}")

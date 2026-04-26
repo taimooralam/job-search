@@ -9,14 +9,15 @@ Queue directory:
   - VPS: /var/lib/scout/ (set SCOUT_QUEUE_DIR or auto-detected)
   - Local dev: data/scout/
 
-All file operations use fcntl.flock() with 5s timeout to prevent corruption
-from concurrent cron processes.
+File locks use a cross-platform abstraction: `fcntl.flock` on POSIX and
+`msvcrt.locking` on Windows. Both paths honour a `LOCK_TIMEOUT` budget so the
+contract is identical from the caller's perspective.
 """
 
-import fcntl
 import json
 import logging
 import os
+import sys
 import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -26,6 +27,13 @@ from typing import Dict, List
 logger = logging.getLogger(__name__)
 
 LOCK_TIMEOUT = 5  # seconds
+
+_IS_WINDOWS = sys.platform.startswith("win")
+
+if _IS_WINDOWS:
+    import msvcrt  # type: ignore[import-not-found]
+else:
+    import fcntl  # type: ignore[import-not-found]
 
 
 def get_queue_dir() -> Path:
@@ -53,24 +61,38 @@ def get_queue_dir() -> Path:
     return local_dir
 
 
-@contextmanager
-def _file_lock(path: Path, exclusive: bool = True):
-    """Acquire a file lock with timeout.
+def _acquire_lock(fd, *, exclusive: bool, path: Path) -> None:
+    """Platform-aware advisory lock with a shared timeout budget.
 
-    Args:
-        path: Path to the lock file (uses .lock suffix)
-        exclusive: True for LOCK_EX (write), False for LOCK_SH (read)
+    POSIX path: `fcntl.flock` with `LOCK_NB` polling.
+    Windows path: `msvcrt.locking(LK_NBLCK)` polling. Windows `msvcrt.locking`
+    does not distinguish shared vs exclusive — all locks are exclusive, which
+    is safe (never less safe than POSIX `LOCK_EX`, only less concurrent for
+    readers). Reader paths in this module are short-lived so the loss is
+    negligible.
     """
-    lock_path = path.with_suffix(path.suffix + ".lock")
-    lock_path.touch(exist_ok=True)
-    fd = open(lock_path, "w")
-    try:
+    deadline = time.monotonic() + LOCK_TIMEOUT
+    if _IS_WINDOWS:
+        # msvcrt.locking requires the file to contain the bytes we lock.
+        # Lock 1 byte at offset 0 — the canonical Windows lockfile pattern.
+        fd.seek(0)
+        while True:
+            try:
+                msvcrt.locking(fd.fileno(), msvcrt.LK_NBLCK, 1)
+                return
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"Could not acquire {'exclusive' if exclusive else 'shared'} "
+                        f"lock on {path} within {LOCK_TIMEOUT}s"
+                    )
+                time.sleep(0.1)
+    else:
         mode = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
-        deadline = time.monotonic() + LOCK_TIMEOUT
         while True:
             try:
                 fcntl.flock(fd, mode | fcntl.LOCK_NB)
-                break
+                return
             except (IOError, OSError):
                 if time.monotonic() >= deadline:
                     raise TimeoutError(
@@ -78,9 +100,48 @@ def _file_lock(path: Path, exclusive: bool = True):
                         f"lock on {path} within {LOCK_TIMEOUT}s"
                     )
                 time.sleep(0.1)
+
+
+def _release_lock(fd) -> None:
+    """Release the platform-appropriate lock previously taken on `fd`."""
+    if _IS_WINDOWS:
+        try:
+            fd.seek(0)
+            msvcrt.locking(fd.fileno(), msvcrt.LK_UNLCK, 1)
+        except OSError:
+            # Best-effort release — the fd close below frees the OS lock anyway.
+            pass
+    else:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
+@contextmanager
+def _file_lock(path: Path, exclusive: bool = True):
+    """Acquire a file lock with timeout.
+
+    Cross-platform: uses fcntl on POSIX, msvcrt on Windows. The `exclusive`
+    distinction is honoured on POSIX via `LOCK_EX` vs `LOCK_SH`; on Windows
+    all locks are exclusive (see `_acquire_lock`).
+
+    Args:
+        path: Path to the data file. A sibling `<path>.lock` file backs the lock.
+        exclusive: True for writer lock, False for reader lock.
+    """
+    lock_path = path.with_suffix(path.suffix + ".lock")
+    # msvcrt.locking needs at least 1 byte in the file to lock. Ensure it
+    # exists and is non-empty before opening the fd. `r+b` is required on
+    # Windows so msvcrt.locking can lock the region for both read and write
+    # access patterns used by this module.
+    if not lock_path.exists() or lock_path.stat().st_size == 0:
+        lock_path.touch(exist_ok=True)
+        with open(lock_path, "wb") as _seed:
+            _seed.write(b"\0")
+    fd = open(lock_path, "r+b")
+    try:
+        _acquire_lock(fd, exclusive=exclusive, path=path)
         yield
     finally:
-        fcntl.flock(fd, fcntl.LOCK_UN)
+        _release_lock(fd)
         fd.close()
 
 
@@ -89,7 +150,7 @@ def _read_jsonl(path: Path) -> List[Dict]:
     if not path.exists():
         return []
     entries = []
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -102,14 +163,14 @@ def _read_jsonl(path: Path) -> List[Dict]:
 
 def _write_jsonl(path: Path, entries: List[Dict]):
     """Overwrite a JSONL file with entries."""
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         for entry in entries:
             f.write(json.dumps(entry, default=str) + "\n")
 
 
 def _append_jsonl(path: Path, entries: List[Dict]):
     """Append entries to a JSONL file."""
-    with open(path, "a") as f:
+    with open(path, "a", encoding="utf-8") as f:
         for entry in entries:
             f.write(json.dumps(entry, default=str) + "\n")
 
@@ -351,7 +412,7 @@ def queue_length() -> int:
     queue_file = queue_dir / "queue.jsonl"
     if not queue_file.exists():
         return 0
-    with open(queue_file, "r") as f:
+    with open(queue_file, "r", encoding="utf-8") as f:
         return sum(1 for line in f if line.strip())
 
 
@@ -361,7 +422,7 @@ def scored_length() -> int:
     scored_file = queue_dir / "scored.jsonl"
     if not scored_file.exists():
         return 0
-    with open(scored_file, "r") as f:
+    with open(scored_file, "r", encoding="utf-8") as f:
         return sum(1 for line in f if line.strip())
 
 
@@ -385,7 +446,7 @@ def append_to_pool(jobs: List[Dict]) -> int:
     now = datetime.now(timezone.utc).isoformat()
 
     with _file_lock(pool_file, exclusive=True):
-        with open(pool_file, "a") as f:
+        with open(pool_file, "a", encoding="utf-8") as f:
             for job in jobs:
                 job["pooled_at"] = now
                 f.write(json.dumps(job) + "\n")
@@ -431,7 +492,7 @@ def purge_pool(max_age_hours: int = POOL_MAX_AGE_HOURS) -> int:
                 purged += 1
 
         if purged:
-            with open(pool_file, "w") as f:
+            with open(pool_file, "w", encoding="utf-8") as f:
                 for entry in kept:
                     f.write(json.dumps(entry) + "\n")
 

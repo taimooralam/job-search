@@ -1,0 +1,108 @@
+verified_skills:
+- TypeScript
+- Python
+- S3 Vectors
+- LiteLLM
+- Redis
+- DynamoDB
+- SQS
+- Vercel AI SDK
+- Zod
+- MCP
+- Vitest
+- text-embedding-3-small
+- RAPTOR
+- Claude Sonnet
+- AWS
+- FastAPI
+- Pydantic V2
+- Qdrant
+- Docker Compose
+- Prometheus
+- Grafana
+- GitHub Actions
+- pytest
+- ruff
+- mypy
+- pre-commit
+- httpx
+- Traefik
+- Langfuse
+verified_patterns:
+- BM25 from scratch
+- RRF fusion
+- LLM-as-judge reranking
+- two-tier semantic caching
+- SHA-256 change detection
+- sentence-boundary chunking
+- Confluence XML parsing
+- Jira ADF parsing
+- RAPTOR hierarchical tree
+- Zod schema validation
+- MCP server tools
+- guardrail profiles
+- per-silo access control
+- parallel Promise.all
+- hybrid retrieval pipeline
+- document ingestion pipeline
+- structured output validation
+- LiteLLM proxy injection
+- LLM gateway
+- multi-provider routing
+- provider fallback chain
+- circuit breaker
+- retry with backoff
+- mock providers
+- Docker multi-stage build
+- CI/CD pipeline
+- VPS deployment
+- Prometheus metrics
+- Grafana dashboards
+- observability stack
+verified_competencies:
+- Hybrid Search
+- RAG Pipeline
+- Document Ingestion Pipeline
+- Retrieval Evaluation (MRR, NDCG)
+- Semantic Caching
+- LLM-as-Judge Evaluation
+- Structured Outputs
+- MCP Tool Design
+- Guardrail Engineering
+- Enterprise AI Platform
+- Search Quality Optimization
+- Vector Search
+- RAPTOR Indexing
+- Knowledge Base Retrieval
+- LLM Gateway Design
+- Provider Fallback Chain
+- Circuit Breaker Pattern
+- Multi-Provider Routing
+- Langfuse Tracing
+- LangGraph
+- LangChain
+- Agent Frameworks
+- API Gateway Design
+- Model Routing
+post_checklist_skills:
+- React
+- Vite
+- Tailwind CSS
+- Vercel
+post_checklist_competencies:
+- Golden-Set Testing
+- Eval Harness Design
+- Faithfulness Evaluation
+- Regression Detection
+- Streaming SSE
+- Rate Limiting
+- SLO/SLI Design
+- Incident Runbooks
+- Cost Optimization
+- Prompt Engineering
+- Document Ingestion Pipeline
+- Hybrid Search
+not_yet_built:
+- fine-tuning pipeline
+- custom embedding training
+- RLHF

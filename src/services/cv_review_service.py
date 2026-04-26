@@ -258,7 +258,7 @@ class CVReviewService(OperationService):
                 # Write prompt to temp file — codex exec reads from stdin pipe
                 import tempfile
                 prompt_file = tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".txt", delete=False, dir="/tmp"
+                    encoding="utf-8", mode="w", suffix=".txt", delete=False, dir="/tmp"
                 )
                 prompt_file.write(full_prompt)
                 prompt_file.close()

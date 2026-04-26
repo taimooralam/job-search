@@ -2,7 +2,6 @@
 Unit tests for src/common/utils.py
 """
 
-import pytest
 from src.common.utils import sanitize_path_component
 
 

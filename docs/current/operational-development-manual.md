@@ -175,6 +175,197 @@ ctx = StageContext(
 )
 ```
 
+## 2026-04-22 Windows Bootstrap And VPS Recovery Notes
+
+These notes were added after a real Windows-machine bootstrap plus interrupted
+VPS stakeholder-validation recovery. Treat them as required procedure, not
+tribal knowledge.
+
+### Fresh Windows machine bootstrap
+
+Do this in order:
+
+1. Confirm the repo is present and on the expected branch/commit.
+2. Fetch latest from GitHub before orienting deeply.
+3. Verify the exact stage files and tests you expect are present before
+   writing code.
+4. Create `.venv` with a real Python install, not the Windows Store stub.
+5. Install `requirements.txt`.
+6. Run only the targeted tests for the checkpoint you are resuming.
+7. Only then start live VPS validation.
+
+Observed failures:
+- PowerShell profile noise (`Microsoft.PowerShell_profile.ps1 cannot be loaded`)
+  looked like repo breakage but was only local shell-policy noise.
+- `python.exe` and `py.exe` resolved to Windows Store shims under
+  `C:\\Users\\<user>\\AppData\\Local\\Microsoft\\WindowsApps\\`, which are not
+  usable as the project interpreter.
+- `git fetch`, `pip install`, and `ssh` all required outside-sandbox /
+  network-enabled execution.
+
+Corrections:
+- On Windows automation, prefer shells that do not load the user PowerShell
+  profile when you only need repo commands.
+- Do not trust `python`, `py`, or `winget` aliases blindly on a fresh machine.
+  Verify the real interpreter path first.
+- For this repo, `python_requires >= 3.11`; if PATH is wrong, use the concrete
+  interpreter path directly to create `.venv`.
+- Treat GitHub sync, dependency install, and SSH as first-class bootstrap
+  steps, not optional cleanup.
+
+### Windows bootstrap checklist
+
+Before any live run:
+- verify `git fetch origin` succeeds
+- verify `HEAD` and `origin/main` are what you think they are
+- verify `.venv` exists
+- verify `requirements.txt` installed cleanly
+- verify the target checkpoint test file passes before touching the VPS
+
+### VPS repo shape and sync rules
+
+Observed on the live host:
+- the active preenrich path was `/root/scout-cron`
+- `/root/scout-cron` was a deployed working tree, not a Git checkout
+- `/root/job-runner` also was not a Git checkout
+
+Implication:
+- do not assume `git pull` is the right recovery path on the VPS
+- inspect the live files directly
+- when the VPS tree is deployment-shaped instead of Git-shaped, sync only the
+  necessary files with `scp` / `rsync` and then verify the exact lines landed
+
+Required procedure:
+- identify the actual live repo path first
+- check whether it is a real Git checkout or a deployed copy
+- if it is a deployed copy, verify code state by content, not by commit SHA
+- after syncing targeted files, grep the specific fix markers on the VPS before
+  rerunning the stage
+
+### Remote Python launch rule
+
+Observed failure:
+- running stdin Python from `/root/scout-cron` imported the repo's top-level
+  `types.py` instead of the stdlib `types` module
+- this broke even read-only recovery scripts before stage code ran
+
+Correction:
+- when using `python -`, heredoc launchers, or temporary recovery scripts on
+  the VPS, run them from `/tmp` (or another neutral directory), not from the
+  repo root
+- use the repo `.venv` interpreter explicitly, e.g.
+  `/root/scout-cron/.venv/bin/python -u /tmp/<script>.py`
+
+### Windows to SSH launcher rule
+
+Observed failure:
+- long inline SSH heredocs from Windows hit quoting collisions before the VPS
+  stage even started
+
+Correction:
+- for non-trivial live-debug launchers from Windows, prefer:
+  1. upload a temporary script to `/tmp`
+  2. execute it with the repo `.venv`
+  3. capture output to a named artifact path
+
+Do not waste time debugging nested PowerShell + SSH + heredoc quoting when the
+real task is stage validation.
+
+### Detached VPS run rule
+
+Observed failure:
+- a detached `nohup ... &` launch from Windows was interrupted before it left a
+  durable log or report
+- follow-up inspection only showed `stdin is not a terminal`
+- the result was ambiguity about whether the remote Python / Codex work was
+  still alive
+
+Correction:
+- for detached VPS runs, use a wrapper script uploaded to `/tmp`, not an inline
+  command
+- invoke it with `ssh -tt` so the remote launch path gets a real TTY even if
+  the actual Python/Codex subprocesses later run detached
+- redirect all stdout/stderr to a named `/tmp/<run>.out`
+- always write a named `/tmp/<run>.json` report artifact
+- always truncate/create the named log before launch so an empty file is a real
+  signal, not leftover state from an older run
+- do not rely on inline Windows quoting like `echo \$! > /tmp/<run>.pid`; it
+  can write the literal string `$!` instead of the remote background PID
+- use the repo helper `scripts/ops/launch_vps_detached.py`, which uploads a
+  real remote wrapper, captures `pid=$!` on the VPS, writes a numeric pid file,
+  returns the launched PID, and now fails fast if the detached process dies
+  before the initial startup poll window
+- for long Python or Codex-backed runners, plain detached `nohup ... &` was
+  still not durable enough on the current VPS path; the helper now launches
+  with `setsid nohup ... &` so the runner survives SSH session teardown and
+  keeps writing the named `/tmp/<run>.out`
+- do not keep a giant streamed SSH session open for long Codex-backed runs;
+  launch once, then poll in short SSH calls only
+
+Required strict detach-poll pattern:
+1. launch with:
+   - `python scripts/ops/launch_vps_detached.py --host <host> --launcher-name <run> --log-path /tmp/<run>.out --pid-path /tmp/<run>.pid --startup-check-seconds 5 -- <command...>`
+2. run an initial startup poll within 5-15 seconds:
+   - `cat /tmp/<run>.pid`
+   - `ps -p <pid> -o pid,etime,cmd --no-headers`
+   - `tail -n 80 /tmp/<run>.out`
+3. if the PID is gone or the log is still empty, stop and inspect before
+   relaunching
+4. only after the startup poll passes, switch to periodic polls every 60-120
+   seconds:
+   - `ps -p <pid> -o pid,etime,cmd --no-headers`
+   - `ls -l /tmp/<run>.json`
+   - `grep -n 'stage_start\\|stage_complete\\|stage_failed\\|runner_complete\\|runner_failed' /tmp/<run>.out | tail -n 60`
+   - `tail -n 120 /tmp/<run>.out`
+5. when the PID exits, inspect the final log and report artifact before
+   deciding whether the run succeeded, failed, or needs a foreground repro
+
+Negative rules:
+- do not watch a long multi-stage run through one continuous SSH stream
+- do not relaunch a detached run until the initial startup poll has shown why
+  the previous launch died
+- do not rerun a full chain when a single-stage resume path exists
+- do not debug nested Windows quoting when the helper can upload a real wrapper
+
+Required pattern:
+- launch with:
+  - `python scripts/ops/launch_vps_detached.py --host <host> --launcher-name <run> --log-path /tmp/<run>.out --pid-path /tmp/<run>.pid --startup-check-seconds 5 -- <command...>`
+- upload `/tmp/<runner>.py` first if the detached command depends on a new temp
+  runner script
+- poll separately; do not keep one giant streamed SSH session open just to
+  watch Codex stderr for long multi-stage runs
+
+### Artifact recovery rule
+
+Observed failure:
+- the target job did not expose `pre_enrichment.outputs.research_enrichment`
+  on the live document
+- it only exposed a legacy `pre_enrichment.stages` shape
+
+Correction:
+- when recovering a fast-path stage rerun, inspect both:
+  - `pre_enrichment.outputs`
+  - `pre_enrichment.stages`
+- do not declare the fast path unavailable until both shapes and any
+  collection-backed artifact refs have been checked
+
+### Correct develop/test-run order for recovery sessions
+
+Use this order when resuming an interrupted stage validation:
+
+1. verify local repo state and expected checkpoint files
+2. run the minimum local targeted tests
+3. verify VPS connectivity and live code path
+4. determine whether the VPS path is Git-backed or deployment-backed
+5. recover the upstream artifact from the live document, legacy stage state,
+   or collection-backed artifact ref
+6. rerun only the target stage if the upstream artifact is recoverable
+7. rerun the full chain only if the fast path is genuinely unavailable
+
+This order is mandatory for interrupted live-validation work. It avoids
+re-solving already-solved work and keeps operator attention on the real
+blocker.
+
 ## Observed Failures And Corrections
 
 ### Failure 1: Buffered silent runs

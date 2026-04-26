@@ -10,14 +10,13 @@ Validates:
 Uses mongomock for Mongo isolation — no real infra.
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
-from bson import ObjectId
 
 import mongomock
+import pytest
+from bson import ObjectId
 
 from src.preenrich.lease import claim_one, heartbeat, release
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -29,6 +28,18 @@ def mock_db():
     """Return a mongomock database handle."""
     client = mongomock.MongoClient()
     return client["jobs"]
+
+
+@pytest.fixture
+def capture_trace_events(monkeypatch):
+    captured = []
+
+    def _fake_emit(**kwargs):
+        captured.append(kwargs)
+        return {"trace_id": None, "trace_url": None}
+
+    monkeypatch.setattr("src.preenrich.lease.emit_standalone_event", _fake_emit)
+    return captured
 
 
 def _insert_job(db, lifecycle: str, lease_expires_at=None, lease_owner=None) -> ObjectId:
@@ -59,6 +70,19 @@ def test_claim_one_selected_job(mock_db):
     assert result is not None
     assert result["lifecycle"] == "preenriching"
     assert result["lease_owner"] == "worker-a"
+
+
+def test_claim_one_emits_trace_event(mock_db, capture_trace_events):
+    job_id = _insert_job(mock_db, "selected")
+
+    result = claim_one(mock_db, worker_id="worker-a")
+
+    assert result is not None
+    assert [event["name"] for event in capture_trace_events] == ["scout.preenrich.legacy_claim"]
+    event = capture_trace_events[0]
+    assert event["session_id"] == f"job:{job_id}"
+    assert event["metadata"]["worker_id"] == "worker-a"
+    assert event["metadata"]["lifecycle_after"] == "preenriching"
 
 
 def test_claim_one_stale_job(mock_db):
@@ -115,7 +139,7 @@ def test_claim_one_takes_expired_lease(mock_db):
     """A job with an expired lease can be re-claimed (S8)."""
     now = datetime.now(timezone.utc)
     expired = now - timedelta(minutes=5)
-    job_id = _insert_job(mock_db, "selected", lease_expires_at=expired)
+    _insert_job(mock_db, "selected", lease_expires_at=expired)
 
     result = claim_one(mock_db, worker_id="worker-rescue")
     assert result is not None
@@ -207,3 +231,19 @@ def test_release_fails_for_wrong_worker(mock_db):
     )
     ok = release(mock_db, job_id, "worker-b", "ready")
     assert ok is False
+
+
+def test_release_emits_trace_event(mock_db, capture_trace_events):
+    job_id = _insert_job(mock_db, "preenriching")
+    mock_db["level-2"].update_one(
+        {"_id": job_id},
+        {"$set": {"lease_owner": "worker-a"}},
+    )
+
+    ok = release(mock_db, job_id, "worker-a", "ready")
+
+    assert ok is True
+    assert [event["name"] for event in capture_trace_events] == ["scout.preenrich.legacy_release"]
+    event = capture_trace_events[0]
+    assert event["metadata"]["level2_job_id"] == str(job_id)
+    assert event["metadata"]["lifecycle_after"] == "ready"

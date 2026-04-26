@@ -14,7 +14,6 @@ Usage:
 
 import json
 import os
-import re
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime
@@ -26,6 +25,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from pymongo import MongoClient
@@ -682,7 +682,7 @@ def main():
     }
 
     json_path = REPORTS_DIR / "architect-skills-analysis.json"
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2)
     print(f"   ✓ Saved JSON data to {json_path}")
 

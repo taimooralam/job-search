@@ -15,15 +15,14 @@ Usage:
 """
 
 import asyncio
+import json
 import os
-import re
 import subprocess
 import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-import json
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -35,7 +34,6 @@ os.environ["USE_FALLBACK"] = "false"
 
 from src.common.json_utils import parse_llm_json
 from src.layer1_4.prompts import JD_EXTRACTION_SYSTEM_PROMPT, JD_EXTRACTION_USER_TEMPLATE
-
 
 # Target roles with their MongoDB regex patterns
 TARGET_ROLES = {
@@ -324,7 +322,7 @@ def generate_report(
 
     # Write report
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text("\n".join(lines))
+    output_path.write_text("\n".join(lines), encoding="utf-8")
     print(f"\nReport written to: {output_path}")
 
 
@@ -333,9 +331,9 @@ async def main():
     print("=" * 60)
     print("Skills Extraction for Whitelist Analysis")
     print("=" * 60)
-    print(f"Model: claude-opus-4-5-20251101")
+    print("Model: claude-opus-4-5-20251101")
     print(f"Concurrency: {MAX_CONCURRENT}")
-    print(f"Fallback: DISABLED (Claude CLI only)")
+    print("Fallback: DISABLED (Claude CLI only)")
     print("=" * 60)
 
     # Connect to MongoDB

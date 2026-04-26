@@ -8,17 +8,17 @@ These tests verify that:
 4. Persona data is correctly injected into prompts
 """
 
-import pytest
-from typing import Dict, List
+from typing import List
 
+import pytest
+
+from src.layer1_4.claude_jd_extractor import RoleCategory
 from src.layer6_v2.header_generator import _load_role_persona
 from src.layer6_v2.prompts.header_generation import (
     ROLE_SUPERPOWERS,
-    build_profile_user_prompt,
     build_persona_user_prompt,
+    build_profile_user_prompt,
 )
-from src.layer1_4.claude_jd_extractor import RoleCategory
-
 
 # ===== FIXTURES =====
 

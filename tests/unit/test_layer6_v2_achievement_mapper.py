@@ -6,6 +6,7 @@ that reduce LLM cognitive load during CV bullet generation.
 """
 
 import pytest
+
 from src.layer6_v2.achievement_mapper import (
     AchievementMapper,
     AchievementMapping,

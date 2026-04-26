@@ -11,7 +11,6 @@ from pydantic import ValidationError
 
 from runner_service.routes.contacts import OutreachRequest
 
-
 # =============================================================================
 # Test OutreachRequest Model Validation
 # =============================================================================

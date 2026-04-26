@@ -9,8 +9,9 @@ These fixtures apply automatically to ALL tests in tests/unit/.
 """
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 # Set test environment BEFORE any imports to prevent Config from loading real values
 # Use "development" since runner_service validates against [development, staging, production]

@@ -25,28 +25,25 @@ Usage:
     metrics_dict = snapshot.to_dict()
 """
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List, Optional
-import logging
 
-from .token_tracker import (
-    get_token_tracker_registry,
-    TokenTrackerRegistry,
-    TokenTracker,
+from .circuit_breaker import (
+    CircuitBreakerRegistry,
+    CircuitState,
+    get_circuit_breaker_registry,
 )
 from .rate_limiter import (
-    get_rate_limiter_registry,
     RateLimiterRegistry,
-    RateLimiter,
+    get_rate_limiter_registry,
 )
-from .circuit_breaker import (
-    get_circuit_breaker_registry,
-    CircuitBreakerRegistry,
-    CircuitBreaker,
-    CircuitState,
+from .token_tracker import (
+    TokenTrackerRegistry,
+    get_token_tracker_registry,
 )
 
 logger = logging.getLogger(__name__)
@@ -451,7 +448,7 @@ class MetricsCollector:
                         health.status = "unhealthy"
 
             # Check token budget
-            token_metrics = self.get_token_metrics()
+            self.get_token_metrics()
             # Budget warnings would come from individual trackers
             # Add check if total cost exceeds configured threshold
             # (This would need budget config from Config class)

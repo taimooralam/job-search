@@ -17,10 +17,10 @@ import json
 import sys
 import time
 import traceback
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
-from dataclasses import dataclass, field, asdict
 from enum import Enum
+from typing import Any, Dict, Optional
 
 
 class EventType(str, Enum):

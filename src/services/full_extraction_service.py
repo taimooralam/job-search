@@ -15,17 +15,16 @@ Usage:
 import asyncio
 import json
 import logging
-import os
 import traceback
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 from bson import ObjectId
 
-from src.common.model_tiers import ModelTier, get_model_for_operation
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.model_tiers import ModelTier
+from src.common.repositories import JobRepositoryInterface, get_job_repository
 from src.common.state import JobState
-from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict, LLMMetadata
+from src.layer1_4 import LLMMetadata, process_jd, process_jd_sync, processed_jd_to_dict
 from src.layer1_4.claude_jd_extractor import JDExtractor
 from src.services.operation_base import OperationResult, OperationService
 
@@ -131,6 +130,7 @@ class FullExtractionService(OperationService):
             Candidate profile text, or None if not available
         """
         from pathlib import Path
+
         from src.common.config import Config
 
         # Priority 1: Try MongoDB first (when enabled)
@@ -342,7 +342,7 @@ class FullExtractionService(OperationService):
         annotation_score = int(weighted_sum / total_weight) if total_weight > 0 else None
 
         # Build summary
-        total = good_match_count + partial_match_count + gap_count
+        good_match_count + partial_match_count + gap_count
         summary_parts = []
         if good_match_count > 0:
             summary_parts.append(f"{good_match_count} strong matches")

@@ -14,9 +14,10 @@ for jobs running on any other runner instance.
 
 import asyncio
 import json
-import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from runner_service.queue.manager import QueueManager
 from runner_service.queue.models import QueueItem, QueueItemStatus

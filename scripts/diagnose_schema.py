@@ -1,7 +1,8 @@
 """Check schema details for level-2 docs."""
-from pymongo import MongoClient
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+from pymongo import MongoClient
 
 load_dotenv()
 client = MongoClient(os.getenv("MONGODB_URI"))
@@ -31,7 +32,7 @@ print(f"\njob_description: {jd}, description: {desc}")
 doc2 = coll.find_one({"extracted_jd.technical_skills": {"$exists": True}})
 if doc2:
     ejd = doc2["extracted_jd"]
-    print(f"\n=== Sample extracted_jd ===")
+    print("\n=== Sample extracted_jd ===")
     print(f"  title: {doc2.get('title')}")
     print(f"  technical_skills: {ejd.get('technical_skills')}")
     print(f"  seniority_level: {ejd.get('seniority_level')}")

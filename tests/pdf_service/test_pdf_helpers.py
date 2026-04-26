@@ -4,12 +4,7 @@ Unit tests for PDF helper functions.
 Tests TipTap JSON to HTML conversion and HTML template building.
 """
 
-import pytest
-from pdf_service.pdf_helpers import (
-    sanitize_for_path,
-    tiptap_json_to_html,
-    build_pdf_html_template
-)
+from pdf_service.pdf_helpers import build_pdf_html_template, sanitize_for_path, tiptap_json_to_html
 
 
 class TestSanitizeForPath:

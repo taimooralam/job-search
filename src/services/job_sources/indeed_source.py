@@ -12,7 +12,7 @@ import logging
 from datetime import datetime
 from typing import Callable, List, Optional
 
-from . import JobSource, JobData
+from . import JobData, JobSource
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class IndeedSource(JobSource):
         """Check if JobSpy is available."""
         if self._jobspy_available is None:
             try:
-                from jobspy import scrape_jobs
+                from jobspy import scrape_jobs  # noqa: F401  # availability check
                 self._jobspy_available = True
             except ImportError:
                 logger.warning("JobSpy not installed. Run: pip install python-jobspy")

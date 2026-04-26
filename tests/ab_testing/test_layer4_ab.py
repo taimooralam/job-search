@@ -13,11 +13,11 @@ Each issue has tests for:
 - Improvement comparison
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
 
-from tests.ab_testing.framework import ABTestRunner, ABTestResult, Comparison
-from tests.ab_testing.scorers import score_specificity, score_grounding, score_hallucinations
+import pytest
+
+from tests.ab_testing.framework import ABTestResult, ABTestRunner, Comparison
+from tests.ab_testing.scorers import score_grounding, score_hallucinations, score_specificity
 
 
 class TestWeakGrounding:

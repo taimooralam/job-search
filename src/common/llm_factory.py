@@ -34,7 +34,6 @@ from src.common.token_tracker import (
     TokenTracker,
     TokenTrackingCallback,
     get_global_tracker,
-    get_token_tracker_registry,
 )
 
 logger = logging.getLogger(__name__)

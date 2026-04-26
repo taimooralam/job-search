@@ -16,18 +16,18 @@ Options:
     --dry-run    Show what would be migrated without actually doing it
 """
 
-import sys
 import argparse
 import json
 import logging
-from pathlib import Path
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.common.database import db
-from src.common.master_cv_store import MasterCVStore, DEFAULT_DATA_DIR
+from src.common.master_cv_store import DEFAULT_DATA_DIR, MasterCVStore
 
 # Configure logging
 logging.basicConfig(
@@ -43,7 +43,7 @@ def load_metadata(data_dir: Path) -> dict:
     if not metadata_path.exists():
         raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
 
-    with open(metadata_path, "r") as f:
+    with open(metadata_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -53,7 +53,7 @@ def load_taxonomy(data_dir: Path) -> dict:
     if not taxonomy_path.exists():
         raise FileNotFoundError(f"Taxonomy file not found: {taxonomy_path}")
 
-    with open(taxonomy_path, "r") as f:
+    with open(taxonomy_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -66,7 +66,7 @@ def load_roles(data_dir: Path) -> list:
     roles = []
     for role_file in sorted(roles_dir.glob("*.md")):
         role_id = role_file.stem
-        with open(role_file, "r") as f:
+        with open(role_file, "r", encoding="utf-8") as f:
             content = f.read()
         roles.append({
             "role_id": role_id,

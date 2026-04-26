@@ -22,18 +22,16 @@ import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from functools import partial
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
 from src.common.repositories import get_job_repository, get_operation_runs_repository
-from src.common.telegram import notify_pipeline_complete, notify_pipeline_failed
+from src.common.telegram import notify_pipeline_failed
 
 # Thread pool for running sync MongoDB operations without blocking the event loop
 # Increased from 4 to 8 workers to handle concurrent streaming operations
@@ -124,34 +122,31 @@ def submit_service_task(coro) -> None:
 
 
 from src.common.model_tiers import (
+    TIER_CONFIGS,
     ModelTier,
     get_model_for_operation,
     get_tier_from_string,
-    TIER_CONFIGS,
-    OPERATION_TASK_TYPES,
 )
-from src.services.operation_base import OperationResult
 
 from ..auth import verify_token
 from ..models import (
     BulkOperationRequest,
     BulkOperationResponse,
     BulkOperationRunInfo,
+    JobQueueStatusResponse,
+    OperationQueueStatus,
     QueueOperationRequest,
     QueueOperationResponse,
-    OperationQueueStatus,
-    JobQueueStatusResponse,
 )
 from .operation_streaming import (
+    append_operation_log,
+    create_layer_callback,
+    create_log_callback,
     create_operation_run,
     get_operation_state,
     get_operation_state_from_redis,
-    append_operation_log,
-    update_operation_status,
-    update_layer_status,
-    create_log_callback,
-    create_layer_callback,
     stream_operation_logs,
+    update_operation_status,
 )
 
 logger = logging.getLogger(__name__)
@@ -1926,7 +1921,7 @@ async def queue_operation(
     operation = resolve_operation_alias(operation)
 
     # Get the actual operation to execute (for new ops that route to parent services)
-    routed_operation = get_routed_operation(operation)
+    get_routed_operation(operation)
 
     # Validate operation type
     if operation not in VALID_QUEUE_OPERATIONS and original_operation not in VALID_QUEUE_OPERATIONS:
@@ -2311,7 +2306,7 @@ async def _execute_queued_operation(
                     "error": result.error,
                 }
             )
-            log_cb(f"Operation complete" if result.success else f"Operation failed: {result.error}")
+            log_cb("Operation complete" if result.success else f"Operation failed: {result.error}")
 
             # Telegram: only notify on failures (success is silent — selector sends 30-min summary)
             if result and not result.success:
@@ -3223,8 +3218,9 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
     Returns:
         GDriveUploadResponse with success status and timestamp
     """
-    import httpx
     from io import BytesIO
+
+    import httpx
 
     # Get n8n webhook URL from environment
     n8n_webhook_url = os.getenv(
@@ -3382,11 +3378,11 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
     4. POST to n8n webhook with company_name, role_name, file_name, and PDF
     5. Update MongoDB with dossier_gdrive_uploaded_at timestamp
     """
-    import httpx
-    from io import BytesIO
-
     # Import the filename generator from pdf_service
     import sys
+    from io import BytesIO
+
+    import httpx
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     from pdf_service.pdf_helpers import generate_dossier_filename
 
@@ -3432,7 +3428,7 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
         import html as html_module
         escaped_dossier = html_module.escape(generated_dossier)
         # Convert line breaks to HTML and preserve spacing
-        formatted_dossier = escaped_dossier.replace("\n", "<br>")
+        escaped_dossier.replace("\n", "<br>")
 
         dossier_html = f"""<!DOCTYPE html>
 <html>

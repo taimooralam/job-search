@@ -17,7 +17,7 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient
 
 from src.common.dedupe import normalize_for_dedupe
 

@@ -12,10 +12,9 @@ Tests the integration of JD annotations into the fit scoring process:
 TDD approach: Tests written first, implementation follows.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
-from typing import Dict, Any, List, Optional
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # =============================================================================
 # FIXTURES
@@ -553,8 +552,8 @@ class TestOpportunityMapperIntegration:
         self, mock_unified_llm_class, sample_job_state_with_annotations
     ):
         """OpportunityMapper includes annotation analysis in output."""
-        from src.layer4.opportunity_mapper import OpportunityMapper
         from src.common.unified_llm import LLMResult
+        from src.layer4.opportunity_mapper import OpportunityMapper
 
         # Mock UnifiedLLM response
         mock_llm = MagicMock()
@@ -591,8 +590,8 @@ Step 4: Score 80 based on evidence.
         self, mock_unified_llm_class, sample_job_state_with_annotations
     ):
         """OpportunityMapper blends annotation signal with LLM score."""
-        from src.layer4.opportunity_mapper import OpportunityMapper
         from src.common.unified_llm import LLMResult
+        from src.layer4.opportunity_mapper import OpportunityMapper
 
         mock_llm = MagicMock()
         mock_result = LLMResult(
@@ -628,8 +627,8 @@ Analysis complete.
         self, mock_unified_llm_class, sample_jd_annotations_with_disqualifier
     ):
         """OpportunityMapper flags disqualifier in output."""
-        from src.layer4.opportunity_mapper import OpportunityMapper
         from src.common.unified_llm import LLMResult
+        from src.layer4.opportunity_mapper import OpportunityMapper
 
         state_with_disqualifier = {
             "job_id": "test_002",
@@ -672,8 +671,8 @@ Analysis complete.
     @patch('src.layer4.opportunity_mapper.UnifiedLLM')
     def test_mapper_works_without_annotations(self, mock_unified_llm_class):
         """OpportunityMapper works when jd_annotations is None."""
-        from src.layer4.opportunity_mapper import OpportunityMapper
         from src.common.unified_llm import LLMResult
+        from src.layer4.opportunity_mapper import OpportunityMapper
 
         state_no_annotations = {
             "job_id": "test_003",
@@ -724,8 +723,8 @@ class TestNodeFunctionIntegration:
         self, mock_unified_llm_class, sample_job_state_with_annotations
     ):
         """Node function returns annotation analysis in state update."""
-        from src.layer4.opportunity_mapper import opportunity_mapper_node
         from src.common.unified_llm import LLMResult
+        from src.layer4.opportunity_mapper import opportunity_mapper_node
 
         mock_llm = MagicMock()
         mock_result = LLMResult(

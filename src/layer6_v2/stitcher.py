@@ -21,20 +21,19 @@ Usage:
 import json
 import re
 from datetime import datetime
-from typing import List, Set, Tuple, Optional, Dict, Callable, TYPE_CHECKING
 from difflib import SequenceMatcher
-from collections import defaultdict
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Tuple
 
 from src.common.logger import get_logger
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 from src.layer6_v2.types import (
-    RoleBullets,
-    StitchedRole,
-    StitchedCV,
-    DuplicatePair,
     DeduplicationResult,
+    DuplicatePair,
+    RoleBullets,
+    StitchedCV,
+    StitchedRole,
 )
 
 
@@ -579,7 +578,7 @@ class CVStitcher:
         )
 
         # Log summary
-        self._logger.info(f"Stitching complete:")
+        self._logger.info("Stitching complete:")
         self._logger.info(f"  Original bullets: {original_count}")
         self._logger.info(f"  After dedup: {after_dedup_count}")
         self._logger.info(f"  Final bullets: {final_count}")

@@ -226,9 +226,9 @@ def stream_logs(run_id: str):
                         yield event + "\n\n"
 
         except requests.exceptions.Timeout:
-            yield f"event: error\ndata: Runner service timeout\n\n"
+            yield "event: error\ndata: Runner service timeout\n\n"
         except requests.exceptions.ConnectionError:
-            yield f"event: error\ndata: Cannot connect to runner service\n\n"
+            yield "event: error\ndata: Cannot connect to runner service\n\n"
         except Exception as e:
             yield f"event: error\ndata: {str(e)}\n\n"
 
@@ -507,9 +507,9 @@ def stream_operation_logs(run_id: str):
                         yield event + "\n\n"
 
         except requests.exceptions.Timeout:
-            yield f"event: error\ndata: Runner service timeout\n\n"
+            yield "event: error\ndata: Runner service timeout\n\n"
         except requests.exceptions.ConnectionError:
-            yield f"event: error\ndata: Cannot connect to runner service\n\n"
+            yield "event: error\ndata: Cannot connect to runner service\n\n"
         except Exception as e:
             yield f"event: error\ndata: {str(e)}\n\n"
 

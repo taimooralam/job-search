@@ -16,17 +16,18 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+
+from src.common.repositories import get_system_state_repository
 
 from ..auth import verify_token
 from .operation_streaming import (
-    create_operation_run,
     create_log_callback,
-    update_operation_status,
+    create_operation_run,
     get_operation_state,
+    update_operation_status,
 )
-from src.common.repositories import get_system_state_repository
 
 logger = logging.getLogger(__name__)
 
@@ -269,7 +270,7 @@ async def _run_himalaya_ingestion(
         _emit_structured_log(
             log_callback,
             event="ingest_start",
-            message=f"Starting Himalayas ingestion",
+            message="Starting Himalayas ingestion",
             metadata={
                 "source": "himalayas",
                 "keywords": keywords,
@@ -280,8 +281,8 @@ async def _run_himalaya_ingestion(
         )
 
         # Import and initialize services
-        from src.services.job_sources import HimalayasSource
         from src.services.job_ingest_service import IngestService
+        from src.services.job_sources import HimalayasSource
 
         # Fetch jobs from Himalaya
         _emit_structured_log(
@@ -500,8 +501,8 @@ async def _run_indeed_ingestion(
         )
 
         # Import and initialize services
-        from src.services.job_sources import IndeedSource
         from src.services.job_ingest_service import IngestService
+        from src.services.job_sources import IndeedSource
 
         # Fetch jobs from Indeed
         _emit_structured_log(
@@ -699,8 +700,8 @@ async def _run_bayt_ingestion(
         )
 
         # Import and initialize services
-        from src.services.job_sources import BaytSource
         from src.services.job_ingest_service import IngestService
+        from src.services.job_sources import BaytSource
 
         # Fetch jobs from Bayt
         _emit_structured_log(

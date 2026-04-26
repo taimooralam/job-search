@@ -17,26 +17,25 @@ Phase 6 Enhancement (JD Annotation System):
 - Must-have requirements emphasis in outreach
 """
 
-import asyncio
 import json
 import logging
 import re
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from firecrawl import FirecrawlApp
 from pydantic import BaseModel, Field, field_validator
 from tenacity import retry, stop_after_attempt, wait_exponential
-from firecrawl import FirecrawlApp
 
+from src.common.annotation_types import ConcernAnnotation, JDAnnotation
+from src.common.claude_web_research import ClaudeWebResearcher, TierType
 from src.common.config import Config
-from src.common.state import JobState, ProgressCallback
-from src.common.unified_llm import invoke_unified_sync
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
-from src.common.annotation_types import JDAnnotation, ConcernAnnotation
 from src.common.persona_builder import get_persona_guidance
-from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
+from src.common.rate_limiter import RateLimitExceededError, get_rate_limiter
+from src.common.state import JobState, ProgressCallback
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.unified_llm import invoke_unified_sync
 from src.common.utils import run_async
-
 
 # ===== SAFE NESTED ACCESS HELPER =====
 
@@ -968,7 +967,7 @@ class PeopleMapper:
                         f"- {c.get('name', 'Unknown')} ({c.get('role', 'Unknown')}) - {linkedin_url}"
                     )
                 raw_content_parts.append(
-                    f"[SOURCE: Claude API Primary Contacts]\n" + "\n".join(contact_strs) + "\n"
+                    "[SOURCE: Claude API Primary Contacts]\n" + "\n".join(contact_strs) + "\n"
                 )
 
             if secondary_contacts:
@@ -979,7 +978,7 @@ class PeopleMapper:
                         f"- {c.get('name', 'Unknown')} ({c.get('role', 'Unknown')}) - {linkedin_url}"
                     )
                 raw_content_parts.append(
-                    f"[SOURCE: Claude API Secondary Contacts]\n" + "\n".join(contact_strs) + "\n"
+                    "[SOURCE: Claude API Secondary Contacts]\n" + "\n".join(contact_strs) + "\n"
                 )
 
             # Log metadata about the research
@@ -1014,7 +1013,7 @@ class PeopleMapper:
             return "Firecrawl fallback disabled.", False
 
         company = state.get("company", "")
-        title = state.get("title", "")
+        state.get("title", "")
         company_url = _safe_get_nested(state, "company_research", "url", default="")
 
         firecrawl_calls = 0
@@ -1028,7 +1027,7 @@ class PeopleMapper:
         if firecrawl_calls < MAX_CALLS:
             try:
                 query = f'site:linkedin.com/in "{company}" engineering (manager OR director OR recruiter)'
-                self.logger.info(f"[Firecrawl Fallback] Credit 1: LinkedIn search")
+                self.logger.info("[Firecrawl Fallback] Credit 1: LinkedIn search")
                 search_response = self._firecrawl_search(query, limit=5)
                 firecrawl_calls += 1
 
@@ -1043,7 +1042,7 @@ class PeopleMapper:
                         f"- {c['name']} ({c['role']}) - {c['linkedin_url']}"
                         for c in all_contacts
                     ]
-                    raw_parts.append(f"[SOURCE: Firecrawl LinkedIn Fallback]\n" + "\n".join(contact_strs) + "\n")
+                    raw_parts.append("[SOURCE: Firecrawl LinkedIn Fallback]\n" + "\n".join(contact_strs) + "\n")
                     self.logger.info(f"[Firecrawl Fallback] Found {len(all_contacts)} contacts from LinkedIn")
             except Exception as e:
                 self.logger.warning(f"[Firecrawl Fallback] LinkedIn search failed: {e}")
@@ -1051,7 +1050,7 @@ class PeopleMapper:
         # Credit 2: Team page scrape (single attempt)
         if firecrawl_calls < MAX_CALLS and company_url:
             try:
-                self.logger.info(f"[Firecrawl Fallback] Credit 2: Team page scrape")
+                self.logger.info("[Firecrawl Fallback] Credit 2: Team page scrape")
                 team_content = self._scrape_company_team_page(company, company_url, max_attempts=1)
                 firecrawl_calls += 1
 
@@ -2228,7 +2227,7 @@ def people_mapper_node(
     """
     # Note: Detailed logging happens inside PeopleMapper.map_people()
     # Node-level logger mainly for entry/exit tracking
-    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer5")
+    get_logger(__name__, run_id=state.get("run_id"), layer="layer5")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
     # Extract progress callback from state for granular LLM logging

@@ -8,15 +8,15 @@ SYNC NOTE: A simplified version of this file is at frontend/repositories/config.
 When modifying get_job_repository() or RepositoryConfig, also update the frontend copy.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 from .base import JobRepositoryInterface
-from .priors_repository import PriorsRepositoryInterface
 from .embedding_chunks_repository import EmbeddingChunksRepositoryInterface
+from .priors_repository import PriorsRepositoryInterface
 
 logger = logging.getLogger(__name__)
 

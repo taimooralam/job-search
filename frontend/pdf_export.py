@@ -7,14 +7,14 @@ Builds structured HTML from JobState and renders to PDF via pdf-service.
 import logging
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import requests
 
 # Only import JobState for type checking to avoid import issues when
 # running from frontend context where src.common may not be in path
 if TYPE_CHECKING:
-    from src.common.state import JobState
+    pass
 
 logger = logging.getLogger(__name__)
 

@@ -21,8 +21,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -154,7 +153,7 @@ def verify_claude_logs(logs: List[Dict[str, Any]], verbose: bool = False) -> Dic
     }
 
     orphan_starts = set(start_sessions.keys()) - set(complete_sessions.keys()) - {None}
-    orphan_completes = set(complete_sessions.keys()) - set(start_sessions.keys()) - {None}
+    set(complete_sessions.keys()) - set(start_sessions.keys()) - {None}
 
     if orphan_starts:
         issues.append({

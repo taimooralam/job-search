@@ -11,7 +11,6 @@ Validates:
 """
 
 import subprocess
-import pytest
 from unittest.mock import patch
 
 from src.common.codex_cli import CodexCLI, CodexResult, MonitoredProcessResult

@@ -8,10 +8,6 @@ Covers:
 - Achievement-grounded whitelist (Fix 5)
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
-from dataclasses import dataclass, field
-from typing import List, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +218,7 @@ class TestAchievementGroundedWhitelist:
         from src.layer6_v2.cv_loader import CVLoader
 
         loader = CVLoader()  # Default: use_enhanced=True
-        candidate = loader.load()
+        loader.load()
 
         grounded = loader.get_achievement_grounded_whitelist()
         full = loader.get_skill_whitelist()

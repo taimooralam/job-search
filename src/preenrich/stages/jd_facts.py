@@ -6,7 +6,6 @@ import re
 import time
 from typing import Any, List
 
-from src.common.codex_cli import CodexCLI
 from src.layer1_4.claude_jd_extractor import JDExtractor
 from src.preenrich.blueprint_config import (
     jd_facts_escalate_on_failure_enabled,
@@ -20,7 +19,12 @@ from src.preenrich.blueprint_models import (
     JDJudgeFlag,
 )
 from src.preenrich.blueprint_prompts import build_p_jd_extract
-from src.preenrich.stages.base import StageBase
+from src.preenrich.stages.base import (
+    StageBase,
+    _finish_llm_span,
+    _invoke_codex_json_traced,
+    _start_llm_span,
+)
 from src.preenrich.stages.blueprint_common import (
     detect_remote_policy,
     evidence_from_quote,
@@ -652,40 +656,93 @@ def _invoke_codex_json(
     prompt: str,
     model: str,
     job_id: str,
+    tracer: Any = None,
+    stage_name: str | None = None,
+    substage: str = "llm.primary",
     cwd: str | None = None,
     reasoning_effort: str | None = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
-    t0 = time.monotonic()
-    cli = CodexCLI(model=model, cwd=cwd, reasoning_effort=reasoning_effort)
-    result = cli.invoke(prompt, job_id=job_id, validate_json=True)
-    duration_ms = int((time.monotonic() - t0) * 1000)
-    attempt = {
-        "provider": "codex",
-        "model": model,
-        "outcome": "success" if result.success else "error_subprocess",
-        "error": result.error,
-        "duration_ms": duration_ms,
-        "input_tokens": result.input_tokens,
-        "output_tokens": result.output_tokens,
-    }
-    return (result.result or None), attempt
+    return _invoke_codex_json_traced(
+        prompt=prompt,
+        model=model,
+        job_id=job_id,
+        tracer=tracer,
+        stage_name=stage_name,
+        substage=substage,
+        codex_cwd=cwd,
+        reasoning_effort=reasoning_effort,
+    )
 
 
-def _invoke_runner_fallback(*, ctx: StageContext, deterministic: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+def _invoke_runner_fallback(
+    *,
+    ctx: StageContext,
+    deterministic: dict[str, Any],
+    prompt: str,
+    tracer: Any = None,
+    stage_name: str | None = None,
+    substage: str = "llm.fallback",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    span = _start_llm_span(
+        tracer=tracer,
+        stage_name=stage_name,
+        substage=substage,
+        provider="claude",
+        model=ctx.config.fallback_model or ctx.config.primary_model or "claude",
+        prompt=prompt,
+        job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "unknown"),
+    )
     t0 = time.monotonic()
     extractor = JDExtractor()
-    result = extractor.extract(
-        job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "unknown"),
-        title=str(ctx.job_doc.get("title") or ""),
-        company=str(ctx.job_doc.get("company") or ""),
-        job_description=_description(ctx.job_doc),
-    )
+    try:
+        result = extractor.extract(
+            job_id=str(ctx.job_doc.get("_id") or ctx.job_doc.get("job_id") or "unknown"),
+            title=str(ctx.job_doc.get("title") or ""),
+            company=str(ctx.job_doc.get("company") or ""),
+            job_description=_description(ctx.job_doc),
+        )
+    except Exception as exc:
+        duration_ms = int((time.monotonic() - t0) * 1000)
+        _finish_llm_span(
+            tracer=tracer,
+            span=span,
+            provider="claude",
+            model=ctx.config.fallback_model or ctx.config.primary_model or "claude",
+            outcome="error_exception",
+            success=False,
+            duration_ms=duration_ms,
+            error=str(exc),
+            schema_valid=None,
+        )
+        raise
     duration_ms = int((time.monotonic() - t0) * 1000)
     if not result.success or result.extracted_jd is None:
+        _finish_llm_span(
+            tracer=tracer,
+            span=span,
+            provider="claude",
+            model=result.model or (ctx.config.fallback_model if ctx.config else None) or "claude",
+            outcome="error_exception",
+            success=False,
+            duration_ms=duration_ms,
+            error=result.error or "runner fallback extraction failed",
+            schema_valid=None,
+        )
         raise RuntimeError(result.error or "runner fallback extraction failed")
     payload = dict(result.extracted_jd)
     payload["salary_range"] = (deterministic.get("salary_range") or {}).get("value")
     payload["application_url"] = (deterministic.get("application_url") or {}).get("value")
+    _finish_llm_span(
+        tracer=tracer,
+        span=span,
+        provider="claude",
+        model=result.model or (ctx.config.fallback_model if ctx.config else None) or "claude",
+        outcome="success",
+        success=True,
+        duration_ms=duration_ms,
+        error=None,
+        schema_valid=None,
+    )
     return payload, {
         "provider": "claude",
         "model": result.model or (ctx.config.fallback_model if ctx.config else None),
@@ -747,6 +804,9 @@ class JDFactsStage:
             prompt=prompt,
             model=primary_model,
             job_id=job_id,
+            tracer=ctx.tracer,
+            stage_name=ctx.stage_name or self.name,
+            substage="llm.primary",
             cwd=ctx.config.codex_workdir,
             reasoning_effort=ctx.config.reasoning_effort,
         )
@@ -769,6 +829,9 @@ class JDFactsStage:
                         prompt=prompt,
                         model=escalation_model,
                         job_id=job_id,
+                        tracer=ctx.tracer,
+                        stage_name=ctx.stage_name or self.name,
+                        substage="llm.escalation",
                         cwd=ctx.config.codex_workdir,
                         reasoning_effort=ctx.config.reasoning_effort,
                     )
@@ -790,7 +853,13 @@ class JDFactsStage:
                             f"jd_facts V2 codex-only extraction failed for job {job_id}: "
                             f"primary={primary_error}; escalation={last_escalation_error}"
                         ) from last_escalation_error
-                    runner_payload, runner_attempt = _invoke_runner_fallback(ctx=ctx, deterministic=deterministic)
+                    runner_payload, runner_attempt = _invoke_runner_fallback(
+                        ctx=ctx,
+                        deterministic=deterministic,
+                        prompt=prompt,
+                        tracer=ctx.tracer,
+                        stage_name=ctx.stage_name or self.name,
+                    )
                     attempts.append(runner_attempt)
                     extraction = _validate_llm_output(runner_payload, deterministic, description=_description(ctx.job_doc))
                     provider_used = "claude"
@@ -798,7 +867,13 @@ class JDFactsStage:
             else:
                 if not _claude_fallback_enabled(ctx):
                     raise RuntimeError(f"jd_facts V2 codex-only extraction failed for job {job_id}: {primary_error}") from primary_error
-                runner_payload, runner_attempt = _invoke_runner_fallback(ctx=ctx, deterministic=deterministic)
+                runner_payload, runner_attempt = _invoke_runner_fallback(
+                    ctx=ctx,
+                    deterministic=deterministic,
+                    prompt=prompt,
+                    tracer=ctx.tracer,
+                    stage_name=ctx.stage_name or self.name,
+                )
                 attempts.append(runner_attempt)
                 extraction = _validate_llm_output(runner_payload, deterministic, description=_description(ctx.job_doc))
                 provider_used = "claude"

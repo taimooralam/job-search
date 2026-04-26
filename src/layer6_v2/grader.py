@@ -19,17 +19,15 @@ Usage:
 import logging
 import re
 import traceback
-from typing import TYPE_CHECKING, List, Dict, Set, Optional, Tuple, Callable, Any
-from collections import Counter
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
-from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
 from src.common.utils import coerce_to_list
 from src.layer6_v2.types import (
@@ -831,8 +829,8 @@ Grade each dimension 1-10 with specific feedback."""
         """
         self._logger.info("Grading CV across 5 dimensions...")
 
-        jd_keywords = extracted_jd.get("top_keywords", [])
-        role_category = extracted_jd.get("role_category", "engineering_manager")
+        extracted_jd.get("top_keywords", [])
+        extracted_jd.get("role_category", "engineering_manager")
 
         if self.use_llm_grading:
             try:
@@ -902,7 +900,7 @@ Grade each dimension 1-10 with specific feedback."""
         )
 
         # Log results
-        self._logger.info(f"Grading complete:")
+        self._logger.info("Grading complete:")
         self._logger.info(f"  Composite score: {result.composite_score:.2f}/10")
         self._logger.info(f"  Passed: {result.passed}")
         self._logger.info(f"  Lowest dimension: {result.lowest_dimension}")

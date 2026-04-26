@@ -24,7 +24,7 @@ def _load_blacklist() -> Dict[str, List[str]]:
         logger.warning(f"Blacklist file not found: {BLACKLIST_PATH}")
         return {}
     try:
-        with open(BLACKLIST_PATH, "r") as f:
+        with open(BLACKLIST_PATH, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         # Normalize all entries to lowercase for case-insensitive matching
         return {

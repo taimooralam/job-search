@@ -9,14 +9,15 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
+
 from pymongo import MongoClient
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.workflow import run_pipeline
 from src.common.config import Config
-from src.common.tiering import resolve_tier, get_tier_config, ProcessingTier
+from src.common.tiering import get_tier_config, resolve_tier
+from src.workflow import run_pipeline
 
 
 def load_candidate_profile(profile_path: str = None) -> str:
@@ -64,7 +65,7 @@ def load_candidate_profile(profile_path: str = None) -> str:
     path = Path(profile_path or Config.CANDIDATE_PROFILE_PATH)
     if not path.exists():
         raise FileNotFoundError(f"Candidate profile not found: {path}")
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding="utf-8") as f:
         return f.read()
 
 
@@ -235,7 +236,7 @@ EXPERIENCE:
         print("="*70)
 
         # Pain Point Analysis (4 Dimensions)
-        print(f"\n📋 Pain Point Analysis (4 Dimensions):")
+        print("\n📋 Pain Point Analysis (4 Dimensions):")
 
         print("\n  A. Pain Points:")
         if final_state.get("pain_points"):
@@ -265,7 +266,7 @@ EXPERIENCE:
         else:
             print("    None extracted")
 
-        print(f"\n⭐ Selected STAR Achievements (Layer 2.5):")
+        print("\n⭐ Selected STAR Achievements (Layer 2.5):")
         if final_state.get("selected_stars"):
             for i, star in enumerate(final_state["selected_stars"], 1):
                 print(f"  {i}. {star['company']} - {star['role'][:50]}...")
@@ -273,14 +274,14 @@ EXPERIENCE:
         else:
             print("  None selected")
 
-        print(f"\n🏢 Company Summary:")
+        print("\n🏢 Company Summary:")
         print(f"  {final_state.get('company_summary', 'None')}")
 
-        print(f"\n🎯 Fit Analysis:")
+        print("\n🎯 Fit Analysis:")
         print(f"  Score: {final_state.get('fit_score', 'N/A')}/100")
         print(f"  Rationale: {final_state.get('fit_rationale', 'None')}")
 
-        print(f"\n👥 Key Contacts (Layer 5):")
+        print("\n👥 Key Contacts (Layer 5):")
         if final_state.get("people"):
             for i, person in enumerate(final_state["people"], 1):
                 print(f"  {i}. {person['name']} - {person['role']}")
@@ -288,23 +289,23 @@ EXPERIENCE:
         else:
             print("  None identified")
 
-        print(f"\n📄 Cover Letter:")
+        print("\n📄 Cover Letter:")
         if final_state.get("cover_letter"):
             print(f"  Generated ({len(final_state['cover_letter'])} chars)")
-            print(f"\n  Preview:")
+            print("\n  Preview:")
             print(f"  {final_state['cover_letter'][:200]}...")
         else:
-            print(f"  Not generated")
+            print("  Not generated")
 
-        print(f"\n📋 CV:")
+        print("\n📋 CV:")
         print(f"  {final_state.get('cv_path', 'Not generated')}")
 
-        print(f"\n📁 Outputs:")
+        print("\n📁 Outputs:")
         print(f"  Drive Folder: {final_state.get('drive_folder_url', 'None')}")
         print(f"  Sheets Row: {final_state.get('sheet_row_id', 'None')}")
 
         if final_state.get("errors"):
-            print(f"\n⚠️  Warnings:")
+            print("\n⚠️  Warnings:")
             for error in final_state["errors"]:
                 print(f"  - {error}")
 

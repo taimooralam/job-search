@@ -13,15 +13,13 @@ should be run separately in integration test suites.
 Note: client and mock_db fixtures are provided by conftest.py
 """
 
-import pytest
-from bson import ObjectId
-from unittest.mock import MagicMock, patch
 import sys
 from pathlib import Path
 
+from bson import ObjectId
+
 # Import the Flask app
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from frontend.app import app
 
 
 # client and mock_db fixtures are provided by conftest.py

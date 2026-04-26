@@ -14,7 +14,6 @@ Model tier: Haiku (cover letters are structured + templated)
 
 from typing import Any, Dict, List, Optional
 
-
 COVER_LETTER_SYSTEM_PROMPT = """You are an expert cover letter writer for senior technical leadership roles.
 
 Your mission: Generate a concise, hyper-personalized 3-paragraph cover letter that connects the candidate's verified achievements to the company's specific needs.

@@ -24,10 +24,10 @@ Usage:
     # LLM_TIMEOUT_grader=300  -> Override timeout for grader step
 """
 
-import os
 import logging
-from dataclasses import dataclass, field
-from typing import Optional, Literal, Dict
+import os
+from dataclasses import dataclass
+from typing import Dict, Literal, Optional
 
 ProviderType = Literal["claude", "codex", "embedding", "none"]
 

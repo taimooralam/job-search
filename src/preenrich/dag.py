@@ -2,7 +2,13 @@
 
 from typing import Dict, List, Set
 
-from src.preenrich.blueprint_config import blueprint_enabled, persona_compat_enabled, stakeholder_surface_enabled
+from src.preenrich.blueprint_config import (
+    blueprint_enabled,
+    pain_point_intelligence_enabled,
+    persona_compat_enabled,
+    presentation_contract_enabled,
+    stakeholder_surface_enabled,
+)
 
 # Canonical execution order — dispatcher iterates in this order.
 # fit_signal is dropped from Phase 2 scope (no live consumer in BatchPipelineService
@@ -25,6 +31,8 @@ BLUEPRINT_STAGE_ORDER: List[str] = [
     "application_surface",
     "research_enrichment",
     "stakeholder_surface",
+    "pain_point_intelligence",
+    "presentation_contract",
     "job_inference",
     "job_hypotheses",
     "annotations",
@@ -54,12 +62,14 @@ _BLUEPRINT_DEPENDENCIES: Dict[str, List[str]] = {
     "application_surface": ["jd_facts"],
     "research_enrichment": ["jd_facts", "classification", "application_surface"],
     "stakeholder_surface": ["jd_facts", "classification", "application_surface", "research_enrichment"],
+    "pain_point_intelligence": ["jd_facts", "classification", "research_enrichment"],
+    "presentation_contract": ["jd_facts", "classification", "research_enrichment", "stakeholder_surface", "pain_point_intelligence"],
     "job_inference": ["jd_facts", "classification", "research_enrichment", "application_surface"],
     "job_hypotheses": ["jd_facts", "classification", "research_enrichment", "application_surface"],
     "annotations": ["jd_structure"],
     "persona_compat": ["annotations"],
     "cv_guidelines": ["jd_facts", "job_inference", "research_enrichment"],
-    "blueprint_assembly": ["jd_facts", "job_inference", "cv_guidelines", "application_surface", "annotations", "persona_compat", "stakeholder_surface"],
+    "blueprint_assembly": ["jd_facts", "job_inference", "cv_guidelines", "application_surface", "annotations", "persona_compat", "stakeholder_surface", "pain_point_intelligence"],
 }
 
 # Inputs that affect which stages are invalidated
@@ -74,8 +84,8 @@ _INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
 }
 
 _BLUEPRINT_INPUT_DIRECT_INVALIDATIONS: Dict[str, Set[str]] = {
-    "jd": {"jd_structure", "jd_facts", "classification", "research_enrichment", "application_surface", "stakeholder_surface", "job_inference", "job_hypotheses", "cv_guidelines", "blueprint_assembly", "annotations"},
-    "company": {"research_enrichment", "application_surface", "stakeholder_surface"},
+    "jd": {"jd_structure", "jd_facts", "classification", "research_enrichment", "application_surface", "stakeholder_surface", "pain_point_intelligence", "job_inference", "job_hypotheses", "cv_guidelines", "blueprint_assembly", "annotations"},
+    "company": {"research_enrichment", "application_surface", "stakeholder_surface", "pain_point_intelligence"},
     "priors": {"annotations"},
     "taxonomy": {"classification"},
 }
@@ -99,6 +109,10 @@ def current_stage_order() -> List[str]:
         order = [stage for stage in order if stage != "persona_compat"]
     if blueprint_enabled() and not stakeholder_surface_enabled():
         order = [stage for stage in order if stage != "stakeholder_surface"]
+    if blueprint_enabled() and not pain_point_intelligence_enabled():
+        order = [stage for stage in order if stage != "pain_point_intelligence"]
+    if blueprint_enabled() and not presentation_contract_enabled():
+        order = [stage for stage in order if stage != "presentation_contract"]
     return list(order)
 
 
@@ -109,6 +123,10 @@ def _current_dependencies() -> Dict[str, List[str]]:
         deps = trimmed
     if blueprint_enabled() and not stakeholder_surface_enabled():
         deps = {stage: [dep for dep in prereqs if dep != "stakeholder_surface"] for stage, prereqs in deps.items() if stage != "stakeholder_surface"}
+    if blueprint_enabled() and not pain_point_intelligence_enabled():
+        deps = {stage: [dep for dep in prereqs if dep != "pain_point_intelligence"] for stage, prereqs in deps.items() if stage != "pain_point_intelligence"}
+    if blueprint_enabled() and not presentation_contract_enabled():
+        deps = {stage: [dep for dep in prereqs if dep != "presentation_contract"] for stage, prereqs in deps.items() if stage != "presentation_contract"}
     return deps
 
 
@@ -118,6 +136,10 @@ def _current_input_invalidations() -> Dict[str, Set[str]]:
         mapping = {key: {stage for stage in value if stage != "persona_compat"} for key, value in mapping.items()}
     if blueprint_enabled() and not stakeholder_surface_enabled():
         mapping = {key: {stage for stage in value if stage != "stakeholder_surface"} for key, value in mapping.items()}
+    if blueprint_enabled() and not pain_point_intelligence_enabled():
+        mapping = {key: {stage for stage in value if stage != "pain_point_intelligence"} for key, value in mapping.items()}
+    if blueprint_enabled() and not presentation_contract_enabled():
+        mapping = {key: {stage for stage in value if stage != "presentation_contract"} for key, value in mapping.items()}
     return mapping
 
 

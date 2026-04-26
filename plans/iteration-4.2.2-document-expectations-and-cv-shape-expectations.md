@@ -994,6 +994,48 @@ When a run produces `status = partial` or `unresolved`:
   `stakeholder_surface.real_stakeholders[].stakeholder_ref`
 - `evidence.excerpt` content beyond 240 chars
 
+### 9.5 Langfuse tracing
+
+Inherits the 4.2 umbrella contract (see
+`plans/iteration-4.2-cv-skeleton-input-contract-and-presentation-bridge.md`
+§8.8). Mongo `debug_context` is the source of truth for raw LLM output and
+normalization diffs; Langfuse mirrors shape and boundaries, not payloads.
+
+**Canonical spans for `presentation_contract`.** The `presentation_contract`
+stage co-produces four subdocuments (4.2.2, 4.2.4, 4.2.5, 4.2.6). Each
+subdocument synthesis pass is a substage span:
+
+- `scout.preenrich.presentation_contract` — stage body span.
+- `scout.preenrich.presentation_contract.preflight` — role-thesis /
+  evaluator-axis / proof-order / ATS-envelope preflight.
+- `scout.preenrich.presentation_contract.document_expectations`
+- `scout.preenrich.presentation_contract.cv_shape_expectations`
+- `scout.preenrich.presentation_contract.ideal_candidate` (4.2.4)
+- `scout.preenrich.presentation_contract.dimension_weights` (4.2.5)
+- `scout.preenrich.presentation_contract.emphasis_rules` (4.2.6)
+- `scout.preenrich.presentation_contract.normalization` — per-subdocument
+  normalization pass when it meaningfully transforms or rejects LLM output.
+- `scout.preenrich.presentation_contract.schema_repair` — schema-repair
+  retries; outcome metadata includes `repair_reason` and `repair_attempt`.
+
+**Required subdocument-span metadata.**
+
+- `primary_document_goal`, `section_order_length`, `ai_section_policy`,
+  `status`, `confidence.band`, `confidence.score`.
+- Normalization counts: `normalization_events_count`,
+  `rejected_output_count`, `defaults_applied_count`. Full bodies stay in
+  Mongo `debug_context`, not in Langfuse.
+
+**Merged vs split prompt mode.** When benchmarking the single-merged prompt
+variant (see §8.*), the stage still emits one span per logical subdocument
+by splitting the merged response at parse time. Span-name stability across
+prompt modes is required so telemetry comparisons are valid.
+
+**What never goes into span payloads.** Raw LLM output, full `ai_section`
+candidates, full bullets or tagline text, and the full `debug_context`.
+Previews are capped at 160 chars and only emitted through
+`_sanitize_langfuse_payload`.
+
 ## 10. Test Strategy (aligned with AGENTS.md)
 
 Follows the current local dev cycle:

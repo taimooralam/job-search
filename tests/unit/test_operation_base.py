@@ -5,17 +5,18 @@ Tests the OperationService base class, OperationResult dataclass,
 and OperationTimer utility for button-triggered pipeline operations.
 """
 
-import pytest
 import time
 from datetime import datetime
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from src.common.model_tiers import ModelTier
 from src.services.operation_base import (
     OperationResult,
     OperationService,
     OperationTimer,
 )
-from src.common.model_tiers import ModelTier
 
 
 class TestOperationResult:
@@ -569,9 +570,9 @@ class TestOperationTimer:
         timer = OperationTimer()
         time.sleep(0.01)
 
-        duration_1 = timer.stop()
+        timer.stop()
         time.sleep(0.01)
-        duration_2 = timer.stop()
+        timer.stop()
 
         # Second stop should return same value (first stop already set end_time)
         # Actually, stop() will update end_time each time, so let's verify behavior

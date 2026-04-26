@@ -8,15 +8,15 @@ Tests for:
 """
 
 import pytest
+
 from src.layer5.people_mapper import PeopleMapper
 from src.layer6.cover_letter_generator import CoverLetterGenerator
 from src.layer6.linkedin_optimizer import (
+    HEADLINE_MAX_LENGTH,
+    HeadlineVariant,
     LinkedInHeadlineOptimizer,
     suggest_linkedin_headlines,
-    HeadlineVariant,
-    HEADLINE_MAX_LENGTH,
 )
-
 
 # ============================================================================
 # Test Fixtures

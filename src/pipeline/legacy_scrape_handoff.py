@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from pymongo.database import Database
 from dotenv import load_dotenv
+from pymongo.database import Database
 
 from src.common.scout_queue import enqueue_jobs, get_queue_dir
 from src.pipeline.discovery import SearchDiscoveryStore

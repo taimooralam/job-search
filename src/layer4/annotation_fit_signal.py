@@ -22,8 +22,7 @@ Usage:
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-
+from typing import Any, Dict, List, Optional
 
 # Signal weights for different annotation relevance levels
 # These map to how much each annotation type contributes to the fit signal

@@ -1,0 +1,34 @@
+{
+  "status": "partial",
+  "confidence_band": "medium",
+  "rule_type_enum_version": "v1",
+  "applies_to_enum_version": "v1",
+  "global_rules_count": 1,
+  "section_rule_count": 1,
+  "section_rule_coverage_section_ids": [
+    "experience"
+  ],
+  "allowed_if_evidenced_count": 2,
+  "downgrade_rules_count": 2,
+  "omit_rules_count": 5,
+  "forbidden_claim_patterns_count": 3,
+  "credibility_ladder_rules_count": 1,
+  "topic_coverage": {
+    "title_inflation": 1,
+    "ai_claims": 2,
+    "leadership_scope": 1,
+    "architecture_claims": 1,
+    "domain_expertise": 1,
+    "stakeholder_management_claims": 1,
+    "metrics_scale_claims": 1,
+    "credibility_ladder_degradation": 3
+  },
+  "title_strategy_conflict_count": 0,
+  "ai_section_policy_conflict_count": 0,
+  "dimension_weight_conflict_count": 0,
+  "must_signal_contradiction_count": 0,
+  "defaults_applied_count": 2,
+  "normalization_events_count": 0,
+  "unresolved_markers_count": 1,
+  "artifact_ref": "__ref__:presentation_contract.id"
+}

@@ -15,17 +15,17 @@ Options:
     --clear    Clear existing STAR records before loading (destructive!)
 """
 
-import sys
 import argparse
 import logging
+import sys
 from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.common.star_parser import parse_star_records
-from src.common.database import db
 from src.common.config import Config
+from src.common.database import db
+from src.common.star_parser import parse_star_records
 
 # Configure logging
 logging.basicConfig(

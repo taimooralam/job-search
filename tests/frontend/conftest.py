@@ -4,11 +4,12 @@ Pytest fixtures for frontend/Flask tests.
 
 import os
 import sys
-import pytest
 from datetime import datetime
-from bson import ObjectId
-from unittest.mock import MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+from bson import ObjectId
 
 
 @pytest.fixture(scope="session", autouse=True)

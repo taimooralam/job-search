@@ -15,14 +15,14 @@ Phase 6 Enhancement (JD Annotation System):
 
 import logging
 import re
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.common.config import Config
-from src.common.unified_llm import invoke_unified_sync
-from src.common.state import JobState
 from src.common.annotation_types import ConcernAnnotation
 from src.common.persona_builder import get_persona_guidance
+from src.common.state import JobState
+from src.common.unified_llm import invoke_unified_sync
 
 
 def _build_cover_letter_system_prompt_with_persona(
@@ -656,8 +656,8 @@ def validate_cover_letter(text: str, state: JobState) -> None:
 
         if not signal_mentioned and signal_keywords:
             raise ValueError(
-                f"Cover letter must reference company context (e.g., recent funding, product launches, or growth). "
-                f"Mention something specific about the company's recent developments."
+                "Cover letter must reference company context (e.g., recent funding, product launches, or growth). "
+                "Mention something specific about the company's recent developments."
             )
 
     # Gate 5: Generic boilerplate detection

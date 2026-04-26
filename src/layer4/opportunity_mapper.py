@@ -19,19 +19,16 @@ Annotation Signal Integration:
 
 import logging
 import re
-from typing import Dict, Any, Tuple, List, Optional, TYPE_CHECKING
-from langchain_core.messages import HumanMessage, SystemMessage
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState, ProgressCallback
+from src.common.llm_config import TIER_TO_CLAUDE_MODEL, TierType
 from src.common.logger import get_logger
-from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.unified_llm import UnifiedLLM, LLMResult
-from src.common.llm_config import TierType, TIER_TO_CLAUDE_MODEL
+from src.common.state import JobState, ProgressCallback
+from src.common.structured_logger import LayerContext, get_structured_logger
+from src.common.unified_llm import LLMResult, UnifiedLLM
 from src.layer4.annotation_fit_signal import (
-    AnnotationFitSignal,
     blend_fit_scores,
     get_annotation_analysis,
 )
