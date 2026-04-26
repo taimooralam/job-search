@@ -557,12 +557,21 @@ jobs:
 
       - name: Copy deployment files locally
         run: |
-          # Copy compose file to job-runner directory (runner is on VPS)
-          # github-runner user has access to /root/job-runner via chmod 711 /root
-          # Source moved to infra/compose/legacy/runner/ in commit fe7ff28e;
-          # VPS still expects the file at /root/job-runner/docker-compose.runner.yml
-          # (referenced by the compose commands below), so preserve that name.
-          cp infra/compose/legacy/runner/docker-compose.yml /root/job-runner/docker-compose.runner.yml
+          # Copy compose file to job-runner directory (runner is on VPS).
+          # github-runner user has access to /root/job-runner via chmod 711 /root.
+          #
+          # Path notes (commit fe7ff28e moved infra files):
+          # - Source: infra/compose/legacy/runner/docker-compose.yml
+          # - Dest:   /root/job-runner/docker-compose.runner.yml
+          #   (the compose commands further down reference this filename)
+          #
+          # The source compose file points env_file at ../../../../.env so that
+          # local dev (running compose from infra/compose/legacy/runner/) finds
+          # the repo-root .env. On the VPS, .env lives next to the compose file
+          # at /root/job-runner/.env, so rewrite that reference on copy.
+          sed 's|\.\./\.\./\.\./\.\./\.env|.env|' \
+            infra/compose/legacy/runner/docker-compose.yml \
+            > /root/job-runner/docker-compose.runner.yml
 
           # Copy data directory
           mkdir -p /root/job-runner/data
