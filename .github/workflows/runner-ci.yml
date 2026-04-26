@@ -6,9 +6,9 @@ on:
     paths:
       - 'runner_service/**'
       - 'pdf_service/**'
-      - 'Dockerfile.runner'
+      - 'infra/docker/legacy/runner/Dockerfile.runner'
       - 'Dockerfile.pdf-service'
-      - 'docker-compose.runner.yml'
+      - 'infra/compose/legacy/runner/docker-compose.yml'
       - 'scripts/run_pipeline.py'
       - 'src/**'
       - 'tests/runner/**'
@@ -20,7 +20,7 @@ on:
     paths:
       - 'runner_service/**'
       - 'pdf_service/**'
-      - 'Dockerfile.runner'
+      - 'infra/docker/legacy/runner/Dockerfile.runner'
       - 'Dockerfile.pdf-service'
       - 'src/**'
       - 'tests/runner/**'
@@ -69,13 +69,16 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          # Check if any code files changed (not just docker-compose.runner.yml)
+          # Check if any code files changed (not just the compose file)
           # Include CI workflow changes to trigger full pipeline validation
-          CODE_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^docker-compose.runner.yml$" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|tests/|Dockerfile\.|requirements\.txt|\.github/workflows/runner-ci\.yml)" | wc -l)
+          # Compose path: infra/compose/legacy/runner/docker-compose.yml
+          # Dockerfile path: infra/docker/legacy/runner/Dockerfile.runner
+          COMPOSE_PATH="infra/compose/legacy/runner/docker-compose\.yml"
+          CODE_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^${COMPOSE_PATH}$" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|tests/|infra/docker/legacy/runner/Dockerfile\.runner|Dockerfile\.pdf-service|requirements\.txt|\.github/workflows/runner-ci\.yml)" | wc -l)
 
-          # Check if only docker-compose.runner.yml changed
-          COMPOSE_ONLY=$(echo "$CHANGED_FILES" | grep -E "^docker-compose.runner.yml$" | wc -l)
-          TOTAL_RUNNER_FILES=$(echo "$CHANGED_FILES" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|Dockerfile\.|docker-compose\.runner\.yml|requirements\.txt)" | wc -l)
+          # Check if only the runner compose file changed
+          COMPOSE_ONLY=$(echo "$CHANGED_FILES" | grep -E "^${COMPOSE_PATH}$" | wc -l)
+          TOTAL_RUNNER_FILES=$(echo "$CHANGED_FILES" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|infra/docker/legacy/runner/Dockerfile\.runner|Dockerfile\.pdf-service|infra/compose/legacy/runner/docker-compose\.yml|requirements\.txt)" | wc -l)
 
           if [[ $CODE_CHANGES -gt 0 ]]; then
             echo "code-changed=true" >> $GITHUB_OUTPUT
@@ -92,7 +95,7 @@ jobs:
           fi
 
   # Unit tests split into parallel jobs for faster execution
-  # SKIP if only docker-compose.runner.yml changed (no code to test)
+  # SKIP if only the runner compose file changed (no code to test)
   test-unit:
     needs: [quick-changes]
     if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
@@ -187,7 +190,7 @@ jobs:
 
   # Service-specific tests run in parallel with matrix
   # Split into fine-grained groups for maximum parallelization (~1-2 min each)
-  # SKIP if only docker-compose.runner.yml changed (no code to test)
+  # SKIP if only the runner compose file changed (no code to test)
   test-services:
     needs: [quick-changes]
     if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
@@ -335,7 +338,7 @@ jobs:
           RUNNER_SHA="${{ steps.deployed.outputs.runner_sha }}"
           if [[ "$RUNNER_SHA" != "unknown" && "$RUNNER_SHA" != "" ]]; then
             echo "### Runner Service (deployed: $RUNNER_SHA)"
-            COMMITS=$(git log --oneline ${RUNNER_SHA}..HEAD -- runner_service/ src/ scripts/ Dockerfile.runner docker-compose.runner.yml requirements.txt 2>/dev/null | head -20)
+            COMMITS=$(git log --oneline ${RUNNER_SHA}..HEAD -- runner_service/ src/ scripts/ infra/docker/legacy/runner/Dockerfile.runner infra/compose/legacy/runner/docker-compose.yml requirements.txt 2>/dev/null | head -20)
             if [[ -n "$COMMITS" ]]; then
               echo "\`\`\`"
               echo "$COMMITS"
@@ -374,10 +377,10 @@ jobs:
           PDF_SHA="${{ steps.deployed.outputs.pdf_sha }}"
 
           # Check runner changes since deployment
-          # IMPORTANT: Include docker-compose.runner.yml for env var changes (CORS_ORIGINS, etc.)
+          # IMPORTANT: Include the runner compose file for env var changes (CORS_ORIGINS, etc.)
           if [[ "$RUNNER_SHA" != "unknown" && "$RUNNER_SHA" != "" ]]; then
             RUNNER_CHANGES=$(git diff --name-only ${RUNNER_SHA}..HEAD -- \
-              runner_service/ src/ scripts/ Dockerfile.runner docker-compose.runner.yml requirements.txt 2>/dev/null | wc -l)
+              runner_service/ src/ scripts/ infra/docker/legacy/runner/Dockerfile.runner infra/compose/legacy/runner/docker-compose.yml requirements.txt 2>/dev/null | wc -l)
             if [[ $RUNNER_CHANGES -gt 0 ]]; then
               echo "runner=true" >> $GITHUB_OUTPUT
               echo "🔄 Runner: $RUNNER_CHANGES files changed since $RUNNER_SHA"
@@ -388,7 +391,7 @@ jobs:
           else
             # Unknown deployed version - check against previous commit as fallback
             RUNNER_CHANGES=$(git diff --name-only HEAD~1..HEAD -- \
-              runner_service/ src/ scripts/ Dockerfile.runner docker-compose.runner.yml requirements.txt 2>/dev/null | wc -l)
+              runner_service/ src/ scripts/ infra/docker/legacy/runner/Dockerfile.runner infra/compose/legacy/runner/docker-compose.yml requirements.txt 2>/dev/null | wc -l)
             if [[ $RUNNER_CHANGES -gt 0 ]]; then
               echo "runner=true" >> $GITHUB_OUTPUT
               echo "🔄 Runner: $RUNNER_CHANGES files changed (unknown deployed version)"
@@ -470,7 +473,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.runner
+          file: ./infra/docker/legacy/runner/Dockerfile.runner
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -556,7 +559,10 @@ jobs:
         run: |
           # Copy compose file to job-runner directory (runner is on VPS)
           # github-runner user has access to /root/job-runner via chmod 711 /root
-          cp docker-compose.runner.yml /root/job-runner/
+          # Source moved to infra/compose/legacy/runner/ in commit fe7ff28e;
+          # VPS still expects the file at /root/job-runner/docker-compose.runner.yml
+          # (referenced by the compose commands below), so preserve that name.
+          cp infra/compose/legacy/runner/docker-compose.yml /root/job-runner/docker-compose.runner.yml
 
           # Copy data directory
           mkdir -p /root/job-runner/data
