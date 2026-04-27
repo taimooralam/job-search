@@ -9,10 +9,14 @@ this README is just for operating the box on the VPS.
 Per iteration-4.4 §8.3.1. Run on the VPS as root:
 
 ```sh
-# 1. Drop the env file (chmod 0600).
+# 1. Drop the env file (chmod 0600). github-runner needs to own the dir
+#    so the deploy-langfuse-mcp workflow can install the compose file
+#    without sudo (see runner-ci.yml for the same /root/job-runner pattern).
 mkdir -p /root/langfuse-mcp
+chown github-runner:github-runner /root/langfuse-mcp
 cp .env.example /root/langfuse-mcp/.env
 chmod 0600 /root/langfuse-mcp/.env
+chown github-runner:github-runner /root/langfuse-mcp/.env
 $EDITOR /root/langfuse-mcp/.env       # populate prod keys + bearer token
 
 # 2. (Optional) create scout-dev project in the Langfuse UI, populate dev keys.

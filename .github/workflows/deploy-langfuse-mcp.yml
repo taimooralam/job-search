@@ -91,7 +91,13 @@ jobs:
 
       - name: Sync compose file to /root/langfuse-mcp/
         run: |
-          install -d -m 0755 /root/langfuse-mcp
+          # /root is chmod 711 + /root/langfuse-mcp is owned by the github-runner
+          # user (created during bootstrap, see infra/compose/langfuse-mcp/README.md).
+          # If either is missing the bootstrap hasn't been run yet.
+          if [ ! -d /root/langfuse-mcp ] || [ ! -w /root/langfuse-mcp ]; then
+            echo "::error::/root/langfuse-mcp missing or not writable by github-runner. Run the bootstrap from infra/compose/langfuse-mcp/README.md before enabling this workflow."
+            exit 1
+          fi
           install -m 0644 infra/compose/langfuse-mcp/docker-compose.yml /root/langfuse-mcp/docker-compose.yml
           # .env is operator-managed (chmod 0600); never overwrite it from CI.
           if [ ! -f /root/langfuse-mcp/.env ]; then
