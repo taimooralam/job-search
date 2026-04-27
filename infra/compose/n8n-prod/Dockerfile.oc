@@ -27,20 +27,18 @@ RUN pip3 install --break-system-packages --no-cache-dir \
 RUN npm i -g @openai/codex mongodb-mcp-server
 
 # ── Bake langfuse-mcp entry into codex config (both root + node home).
-# Bearer token resolved from LANGFUSE_MCP_TOKEN env at runtime; never
-# baked. Per plans/iteration-4.4-langfuse-mcp-feedback-loop.md §11.4.
+# Token is rendered at container startup from $LANGFUSE_MCP_TOKEN by the
+# entrypoint shim so the secret never lives in the image layer. Per
+# plans/iteration-4.4-langfuse-mcp-feedback-loop.md §11.4.
 RUN mkdir -p /root/.codex /home/node/.codex && \
     printf '%s\n' \
       '' \
       '[mcp_servers.langfuse]' \
-      'type = "http"' \
       'url = "https://langfuse-mcp.srv1112039.hstgr.cloud/mcp"' \
       '' \
-      '[mcp_servers.langfuse.headers]' \
-      'Authorization = "Bearer ${LANGFUSE_MCP_TOKEN}"' \
-      > /etc/codex-langfuse.toml.snippet && \
-    cat /etc/codex-langfuse.toml.snippet >> /root/.codex/config.toml && \
-    cat /etc/codex-langfuse.toml.snippet >> /home/node/.codex/config.toml && \
+      '[mcp_servers.langfuse.http_headers]' \
+      'Authorization = "Bearer __LANGFUSE_MCP_TOKEN__"' \
+      > /etc/codex-langfuse.toml.template && \
     chown -R node:node /home/node/.codex
 
 # ── Composio CLI (installed system-wide) ─────────────────────────
