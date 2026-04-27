@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 from pydantic import BaseModel, ValidationError
 
 from src.common.codex_cli import CodexCLI
+from src.observability import record_error
 from src.preenrich.types import PreenrichTracerHandle, StageContext, StageResult
 
 logger = logging.getLogger(__name__)
@@ -148,6 +149,14 @@ def _invoke_codex_json_traced(
             duration_ms=duration_ms,
             error=str(exc),
             schema_valid=None,
+        )
+        record_error(
+            session_id=str(getattr(tracer, "session_id", None) or job_id),
+            trace_id=getattr(tracer, "trace_id", None),
+            pipeline="preenrich",
+            stage=stage_name or "<unknown>",
+            exc=exc,
+            metadata={"job_id": job_id, "substage": substage, "provider": "codex", "model": model, "duration_ms": duration_ms},
         )
         raise
 
@@ -309,6 +318,22 @@ def _call_llm_with_fallback(
             "input_tokens": None,
             "output_tokens": None,
         })
+        record_error(
+            session_id=str(getattr(tracer, "session_id", None) or job_id),
+            trace_id=getattr(tracer, "trace_id", None),
+            pipeline="preenrich",
+            stage=stage_name or "<unknown>",
+            exc=exc,
+            severity="WARN",
+            metadata={
+                "job_id": job_id,
+                "substage": "llm.primary",
+                "provider": primary_provider,
+                "model": primary_model,
+                "duration_ms": primary_duration_ms,
+                "fallback_will_be_attempted": fallback_provider not in {"", "none"} and bool(fallback_model),
+            },
+        )
 
     if codex_outcome == "success" and codex_result_dict is not None:
         return codex_result_dict, attempts
@@ -390,6 +415,21 @@ def _call_llm_with_fallback(
             "input_tokens": None,
             "output_tokens": None,
         })
+        record_error(
+            session_id=str(getattr(tracer, "session_id", None) or job_id),
+            trace_id=getattr(tracer, "trace_id", None),
+            pipeline="preenrich",
+            stage=stage_name or "<unknown>",
+            exc=fb_exc,
+            metadata={
+                "job_id": job_id,
+                "substage": "llm.fallback",
+                "provider": fallback_provider,
+                "model": fallback_model,
+                "duration_ms": fallback_duration_ms,
+                "primary_error": codex_error,
+            },
+        )
         raise RuntimeError(
             f"Both primary ({primary_provider}/{primary_model}) and fallback "
             f"({fallback_provider}/{fallback_model}) failed for job {job_id}. "

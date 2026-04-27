@@ -29,10 +29,10 @@ RUN pip install --no-cache-dir -r requirements.langfuse-mcp.txt
 COPY src/observability ./src/observability
 COPY src/pipeline/tracing.py ./src/pipeline/tracing.py
 COPY src/pipeline/__init__.py ./src/pipeline/__init__.py
-COPY src/__init__.py ./src/__init__.py 2>/dev/null || true
 
-# Install a stub package marker so `from src...` imports work at runtime.
-RUN touch ./src/__init__.py ./src/pipeline/__init__.py ./src/observability/__init__.py 2>/dev/null || true \
+# Make `src` a package so `from src...` imports resolve at runtime.
+# (`src/__init__.py` is intentionally not committed at the repo root.)
+RUN touch ./src/__init__.py \
  && chown -R app:app /app
 
 EXPOSE 4000

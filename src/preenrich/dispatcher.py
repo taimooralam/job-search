@@ -22,6 +22,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from src.observability import record_error
 from src.preenrich.dag import _DEPENDENCIES
 from src.preenrich.lease import heartbeat
 from src.preenrich.types import (
@@ -394,6 +395,14 @@ def single_stage(
             stage_tracer.complete(output={"status": "failed", "error_class": "stage_failure", "error_message_preview": error_msg[:240]})
         logger.error(
             "Stage %s failed for job %s: %s", stage_name, job_id, error_msg
+        )
+        record_error(
+            session_id=str(getattr(stage_tracer, "session_id", None) or job_id),
+            trace_id=getattr(stage_tracer, "trace_id", None),
+            pipeline="preenrich",
+            stage=stage_name,
+            exc=exc,
+            metadata={"job_id": str(job_id), "worker_id": worker_id},
         )
     finally:
         ctx.stage_name = previous_stage_name

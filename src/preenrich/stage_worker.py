@@ -17,6 +17,7 @@ from typing import Any, Callable, Optional
 from bson import ObjectId
 from pymongo import ReturnDocument
 
+from src.observability import record_error
 from src.pipeline.queue import WorkItemQueue
 from src.pipeline.tracing import PreenrichTracingSession
 from src.preenrich.blueprint_config import (
@@ -366,6 +367,19 @@ class StageWorker:
         if error is not None:
             stage_tracer.complete(output={"status": "failed", "error_class": classify_error(error), "shadow_mode": shadow_mode})
             error_class = classify_error(error)
+            record_error(
+                session_id=str(getattr(stage_tracer, "session_id", None) or level2_id),
+                trace_id=getattr(stage_tracer, "trace_id", None),
+                pipeline="preenrich",
+                stage=self.stage_name,
+                exc=error,
+                metadata={
+                    "level2_job_id": str(level2_id),
+                    "attempt_number": attempt_number,
+                    "shadow_mode": shadow_mode,
+                    "error_class": error_class,
+                },
+            )
             self._finish_stage_run(run_id, status="failed", duration_ms=duration_ms, error=error)
             failure_result = self._handle_stage_failure(
                 work_item,
