@@ -688,3 +688,73 @@ Source: `reports/iteration-4.4-codex-review.md`. Verdict was "needs Critical fix
 ### Pending edits (one Major still to apply in body)
 
 The `ENABLE_CANONICAL_JOB_SESSION` gate on the four canonical-job-session features (`langfuse.find_session_for_job`, the `langfuse://job/{level2_job_id}` resource, the `langfuse://job/{...}/live` alias, and acceptance criterion #2's job-id mention) needs an inline edit in §7.1 / §7.2 / §7.3 / §17 to add the feature-flag note. Tracked as a pre-implementation TODO; will land in the same PR that creates `src/observability/langfuse_mcp/tools/find_session_for_job.py`.
+
+---
+
+## 20. Trace-listing tool: `langfuse.list_recent_traces` (added 2026-04-28)
+
+Phase A bring-up shipped 5 of the 12 §7.1 tools: `health`, `error_summary`, `list_recent_errors`, `get_trace`, `get_session`. The 7 secondary tools were deferred per the joyful-pond execution plan ("incremental, after Phase A bring-up confirms the core surface"). The first user request that hit the gap was "get the last 5 Langfuse traces" — neither `search_traces` nor any list-traces method exists in `client.py`, and the upstream `GET /api/public/traces` is therefore unreachable through the MCP.
+
+### 20.1 Decision: ship `list_recent_traces` first, defer `search_traces`
+
+§7.1 specifies `langfuse.search_traces(filters, limit=50)` with the rule "requires at least one filter to prevent accidental whole-project dumps." Two paths to satisfy that rule:
+
+| Option | Surface | Default-safe? | When to ship |
+|---|---|---|---|
+| `search_traces(filters, limit)` | open-ended; caller picks any filter | only if input validation enforces ≥ 1 filter | when an open-ended need actually surfaces |
+| `list_recent_traces(window_minutes, limit, name?, session_id?, user_id?, tags?, env?)` | recency-anchored; `window_minutes` is the implicit "≥ 1 filter" | yes — `window_minutes` is mandatory and bounded ≤ 1440 | now |
+
+The user-facing question ("last 5 traces", "last 5 traces from preenrich today") is always recency-anchored. A mandatory `window_minutes` is the natural single-filter shape and matches the existing `list_recent_errors` idiom. Ship that; revisit `search_traces` when an open-ended query need actually appears.
+
+### 20.2 Tool input schema
+
+| Field | Type | Default | Constraints |
+|---|---|---|---|
+| `window_minutes` | integer | 60 | 1–1440 |
+| `limit` | integer | 50 | 1–100 (matches Langfuse upstream cap) |
+| `name` | string | — | optional upstream `name` filter |
+| `session_id` | string | — | optional upstream `sessionId` filter |
+| `user_id` | string | — | optional upstream `userId` filter |
+| `tags` | string[] | — | optional upstream `tags` filter |
+| `env` | enum | — | `prod` \| `dev` \| `staging` — applied client-side via `metadata.env` |
+| `project` | enum | `scout-prod` | `scout-prod` \| `scout-dev` |
+
+### 20.3 Output shape
+
+Returned as JSON-stringified text in the standard `{content:[{type:"text",text}]}` MCP envelope:
+
+```json
+{
+  "ok": true,
+  "project": "scout-prod",
+  "window_minutes": 60,
+  "count": 5,
+  "traces": [
+    {
+      "id": "...",
+      "name": "...",
+      "timestamp": "...",
+      "session_id": "...",
+      "user_id": "...",
+      "tags": [...],
+      "release": "...",
+      "version": "...",
+      "input_preview": "...",   // first 200 chars
+      "output_preview": "...",  // first 200 chars
+      "metadata": { ... }
+    }
+  ]
+}
+```
+
+### 20.4 Files changed
+
+- `src/observability/langfuse_mcp/client.py` — add `list_traces(...)` (mirrors `list_observations` pattern; `_get_with_retry("/api/public/traces", params=...)`) and `list_recent_traces(window_minutes, limit, ...)` wrapper.
+- `src/observability/langfuse_mcp/aggregations.py` — add `trace_summary(trace) -> dict` helper (pure, unit-tested).
+- `src/observability/langfuse_mcp/server.py` — add 6th `_TOOL_DESCRIPTORS` entry and dispatch branch in `_call_tool`.
+- `tests/observability/test_server.py` — add 6 tests (registration, happy path, limit clamp, window validation, env filter, degraded passthrough).
+- `tests/observability/test_aggregations.py` — add `trace_summary` truncation test.
+
+### 20.5 Still deferred (re-affirmed)
+
+`search_traces`, `get_observation`, `list_sessions`, `cost_today`, `get_score`, `diff_traces`, `find_session_for_job`, `tail_session`, `find_session_for_recent_run`. Each is a discrete follow-up; none blocks `list_recent_traces`.

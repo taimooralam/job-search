@@ -330,6 +330,23 @@ _TOOL_DESCRIPTORS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "langfuse.list_recent_traces",
+        "description": "Recent traces in the window (default 60 min, limit 50). Optional name/session_id/user_id/tags narrow further.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "window_minutes": {"type": "integer", "minimum": 1, "maximum": 1440, "default": 60},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50},
+                "name": {"type": "string"},
+                "session_id": {"type": "string"},
+                "user_id": {"type": "string"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "env": {"type": "string", "enum": ["prod", "dev", "staging"]},
+                "project": {"type": "string", "enum": ["scout-prod", "scout-dev"], "default": "scout-prod"},
+            },
+        },
+    },
+    {
         "name": "langfuse.get_session",
         "description": "One session timeline.",
         "inputSchema": {
@@ -403,6 +420,48 @@ async def _call_tool(*, name: str, args: dict[str, Any], app: FastAPI) -> dict[s
             raise _RpcError(-32602, "trace_id is required")
         result = await client.get_trace(trace_id)
         return _tool_result_text(json.dumps(_unwrap(result)))
+
+    if name == "langfuse.list_recent_traces":
+        from src.observability.langfuse_mcp.aggregations import trace_summary
+
+        window = max(1, min(int(args.get("window_minutes") or 60), 1440))
+        limit = max(1, min(int(args.get("limit") or 50), 100))
+        env_filter = args.get("env")
+        try:
+            traces = await client.list_recent_traces(
+                window_minutes=window,
+                limit=limit,
+                name=args.get("name"),
+                session_id=args.get("session_id"),
+                user_id=args.get("user_id"),
+                tags=args.get("tags"),
+            )
+        except ValueError as exc:
+            return _tool_result_text(json.dumps(
+                DegradedResponse("invalid_argument", detail=str(exc)).to_dict()
+            ))
+        if isinstance(traces, DegradedResponse):
+            payload = traces.to_dict() | {"project": project, "window_minutes": window}
+            return _tool_result_text(json.dumps(payload))
+
+        # Optional client-side env filter on metadata.env (matches the
+        # convention used by record_error and the SSE filter helper).
+        if env_filter:
+            traces = [
+                t for t in traces
+                if isinstance(t, dict)
+                and isinstance(t.get("metadata"), dict)
+                and t["metadata"].get("env") == env_filter
+            ]
+
+        summaries = [trace_summary(t) for t in traces if isinstance(t, dict)]
+        return _tool_result_text(json.dumps({
+            "ok": True,
+            "project": project,
+            "window_minutes": window,
+            "count": len(summaries),
+            "traces": summaries,
+        }))
 
     if name == "langfuse.get_session":
         session_id = args.get("session_id")

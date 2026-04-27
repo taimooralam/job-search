@@ -166,6 +166,86 @@ class LangfuseClient:
     async def get_trace(self, trace_id: str) -> dict[str, Any] | DegradedResponse:
         return await self._get_with_retry(f"/api/public/traces/{trace_id}")
 
+    async def list_traces(
+        self,
+        *,
+        from_timestamp: datetime | None = None,
+        to_timestamp: datetime | None = None,
+        name: Optional[str] = None,
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+        limit: int = 50,
+        page: int = 1,
+    ) -> list[dict[str, Any]] | DegradedResponse:
+        """Paginated `GET /api/public/traces`.
+
+        Returns the raw trace dicts in newest-first order (the upstream's
+        natural sort). Callers post-process through
+        :func:`.aggregations.trace_summary` to trim the payload before
+        returning to MCP clients.
+        """
+        # Defensive cap: same hard limit Langfuse imposes on observations,
+        # asserted on traces to keep payloads bounded.
+        params: dict[str, Any] = {
+            "limit": min(int(limit), 100),
+            "page": page,
+        }
+        if from_timestamp:
+            params["fromTimestamp"] = _iso(from_timestamp)
+        if to_timestamp:
+            params["toTimestamp"] = _iso(to_timestamp)
+        if name:
+            params["name"] = name
+        if session_id:
+            params["sessionId"] = session_id
+        if user_id:
+            params["userId"] = user_id
+        if tags:
+            # httpx serialises a list to repeated query keys (?tags=a&tags=b),
+            # which is what Langfuse expects.
+            params["tags"] = list(tags)
+
+        result = await self._get_with_retry("/api/public/traces", params=params)
+        if isinstance(result, DegradedResponse):
+            return result
+        data = result.get("data") or []
+        if not isinstance(data, list):
+            return DegradedResponse(
+                reason="schema_mismatch",
+                detail=f"traces: expected list under 'data', got {type(data).__name__}",
+            )
+        return data
+
+    async def list_recent_traces(
+        self,
+        *,
+        window_minutes: int,
+        limit: int = 50,
+        name: Optional[str] = None,
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+    ) -> list[dict[str, Any]] | DegradedResponse:
+        """Convenience: traces emitted in the last N minutes.
+
+        Mirrors :meth:`list_recent_errors` — `window_minutes` is the mandatory
+        bound that satisfies the iteration-4.4 §7.1 "no unbounded scans" rule.
+        Optional `name`/`session_id`/`user_id`/`tags` narrow further.
+        """
+        if window_minutes <= 0 or window_minutes > 24 * 60:
+            raise ValueError("window_minutes must be in (0, 1440]")
+        now = datetime.now(timezone.utc)
+        return await self.list_traces(
+            from_timestamp=now - timedelta(minutes=window_minutes),
+            to_timestamp=now,
+            name=name,
+            session_id=session_id,
+            user_id=user_id,
+            tags=tags,
+            limit=limit,
+        )
+
     async def list_sessions(
         self,
         *,

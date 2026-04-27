@@ -32,10 +32,23 @@ class _FakeClient:
 
     project_name = "scout-prod"
 
-    def __init__(self, *, observations: list[dict[str, Any]] | None = None,
-                 health_ok: bool = True) -> None:
+    def __init__(
+        self,
+        *,
+        observations: list[dict[str, Any]] | None = None,
+        health_ok: bool = True,
+        traces: list[dict[str, Any]] | None = None,
+        traces_response: Any = None,
+    ) -> None:
         self._obs = observations or []
         self._health_ok = health_ok
+        self._traces = traces or []
+        # If set, list_recent_traces returns this verbatim (used to inject
+        # DegradedResponse / ValueError sentinels). Else it returns _traces
+        # capped by limit.
+        self._traces_response = traces_response
+        # Capture call kwargs so tests can assert clamping / arg-passthrough.
+        self.list_recent_traces_calls: list[dict[str, Any]] = []
         self.closed = False
 
     async def health(self):
@@ -57,6 +70,19 @@ class _FakeClient:
 
     async def get_session(self, session_id: str):
         return {"id": session_id, "events": []}
+
+    async def list_recent_traces(self, **kwargs):
+        self.list_recent_traces_calls.append(kwargs)
+        # Mirror the real client's bounds check so tests cover the route.
+        window = kwargs.get("window_minutes")
+        if window is not None and (window <= 0 or window > 1440):
+            raise ValueError("window_minutes must be in (0, 1440]")
+        if isinstance(self._traces_response, BaseException):
+            raise self._traces_response
+        if self._traces_response is not None:
+            return self._traces_response
+        limit = int(kwargs.get("limit") or 50)
+        return list(self._traces)[:limit]
 
     async def aclose(self) -> None:
         self.closed = True
@@ -237,6 +263,148 @@ def test_mcp_unknown_tool_returns_method_not_found(app_with_fakes):
     body = r.json()
     assert "error" in body
     assert body["error"]["code"] == -32601
+
+
+# --------------------------------------------------------------------------- #
+# langfuse.list_recent_traces (iteration-4.4 §20)
+# --------------------------------------------------------------------------- #
+
+
+def _trace(*, tid: str, env: str = "prod", name: str = "scout.search.run") -> dict[str, Any]:
+    return {
+        "id": tid,
+        "name": name,
+        "timestamp": "2026-04-28T10:00:00+00:00",
+        "sessionId": f"sess_{tid}",
+        "userId": None,
+        "tags": [],
+        "release": None,
+        "version": None,
+        "input": {"x": 1},
+        "output": {"y": 2},
+        "metadata": {"env": env, "pipeline": "preenrich"},
+    }
+
+
+def _traces_app(monkeypatch, *, traces=None, traces_response=None):
+    """Build the FastAPI app with a fake client preloaded with traces."""
+    monkeypatch.setenv("LANGFUSE_HOST", "http://example.invalid")
+    monkeypatch.setenv("LANGFUSE_PROD_PUBLIC_KEY", "pk")
+    monkeypatch.setenv("LANGFUSE_PROD_SECRET_KEY", "sk")
+    monkeypatch.delenv("LANGFUSE_DEV_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("LANGFUSE_DEV_SECRET_KEY", raising=False)
+    monkeypatch.setenv("LANGFUSE_MCP_TOKEN", "secret-1")
+    monkeypatch.delenv("LANGFUSE_MCP_TOKENS", raising=False)
+    fake = _FakeClient(traces=traces, traces_response=traces_response)
+    monkeypatch.setattr(server_mod, "_build_clients", lambda: {"scout-prod": fake})
+    return fake
+
+
+def _call_list_recent_traces(client: TestClient, **arguments):
+    return client.post(
+        "/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": 99,
+            "method": "tools/call",
+            "params": {"name": "langfuse.list_recent_traces", "arguments": arguments},
+        },
+        headers={"Authorization": "Bearer secret-1"},
+    )
+
+
+def test_mcp_tools_list_includes_list_recent_traces(app_with_fakes):
+    c, _ = app_with_fakes
+    r = c.post(
+        "/mcp",
+        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+        headers={"Authorization": "Bearer secret-1"},
+    )
+    tool_names = {t["name"] for t in r.json()["result"]["tools"]}
+    assert "langfuse.list_recent_traces" in tool_names
+
+
+def test_list_recent_traces_returns_array(monkeypatch):
+    fake = _traces_app(
+        monkeypatch,
+        traces=[_trace(tid="a"), _trace(tid="b"), _trace(tid="c")],
+    )
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, window_minutes=60, limit=5)
+    assert r.status_code == 200
+    import json as _json
+    parsed = _json.loads(r.json()["result"]["content"][0]["text"])
+    assert parsed["ok"] is True
+    assert parsed["count"] == 3
+    assert [t["id"] for t in parsed["traces"]] == ["a", "b", "c"]
+    assert parsed["traces"][0]["session_id"] == "sess_a"
+    # capture: real client got the right call kwargs
+    assert fake.list_recent_traces_calls[-1]["window_minutes"] == 60
+    assert fake.list_recent_traces_calls[-1]["limit"] == 5
+
+
+def test_list_recent_traces_clamps_limit_to_100(monkeypatch):
+    fake = _traces_app(monkeypatch, traces=[_trace(tid=str(i)) for i in range(5)])
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, window_minutes=60, limit=500)
+    assert r.status_code == 200
+    assert fake.list_recent_traces_calls[-1]["limit"] == 100
+
+
+def test_list_recent_traces_window_validation_returns_degraded(monkeypatch):
+    # window_minutes=0 trips the (0, 1440] guard inside the fake (which
+    # mirrors the real client) and the dispatch branch must catch it as a
+    # DegradedResponse rather than raising to MCP.
+    _traces_app(monkeypatch, traces=[_trace(tid="a")])
+    with TestClient(server_mod.create_app()) as c:
+        # window_minutes default = 60, but a too-low explicit value coerces
+        # via the dispatch's max(1, min(..., 1440)). To actually hit the
+        # ValueError path we have to bypass dispatch's clamp by injecting a
+        # fake that raises unconditionally:
+        pass
+    # Now exercise the explicit ValueError path by replacing the fake.
+    fake = _traces_app(monkeypatch, traces_response=ValueError("window_minutes must be in (0, 1440]"))
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, window_minutes=60)
+    assert r.status_code == 200
+    import json as _json
+    parsed = _json.loads(r.json()["result"]["content"][0]["text"])
+    assert parsed.get("degraded") is True
+    assert parsed["reason"] == "invalid_argument"
+    assert "window_minutes" in parsed["detail"]
+    assert fake.list_recent_traces_calls  # the call was attempted
+
+
+def test_list_recent_traces_filters_by_env(monkeypatch):
+    _traces_app(
+        monkeypatch,
+        traces=[
+            _trace(tid="a", env="prod"),
+            _trace(tid="b", env="prod"),
+            _trace(tid="c", env="dev"),
+        ],
+    )
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, window_minutes=60, env="prod")
+    import json as _json
+    parsed = _json.loads(r.json()["result"]["content"][0]["text"])
+    assert parsed["count"] == 2
+    assert {t["id"] for t in parsed["traces"]} == {"a", "b"}
+
+
+def test_list_recent_traces_degrades_on_upstream_4xx(monkeypatch):
+    _traces_app(
+        monkeypatch,
+        traces_response=DegradedResponse("upstream_4xx", detail="HTTP 400"),
+    )
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, window_minutes=60)
+    import json as _json
+    parsed = _json.loads(r.json()["result"]["content"][0]["text"])
+    assert parsed["degraded"] is True
+    assert parsed["reason"] == "upstream_4xx"
+    assert parsed["project"] == "scout-prod"
+    assert parsed["window_minutes"] == 60
 
 
 def test_token_rotation_overlap(monkeypatch):

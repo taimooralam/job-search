@@ -17,6 +17,7 @@ from src.observability.langfuse_mcp.aggregations import (
     is_error_observation,
     time_bucketed_rollup,
     top_n_errors,
+    trace_summary,
 )
 
 
@@ -198,3 +199,44 @@ def test_time_bucketed_rollup_skips_observations_without_timestamps():
     ]
     rollup = time_bucketed_rollup(members, bucket_minutes=5)
     assert sum(row["count"] for row in rollup) == 1
+
+
+# --------------------------------------------------------------------------- #
+# trace_summary (iteration-4.4 §20)
+# --------------------------------------------------------------------------- #
+
+
+def test_trace_summary_truncates_io_and_normalises_keys():
+    big_input = "x" * 500
+    big_output = {"a": "y" * 500}
+    trace = {
+        "id": "t1",
+        "name": "scout.search.run",
+        "timestamp": "2026-04-28T10:00:00+00:00",
+        "sessionId": "sess_a",
+        "userId": None,
+        "tags": ["region:eu"],
+        "release": "0.1.0",
+        "version": None,
+        "input": big_input,
+        "output": big_output,
+        "metadata": {"env": "prod", "pipeline": "preenrich"},
+    }
+    summary = trace_summary(trace)
+    assert summary["id"] == "t1"
+    assert summary["session_id"] == "sess_a"  # camelCase normalised
+    assert summary["tags"] == ["region:eu"]
+    assert len(summary["input_preview"]) == 200
+    assert summary["input_preview"].endswith("...")
+    assert summary["output_preview"].startswith("{'a': 'y")
+    assert summary["metadata"] == {"env": "prod", "pipeline": "preenrich"}
+
+
+def test_trace_summary_handles_missing_optionals():
+    summary = trace_summary({"id": "t2", "name": "x"})
+    assert summary["id"] == "t2"
+    assert summary["session_id"] is None
+    assert summary["tags"] == []
+    assert summary["input_preview"] == ""
+    assert summary["output_preview"] == ""
+    assert summary["metadata"] == {}

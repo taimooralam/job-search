@@ -199,10 +199,34 @@ def _preview(value: Any, limit: int = 200) -> str:
     return s if len(s) <= limit else s[: limit - 3] + "..."
 
 
+def trace_summary(trace: Mapping[str, Any]) -> dict[str, Any]:
+    """Project an upstream Langfuse trace dict into the MCP-facing summary shape.
+
+    The Langfuse REST `/api/public/traces` response carries large `input` and
+    `output` blobs. The MCP tool surface is read-mostly by humans-via-LLM, so
+    we truncate to a 200-char preview and keep the rest of the metadata
+    addressable without forcing every caller to parse a 30 kB blob.
+    """
+    return {
+        "id": trace.get("id"),
+        "name": trace.get("name"),
+        "timestamp": trace.get("timestamp"),
+        "session_id": trace.get("sessionId") or trace.get("session_id"),
+        "user_id": trace.get("userId") or trace.get("user_id"),
+        "tags": trace.get("tags") or [],
+        "release": trace.get("release"),
+        "version": trace.get("version"),
+        "input_preview": _preview(trace.get("input")),
+        "output_preview": _preview(trace.get("output")),
+        "metadata": trace.get("metadata") or {},
+    }
+
+
 __all__ = [
     "is_error_observation",
     "fingerprint_observation",
     "group_by_fingerprint",
     "top_n_errors",
     "time_bucketed_rollup",
+    "trace_summary",
 ]
