@@ -217,12 +217,19 @@ def _register_routes(app: FastAPI) -> None:
         )
 
     @app.post("/mcp")
-    async def mcp_endpoint(request: Request) -> JSONResponse:
-        """Minimal MCP JSON-RPC transport.
+    async def mcp_endpoint(request: Request) -> Response:
+        """Minimal MCP JSON-RPC transport (Streamable HTTP, single-response mode).
 
         Implements only what the Claude Code / Codex CLI clients actually
         call: ``initialize``, ``tools/list``, ``tools/call``, ``resources/list``,
-        ``resources/read``. Anything else returns ``method_not_found``.
+        ``resources/read``, plus the ``notifications/initialized`` notification.
+        Anything else returns ``method_not_found``.
+
+        Per the MCP Streamable HTTP spec, a request *without* an ``id`` is a
+        notification: the server MUST return HTTP 202 with an empty body and
+        MUST NOT send a JSON-RPC response. Returning a response payload to
+        Codex's rmcp client otherwise tripped a JsonRpcMessage union
+        deserialisation error and tore the transport down.
         """
         _require_auth(request)
         try:
@@ -233,10 +240,17 @@ def _register_routes(app: FastAPI) -> None:
         if not isinstance(body, dict):
             return _jsonrpc_error(None, code=-32600, message="invalid request")
 
-        rpc_id = body.get("id")
         method = body.get("method") or ""
         params = body.get("params") or {}
+        is_notification = "id" not in body
 
+        if is_notification:
+            # Fire-and-forget. We currently don't need to act on
+            # notifications/initialized but accept it (and any future
+            # client→server notification) without erroring.
+            return Response(status_code=202)
+
+        rpc_id = body.get("id")
         try:
             result = await _dispatch_mcp(method, params, app=app)
         except _RpcError as exc:
