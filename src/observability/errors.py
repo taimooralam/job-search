@@ -101,33 +101,43 @@ def record_error(
             secret_key=config["secret_key"],
         )
 
-        # Use ``create_event`` if available (Langfuse SDK ≥ 3); fall back to
-        # ``start_observation(as_type='event')`` so we work against the
-        # SDK pin already in the repo.
         event_name = f"error.{pipeline}.{stage}"
         level = _LANGFUSE_LEVEL_BY_SEVERITY[severity]
+
+        # Resolve / synthesise trace_id so update_trace can attach session_id.
+        # Reuses the same pattern as src/pipeline/tracing.py: trace_id is
+        # required by every observation in Langfuse SDK 4.x; if the caller
+        # didn't supply one, derive a deterministic id from session_id so
+        # repeated record_error calls in the same session group together.
+        effective_trace_id = trace_id
+        if not effective_trace_id:
+            try:
+                effective_trace_id = client.create_trace_id(seed=session_id)
+            except Exception:  # pragma: no cover - defensive
+                effective_trace_id = None
+
+        # Emit as a short-lived span with level set at construction time.
+        # We deliberately avoid as_type="event" here: in SDK 4.x events are
+        # immutable after creation, so trace metadata (incl. session_id)
+        # cannot be attached afterwards. A span lets us update_trace().
         try:
-            client.create_event(  # type: ignore[attr-defined]
-                trace_id=trace_id,
-                session_id=session_id,
-                name=event_name,
-                level=level,
-                input=payload,
-                metadata=payload,
-            )
-        except (AttributeError, TypeError):
-            # Older SDK: emit a short observation through the trace context.
-            ctx = {"trace_id": trace_id} if trace_id else {}
             obs = client.start_observation(  # type: ignore[attr-defined]
-                trace_context=ctx or None,
+                trace_context={"trace_id": effective_trace_id} if effective_trace_id else None,
                 name=event_name,
-                as_type="event",
+                as_type="span",
                 input=payload,
                 metadata=payload,
+                level=level,
+                status_message=type(exc).__name__,
             )
-            if hasattr(obs, "update"):
+            if hasattr(obs, "update_trace"):
                 try:
-                    obs.update(level=level)
+                    obs.update_trace(
+                        name=event_name,
+                        session_id=session_id,
+                        input=payload,
+                        metadata=payload,
+                    )
                 except Exception:  # pragma: no cover - defensive
                     pass
             if hasattr(obs, "end"):
@@ -135,6 +145,8 @@ def record_error(
                     obs.end()
                 except Exception:  # pragma: no cover - defensive
                     pass
+        except Exception as inner:  # pragma: no cover - defensive
+            logger.warning("record_error emit (span) failed: %s", inner)
 
         try:
             client.flush()
