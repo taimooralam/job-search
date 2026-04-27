@@ -570,7 +570,7 @@ def main() -> None:
         level=os.getenv("LANGFUSE_MCP_LOG_LEVEL", "INFO"),
         format='{"ts":"%(asctime)s","lvl":"%(levelname)s","logger":"%(name)s","msg":"%(message)s"}',
     )
-    uvicorn.run(create_app(), host=host, port=port, log_level="info", access_log=False)
+    uvicorn.run(create_app(), host=host, port=port, log_level="info", access_log=True)
 
 
 if __name__ == "__main__":  # pragma: no cover
