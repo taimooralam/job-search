@@ -29,6 +29,7 @@ credentials/
 !example/example_job.json
 !example/example_config.env
 !n8n/skills/linkedin-intel/config/edge-rules.json
+!.mcp.json
 
 # IDE / Editor
 .idea/

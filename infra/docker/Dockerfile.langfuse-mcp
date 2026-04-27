@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:1.6
+#
+# langfuse-mcp — read-only MCP server for the langfuse stack.
+# See plans/iteration-4.4-langfuse-mcp-feedback-loop.md.
+#
+# Build context = repo root.
+#   docker build -t langfuse-mcp:dev -f infra/docker/Dockerfile.langfuse-mcp .
+
+FROM python:3.12-slim AS base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    LANGFUSE_MCP_LOG_LEVEL=INFO
+
+# Non-root runtime user. uid 10001 to dodge collisions with host shells.
+RUN groupadd --system --gid 10001 app \
+ && useradd  --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app
+
+WORKDIR /app
+
+# Install Python deps as root (cache-friendly), then drop privileges.
+COPY requirements.langfuse-mcp.txt .
+RUN pip install --no-cache-dir -r requirements.langfuse-mcp.txt
+
+# Copy the bits the server actually imports. Keep this minimal — the MCP
+# server doesn't need pipeline/preenrich/cv_assembly code at runtime.
+COPY src/observability ./src/observability
+COPY src/pipeline/tracing.py ./src/pipeline/tracing.py
+COPY src/pipeline/__init__.py ./src/pipeline/__init__.py
+COPY src/__init__.py ./src/__init__.py 2>/dev/null || true
+
+# Install a stub package marker so `from src...` imports work at runtime.
+RUN touch ./src/__init__.py ./src/pipeline/__init__.py ./src/observability/__init__.py 2>/dev/null || true \
+ && chown -R app:app /app
+
+EXPOSE 4000
+
+USER app
+
+# Healthcheck via stdlib so we don't need wget/curl in the image.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \
+  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/healthz', timeout=3).status==200 else 1)"
+
+CMD ["python", "-m", "src.observability.langfuse_mcp.server"]

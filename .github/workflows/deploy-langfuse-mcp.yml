@@ -1,0 +1,123 @@
+name: Deploy langfuse-mcp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/observability/**'
+      - 'infra/docker/Dockerfile.langfuse-mcp'
+      - 'infra/compose/langfuse-mcp/**'
+      - 'requirements.langfuse-mcp.txt'
+      - 'src/pipeline/tracing.py'
+      - '.github/workflows/deploy-langfuse-mcp.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/langfuse-mcp
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install MCP deps + pytest
+        run: |
+          pip install -r requirements.langfuse-mcp.txt
+          pip install pytest pytest-xdist pytest-asyncio
+      - name: Run observability tests
+        run: pytest -q tests/observability/ -n auto
+
+  build-and-push:
+    name: Build + push image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=,format=short
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build + push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/docker/Dockerfile.langfuse-mcp
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy on VPS
+    needs: build-and-push
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Sync compose file to /root/langfuse-mcp/
+        run: |
+          install -d -m 0755 /root/langfuse-mcp
+          install -m 0644 infra/compose/langfuse-mcp/docker-compose.yml /root/langfuse-mcp/docker-compose.yml
+          # .env is operator-managed (chmod 0600); never overwrite it from CI.
+          if [ ! -f /root/langfuse-mcp/.env ]; then
+            echo "::error::/root/langfuse-mcp/.env missing. Run the bootstrap from infra/compose/langfuse-mcp/README.md before enabling this workflow."
+            exit 1
+          fi
+
+      - name: Pull + up
+        working-directory: /root/langfuse-mcp
+        run: |
+          docker compose pull
+          docker compose up -d --force-recreate --remove-orphans
+
+      - name: Wait for healthcheck
+        run: |
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' langfuse-mcp 2>/dev/null || echo "starting")
+            echo "attempt $i: $STATUS"
+            [ "$STATUS" = "healthy" ] && exit 0
+            sleep 3
+          done
+          docker logs --tail=200 langfuse-mcp
+          exit 1
+
+      - name: Smoke /healthz over public TLS
+        run: |
+          BODY=$(curl -fsS https://langfuse-mcp.srv1112039.hstgr.cloud/healthz)
+          echo "$BODY" | jq .
+          echo "$BODY" | jq -e '.ok == true and .langfuse_reachable == true' >/dev/null

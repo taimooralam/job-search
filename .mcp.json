@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "langfuse": {
+      "type": "http",
+      "url": "https://langfuse-mcp.srv1112039.hstgr.cloud/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LANGFUSE_MCP_TOKEN}"
+      }
+    }
+  }
+}

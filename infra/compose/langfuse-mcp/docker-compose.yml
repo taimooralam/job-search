@@ -1,0 +1,53 @@
+# langfuse-mcp — read-only MCP server next to Langfuse.
+#
+# Deploy on the VPS at /root/langfuse-mcp/. The runner workflow at
+# .github/workflows/deploy-langfuse-mcp.yml does the pull + up cycle.
+#
+# Networks (per iteration-4.4 §8.3):
+#   - langfuse_internal: shared with langfuse-web so we can reach it via
+#     in-cluster DNS at http://langfuse-web:3000. Created once with:
+#       docker network create langfuse_internal
+#       docker network connect langfuse_internal langfuse-web
+#   - traefik: the existing n8n-prod_default external network for TLS routing.
+#
+# Bootstrap is documented in §8.3.1 and infra/compose/langfuse-mcp/README.md.
+
+services:
+  langfuse-mcp:
+    image: ghcr.io/taimooralam/job-search/langfuse-mcp:latest
+    container_name: langfuse-mcp
+    restart: always
+    env_file: /root/langfuse-mcp/.env
+    networks:
+      - langfuse_internal
+      - traefik
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/healthz', timeout=3).status==200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=n8n-prod_default
+      - traefik.http.routers.langfuse-mcp.rule=Host(`langfuse-mcp.srv1112039.hstgr.cloud`)
+      - traefik.http.routers.langfuse-mcp.tls=true
+      - traefik.http.routers.langfuse-mcp.entrypoints=web,websecure
+      - traefik.http.routers.langfuse-mcp.tls.certresolver=mytlschallenge
+      - traefik.http.services.langfuse-mcp.loadbalancer.server.port=4000
+
+networks:
+  traefik:
+    external: true
+    name: n8n-prod_default
+  langfuse_internal:
+    external: true

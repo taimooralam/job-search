@@ -1,0 +1,6 @@
+# Pinned to the small subset that the MCP server actually needs.
+# Mirrors the floors in requirements.txt so we don't drift versions.
+fastapi>=0.115.0
+uvicorn[standard]>=0.24.0
+httpx>=0.28.0
+pydantic>=2.0.0
