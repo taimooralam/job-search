@@ -254,7 +254,11 @@ def _top_frame(exc: BaseException):
 
 
 def _normalise_frame_path(path: str) -> str:
-    """POSIX-relative-to-repo-root, falling back to absolute POSIX path."""
+    """POSIX-relative-to-repo-root, falling back to absolute POSIX path.
+
+    Always returns forward-slashes so a Windows traceback fingerprints
+    identically to the same bug captured on Linux CI.
+    """
     from pathlib import Path
 
     if not path:
@@ -266,10 +270,10 @@ def _normalise_frame_path(path: str) -> str:
     root = repo_root()
     if root is not None:
         try:
-            return absolute.relative_to(root).as_posix()
+            return absolute.relative_to(root).as_posix().replace("\\", "/")
         except ValueError:
             pass
-    return absolute.as_posix()
+    return absolute.as_posix().replace("\\", "/")
 
 
 __all__ = [
