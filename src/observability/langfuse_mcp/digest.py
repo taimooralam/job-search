@@ -26,7 +26,7 @@ async def render_digest(
     Returns a dict with both ``markdown`` and ``json`` keys so the HTTP layer
     can content-negotiate without re-running the upstream query.
     """
-    raw = await client.list_recent_errors(window_minutes=window_minutes, limit=200)
+    raw = await client.list_recent_errors(window_minutes=window_minutes, limit=100)
     if isinstance(raw, DegradedResponse):
         return _degraded_payload(
             window_minutes=window_minutes,

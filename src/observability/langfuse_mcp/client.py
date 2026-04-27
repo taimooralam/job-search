@@ -133,8 +133,10 @@ class LangfuseClient:
         Returns the raw observation dicts from Langfuse. Callers post-process
         through :mod:`.aggregations`.
         """
+        # Langfuse public API caps observations limit at 100 per request;
+        # larger values get a 400 with `{"code":"too_big","maximum":100}`.
         params: dict[str, Any] = {
-            "limit": limit,
+            "limit": min(int(limit), 100),
             "page": page,
         }
         if from_timestamp:
