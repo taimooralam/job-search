@@ -38,6 +38,21 @@ RUN mkdir -p /root/.codex /home/node/.codex && \
       '' \
       '[mcp_servers.langfuse.http_headers]' \
       'Authorization = "Bearer __LANGFUSE_MCP_TOKEN__"' \
+      '' \
+      '[mcp_servers.langfuse.tools."langfuse.health"]' \
+      'approval_mode = "approve"' \
+      '' \
+      '[mcp_servers.langfuse.tools."langfuse.error_summary"]' \
+      'approval_mode = "approve"' \
+      '' \
+      '[mcp_servers.langfuse.tools."langfuse.list_recent_errors"]' \
+      'approval_mode = "approve"' \
+      '' \
+      '[mcp_servers.langfuse.tools."langfuse.get_trace"]' \
+      'approval_mode = "approve"' \
+      '' \
+      '[mcp_servers.langfuse.tools."langfuse.get_session"]' \
+      'approval_mode = "approve"' \
       > /etc/codex-langfuse.toml.template && \
     chown -R node:node /home/node/.codex
 
