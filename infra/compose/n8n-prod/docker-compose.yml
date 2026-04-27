@@ -152,6 +152,7 @@ services:
         if [ -n "${LANGFUSE_MCP_TOKEN}" ] && [ -f /etc/codex-langfuse.toml.template ]; then
           sed "s|__LANGFUSE_MCP_TOKEN__|${LANGFUSE_MCP_TOKEN}|" /etc/codex-langfuse.toml.template >> /root/.codex/config.toml
           sed "s|__LANGFUSE_MCP_TOKEN__|${LANGFUSE_MCP_TOKEN}|" /etc/codex-langfuse.toml.template >> /home/node/.codex/config.toml
+          chown node:node /home/node/.codex/config.toml 2>/dev/null
           chmod 0600 /root/.codex/config.toml /home/node/.codex/config.toml 2>/dev/null
         fi
         if [ -n "${GITHUB_TOKEN}" ]; then
