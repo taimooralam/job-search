@@ -53,6 +53,9 @@ RUN mkdir -p /root/.codex /home/node/.codex && \
       '' \
       '[mcp_servers.langfuse.tools."langfuse.get_session"]' \
       'approval_mode = "approve"' \
+      '' \
+      '[mcp_servers.langfuse.tools."langfuse.list_recent_traces"]' \
+      'approval_mode = "approve"' \
       > /etc/codex-langfuse.toml.template && \
     chown -R node:node /home/node/.codex
 
