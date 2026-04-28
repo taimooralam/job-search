@@ -785,3 +785,67 @@ Why this is *not* a `/loop` of the MCP tool: `/loop` clamps to ≥ 30-60 s minim
 ### 20.5 Still deferred (re-affirmed)
 
 `search_traces`, `get_observation`, `list_sessions`, `cost_today`, `get_score`, `diff_traces`, `find_session_for_job`, `tail_session`, `find_session_for_recent_run`. Each is a discrete follow-up; none blocks `list_recent_traces`.
+
+---
+
+## 21. Closure recommendation (added 2026-04-28)
+
+### 21.1 Status: declare iteration 4.4 closed at "Phase A++"
+
+Phase A bring-up (§13) shipped the load-bearing surface: error visibility, recent-trace queryability, live SSE tail, all five CLI surfaces wired, emitter retrofitted, E2E round-trip <10 s. Phase A++ is Phase A plus the §20 / §20.4.2 trace-list tool and SSE traces endpoint added when the first user need surfaced ("get the last 5 traces" + "watch a session live").
+
+The remaining §7.1 / §7.2 surface (~50% of the originally-spec'd tools/resources) is **not on the critical path**. Each remaining tool is small (~20-50 LOC + a handful of tests, same pattern as `list_recent_traces`), isolated, and can be added in a single follow-up commit when a concrete need arrives. Shipping them speculatively trades real follow-up surface area (each tool needs CI deploy, version bump in 5 client configs, and ongoing maintenance) for marginal LLM ergonomics.
+
+**Recommendation: stop active 4.4 work; treat the deferred tools as a backlog, not a debt.**
+
+### 21.2 §17 acceptance criteria — explicit verdict
+
+| # | Criterion | Status | Evidence |
+|---|---|---|---|
+| 1 | `/healthz` over TLS returns `ok=true` | ✓ | `curl -fsS https://langfuse-mcp.srv1112039.hstgr.cloud/healthz` → `{"ok":true,"langfuse_reachable":true,...}` |
+| 2 | Laptop Claude Code can call `langfuse.error_summary(60)` | ✓ | Verified live this session via `mcp__langfuse__langfuse_health` and `mcp__langfuse__langfuse_error_summary` |
+| 3 | Laptop Codex can call same | ✓ | `LAPTOP_CODEX=3 3b3a8b20…` from `codex exec` after per-tool `approval_mode = "approve"` added |
+| 4 | `record_error` round-trip → MCP within 30 s | ✓ | Verified: synthetic emit appeared in `/digest?window=10` in <10 s |
+| 5 | Live `errors/live` SSE pushes notification within 10 s | ⏸ partial | `/sse/errors/live` endpoint shipped + working (curl-verified); the Claude Code Notification-hook injection that turns events into in-conversation system reminders is not wired (separate hook config, ~10 LOC) |
+| 6 | SessionStart hook idempotent + 8 s timeout | ✓ | Verified live: `SessionStart:resume hook success: <system-reminder>... langfuse-mcp digest...` fired this session |
+| 7 | Token rotation < 60 s, no rebuild | ✓ | Documented in `infra/compose/langfuse-mcp/README.md` §Rotation; `LANGFUSE_MCP_TOKENS` overlap supported |
+| 8 | Zero deps on `src/cv_assembly/` or `src/preenrich/` (server side) | ✓ | `src/observability/langfuse_mcp/` imports only stdlib + httpx + fastapi + pydantic. (Emitter side `record_error()` is the inverse direction — `src/preenrich/` calls `src/observability/`, not vice versa.) |
+| 9 | `oc` container `codex exec "use langfuse.error_summary(60)"` succeeds | ⏸ partial | MCP wiring verified inside container (`http_headers: Authorization=*****` + 6 approve markers); blocked from full live test by `node`-user OpenAI auth (orthogonal to MCP — needs `OPENAI_API_KEY` in compose env) |
+| 10 | `/langfuse-tail <session_id>` streams new observation within 10 s | ⏸ partial | `/sse/session/{sid}/tail` HTTP SSE endpoint shipped + working; the `/langfuse-tail` Claude Code skill that wraps it is not authored. `/sse/traces?session_id=...` covers the same need today (see §20.4.2 + memory `reference_langfuse_mcp.md`) |
+
+7 of 10 fully met, 3 partially (each is a thin wrapper around already-shipped infrastructure — none requires new server-side work).
+
+### 21.3 Deferred backlog with "ship-when" triggers
+
+Each is a single-commit, isolated addition. Don't ship until the trigger fires.
+
+| Deferred item | Trigger to ship | Estimated cost |
+|---|---|---|
+| `langfuse.search_traces(filters, limit)` | LLM/operator ask that `list_recent_traces` (recency-anchored) can't answer — e.g. "find any trace with `tags=['retry']` regardless of time" | ~30 LOC, 3 tests |
+| `langfuse.get_observation(observation_id)` | Operator wants drill-down into a specific span without pulling the whole trace | ~15 LOC, 2 tests |
+| `langfuse.list_sessions(filters, limit)` | Need session rollups (count of sessions per pipeline today, etc.) | ~40 LOC, 4 tests |
+| `langfuse.cost_today(group_by)` | Cost monitoring becomes a recurring ask (it isn't today) | ~50 LOC + Langfuse REST query for cost; not in current `client.py` surface |
+| `langfuse.get_score(trace_id_or_observation_id)` | Eval scores get attached and the operator wants to inspect them; gated on 4.3.8 scoring landing | ~20 LOC, 2 tests |
+| `langfuse.diff_traces(trace_id_a, trace_id_b)` | Comparing two runs of the same stage becomes a recurring ask | ~60 LOC; non-trivial diff renderer |
+| `langfuse.tail_session(session_id, since_ts?)` | Replace the `/sse/session/.../tail` curl pattern with an MCP-native equivalent so `/langfuse-tail` skill can ship | ~40 LOC, 4 tests |
+| `langfuse.find_session_for_job(level2_job_id)` | 4.3.8 lands and the canonical `session_id = f"job:{id}"` convention is enforced | ~15 LOC, 2 tests; gated by `ENABLE_CANONICAL_JOB_SESSION` flag |
+| `langfuse.find_session_for_recent_run(pipeline, env)` | Operator/LLM regularly needs "what was the latest preenrich session id?" | ~25 LOC, 3 tests |
+| `langfuse://errors/last-24h` resource | Resource-style mention in chat ("paste this URI") becomes a workflow | trivial alias of `error_summary(window=1440)` |
+| `langfuse://traces/{trace_id}` resource | Same as above for traces | ~15 LOC |
+| `langfuse://sessions/{session_id}` resource | Same | ~15 LOC |
+| Acceptance criterion #5 (Notification hook) | Operator wants in-conversation alerts on prod errors, not just curl visibility | Edit `.claude/settings.local.json` `Notification` hook block (~15 lines); already documented pattern |
+| Acceptance criterion #10 (`/langfuse-tail` skill) | Same as above for trace tailing | New `.claude/skills/langfuse-tail/SKILL.md` (~30 lines) wrapping `/sse/session/{sid}/tail` curl |
+
+### 21.4 Hand-off for the next operator (or future Claude session)
+
+Everything needed to extend is captured:
+
+- **Architecture / decisions**: this document, especially §7 (planned surface), §19 (review amendments), §20 (trace-list tool decisions).
+- **Live status / endpoints / curl recipes / when-to-use rules**: `~/.claude/projects/.../memory/reference_langfuse_mcp.md` (loads automatically into every Claude Code session in this repo).
+- **Implementation patterns**: `src/observability/langfuse_mcp/{client,server}.py` — every new tool is a 3-step copy-paste of `list_recent_traces`: client method, `_TOOL_DESCRIPTORS` entry, dispatch branch. Tests follow `test_list_recent_traces_*` shape.
+- **Deploy**: push to `main` touching `src/observability/**` auto-fires `.github/workflows/deploy-langfuse-mcp.yml`. No manual steps after first bootstrap.
+- **CLI integration deltas** (when adding a tool that takes per-tool approval): add `[mcp_servers.langfuse.tools."langfuse.<name>"] approval_mode = "approve"` to: laptop `~/.codex/config.toml`, VPS `/root/.codex/config.toml`, `infra/compose/n8n-prod/Dockerfile.oc` (template block) → rebuild + restart `oc`.
+
+### 21.5 Closure verdict
+
+**Iteration 4.4 is closed.** Outstanding work moves to a tactical backlog tracked in §21.3 with explicit "ship-when" triggers; nothing is blocked, nothing is on the critical path of any other iteration.
