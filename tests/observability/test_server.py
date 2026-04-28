@@ -463,6 +463,61 @@ def test_list_recent_traces_degrades_on_upstream_4xx(monkeypatch):
     assert parsed["window_minutes"] == 60
 
 
+def test_sse_traces_requires_auth(monkeypatch):
+    _traces_app(monkeypatch, traces=[_trace(tid="a")])
+    with TestClient(server_mod.create_app()) as c:
+        r = c.get("/sse/traces")
+        assert r.status_code == 401
+
+
+def test_sse_traces_emits_only_new_traces_after_priming(monkeypatch):
+    """Stream must seed dedup with existing traces and only yield deltas."""
+    import asyncio as _aio
+
+    # Per-iteration responses: iter 1 = seeded set (primes dedup), iter 2 =
+    # same seeded set + one new trace (NEW_X), iter 3 = same again (no
+    # further yield because NEW_X is now in `seen`).
+    seeded = [_trace(tid="seeded_1"), _trace(tid="seeded_2", name="scout.search.run")]
+    new_trace = _trace(tid="NEW_X", name="scout.search.run")
+    iter_responses = [
+        list(seeded),                # iter 1 — primes
+        list(seeded) + [new_trace],  # iter 2 — yields NEW_X
+    ]
+
+    class _StreamingFake(_FakeClient):
+        async def list_recent_traces(self, **kwargs):
+            self.list_recent_traces_calls.append(kwargs)
+            if iter_responses:
+                return iter_responses.pop(0)
+            return list(seeded) + [new_trace]  # steady state
+
+    fake = _StreamingFake()
+    # Skip the real sleep so the test is fast — replace with a yield-only
+    # stub that returns immediately.
+    async def _instant_sleep(*_a, **_kw):
+        return None
+    monkeypatch.setattr("asyncio.sleep", _instant_sleep)
+
+    async def _drive():
+        gen = server_mod._traces_live_stream(client=fake, name_prefix="scout.")
+        chunks: list[bytes] = []
+        # Drive a few iterations; the new trace event arrives on iter 2.
+        async for ev in gen:
+            chunks.append(ev)
+            if b"NEW_X" in ev or len(chunks) > 10:
+                break
+        await gen.aclose()
+        return chunks
+
+    chunks = _aio.run(_drive())
+    body = b"".join(chunks).decode()
+    assert "event: trace" in body
+    assert "NEW_X" in body
+    # Seeded ids must NOT have been yielded — they primed the dedup set.
+    assert "seeded_1" not in body
+    assert "seeded_2" not in body
+
+
 def test_token_rotation_overlap(monkeypatch):
     """During rotation overlap, BOTH old and new tokens must authenticate."""
     monkeypatch.setenv("LANGFUSE_HOST", "http://example.invalid")

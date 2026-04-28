@@ -764,6 +764,24 @@ Behavior:
 - If both `name` and `name_prefix` are passed, exact `name` wins (prefix is ignored — exact upstream filter is cheaper).
 - Bounded-scan rule preserved: `window_minutes` is still mandatory; the over-fetch is a one-shot 100-row page, not pagination.
 
+### 20.4.2 `/sse/traces` HTTP SSE endpoint (added 2026-04-28)
+
+Companion to the `langfuse.list_recent_traces` MCP tool. The MCP tool is the right fit when the LLM asks "what new traces hit since last time?" on demand. The SSE endpoint is the right fit when a **human** wants a live feed in a side terminal, or when a non-MCP daemon needs to consume trace events for downstream notification routing.
+
+```
+GET /sse/traces?[name=…|name_prefix=…]&[session_id=…]&[user_id=…]&[env=…]&[project=…]
+Authorization: Bearer <LANGFUSE_MCP_TOKEN>
+```
+
+Behavior:
+- Polls Langfuse every `LANGFUSE_MCP_POLL_INTERVAL_SEC` (default 5 s).
+- **First poll seeds dedup** — historical rows are *not* dumped on connect; only events ingested after connect time stream out.
+- Subsequent polls yield one `event: trace\ndata: {trace_summary}\n\n` per new trace id matching the filters.
+- `name_prefix` over-fetches up to 100 (the upstream cap) and prefix-filters server-side; same semantics as the MCP tool.
+- Keepalive comment frame every 5 polls so proxies don't kill the stream.
+
+Why this is *not* a `/loop` of the MCP tool: `/loop` clamps to ≥ 30-60 s minimum and burns LLM tokens per iteration regardless of whether new traces arrived. SSE is sub-second freshness and zero LLM cost for human eyes. For LLM consumption, prefer the on-demand MCP tool.
+
 ### 20.5 Still deferred (re-affirmed)
 
 `search_traces`, `get_observation`, `list_sessions`, `cost_today`, `get_score`, `diff_traces`, `find_session_for_job`, `tail_session`, `find_session_for_recent_run`. Each is a discrete follow-up; none blocks `list_recent_traces`.

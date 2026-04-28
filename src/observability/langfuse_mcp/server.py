@@ -216,6 +216,41 @@ def _register_routes(app: FastAPI) -> None:
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    @app.get("/sse/traces")
+    async def traces_live(request: Request) -> StreamingResponse:
+        """Live SSE of new traces matching a query.
+
+        Query params:
+        - ``name``        — exact upstream name filter
+        - ``name_prefix`` — server-side prefix filter (over-fetch + filter)
+        - ``session_id``  — pin to one session
+        - ``user_id``     — filter by user
+        - ``env``         — client-side metadata.env filter (prod/dev/staging)
+        - ``project``     — scout-prod (default) | scout-dev
+
+        Yields one ``event: trace`` per *new* trace seen since the connection
+        opened (dedup by trace id). Polls every ``LANGFUSE_MCP_POLL_INTERVAL_SEC``
+        (default 5s); the first poll seeds the dedup set with the existing
+        last 50 traces in the window so callers don't get a backlog flood.
+        """
+        _require_auth(request)
+        project = request.query_params.get("project") or "scout-prod"
+        client = _client_for_app(app, project)
+        if client is None:
+            raise HTTPException(status_code=404, detail=f"project unconfigured: {project}")
+        return StreamingResponse(
+            _traces_live_stream(
+                client=client,
+                name=request.query_params.get("name"),
+                name_prefix=request.query_params.get("name_prefix"),
+                session_id=request.query_params.get("session_id"),
+                user_id=request.query_params.get("user_id"),
+                env=request.query_params.get("env"),
+            ),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     @app.post("/mcp")
     async def mcp_endpoint(request: Request) -> Response:
         """Minimal MCP JSON-RPC transport (Streamable HTTP, single-response mode).
@@ -537,6 +572,72 @@ async def _errors_live_stream(*, client: LangfuseClient, env: str | None) -> Asy
                     continue
                 seen.add(obs_id)
                 yield _sse_event("error", obs)
+        if iteration % keepalive_every == 0:
+            yield b": keepalive\n\n"
+        await asyncio.sleep(poll_interval)
+
+
+async def _traces_live_stream(
+    *,
+    client: LangfuseClient,
+    name: Optional[str] = None,
+    name_prefix: Optional[str] = None,
+    session_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    env: Optional[str] = None,
+) -> AsyncIterator[bytes]:
+    """Poll Langfuse every 5 s; yield SSE events for new traces matching the query.
+
+    Dedup is per-stream via an in-memory set of trace ids. The first poll
+    primes the dedup set so we don't re-emit historical rows that pre-date
+    the connection — only events ingested *after* connect time stream out.
+    """
+    from src.observability.langfuse_mcp.aggregations import trace_summary
+
+    seen: set[str] = set()
+    keepalive_every = 5
+    iteration = 0
+    poll_interval = float(os.getenv("LANGFUSE_MCP_POLL_INTERVAL_SEC") or "5")
+    primed = False
+
+    # `name_prefix` is a server-side filter: the upstream supports exact `name`
+    # only. When prefix is in play, over-fetch the upstream cap and filter
+    # locally; otherwise fetch a small page.
+    over_fetch = bool(name_prefix and not name)
+
+    while True:
+        iteration += 1
+        try:
+            traces = await client.list_recent_traces(
+                window_minutes=10,
+                limit=100 if over_fetch else 50,
+                name=name,
+                session_id=session_id,
+                user_id=user_id,
+            )
+        except ValueError:
+            traces = []
+        if not isinstance(traces, DegradedResponse):
+            for tr in traces:
+                if not isinstance(tr, dict):
+                    continue
+                tid = tr.get("id")
+                if not tid:
+                    continue
+                if name_prefix and not str(tr.get("name") or "").startswith(name_prefix):
+                    continue
+                if env:
+                    md = tr.get("metadata") or {}
+                    if not (isinstance(md, dict) and md.get("env") == env):
+                        continue
+                if tid in seen:
+                    continue
+                seen.add(tid)
+                if primed:
+                    # Only yield events *after* the priming pass so callers
+                    # don't get an immediate backlog dump on connect.
+                    yield _sse_event("trace", trace_summary(tr))
+            primed = True
         if iteration % keepalive_every == 0:
             yield b": keepalive\n\n"
         await asyncio.sleep(poll_interval)
