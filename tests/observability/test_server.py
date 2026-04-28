@@ -392,6 +392,62 @@ def test_list_recent_traces_filters_by_env(monkeypatch):
     assert {t["id"] for t in parsed["traces"]} == {"a", "b"}
 
 
+def test_list_recent_traces_name_prefix_filters_clientside(monkeypatch):
+    fake = _traces_app(
+        monkeypatch,
+        traces=[
+            _trace(tid="a", name="preenrich.jd_extraction"),
+            _trace(tid="b", name="preenrich.classification"),
+            _trace(tid="c", name="scout.work_item.enqueue"),
+            _trace(tid="d", name="scout.search.run"),
+            _trace(tid="e", name="preenrich.role_research"),
+        ],
+    )
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, name_prefix="preenrich.", limit=10)
+    import json as _json
+    parsed = _json.loads(r.json()["result"]["content"][0]["text"])
+    # All three preenrich.* traces returned; both scout.* dropped.
+    assert parsed["count"] == 3
+    assert {t["id"] for t in parsed["traces"]} == {"a", "b", "e"}
+    # Server over-fetched up to 100 to give the prefix filter room to work.
+    assert fake.list_recent_traces_calls[-1]["limit"] == 100
+    # `name` upstream filter not set when prefix is in play.
+    assert fake.list_recent_traces_calls[-1]["name"] is None
+
+
+def test_list_recent_traces_exact_name_wins_over_prefix(monkeypatch):
+    fake = _traces_app(
+        monkeypatch,
+        traces=[_trace(tid="x", name="scout.search.run")],
+    )
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(
+            c,
+            name="scout.search.run",
+            name_prefix="preenrich.",
+            limit=5,
+        )
+    parsed = __import__("json").loads(r.json()["result"]["content"][0]["text"])
+    # When both are passed, exact `name` is used and prefix is ignored;
+    # over-fetch should NOT trigger (limit stays at caller's limit).
+    assert parsed["count"] == 1
+    assert fake.list_recent_traces_calls[-1]["name"] == "scout.search.run"
+    assert fake.list_recent_traces_calls[-1]["limit"] == 5
+
+
+def test_list_recent_traces_name_prefix_truncates_to_limit(monkeypatch):
+    # Prefix matches 5 traces; caller asks for limit=2; only 2 returned.
+    _traces_app(
+        monkeypatch,
+        traces=[_trace(tid=str(i), name=f"preenrich.stage{i}") for i in range(5)],
+    )
+    with TestClient(server_mod.create_app()) as c:
+        r = _call_list_recent_traces(c, name_prefix="preenrich.", limit=2)
+    parsed = __import__("json").loads(r.json()["result"]["content"][0]["text"])
+    assert parsed["count"] == 2
+
+
 def test_list_recent_traces_degrades_on_upstream_4xx(monkeypatch):
     _traces_app(
         monkeypatch,

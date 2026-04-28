@@ -337,7 +337,8 @@ _TOOL_DESCRIPTORS: list[dict[str, Any]] = [
             "properties": {
                 "window_minutes": {"type": "integer", "minimum": 1, "maximum": 1440, "default": 60},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 50},
-                "name": {"type": "string"},
+                "name": {"type": "string", "description": "Exact upstream name filter (e.g. 'scout.search.run')."},
+                "name_prefix": {"type": "string", "description": "Server-side prefix filter (e.g. 'preenrich.'). Applied after fetching up to 100 traces from upstream; ignored if `name` is also set."},
                 "session_id": {"type": "string"},
                 "user_id": {"type": "string"},
                 "tags": {"type": "array", "items": {"type": "string"}},
@@ -427,11 +428,21 @@ async def _call_tool(*, name: str, args: dict[str, Any], app: FastAPI) -> dict[s
         window = max(1, min(int(args.get("window_minutes") or 60), 1440))
         limit = max(1, min(int(args.get("limit") or 50), 100))
         env_filter = args.get("env")
+        # Upstream `name` is exact-match only. `name_prefix` is server-side:
+        # we over-fetch (up to 100, the upstream cap) and prefix-filter, then
+        # truncate to `limit`. Ignored if `name` is also set (exact wins).
+        exact_name = args.get("name")
+        prefix = args.get("name_prefix")
+        if prefix and not exact_name:
+            fetch_limit = 100
+        else:
+            prefix = None
+            fetch_limit = limit
         try:
             traces = await client.list_recent_traces(
                 window_minutes=window,
-                limit=limit,
-                name=args.get("name"),
+                limit=fetch_limit,
+                name=exact_name,
                 session_id=args.get("session_id"),
                 user_id=args.get("user_id"),
                 tags=args.get("tags"),
@@ -453,6 +464,16 @@ async def _call_tool(*, name: str, args: dict[str, Any], app: FastAPI) -> dict[s
                 and isinstance(t.get("metadata"), dict)
                 and t["metadata"].get("env") == env_filter
             ]
+
+        if prefix:
+            traces = [
+                t for t in traces
+                if isinstance(t, dict) and isinstance(t.get("name"), str)
+                and t["name"].startswith(prefix)
+            ]
+
+        # Truncate to caller-requested limit (over-fetch was internal).
+        traces = traces[:limit]
 
         summaries = [trace_summary(t) for t in traces if isinstance(t, dict)]
         return _tool_result_text(json.dumps({

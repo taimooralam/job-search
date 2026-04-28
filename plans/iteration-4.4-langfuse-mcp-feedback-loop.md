@@ -755,6 +755,15 @@ Returned as JSON-stringified text in the standard `{content:[{type:"text",text}]
 - `tests/observability/test_server.py` — add 6 tests (registration, happy path, limit clamp, window validation, env filter, degraded passthrough).
 - `tests/observability/test_aggregations.py` — add `trace_summary` truncation test.
 
+### 20.4.1 `name_prefix` (added 2026-04-28)
+
+The Langfuse Public API's `name` filter is **exact match only** (verified live: `name=scout.search.*` and `name=scout` both return 0 rows; only `name=scout.search.run` returns matches). Since the natural ask is "all `preenrich.*` traces" rather than the exact stage name, `langfuse.list_recent_traces` accepts an optional `name_prefix` parameter.
+
+Behavior:
+- If `name_prefix` is set and `name` is not, the dispatch over-fetches up to 100 (the upstream cap), filters `t.name.startswith(prefix)` server-side, then truncates to the caller's `limit`.
+- If both `name` and `name_prefix` are passed, exact `name` wins (prefix is ignored — exact upstream filter is cheaper).
+- Bounded-scan rule preserved: `window_minutes` is still mandatory; the over-fetch is a one-shot 100-row page, not pagination.
+
 ### 20.5 Still deferred (re-affirmed)
 
 `search_traces`, `get_observation`, `list_sessions`, `cost_today`, `get_score`, `diff_traces`, `find_session_for_job`, `tail_session`, `find_session_for_recent_run`. Each is a discrete follow-up; none blocks `list_recent_traces`.
